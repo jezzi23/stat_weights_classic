@@ -22,7 +22,8 @@ local spell_flags = {
     snare = bit.lshift(1,2),
     heal = bit.lshift(1,3),
     pyro_dot = bit.lshift(1,4), -- pyro is an exception to scaling rules
-    flat_dot = bit.lshift(1,5) -- 0 scaling on dots
+    flat_dot = bit.lshift(1,5), -- 0 scaling on dots
+    absorb = bit.lshift(1,6)
 };
 
 function create_spells()
@@ -2062,6 +2063,137 @@ function create_spells()
                 mana                = 410,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
+            },
+            -- power word: shield
+            [17] = {
+                base_min            = 48.0,
+                base_max            = 48.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 6,
+                mana                = 45,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [592] = {
+                base_min            = 94.0,
+                base_max            = 94.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 12,
+                mana                = 80,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [600] = {
+                base_min            = 166.0,
+                base_max            = 166.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 18,
+                mana                = 130,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [3747] = {
+                base_min            = 244.0,
+                base_max            = 244.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 24,
+                mana                = 175,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [6065] = {
+                base_min            = 313.0,
+                base_max            = 313.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 30,
+                mana                = 210,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [6066] = {
+                base_min            = 394.0,
+                base_max            = 394.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 36,
+                mana                = 250,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [10898] = {
+                base_min            = 499.0,
+                base_max            = 499.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 7,
+                lvl_req             = 42,
+                mana                = 300,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [10899] = {
+                base_min            = 622.0,
+                base_max            = 622.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 8,
+                lvl_req             = 48,
+                mana                = 355,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [10900] = {
+                base_min            = 783.0,
+                base_max            = 783.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 9,
+                lvl_req             = 54,
+                mana                = 425,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
+            },
+            [10901] = {
+                base_min            = 942.0,
+                base_max            = 942.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 10,
+                lvl_req             = 60,
+                mana                = 500,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy
             }
         }; 
     end
@@ -2640,7 +2772,7 @@ end
 
 function begin_tooltip_section(tooltip)
     tooltip:AddLine(" ");
-    tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
+    --tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
 end
 function end_tooltip_section(tooltip)
     tooltip:Show();
@@ -2748,9 +2880,14 @@ function spell_coef(spell_info, spell_name)
         end
     end
 
+    -- special coefs
+    if spell_name == "Power Word: Shield" then
+        direct_coef = 0.1;
+        ot_coef = 0;
+    end
     -- distribute direct and ot coefs if both
     if spell_info.base_min > 0 and spell_info.over_time > 0 then
-        -- pyroblast and fireball dots are the only exceptions afaik....?
+        -- pyroblast and fireball dots are special...
         if spell_name == "Pyroblast" then
             direct_coef = 1.0;
             ot_coef = 0.7;
@@ -2797,7 +2934,7 @@ function spell_info(base_min, base_max,
     local min_crit_if_hit = min_noncrit_if_hit * crit_mod;
     local max_crit_if_hit = max_noncrit_if_hit * crit_mod;
 
-    -- TODO: Looks like min and max are rounded up to the nearest integer
+    -- TODO: Looks like min is ceiled and max is floored
     --       do this until we know any better!
 
     --min_noncrit_if_hit = math.ceil(min_noncrit_if_hit);
@@ -2810,14 +2947,17 @@ function spell_info(base_min, base_max,
     local max = hit * ((1 - crit) * max_noncrit_if_hit + (crit * max_crit_if_hit));
 
     local ot = 0;
+    local ot_ticks = 0;
 
     if base_ot > 0 then
 
-        local base_ot_num_ticks = (ot_freq / ot_dur);
+        local base_ot_num_ticks = (ot_dur / ot_freq);
         local ot_coef_per_tick = ot_coef / base_ot_num_ticks;
         local base_ot_tick = base_ot * base_mod / base_ot_num_ticks;
 
-        ot = (base_ot_tick + ot_coef_per_tick * sp) * (base_ot_num_ticks + ot_extra_ticks) * mod;
+        ot_ticks = base_ot_num_ticks + ot_extra_ticks;
+
+        ot = (base_ot_tick + ot_coef_per_tick * sp) * ot_ticks * mod;
     end
 
     local expected_ot = hit * ot;
@@ -2825,8 +2965,8 @@ function spell_info(base_min, base_max,
     local avg_direct = (min + max) / 2;
     local avg = avg_direct + expected_ot;
 
-    local dps_direct = avg_direct/cast_time;
-    local dps = avg/cast_time;
+    local effect_per_sec_direct = avg_direct/cast_time;
+    local effect_per_sec = avg/cast_time;
 
     return {
         min_noncrit = min_noncrit_if_hit,
@@ -2837,15 +2977,17 @@ function spell_info(base_min, base_max,
 
         --including crit/hit
         avg_direct = avg_direct,
-        dps_direct = dps_direct,
+        effect_per_sec_direct = effect_per_sec_direct,
 
+        ot_num_ticks = ot_ticks,
+        ot_duration = ot_dur + ot_extra_ticks * ot_freq,
         ot_if_hit = ot,
         ot = expected_ot,
 
         avg = avg,
-        dps = dps,
+        effect_per_sec = effect_per_sec,
 
-        dmg_per_cost = avg/mana,
+        effect_per_cost = avg/mana,
 
         mana = mana
     };
@@ -2853,14 +2995,12 @@ end
 
 function evaluate_spell(spell_id, loadout)
 
-    --TODO: fix mana shit
-    --TODO: take extended dot durations into account
-
     local spell_data = get_spell(spell_id, loadout.lvl);
 
     local spell_name, _ = GetSpellInfo(spell_id);
 
     local crit = 0;
+    local crit_delta_1 = 0;
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         crit = loadout.healing_crit;
     else 
@@ -2870,6 +3010,13 @@ function evaluate_spell(spell_id, loadout)
         loadout.ability_crit[spell_name] = 0;
     end
     crit = crit + loadout.ability_crit[spell_name];
+    crit_delta_1 = math.min(crit + 0.01, 1.0);
+
+    if bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
+        crit = 0.0;
+        crit_delta_1 = 0.0;
+    end
+
 
     local cast_speed = spell_data.cast_time;
     if not loadout.ability_cast_mod[spell_name] then
@@ -2886,11 +3033,14 @@ function evaluate_spell(spell_id, loadout)
 
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         spell_mod = 1;
-        --spell_mod = loadout.ability_effect_mod[spell_name];
         spell_mod_base = 1 + loadout.spell_heal_mod;
-        spell_mod_base = spell_mod_base * (1 + loadout.ability_effect_mod[spell_name]);
+        spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
 
-    else 
+    elseif bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
+        spell_mod = 1;
+        spell_mod_base = 1;
+        spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
+    else
         -- TODO: see if frostbolts should be done like the heal before
         spell_mod = spell_mod + loadout.spell_dmg_mod_by_school[spell_data.school];
         spell_mod = spell_mod + loadout.ability_effect_mod[spell_name];
@@ -2898,7 +3048,7 @@ function evaluate_spell(spell_id, loadout)
 
     local hit = spell_hit(loadout.lvl, loadout.target_lvl, loadout.spelldmg_hit_by_school[spell_data.school]);
     local hit_delta_1 = hit + 0.01;
-    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 or bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
         hit = 1.0;
         hit_delta_1 = 1.0;
     else
@@ -2923,6 +3073,8 @@ function evaluate_spell(spell_id, loadout)
     if loadout.ability_cost_mod[spell_name] then
         cost = cost * (1 - loadout.ability_cost_mod[spell_name]);
     end
+    -- the game seems to round mana up/down to the nearest
+    cost = tonumber(string.format("%.0f", cost));
 
     local direct_coef, over_time_coef = spell_coef(spell_data, spell_name);
 
@@ -2956,7 +3108,7 @@ function evaluate_spell(spell_id, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
         spell_power,
-        math.min(crit + 0.01, 1.0),
+        crit_delta_1,
         loadout.spell_crit_mod_by_school[spell_data.school],
         hit,
         spell_mod, spell_mod_base,
@@ -2980,8 +3132,8 @@ function evaluate_spell(spell_id, loadout)
     local dmg_1_crit_delta = dmg_1_extra_crit.avg - normal_dmg.avg;
     local dmg_1_hit_delta  = dmg_1_extra_hit.avg - normal_dmg.avg;
 
-    local sp_per_crit = dmg_1_crit_delta/dmg_1_sp_delta;
-    local sp_per_hit = dmg_1_hit_delta/dmg_1_sp_delta;
+    local sp_per_crit = dmg_1_crit_delta/(dmg_1_sp_delta);
+    local sp_per_hit = dmg_1_hit_delta/(dmg_1_sp_delta);
 
     return {
         dmg_per_sp = dmg_1_sp_delta,
@@ -3009,7 +3161,7 @@ function tooltip_spell_info(tooltip, spell_id, loadout)
         local effect_per_sp = "";
         local sp_name = "";
 
-        if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+        if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
             effect = "Heal";
             effect_per_sec = "HPS";
             effect_per_cost = "Heal per Mana";
@@ -3024,32 +3176,67 @@ function tooltip_spell_info(tooltip, spell_id, loadout)
         end
 
         begin_tooltip_section(tooltip);
+
+        if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+            tooltip:AddLine(string.format("Loadout: %s", loadout.name));
+        else
+            tooltip:AddLine(string.format("Loadout: %s - target lvl %d", loadout.name, loadout.target_lvl));
+        end
         -- tmp
         tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
-                       1.0, 1.0, 1.0);
+                        1.0, 1.0, 1.0);
         tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
-        tooltip:AddLine("  ".."coefs: "..direct_coef..", "..ot_coef, 1.0, 1.0, 1.0);
+        tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
 
         -- tmp ends
         if eval.spell_data.min_noncrit ~= 0 then
-        tooltip:AddLine("  ".."Normal "..effect..": "..string.format("%.1f", eval.spell_data.min_noncrit).."-"..string.format("%.1f",eval.spell_data.max_noncrit),
-                       232.0/255, 225.0/255, 32.0/255);
-        tooltip:AddLine("  ".."Critical ("..(eval.spell_crit*100).."%): "..effect..": "..string.format("%.1f",eval.spell_data.min_crit).."-"..string.format("%.1f",eval.spell_data.max_crit),
-                       194.0/255, 52.0/255, 23.0/255);
+            if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
+                tooltip:AddLine(string.format("  Normal %s: %d-%d", 
+                                              effect, 
+                                              math.ceil(eval.spell_data.min_noncrit), 
+                                              math.floor(eval.spell_data.max_noncrit)),
+                                232.0/255, 225.0/255, 32.0/255);
+            else
+                tooltip:AddLine(string.format("  Normal %s: %d", 
+                                              effect, 
+                                              math.ceil(eval.spell_data.min_noncrit)),
+                                232.0/255, 225.0/255, 32.0/255);
+            end
+            if eval.spell_crit ~= 0 then
+            tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d-%d", 
+                                          effect, eval.spell_crit*100, math.ceil(eval.spell_data.min_crit), math.floor(eval.spell_data.max_crit)),
+                           194.0/255, 52.0/255, 23.0/255);
+            end
         end
+
 
         if eval.spell_data.ot_if_hit ~= 0 then
-            tooltip:AddLine("  "..effect.." over time: "..string.format("%.1f",eval.spell_data.ot_if_hit),
-                           232.0/255, 225.0/255, 32.0/255);
 
+            -- round over time num for niceyness
+            local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
+            tooltip:AddLine(string.format("  %s: %d over %d sec (%d-%d per tick for %d ticks)",
+                                          effect,
+                                          ot, 
+                                          eval.spell_data.ot_duration, 
+                                          math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                          math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                          eval.spell_data.ot_num_ticks), 
+                            232.0/255, 225.0/255, 32.0/255);
         end
-
-        tooltip:AddLine("  "..effect_per_sec..": "..string.format("%.1f",eval.spell_data.avg));
-        tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.dmg_per_cost));
-        tooltip:AddLine("  ".."Weights");
-        tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp));
-        tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit));
-        tooltip:AddLine("  "..sp_name.." per 1% hit: "..string.format("%.1f",eval.sp_per_hit));
+        if spell.base_min > 0 then
+            if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+                tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg).." (including crits)");
+            elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+                tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg));
+            else
+                tooltip:AddLine("  "..effect.." average: "..string.format("%.1f",eval.spell_data.avg).." (including crits/misses)");
+            end
+        end
+        tooltip:AddLine("  "..effect_per_sec..": "..string.format("%.1f",eval.spell_data.effect_per_sec));
+        tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
+        tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
+        tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
+        tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
 
         end_tooltip_section(tooltip);
 
@@ -3176,10 +3363,10 @@ function print_spell(spell_name, spell_id, loadout)
 
         print("Spell evaluation");
         print(string.format("ot if hit: %.3f", eval.spell_data.ot_if_hit));
-        print(string.format("including hit/miss - avg: %.3f, dps: %.3f, dmg per mana:%.3f, dmg_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
+        print(string.format("including hit/miss - avg: %.3f, effect_per_sec: %.3f, dmg per mana:%.3f, dmg_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
                             eval.spell_data.avg, 
-                            eval.spell_data.dps, 
-                            eval.spell_data.dmg_per_cost, 
+                            eval.spell_data.effect_per_sec, 
+                            eval.spell_data.effect_per_cost, 
                             eval.dmg_per_sp, 
                             eval.sp_per_crit, 
                             eval.sp_per_hit
@@ -3194,14 +3381,13 @@ function diff_spell(spell_id, loadout1, loadout2)
     rhs = evaluate_spell(spell_id, loadout2);
     return {
         avg = rhs.spell_data.avg - lhs.spell_data.avg,
-        dps = rhs.spell_data.dps - lhs.spell_data.dps
+        effect_per_sec = rhs.spell_data.effect_per_sec - lhs.spell_data.effect_per_sec
     };
 end
 
 local function command(msg, editbox)
     print_loadout(current_loadout());
 end
-
 
 ItemRefTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
   --local name, link = tooltip:GetItem();
@@ -3224,7 +3410,7 @@ GameTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
 
     --print("--------------------------------------");
     --print("diff on item using frostbolt10");
-    --print("delta - avg:" ,  diff.avg, "dps:", diff.dps);
+    --print("delta - avg:" ,  diff.avg, "effect_per_sec:", diff.effect_per_sec);
 end)
 
 
