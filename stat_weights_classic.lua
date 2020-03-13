@@ -2300,7 +2300,7 @@ function create_spells()
                     school              = magic_school.holy,
                 }
             },
-            [27803] = {
+            [27800] = {
                 base_min            = 146.0,
                 base_max            = 148.0, 
                 over_time           = 0.0,
@@ -3069,6 +3069,10 @@ function spell_coef(spell_info, spell_name)
         ot_coef = ot_coef * 0.95;
     end
 
+    if spell_name == "Holy Nova" then
+        direct_coef = direct_coef/2;
+    end
+
     direct_coef = direct_coef * spell_scaling(spell_info.lvl_req);
     ot_coef = ot_coef * spell_scaling(spell_info.lvl_req);
     
@@ -3395,7 +3399,7 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
         if spell.healing_version then
             -- used for holy nova
-            tooltip_spell_info(tooltip, spellhealing_version, spell_name, loadout);
+            tooltip_spell_info(tooltip, spell.healing_version, spell_name, loadout);
         end
 
     end
