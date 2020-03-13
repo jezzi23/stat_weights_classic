@@ -1,0 +1,4 @@
+## Interface: 11303
+## Title: Stat Weights - Classic
+## Notes: Demo
+stat_weights_classic.lua
