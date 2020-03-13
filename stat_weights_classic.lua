@@ -2827,7 +2827,7 @@ function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 10);
         if pts ~= 0 then
 
-            local instants = {"Power Word: Shield", "Renew"};
+            local instants = {"Power Word: Shield", "Renew", "Holy Nova"};
             for k, v in pairs(instants) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
@@ -3087,7 +3087,7 @@ function spell_info(base_min, base_max,
                     direct_coef, ot_coef,
                     mana)
 
-    --print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
+    print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
 
     local min_noncrit_if_hit = (base_min * base_mod + sp * direct_coef) * mod;
     local max_noncrit_if_hit = (base_max * base_mod + sp * direct_coef) * mod;
