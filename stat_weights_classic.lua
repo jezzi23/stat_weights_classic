@@ -2194,6 +2194,163 @@ function create_spells()
                 mana                = 500,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
+            },
+            -- holy nova
+            [15237] = {
+                base_min            = 29.0,
+                base_max            = 34.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 185,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 54.0,
+                    base_max            = 63.0, 
+                    over_time           = 0.0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 1,
+                    lvl_req             = 20,
+                    mana                = 185,
+                    flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
+                    school              = magic_school.holy,
+                }
+            },
+            [15430] = {
+                base_min            = 52.0,
+                base_max            = 61.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 28,
+                mana                = 290,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 89.0,
+                    base_max            = 101.0, 
+                    over_time           = 0.0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 2,
+                    lvl_req             = 28,
+                    mana                = 290,
+                    flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
+                    school              = magic_school.holy,
+                }
+            },
+            [15431] = {
+                base_min            = 79.0,
+                base_max            = 92.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 36,
+                mana                = 400,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 124.0,
+                    base_max            = 143.0, 
+                    over_time           = 0.0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 3,
+                    lvl_req             = 36,
+                    mana                = 400,
+                    flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
+                    school              = magic_school.holy,
+                }
+            },
+            [27799] = {
+                base_min            = 110.0,
+                base_max            = 127.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 44,
+                mana                = 520,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 165.0,
+                    base_max            = 192.0, 
+                    over_time           = 0.0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 4,
+                    lvl_req             = 44,
+                    mana                = 520,
+                    flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
+                    school              = magic_school.holy,
+                }
+            },
+            [27803] = {
+                base_min            = 146.0,
+                base_max            = 148.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 52,
+                mana                = 635,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 239.0,
+                    base_max            = 276.0, 
+                    over_time           = 0.0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 5,
+                    lvl_req             = 52,
+                    mana                = 635,
+                    flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
+                    school              = magic_school.holy,
+                }
+            },
+            [27801] = {
+                base_min            = 181.0,
+                base_max            = 209.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 60,
+                mana                = 750,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 302.0,
+                    base_max            = 350.0, 
+                    over_time           = 0.0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 6,
+                    lvl_req             = 60,
+                    mana                = 750,
+                    flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
+                    school              = magic_school.holy,
+                }
             }
         }; 
     end
@@ -2204,7 +2361,7 @@ end
 
 spells = create_spells();
 
-function get_spell(spell_id, lvl)
+function get_spell(spell_id)
 
     return spells[spell_id];
 end
@@ -2926,7 +3083,7 @@ function spell_info(base_min, base_max,
                     direct_coef, ot_coef,
                     mana)
 
-    print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
+    --print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
 
     local min_noncrit_if_hit = (base_min * base_mod + sp * direct_coef) * mod;
     local max_noncrit_if_hit = (base_max * base_mod + sp * direct_coef) * mod;
@@ -2993,11 +3150,7 @@ function spell_info(base_min, base_max,
     };
 end
 
-function evaluate_spell(spell_id, loadout)
-
-    local spell_data = get_spell(spell_id, loadout.lvl);
-
-    local spell_name, _ = GetSpellInfo(spell_id);
+function evaluate_spell(spell_data, spell_name, loadout)
 
     local crit = 0;
     local crit_delta_1 = 0;
@@ -3039,7 +3192,7 @@ function evaluate_spell(spell_id, loadout)
     elseif bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
         spell_mod = 1;
         spell_mod_base = 1;
-        spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
+        spell_mod = spell_mod + loadout.ability_effect_mod[spell_name];
     else
         -- TODO: see if frostbolts should be done like the heal before
         spell_mod = spell_mod + loadout.spell_dmg_mod_by_school[spell_data.school];
@@ -3146,14 +3299,11 @@ function evaluate_spell(spell_id, loadout)
 
 end
 
-function tooltip_spell_info(tooltip, spell_id, loadout)
-
-    local spell = get_spell(spell_id, loadout.lvl);
-    local spell_name, _ = GetSpellInfo(spell_id);
+function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
     if spell then
 
-        local eval = evaluate_spell(spell_id, loadout);
+        local eval = evaluate_spell(spell, spell_name, loadout);
         
         local direct_coef, ot_coef = spell_coef(spell, spell_name);
 
@@ -3242,6 +3392,11 @@ function tooltip_spell_info(tooltip, spell_id, loadout)
         tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
 
         end_tooltip_section(tooltip);
+
+        if spell.healing_version then
+            -- used for holy nova
+            tooltip_spell_info(tooltip, spellhealing_version, spell_name, loadout);
+        end
 
     end
 end
@@ -3335,12 +3490,11 @@ function loadout_by_item_tooltip()
     return loadout;
 end
 
-function print_spell(spell_name, spell_id, loadout)
+function print_spell(spell, spell_name, loadout)
 
-    local spell = get_spell(spell_id, loadout.lvl);
     if spell then
 
-        local eval = evaluate_spell(spell_id, loadout);
+        local eval = evaluate_spell(spell, spell_name, loadout);
         
         local direct_coef, ot_oef = spell_coef(spell, spell_name);
 
@@ -3378,10 +3532,10 @@ function print_spell(spell_name, spell_id, loadout)
     end
 end
 
-function diff_spell(spell_id, loadout1, loadout2)
+function diff_spell(spell_data, spell_name, loadout1, loadout2)
 
-    lhs = evaluate_spell(spell_id, loadout1);
-    rhs = evaluate_spell(spell_id, loadout2);
+    lhs = evaluate_spell(spell_data, spell_name, loadout1);
+    rhs = evaluate_spell(spell_data, spell_name, loadout2);
     return {
         avg = rhs.spell_data.avg - lhs.spell_data.avg,
         effect_per_sec = rhs.spell_data.effect_per_sec - lhs.spell_data.effect_per_sec
@@ -3421,10 +3575,14 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
     local name, spell_id = tooltip:GetSpell();
 
+    local spell = get_spell(spell_id);
+
     local loadout = current_loadout();
 
-    --print_spell(name, spell_id, loadout);
-    tooltip_spell_info(GameTooltip, spell_id, loadout);
+    --local spell_name, _ = GetSpellInfo(spell_id);
+
+    --print_spell(spell, spell_name, loadout);
+    tooltip_spell_info(GameTooltip, spell, name, loadout);
 
 end)
 
