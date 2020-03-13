@@ -2926,7 +2926,7 @@ function spell_info(base_min, base_max,
                     direct_coef, ot_coef,
                     mana)
 
-    --print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
+    print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
 
     local min_noncrit_if_hit = (base_min * base_mod + sp * direct_coef) * mod;
     local max_noncrit_if_hit = (base_max * base_mod + sp * direct_coef) * mod;
@@ -3063,7 +3063,7 @@ function evaluate_spell(spell_id, loadout)
     end
 
     local spell_power = 0;
-    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 or bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
         spell_power = loadout.healingpower;
     else
         spell_power = loadout.spelldmg_by_school[spell_data.school];
@@ -3149,6 +3149,8 @@ end
 function tooltip_spell_info(tooltip, spell_id, loadout)
 
     local spell = get_spell(spell_id, loadout.lvl);
+    local spell_name, _ = GetSpellInfo(spell_id);
+
     if spell then
 
         local eval = evaluate_spell(spell_id, loadout);
@@ -3199,7 +3201,8 @@ function tooltip_spell_info(tooltip, spell_id, loadout)
             else
                 tooltip:AddLine(string.format("  Normal %s: %d", 
                                               effect, 
-                                              math.ceil(eval.spell_data.min_noncrit)),
+                                              math.floor(eval.spell_data.min_noncrit)),
+                                              --string.format("%.0f", eval.spell_data.min_noncrit)),
                                 232.0/255, 225.0/255, 32.0/255);
             end
             if eval.spell_crit ~= 0 then
