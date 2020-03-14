@@ -2965,6 +2965,12 @@ function apply_talents(loadout)
             new_loadout.spell_crit_by_school[magic_school.fire] =
                 new_loadout.spell_crit_by_school[magic_school.fire] + pts * 0.02;
         end
+        -- fire power
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 15);
+        if pts ~= 0 then
+            new_loadout.spell_dmg_mod_by_school[magic_school.fire] =
+                new_loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
+        end
         -- improved frostbolt
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
         if pts ~= 0 then
@@ -4001,7 +4007,6 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
     tooltip_spell_info(GameTooltip, spell, name, loadout);
 
 end)
-
 
 SLASH_STAT_WEIGHTS1 = '/sw'
 SLASH_STAT_WEIGHTS2 = '/stat-weights'
