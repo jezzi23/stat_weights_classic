@@ -28,7 +28,8 @@ local spell_flags = {
     heal = bit.lshift(1,3),
     pyro_dot = bit.lshift(1,4), -- pyro is an exception to scaling rules
     flat_dot = bit.lshift(1,5), -- 0 scaling on dots
-    absorb = bit.lshift(1,6)
+    absorb = bit.lshift(1,6),
+    over_time_crit = bit.lshift(1,7),
 };
 
 function create_spells()
@@ -980,7 +981,7 @@ function create_spells()
                 rank                = 1,
                 lvl_req             = 8, 
                 mana                = 85,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [5144] = {
@@ -993,7 +994,7 @@ function create_spells()
                 rank                = 2,
                 lvl_req             = 16, 
                 mana                = 140,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [5145] = {
@@ -1006,7 +1007,7 @@ function create_spells()
                 rank                = 3,
                 lvl_req             = 24, 
                 mana                = 235,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [8416] = {
@@ -1019,7 +1020,7 @@ function create_spells()
                 rank                = 4,
                 lvl_req             = 32, 
                 mana                = 320,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [8417] = {
@@ -1032,7 +1033,7 @@ function create_spells()
                 rank                = 5,
                 lvl_req             = 40, 
                 mana                = 410,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [10211] = {
@@ -1045,7 +1046,7 @@ function create_spells()
                 rank                = 6,
                 lvl_req             = 48, 
                 mana                = 500,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [10212] = {
@@ -1058,7 +1059,7 @@ function create_spells()
                 rank                = 7,
                 lvl_req             = 56, 
                 mana                = 595,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             [25345] = {
@@ -1071,7 +1072,7 @@ function create_spells()
                 rank                = 8,
                 lvl_req             = 56, 
                 mana                = 635,
-                flags               = 0,
+                flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
             -- arcane explosion
@@ -3442,7 +3443,10 @@ function spell_coef(spell_info, spell_name)
     end
     
     if spell_info.over_time_duration < 15 then
-        if spell_info.cast_time == spell_info.over_time_duration then
+        if spell_name == "Arcane Missiles" then
+            -- for arcane missiles max scaling is at 5 secs channel at 1.2 coef
+            ot_coef = 1.2 * spell_info.over_time_duration/5;
+        elseif spell_info.cast_time == spell_info.over_time_duration then
             ot_coef = math.min(1.0, math.max(1.5/3.5, spell_info.cast_time/3.5));
         else
             ot_coef = spell_info.over_time_duration/15.0;
@@ -3497,7 +3501,7 @@ end
 function spell_info(base_min, base_max,
                     base_ot, ot_freq, ot_dur, ot_extra_ticks,
                     cast_time, sp, 
-                    crit, crit_mod, hit,
+                    crit, ot_crit, crit_mod, hit,
                     mod, base_mod,
                     direct_coef, ot_coef,
                     mana)
@@ -3526,6 +3530,7 @@ function spell_info(base_min, base_max,
     local max = hit * ((1 - crit) * max_noncrit_if_hit + (crit * max_crit_if_hit));
 
     local ot = 0;
+    local ot_if_crit = 0;
     local ot_ticks = 0;
 
     if base_ot > 0 then
@@ -3537,9 +3542,16 @@ function spell_info(base_min, base_max,
         ot_ticks = base_ot_num_ticks + ot_extra_ticks;
 
         ot = (base_ot_tick + ot_coef_per_tick * sp) * ot_ticks * mod;
+
+        ot_if_crit = ot * crit_mod;
     end
 
+
     local expected_ot = hit * ot;
+
+    local avg_ot_if_hit = (1 - ot_crit) * ot + ot_crit * ot_if_crit;
+
+    local expected_ot = hit * avg_ot_if_hit;
 
     local avg_direct = (min + max) / 2;
     local avg = avg_direct + expected_ot;
@@ -3561,6 +3573,7 @@ function spell_info(base_min, base_max,
         ot_num_ticks = ot_ticks,
         ot_duration = ot_dur + ot_extra_ticks * ot_freq,
         ot_if_hit = ot,
+        ot_crit_if_hit = ot_if_crit,
         ot = expected_ot,
 
         avg = avg,
@@ -3575,7 +3588,9 @@ end
 function evaluate_spell(spell_data, spell_name, loadout)
 
     local crit = 0;
+    local ot_crit = 0;
     local crit_delta_1 = 0;
+    local ot_crit_delta_1 = 0;
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         crit = loadout.healing_crit;
     else 
@@ -3591,7 +3606,10 @@ function evaluate_spell(spell_data, spell_name, loadout)
         crit = 0.0;
         crit_delta_1 = 0.0;
     end
-
+    if bit.band(spell_data.flags, spell_flags.over_time_crit) ~= 0 then
+        ot_crit = crit;
+        ot_crit_delta_1 = crit_delta_1;
+    end
 
     local cast_speed = spell_data.cast_time;
     if not loadout.ability_cast_mod[spell_name] then
@@ -3659,6 +3677,7 @@ function evaluate_spell(spell_data, spell_name, loadout)
         cast_speed,
         spell_power,
         crit,
+        ot_crit,
         loadout.spell_crit_mod_by_school[spell_data.school],
         hit,
         spell_mod, spell_mod_base,
@@ -3672,6 +3691,7 @@ function evaluate_spell(spell_data, spell_name, loadout)
         cast_speed,
         spell_power + 1,
         crit,
+        ot_crit,
         loadout.spell_crit_mod_by_school[spell_data.school],
         hit,
         spell_mod, spell_mod_base,
@@ -3684,6 +3704,7 @@ function evaluate_spell(spell_data, spell_name, loadout)
         cast_speed,
         spell_power,
         crit_delta_1,
+        ot_crit_delta_1,
         loadout.spell_crit_mod_by_school[spell_data.school],
         hit,
         spell_mod, spell_mod_base,
@@ -3696,6 +3717,7 @@ function evaluate_spell(spell_data, spell_name, loadout)
         cast_speed,
         spell_power,
         crit,
+        ot_crit,
         loadout.spell_crit_mod_by_school[spell_data.school],
         hit_delta_1,
         spell_mod, spell_mod_base,
@@ -3756,13 +3778,6 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         else
             tooltip:AddLine(string.format("Loadout: %s - target lvl %d", loadout.name, loadout.target_lvl));
         end
-        -- tmp
-        tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
-                        1.0, 1.0, 1.0);
-        tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
-        tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
-
-        -- tmp ends
         if eval.spell_data.min_noncrit ~= 0 then
             if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
                 tooltip:AddLine(string.format("  Normal %s: %d-%d", 
@@ -3791,12 +3806,24 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
             tooltip:AddLine(string.format("  %s: %d over %d sec (%d-%d per tick for %d ticks)",
                                           effect,
-                                          ot, 
+                                          eval.spell_data.ot_if_hit, 
                                           eval.spell_data.ot_duration, 
                                           math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
                                           math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
                                           eval.spell_data.ot_num_ticks), 
                             232.0/255, 225.0/255, 32.0/255);
+            if eval.spell_data.ot_crit_if_hit ~= 0 then
+                -- over time can crit (e.g. arcane missiles)
+                tooltip:AddLine(string.format("  Critical %s: %d over %d sec (%d-%d per tick for %d ticks)",
+                                              effect,
+                                              eval.spell_data.ot_crit_if_hit, 
+                                              eval.spell_data.ot_duration, 
+                                              math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
+                                              math.ceil(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
+                                              eval.spell_data.ot_num_ticks), 
+                           194.0/255, 52.0/255, 23.0/255);
+                    
+            end
         end
         if spell.base_min > 0 then
             if bit.band(spell.flags, spell_flags.heal) ~= 0 then
@@ -3812,6 +3839,14 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
         tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
         tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+
+        -- tmp
+        tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
+                        1.0, 1.0, 1.0);
+        tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
+        tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
+
+        -- tmp ends
 
         end_tooltip_section(tooltip);
 
