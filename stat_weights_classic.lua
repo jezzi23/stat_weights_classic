@@ -1,4 +1,9 @@
 
+
+--TODO: Known spells that are incorrectly evaluated
+        -- Holy Nova
+        -- Regrowth
+
 local magic_school = {
      physical = 1,
      holy     = 2,
@@ -2353,6 +2358,325 @@ function create_spells()
                 }
             }
         }; 
+    elseif class == "SHAMAN" then
+
+        return {
+            [5394] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 6.0 * 30,
+                over_time_tick_freq = 2,
+                over_time_duration  = 60.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 40,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [6375] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 8.0 * 30,
+                over_time_tick_freq = 2,
+                over_time_duration  = 60.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 30,
+                mana                = 50,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [6377] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 10.0 * 30,
+                over_time_tick_freq = 2,
+                over_time_duration  = 60.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 40,
+                mana                = 60,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10462] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 12.0 * 30,
+                over_time_tick_freq = 2,
+                over_time_duration  = 60.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 50,
+                mana                = 70,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10463] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 14.0 * 30,
+                over_time_tick_freq = 2,
+                over_time_duration  = 60.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 60,
+                mana                = 80,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            -- lesser healing
+            [8004] = {
+                base_min            = 170.0,
+                base_max            = 195.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 105,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [8008] = {
+                base_min            = 257.0,
+                base_max            = 292.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 28,
+                mana                = 145,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [8010] = {
+                base_min            = 349.0,
+                base_max            = 394.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 36,
+                mana                = 185,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10466] = {
+                base_min            = 473.0,
+                base_max            = 529.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 44,
+                mana                = 235,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10467] = {
+                base_min            = 649.0,
+                base_max            = 723.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 52,
+                mana                = 305,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10468] = {
+                base_min            = 832.0,
+                base_max            = 928.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 60,
+                mana                = 380,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            -- healing wave
+            [331] = {
+                base_min            = 36.0,
+                base_max            = 47.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 1,
+                mana                = 25,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [332] = {
+                base_min            = 69.0,
+                base_max            = 83.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 2,
+                lvl_req             = 6,
+                mana                = 45,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [547] = {
+                base_min            = 136.0,
+                base_max            = 163.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 3,
+                lvl_req             = 12,
+                mana                = 80,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [913] = {
+                base_min            = 279.0,
+                base_max            = 328.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 4,
+                lvl_req             = 18,
+                mana                = 155,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [939] = {
+                base_min            = 389.0,
+                base_max            = 454.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 5,
+                lvl_req             = 24,
+                mana                = 200,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [959] = {
+                base_min            = 552.0,
+                base_max            = 639.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 6,
+                lvl_req             = 32,
+                mana                = 265,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [8005] = {
+                base_min            = 759.0,
+                base_max            = 874.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 7,
+                lvl_req             = 40,
+                mana                = 340,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10395] = {
+                base_min            = 1040.0,
+                base_max            = 1191.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 8,
+                lvl_req             = 48,
+                mana                = 440,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10396] = {
+                base_min            = 1389.0,
+                base_max            = 1583.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 9,
+                lvl_req             = 56,
+                mana                = 560,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [25357] = {
+                base_min            = 1620.0,
+                base_max            = 1850.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 10,
+                lvl_req             = 60,
+                mana                = 620,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            -- chain heal
+            [1064] = {
+                base_min            = 332.0,
+                base_max            = 381.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 1,
+                lvl_req             = 40,
+                mana                = 260,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10622] = {
+                base_min            = 419.0,
+                base_max            = 479.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 2,
+                lvl_req             = 46,
+                mana                = 315,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            },
+            [10623] = {
+                base_min            = 567.0,
+                base_max            = 646.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 3,
+                lvl_req             = 54,
+                mana                = 405,
+                flags               = spell_flags.heal,
+                school              = magic_school.nature,
+            }
+        };
     end
     return {};
 end
@@ -2431,7 +2755,6 @@ function negate_loadout(loadout)
         negated.spell_crit_mod_by_school[i] = -loadout.spell_crit_mod_by_school[i];
     end
     negated.spell_heal_mod = -negated.spell_heal_mod;
-
 
     return negated;
 end
@@ -2919,7 +3242,90 @@ function apply_talents(loadout)
             new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
         end
         --TODO: shadow talents
-        
+
+    elseif class == "SHAMAN" then
+
+        -- improved healing wave
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
+        if pts ~= 0 then
+            if not new_loadout.ability_cast_mod["Healing Wave"] then
+                new_loadout.ability_cast_mod["Healing Wave"] = 0;
+            end
+            new_loadout.ability_cast_mod["Healing Wave"] = new_loadout.ability_cast_mod["Healing Wave"] + pts * 0.1;
+        end
+
+        -- tidal focus
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
+        if pts ~= 0 then
+
+            local abilities = {"Lesser Heal", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_cost_mod[v] then
+                    new_loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.01;
+            end
+        end
+
+        -- totemic focus
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 5);
+        if pts ~= 0 then
+
+            -- TODO: add dps totems
+            local totems = {"Healing Stream Totem"};
+
+            for k, v in pairs(totems) do
+                if not new_loadout.ability_cost_mod[v] then
+                    new_loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(totems) do
+                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.05;
+            end
+        end
+
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 10);
+        if pts ~= 0 then
+
+            local totems = {"Healing Stream Totem"};
+
+            for k, v in pairs(totems) do
+                if not new_loadout.ability_effect_mod[v] then
+                    new_loadout.ability_effect_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(totems) do
+                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.05;
+            end
+        end
+
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 11);
+        if pts ~= 0 then
+
+            new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01;
+
+            -- TODO: lightning shield? any more lightning spells??
+            local lightning_spells = {"Lightning Bolt", "Chain Lightning"};
+
+            for k, v in pairs(lightning_spells) do
+                if not new_loadout.ability_crit[v] then
+                    new_loadout.ability_crit[v] = 0;
+                end
+            end
+            for k, v in pairs(lightning_spells) do
+                new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + pts * 0.01;
+            end
+        end
+
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
+        if pts ~= 0 then
+
+            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
+
+        end
+
     end
 
 
@@ -3041,6 +3447,9 @@ function spell_coef(spell_info, spell_name)
     if spell_name == "Power Word: Shield" then
         direct_coef = 0.1;
         ot_coef = 0;
+    elseif spell_name == "Healing Stream Totem" then
+        direct_coef = 0.0;
+        ot_coef = 0.65;
     end
     -- distribute direct and ot coefs if both
     if spell_info.base_min > 0 and spell_info.over_time > 0 then
@@ -3087,7 +3496,10 @@ function spell_info(base_min, base_max,
                     direct_coef, ot_coef,
                     mana)
 
-    print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
+    -- tmp
+    if __sw__print then
+        print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
+    end 
 
     local min_noncrit_if_hit = (base_min * base_mod + sp * direct_coef) * mod;
     local max_noncrit_if_hit = (base_max * base_mod + sp * direct_coef) * mod;
