@@ -2360,7 +2360,6 @@ function create_spells()
             }
         }; 
     elseif class == "SHAMAN" then
-
         return {
             [5394] = {
                 base_min            = 0.0,
@@ -2678,6 +2677,284 @@ function create_spells()
                 school              = magic_school.nature,
             }
         };
+    elseif class == "PALADIN" then
+        return {
+            [19750] = {
+                base_min            = 67.0,
+                base_max            = 77.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 35,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [19939] = {
+                base_min            = 102.0,
+                base_max            = 117.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 26,
+                mana                = 50,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [19940] = {
+                base_min            = 153.0,
+                base_max            = 171.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 34,
+                mana                = 70,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [19941] = {
+                base_min            = 206.0,
+                base_max            = 231.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 42,
+                mana                = 90,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [19942] = {
+                base_min            = 278.0,
+                base_max            = 310.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 50,
+                mana                = 115,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [19943] = {
+                base_min            = 348.0,
+                base_max            = 389.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 58,
+                mana                = 140,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            -- holy light
+            [635] = {
+                base_min            = 42.0,
+                base_max            = 51.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 1,
+                lvl_req             = 1,
+                mana                = 35,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [639] = {
+                base_min            = 81.0,
+                base_max            = 96.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 2,
+                lvl_req             = 6,
+                mana                = 60,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [647] = {
+                base_min            = 167.0,
+                base_max            = 196.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 3,
+                lvl_req             = 14,
+                mana                = 110,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [1026] = {
+                base_min            = 332.0,
+                base_max            = 368.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 4,
+                lvl_req             = 22,
+                mana                = 190,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [1042] = {
+                base_min            = 506.0,
+                base_max            = 569.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 5,
+                lvl_req             = 30,
+                mana                = 275,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [3472] = {
+                base_min            = 717.0,
+                base_max            = 799.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 6,
+                lvl_req             = 38,
+                mana                = 365,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [10328] = {
+                base_min            = 968.0,
+                base_max            = 1067.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 7,
+                lvl_req             = 46,
+                mana                = 465,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [10329] = {
+                base_min            = 1272.0,
+                base_max            = 1414.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 8,
+                lvl_req             = 54,
+                mana                = 580,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            [25292] = {
+                base_min            = 1590.0,
+                base_max            = 1770.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 9,
+                lvl_req             = 60,
+                mana                = 660,
+                flags               = spell_flags.heal,
+                school              = magic_school.holy
+            },
+            -- holy shock
+            [20473] = {
+                base_min            = 204.0,
+                base_max            = 220.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 40,
+                mana                = 225,
+                flags               = 0,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 204.0,
+                    base_max            = 220.0, 
+                    over_time           = 0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 1,
+                    lvl_req             = 40,
+                    mana                = 225,
+                    flags               = spell_flags.heal,
+                    school              = magic_school.holy,
+                }
+            },
+            [20929] = {
+                base_min            = 279.0,
+                base_max            = 301.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 48,
+                mana                = 275,
+                flags               = 0,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 279.0,
+                    base_max            = 301.0, 
+                    over_time           = 0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 1,
+                    lvl_req             = 48,
+                    mana                = 275,
+                    flags               = spell_flags.heal,
+                    school              = magic_school.holy,
+                }
+            },
+            [20930] = {
+                base_min            = 365.0,
+                base_max            = 395.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 56,
+                mana                = 325,
+                flags               = 0,
+                school              = magic_school.holy,
+                healing_version = {
+                    base_min            = 365.0,
+                    base_max            = 395.0, 
+                    over_time           = 0,
+                    over_time_tick_freq = 0,
+                    over_time_duration  = 0.0,
+                    cast_time           = 1.5,
+                    rank                = 3,
+                    lvl_req             = 56,
+                    mana                = 325,
+                    flags               = spell_flags.heal,
+                    school              = magic_school.holy,
+                }
+            }
+        };
     end
     return {};
 end
@@ -2717,6 +2994,8 @@ function empty_loadout()
 
         ignite = 0,
         spiritual_guidance = 0,
+        illumination  = 0,
+        master_of_elements  = 0,
         
         -- indexable by ability name
         ability_crit = {},
@@ -2960,6 +3239,11 @@ function apply_talents(loadout)
             end
             new_loadout.ability_crit["Flamestrike"] = new_loadout.ability_crit["Flamestrike"] + pts * 0.05;
         end
+        -- master of elements
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 9);
+        if pts ~= 0 then
+            new_loadout.master_of_elements = pts;
+        end
         -- critical mass
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 13);
         if pts ~= 0 then
@@ -3181,9 +3465,9 @@ function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 3);
         if pts ~= 0 then
 
-            new_loadout.healing_crit = new_loadout.healing_crit + 0.05; -- all priest heals are holy...
+            new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
             new_loadout.spell_crit_by_school[magic_school.holy] = 
-                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.05;
+                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
         -- divine fury
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 5);
@@ -3333,6 +3617,44 @@ function apply_talents(loadout)
 
         end
 
+
+    elseif class == "PALADIN" then
+
+        -- divine intellect
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        if pts ~= 0 then
+            new_loadout.stat_mod = new_loadout.stat_mod[stat.int] + pts * 0.02;
+        end
+
+        -- healing light
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
+        if pts ~= 0 then
+
+            local abilities = {"Holy Light", "Flash of Light"};
+
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_effect_mod[v] then
+                    new_loadout.ability_effect_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.04;
+            end
+        end
+        -- illumination
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 9);
+        if pts ~= 0 then
+            new_loadout.illumination = pts;
+        end
+
+        -- holy power
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
+        if pts ~= 0 then
+
+            new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
+            new_loadout.spell_crit_by_school[magic_school.holy] = 
+                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
+        end
     end
 
 
@@ -3466,7 +3788,7 @@ function spell_coef(spell_info, spell_name)
         -- pyroblast and fireball dots are special...
         if spell_name == "Pyroblast" then
             direct_coef = 1.0;
-            ot_coef = 0.7;
+            ot_coef = 0.65;
         elseif spell_name == "Fireball" then
             direct_coef = 1.0;
             ot_coef = 0;
@@ -3504,7 +3826,8 @@ function spell_info(base_min, base_max,
                     crit, ot_crit, crit_mod, hit,
                     mod, base_mod,
                     direct_coef, ot_coef,
-                    mana)
+                    mana, 
+                    spell_name, loadout)
 
     -- tmp
     if __sw__print then
@@ -3532,6 +3855,21 @@ function spell_info(base_min, base_max,
     local ot = 0;
     local ot_if_crit = 0;
     local ot_ticks = 0;
+    local ignite_min = 0;
+    local ignite_max = 0;
+
+    --if loadout.ignite ~= 0 and 
+    if spell_name == "Fireball" then
+        -- dont include dot for calcs
+        base_ot = 0.0;
+        base_dur = 0.0;
+    end
+
+    if loadout.ignite ~= 0 then
+        -- dont include dot for calcs
+         ignite_min = loadout.ignite * 0.08 * min_crit_if_hit;
+         ignite_max = loadout.ignite * 0.08 * max_crit_if_hit;
+    end
 
     if base_ot > 0 then
 
@@ -3543,9 +3881,12 @@ function spell_info(base_min, base_max,
 
         ot = (base_ot_tick + ot_coef_per_tick * sp) * ot_ticks * mod;
 
-        ot_if_crit = ot * crit_mod;
+        if ot_crit > 0 then
+            ot_if_crit = ot * crit_mod;
+        else
+            ot_if_crit = 0;
+        end
     end
-
 
     local expected_ot = hit * ot;
 
@@ -3554,7 +3895,7 @@ function spell_info(base_min, base_max,
     local expected_ot = hit * avg_ot_if_hit;
 
     local avg_direct = (min + max) / 2;
-    local avg = avg_direct + expected_ot;
+    local avg = avg_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
     local effect_per_sec_direct = avg_direct/cast_time;
     local effect_per_sec = avg/cast_time;
@@ -3565,6 +3906,9 @@ function spell_info(base_min, base_max,
 
         min_crit = min_crit_if_hit,
         max_crit = max_crit_if_hit,
+
+        ignite_min = ignite_min,
+        ignite_max = ignite_max,
 
         --including crit/hit
         avg_direct = avg_direct,
@@ -3666,6 +4010,14 @@ function evaluate_spell(spell_data, spell_name, loadout)
     if loadout.ability_cost_mod[spell_name] then
         cost = cost * (1 - loadout.ability_cost_mod[spell_name]);
     end
+    if loadout.illumination ~= 0  and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+        cost = cost * (1 - loadout.healing_crit * (loadout.illumination * 0.2));
+    end
+    if loadout.master_of_elements ~= 0  and 
+       (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) ~= 0 then
+        cost = cost * (1 - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1));
+    end
+
     -- the game seems to round mana up/down to the nearest
     cost = tonumber(string.format("%.0f", cost));
 
@@ -3682,7 +4034,8 @@ function evaluate_spell(spell_data, spell_name, loadout)
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost
+        cost,
+        spell_name, loadout
     );
 
     local dmg_1_extra_sp = spell_info(
@@ -3696,7 +4049,8 @@ function evaluate_spell(spell_data, spell_name, loadout)
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost
+        cost,
+        spell_name, loadout
     );
     local dmg_1_extra_crit = spell_info(
         spell_data.base_min, spell_data.base_max, 
@@ -3709,7 +4063,8 @@ function evaluate_spell(spell_data, spell_name, loadout)
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost
+        cost,
+        spell_name, loadout
     );
     local dmg_1_extra_hit = spell_info(
         spell_data.base_min, spell_data.base_max, 
@@ -3722,7 +4077,8 @@ function evaluate_spell(spell_data, spell_name, loadout)
         hit_delta_1,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost
+        cost,
+        spell_name, loadout
     );
 
     local dmg_1_sp_delta = dmg_1_extra_sp.avg - normal_dmg.avg;
@@ -3738,7 +4094,8 @@ function evaluate_spell(spell_data, spell_name, loadout)
         sp_per_hit = sp_per_hit,
 
         spell_data = normal_dmg,
-        spell_crit = crit;
+        spell_crit = crit,
+        spell_hit = hit
     };
 
 end
@@ -3780,22 +4137,38 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
         if eval.spell_data.min_noncrit ~= 0 then
             if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
-                tooltip:AddLine(string.format("  Normal %s: %d-%d", 
+                tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d-%d", 
                                               effect, 
+                                              eval.spell_hit*100,
                                               math.ceil(eval.spell_data.min_noncrit), 
                                               math.floor(eval.spell_data.max_noncrit)),
                                 232.0/255, 225.0/255, 32.0/255);
             else
-                tooltip:AddLine(string.format("  Normal %s: %d", 
-                                              effect, 
+                tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d", 
+                                              effect,
+                                              eval.spell_hit*100,
                                               math.floor(eval.spell_data.min_noncrit)),
                                               --string.format("%.0f", eval.spell_data.min_noncrit)),
                                 232.0/255, 225.0/255, 32.0/255);
             end
             if eval.spell_crit ~= 0 then
-            tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d-%d", 
-                                          effect, eval.spell_crit*100, math.ceil(eval.spell_data.min_crit), math.floor(eval.spell_data.max_crit)),
-                           194.0/255, 52.0/255, 23.0/255);
+                if loadout.ignite ~= 0 and eval.spell_data.ignite_min > 0 then
+                    tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d-%d (ignites for %d-%d)", 
+                                                  effect, 
+                                                  eval.spell_crit*100, 
+                                                  math.ceil(eval.spell_data.min_crit), 
+                                                  math.floor(eval.spell_data.max_crit),
+                                                   math.ceil(eval.spell_data.ignite_min), 
+                                                  math.floor(eval.spell_data.ignite_max)),
+                                   194.0/255, 52.0/255, 23.0/255);
+                else
+                    tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d-%d", 
+                                                  effect, 
+                                                  eval.spell_crit*100, 
+                                                  math.ceil(eval.spell_data.min_crit), 
+                                                  math.floor(eval.spell_data.max_crit)),
+                                   194.0/255, 52.0/255, 23.0/255);
+                end
             end
         end
 
@@ -3825,16 +4198,27 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                     
             end
         end
+
+        local effect_extra_str = "";
         if spell.base_min > 0 then
+
+            if spell_name == "Fireball" then
+                effect_extra_str = "(incl: crits/miss, ignite - excl: fireball dot)";
+            elseif spell_name == "Pyroblast" then
+                effect_extra_str = "(incl: crits/miss, ignite & pyro dot)";
+            end
+
             if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg).." (including crits)");
+                tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg).." (incl: crits)");
             elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
                 tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg));
             else
-                tooltip:AddLine("  "..effect.." average: "..string.format("%.1f",eval.spell_data.avg).." (including crits/misses)");
+                tooltip:AddLine("  "..effect.." average: "..string.format("%.1f ",eval.spell_data.avg)..effect_extra_str);
             end
         end
-        tooltip:AddLine("  "..effect_per_sec..": "..string.format("%.1f",eval.spell_data.effect_per_sec));
+        tooltip:AddLine(string.format("  %s: %.1f", 
+                                      effect_per_sec,
+                                      eval.spell_data.effect_per_sec));
         tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
         tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
         tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
