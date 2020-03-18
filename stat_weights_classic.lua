@@ -3830,7 +3830,7 @@ function spell_info(base_min, base_max,
                     spell_name, loadout)
 
     -- tmp
-    if __sw__print then
+    if __sw__debug__ then
         print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
     end 
 
@@ -4222,15 +4222,18 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
         tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
         tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
-        tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
 
-        -- tmp
-        tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
-                        1.0, 1.0, 1.0);
-        tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
-        tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
+        if bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0 then
+            tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+        end
 
-        -- tmp ends
+        -- debug tooltip stuff
+        if __sw__debug__ then
+            tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
+                            1.0, 1.0, 1.0);
+            tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
+            tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
+        end
 
         end_tooltip_section(tooltip);
 
@@ -4238,7 +4241,6 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             -- used for holy nova
             tooltip_spell_info(tooltip, spell.healing_version, spell_name, loadout);
         end
-
     end
 end
 
@@ -4410,7 +4412,6 @@ GameTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
     --print("diff on item using frostbolt10");
     --print("delta - avg:" ,  diff.avg, "effect_per_sec:", diff.effect_per_sec);
 end)
-
 
 GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
