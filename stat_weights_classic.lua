@@ -1,5 +1,7 @@
 
 
+local_version =  0.1;
+
 --TODO: Known spells that are incorrectly evaluated
         -- Holy Nova
         -- Regrowth
@@ -32,7 +34,7 @@ local spell_flags = {
     over_time_crit = bit.lshift(1,7),
 };
 
-function create_spells()
+local function create_spells()
     
     local _, class = UnitClass("player");
     if class == "MAGE" then
@@ -2959,16 +2961,14 @@ function create_spells()
     return {};
 end
 
+local spells = create_spells();
 
-
-spells = create_spells();
-
-function get_spell(spell_id)
+local function get_spell(spell_id)
 
     return spells[spell_id];
 end
 
-function empty_loadout()
+local function empty_loadout()
 
     return  {
         name = "Empty loadout";
@@ -3006,7 +3006,7 @@ function empty_loadout()
     };
 end
 
-function negate_loadout(loadout)
+local function negate_loadout(loadout)
 
     local negated = loadout;
 
@@ -3040,7 +3040,7 @@ function negate_loadout(loadout)
 end
 
 -- deep copy to avoid reference entanglement
-function loadout_copy(loadout)
+local function loadout_copy(loadout)
 
     local cpy = {};
 
@@ -3093,7 +3093,7 @@ function loadout_copy(loadout)
     return cpy;
 end
 
-function loadout_add(primary, diff)
+local function loadout_add(primary, diff)
 
     local added = loadout_copy(primary);
 
@@ -3132,52 +3132,8 @@ function loadout_add(primary, diff)
 
     return added;
 end
-    
-function current_loadout()
 
-   local loadout = empty_loadout();
-
-   local _, int, _, _ = UnitStat("player", 4);
-   local _, spirit, _, _ = UnitStat("player", 5);
-
-   loadout.name = "Current loadout";
-
-   loadout.lvl = UnitLevel("player");
-   loadout.target_lvl = loadout.lvl + 3;
-   
-   loadout.int = int;
-   loadout.spirit = spirit;
-
-   for i = 1, 7 do
-       loadout.spelldmg_by_school[i] = GetSpellBonusDamage(i);
-   end
-   for i = 1, 7 do
-       loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
-   end
-
-   local min_crit = 1;
-   for i = 2, 7 do
-       if min_crit > loadout.spell_crit_by_school[i] then
-           min_crit = loadout.spell_crit_by_school[i];
-       end
-   end
-
-   local spell_hit = GetSpellHitModifier()/100;
-   for i = 1, 7 do
-       loadout.spelldmg_hit_by_school[i] = spell_hit;
-   end
-
-   loadout.healingpower = GetSpellBonusHealing();
-   loadout.healing_crit = min_crit;
-
-   loadout.spell_crit_mod_by_school = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
-
-   loadout_with_talents = apply_talents(loadout);
-
-   return loadout_with_talents;
-end
-
-function apply_talents(loadout)
+local function apply_talents(loadout)
 
     local new_loadout = loadout;
     
@@ -3662,16 +3618,61 @@ function apply_talents(loadout)
     return new_loadout;
 end
 
-function begin_tooltip_section(tooltip)
+    
+local function current_loadout()
+
+   local loadout = empty_loadout();
+
+   local _, int, _, _ = UnitStat("player", 4);
+   local _, spirit, _, _ = UnitStat("player", 5);
+
+   loadout.name = "Current loadout";
+
+   loadout.lvl = UnitLevel("player");
+   loadout.target_lvl = loadout.lvl + 3;
+   
+   loadout.int = int;
+   loadout.spirit = spirit;
+
+   for i = 1, 7 do
+       loadout.spelldmg_by_school[i] = GetSpellBonusDamage(i);
+   end
+   for i = 1, 7 do
+       loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
+   end
+
+   local min_crit = 1;
+   for i = 2, 7 do
+       if min_crit > loadout.spell_crit_by_school[i] then
+           min_crit = loadout.spell_crit_by_school[i];
+       end
+   end
+
+   local spell_hit = GetSpellHitModifier()/100;
+   for i = 1, 7 do
+       loadout.spelldmg_hit_by_school[i] = spell_hit;
+   end
+
+   loadout.healingpower = GetSpellBonusHealing();
+   loadout.healing_crit = min_crit;
+
+   loadout.spell_crit_mod_by_school = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
+
+   loadout_with_talents = apply_talents(loadout);
+
+   return loadout_with_talents;
+end
+
+local function begin_tooltip_section(tooltip)
     tooltip:AddLine(" ");
     --tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
 end
-function end_tooltip_section(tooltip)
+local function end_tooltip_section(tooltip)
     tooltip:Show();
 end
 
 
-function print_loadout(loadout)
+local function print_loadout(loadout)
 
     print(loadout.name);
     print("int: "..loadout.int..", spirit: "..loadout.spirit);
@@ -3736,11 +3737,11 @@ function print_loadout(loadout)
     end
 end
 
-function spell_scaling(lvl)
+local function spell_scaling(lvl)
     return math.min(1, 1 - (20 - lvl)* 0.0375);
 end
 
-function spell_hit(lvl, lvl_target, hit)
+local function spell_hit(lvl, lvl_target, hit)
 
     base_hit = 0;
 
@@ -3753,7 +3754,7 @@ function spell_hit(lvl, lvl_target, hit)
     return math.max(0.01, math.min(0.99, base_hit + hit));
 end
 
-function spell_coef(spell_info, spell_name)
+local function spell_coef(spell_info, spell_name)
 
     local direct_coef = 1;
     local ot_coef = 1;
@@ -3820,14 +3821,14 @@ function spell_coef(spell_info, spell_name)
     return direct_coef, ot_coef;
 end
 
-function spell_info(base_min, base_max,
-                    base_ot, ot_freq, ot_dur, ot_extra_ticks,
-                    cast_time, sp, 
-                    crit, ot_crit, crit_mod, hit,
-                    mod, base_mod,
-                    direct_coef, ot_coef,
-                    mana, 
-                    spell_name, loadout)
+local function spell_info(base_min, base_max,
+                          base_ot, ot_freq, ot_dur, ot_extra_ticks,
+                          cast_time, sp, 
+                          crit, ot_crit, crit_mod, hit,
+                          mod, base_mod,
+                          direct_coef, ot_coef,
+                          mana, 
+                          spell_name, loadout)
 
     -- tmp
     if __sw__debug__ then
@@ -3929,7 +3930,7 @@ function spell_info(base_min, base_max,
     };
 end
 
-function evaluate_spell(spell_data, spell_name, loadout)
+local function evaluate_spell(spell_data, spell_name, loadout)
 
     local crit = 0;
     local ot_crit = 0;
@@ -4100,7 +4101,7 @@ function evaluate_spell(spell_data, spell_name, loadout)
 
 end
 
-function tooltip_spell_info(tooltip, spell, spell_name, loadout)
+local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
     if spell then
 
@@ -4244,7 +4245,7 @@ function tooltip_spell_info(tooltip, spell, spell_name, loadout)
     end
 end
 
-function loadout_by_item_tooltip()
+local function loadout_by_item_tooltip()
 
     local loadout = empty_loadout();
     loadout.name = "Single item loadout - Primary";
@@ -4333,7 +4334,7 @@ function loadout_by_item_tooltip()
     return loadout;
 end
 
-function print_spell(spell, spell_name, loadout)
+local function print_spell(spell, spell_name, loadout)
 
     if spell then
 
@@ -4375,7 +4376,7 @@ function print_spell(spell, spell_name, loadout)
     end
 end
 
-function diff_spell(spell_data, spell_name, loadout1, loadout2)
+local function diff_spell(spell_data, spell_name, loadout1, loadout2)
 
     lhs = evaluate_spell(spell_data, spell_name, loadout1);
     rhs = evaluate_spell(spell_data, spell_name, loadout2);
