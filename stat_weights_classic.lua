@@ -3827,7 +3827,7 @@ local function spell_info(base_min, base_max,
                           crit, ot_crit, crit_mod, hit,
                           mod, base_mod,
                           direct_coef, ot_coef,
-                          mana, 
+                          mana, school,
                           spell_name, loadout)
 
     -- tmp
@@ -3866,7 +3866,7 @@ local function spell_info(base_min, base_max,
         base_dur = 0.0;
     end
 
-    if loadout.ignite ~= 0 then
+    if loadout.ignite ~= 0 and school == magic_school.fire then
         -- dont include dot for calcs
          ignite_min = loadout.ignite * 0.08 * min_crit_if_hit;
          ignite_max = loadout.ignite * 0.08 * max_crit_if_hit;
@@ -4035,7 +4035,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost,
+        cost, spell_data.school,
         spell_name, loadout
     );
 
@@ -4050,7 +4050,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost,
+        cost, spell_data.school,
         spell_name, loadout
     );
     local dmg_1_extra_crit = spell_info(
@@ -4064,7 +4064,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost,
+        cost, spell_data.school,
         spell_name, loadout
     );
     local dmg_1_extra_hit = spell_info(
@@ -4078,7 +4078,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         hit_delta_1,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
-        cost,
+        cost, spell_data.school,
         spell_name, loadout
     );
 
