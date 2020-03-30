@@ -1,6 +1,9 @@
 
+local version =  0.1;
+-- TODO: add libstub here
+--local icon_lib = LibStub("LibDBIcon-1.0");
 
-local_version =  0.1;
+local font = "GameFontHighlightSmall"
 
 --TODO: Known spells that are incorrectly evaluated
         -- Holy Nova
@@ -32,6 +35,22 @@ local spell_flags = {
     flat_dot = bit.lshift(1,5), -- 0 scaling on dots
     absorb = bit.lshift(1,6),
     over_time_crit = bit.lshift(1,7),
+};
+
+local stat_ids_in_ui = {
+    int = 1,
+    spirit = 2,
+    spell_crit = 3,
+    spell_hit = 4,
+    sp = 5,
+    spell_damage = 6,
+    healing_power = 7,
+    holy_power = 8,
+    fire_power = 9,
+    nature_power = 10,
+    frost_power = 11,
+    shadow_power = 12,
+    arcane_power = 13
 };
 
 local function create_spells()
@@ -1619,6 +1638,519 @@ local function create_spells()
                 mana                = 880,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
+            },
+            -- moonfire
+            [8921] = {
+                base_min            = 9.0,
+                base_max            = 12.0, 
+                over_time           = 12,
+                over_time_tick_freq = 3,
+                over_time_duration  = 9,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 4,
+                mana                = 25,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [8924] = {
+                base_min            = 17.0,
+                base_max            = 21.0, 
+                over_time           = 32,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 10,
+                mana                = 50,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [8925] = {
+                base_min            = 30.0,
+                base_max            = 37.0, 
+                over_time           = 52,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 16,
+                mana                = 75,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [8926] = {
+                base_min            = 47.0,
+                base_max            = 55.0, 
+                over_time           = 80,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 22,
+                mana                = 105,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [8927] = {
+                base_min            = 70.0,
+                base_max            = 82.0, 
+                over_time           = 124,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 28,
+                mana                = 150,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [8928] = {
+                base_min            = 91.0,
+                base_max            = 108.0, 
+                over_time           = 164,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 34,
+                mana                = 190,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [8929] = {
+                base_min            = 117.0,
+                base_max            = 137.0, 
+                over_time           = 212,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 7,
+                lvl_req             = 40,
+                mana                = 235,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [9833] = {
+                base_min            = 143.0,
+                base_max            = 168.0, 
+                over_time           = 264,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 8,
+                lvl_req             = 46,
+                mana                = 280,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [9834] = {
+                base_min            = 172.0,
+                base_max            = 200.0, 
+                over_time           = 320,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 9,
+                lvl_req             = 52,
+                mana                = 325,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            [9835] = {
+                base_min            = 195.0,
+                base_max            = 228.0, 
+                over_time           = 384,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12,
+                cast_time           = 1.5,
+                rank                = 109,
+                lvl_req             = 58,
+                mana                = 375,
+                flags               = 0,
+                school              = magic_school.arcane
+            },
+            -- wrath
+            [5176] = {
+                base_min            = 13.0,
+                base_max            = 16.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 1,
+                mana                = 20,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [5177] = {
+                base_min            = 28.0,
+                base_max            = 33.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.7,
+                rank                = 2,
+                lvl_req             = 6,
+                mana                = 35,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [5178] = {
+                base_min            = 48.0,
+                base_max            = 57.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 3,
+                lvl_req             = 14,
+                mana                = 55,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [5179] = {
+                base_min            = 69.0,
+                base_max            = 79.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 4,
+                lvl_req             = 22,
+                mana                = 70,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [5180] = {
+                base_min            = 108.0,
+                base_max            = 123.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 5,
+                lvl_req             = 30,
+                mana                = 100,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [6780] = {
+                base_min            = 148.0,
+                base_max            = 167.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 6,
+                lvl_req             = 38,
+                mana                = 125,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [8905] = {
+                base_min            = 198.0,
+                base_max            = 221.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 7,
+                lvl_req             = 46,
+                mana                = 155,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [9912] = {
+                base_min            = 248.0,
+                base_max            = 277.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 8,
+                lvl_req             = 54,
+                mana                = 180,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            -- starfire
+            [2912] = {
+                base_min            = 95.0,
+                base_max            = 115.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 95,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [8949] = {
+                base_min            = 146.0,
+                base_max            = 177.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 2,
+                lvl_req             = 26,
+                mana                = 135,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [8950] = {
+                base_min            = 212.0,
+                base_max            = 253.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 3,
+                lvl_req             = 34,
+                mana                = 180,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [8951] = {
+                base_min            = 293.0,
+                base_max            = 348.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 4,
+                lvl_req             = 42,
+                mana                = 230,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [9875] = {
+                base_min            = 378.0,
+                base_max            = 445.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 5,
+                lvl_req             = 50,
+                mana                = 275,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [9876] = {
+                base_min            = 451.0,
+                base_max            = 531.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 6,
+                lvl_req             = 58,
+                mana                = 315,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            [25298] = {
+                base_min            = 496.0,
+                base_max            = 584.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0.0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.5,
+                rank                = 7,
+                lvl_req             = 60,
+                mana                = 340,
+                flags               = 0,
+                school              = magic_school.nature
+            },
+            -- insect swarm
+            [5570] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 66.0,
+                over_time_tick_freq = 2.0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 45,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [24974] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 138.0,
+                over_time_tick_freq = 2.0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 30,
+                mana                = 85,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [24975] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 174.0,
+                over_time_tick_freq = 2.0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 40,
+                mana                = 100,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [24976] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 264.0,
+                over_time_tick_freq = 2.0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 50,
+                mana                = 140,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [24977] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 324.0,
+                over_time_tick_freq = 2.0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 60,
+                mana                = 160,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            -- hurricane
+            [16914] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 72.0 * 10,
+                over_time_tick_freq = 1.0,
+                over_time_duration  = 10.0,
+                cast_time           = 10,
+                rank                = 1,
+                lvl_req              = 40,
+                mana                = 880,
+                flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
+                school              = magic_school.nature,
+            },
+            [17401] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 102.0 * 10,
+                over_time_tick_freq = 1.0,
+                over_time_duration  = 10.0,
+                cast_time           = 10,
+                rank                = 2,
+                lvl_req             = 50,
+                mana                = 1180,
+                flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
+                school              = magic_school.nature
+            },
+            [17402] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 134.0 * 10,
+                over_time_tick_freq = 1.0,
+                over_time_duration  = 10.0,
+                cast_time           = 10,
+                rank                = 3,
+                lvl_req             = 60,
+                mana                = 1495,
+                flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
+                school              = magic_school.nature
+            },
+            -- entangling roots
+            [339] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 20,
+                over_time_tick_freq = 3.0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 8,
+                mana                = 50,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [1062] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 50,
+                over_time_tick_freq = 3.0,
+                over_time_duration  = 15.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 18,
+                mana                = 65,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [5195] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 90,
+                over_time_tick_freq = 3.0,
+                over_time_duration  = 18.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 28,
+                mana                = 80,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [5196] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 140,
+                over_time_tick_freq = 3.0,
+                over_time_duration  = 21.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 38,
+                mana                = 95,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [9852] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 200,
+                over_time_tick_freq = 3.0,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 48,
+                mana                = 110,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
+            },
+            [9853] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 270,
+                over_time_tick_freq = 3.0,
+                over_time_duration  = 27.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 58,
+                mana                = 125,
+                flags               = spell_flags.snare,
+                school              = magic_school.nature
             }
         };
 
@@ -3054,9 +3586,20 @@ local function loadout_copy(loadout)
 
     cpy.spelldmg_by_school = {};
     cpy.spell_crit_by_school = {};
+    cpy.healing_crit = loadout.healing_crit;
     cpy.spelldmg_hit_by_school = {};
     cpy.spell_dmg_mod_by_school = {};
     cpy.spell_crit_mod_by_school = {};
+
+    cpy.spell_heal_mod = loadout.spell_heal_mod;
+
+
+    cpy.ignite = loadout.ignite;
+    cpy.spiritual_guidance = loadout.spiritual_guidance;
+    cpy.illumination = loadout.illumination;
+    cpy.master_of_elements = loadout.master_of_elements;
+
+    cpy.stat_mod = {};
 
     cpy.ability_crit = {};
     cpy.ability_effect_mod = {};
@@ -3070,6 +3613,10 @@ local function loadout_copy(loadout)
         cpy.spelldmg_hit_by_school[i] = loadout.spelldmg_hit_by_school[i];
         cpy.spell_dmg_mod_by_school[i] = loadout.spell_dmg_mod_by_school[i];
         cpy.spell_crit_mod_by_school[i] = loadout.spell_crit_mod_by_school[i];
+    end
+
+    for i = 1, 5 do
+        cpy.stat_mod[i] = loadout.stat_mod[i];
     end
 
     cpy.spell_heal_mod = loadout.spell_heal_mod;
@@ -3090,6 +3637,7 @@ local function loadout_copy(loadout)
         cpy.ability_cost_mod[k] = v;
     end
 
+
     return cpy;
 end
 
@@ -3098,7 +3646,7 @@ local function loadout_add(primary, diff)
     local added = loadout_copy(primary);
 
     added.int = primary.int + diff.int * (1 + primary.stat_mod[stat.int]);
-    added.spirit = primary.spirit + diff.spirit* (1 + primary.stat_mod[stat.spirit]);
+    added.spirit = primary.spirit + diff.spirit * (1 + primary.stat_mod[stat.spirit]);
 
     local sp_gained_from_spirit = diff.spirit * (1 + primary.stat_mod[stat.spirit]) * primary.spiritual_guidance * 0.05;
 
@@ -3613,12 +4161,9 @@ local function apply_talents(loadout)
         end
     end
 
-
-
     return new_loadout;
 end
 
-    
 local function current_loadout()
 
    local loadout = empty_loadout();
@@ -3783,6 +4328,14 @@ local function spell_coef(spell_info, spell_name)
     elseif spell_name == "Healing Stream Totem" then
         direct_coef = 0.0;
         ot_coef = 0.65;
+    elseif spell_name == "Insect Swarm" then
+        -- insect swarm seems to have 15/15 scaling isntead of 12/15
+        direct_coef = 0.0;
+        ot_coef = 1.0;
+    elseif spell_name == "Entangling Roots" then
+        -- scales of cast time, not ot duration
+        ot_coef = 0.0;
+        direct_coef = math.min(1.0, math.max(1.5/3.5, spell_info.cast_time/3.5));
     end
     -- distribute direct and ot coefs if both
     if spell_info.base_min > 0 and spell_info.over_time > 0 then
@@ -3891,15 +4444,15 @@ local function spell_info(base_min, base_max,
 
     local expected_ot = hit * ot;
 
-    local avg_ot_if_hit = (1 - ot_crit) * ot + ot_crit * ot_if_crit;
+    local expectation_ot_if_hit = (1 - ot_crit) * ot + ot_crit * ot_if_crit;
 
-    local expected_ot = hit * avg_ot_if_hit;
+    local expected_ot = hit * expectation_ot_if_hit;
 
-    local avg_direct = (min + max) / 2;
-    local avg = avg_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
+    local expectation_direct = (min + max) / 2;
+    local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
-    local effect_per_sec_direct = avg_direct/cast_time;
-    local effect_per_sec = avg/cast_time;
+    local effect_per_sec_direct = expectation_direct/cast_time;
+    local effect_per_sec = expectation/cast_time;
 
     return {
         min_noncrit = min_noncrit_if_hit,
@@ -3912,7 +4465,7 @@ local function spell_info(base_min, base_max,
         ignite_max = ignite_max,
 
         --including crit/hit
-        avg_direct = avg_direct,
+        expectation_direct = expectation_direct,
         effect_per_sec_direct = effect_per_sec_direct,
 
         ot_num_ticks = ot_ticks,
@@ -3921,10 +4474,10 @@ local function spell_info(base_min, base_max,
         ot_crit_if_hit = ot_if_crit,
         ot = expected_ot,
 
-        avg = avg,
+        expectation = expectation,
         effect_per_sec = effect_per_sec,
 
-        effect_per_cost = avg/mana,
+        effect_per_cost = expectation/mana,
 
         mana = mana
     };
@@ -4014,6 +4567,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
     if loadout.illumination ~= 0  and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         cost = cost * (1 - loadout.healing_crit * (loadout.illumination * 0.2));
     end
+
     if loadout.master_of_elements ~= 0  and 
        (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) ~= 0 then
         cost = cost * (1 - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1));
@@ -4082,9 +4636,9 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_name, loadout
     );
 
-    local dmg_1_sp_delta = dmg_1_extra_sp.avg - normal_dmg.avg;
-    local dmg_1_crit_delta = dmg_1_extra_crit.avg - normal_dmg.avg;
-    local dmg_1_hit_delta  = dmg_1_extra_hit.avg - normal_dmg.avg;
+    local dmg_1_sp_delta = dmg_1_extra_sp.expectation - normal_dmg.expectation;
+    local dmg_1_crit_delta = dmg_1_extra_crit.expectation - normal_dmg.expectation;
+    local dmg_1_hit_delta  = dmg_1_extra_hit.expectation - normal_dmg.expectation;
 
     local sp_per_crit = dmg_1_crit_delta/(dmg_1_sp_delta);
     local sp_per_hit = dmg_1_hit_delta/(dmg_1_sp_delta);
@@ -4178,19 +4732,35 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
             -- round over time num for niceyness
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
-            tooltip:AddLine(string.format("  %s: %d over %d sec (%d-%d per tick for %d ticks)",
-                                          effect,
-                                          eval.spell_data.ot_if_hit, 
-                                          eval.spell_data.ot_duration, 
-                                          math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                          math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                          eval.spell_data.ot_num_ticks), 
-                            232.0/255, 225.0/255, 32.0/255);
+
+            if eval.spell_hit ~= 1.0 then
+                tooltip:AddLine(string.format("  %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
+                                              effect,
+                                              eval.spell_hit,
+                                              eval.spell_data.ot_if_hit, 
+                                              eval.spell_data.ot_duration, 
+                                              math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                              math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                              eval.spell_data.ot_num_ticks), 
+                                232.0/255, 225.0/255, 32.0/255);
+
+            else
+                tooltip:AddLine(string.format("  %s: %d over %d sec (%d-%d per tick for %d ticks)",
+                                              effect,
+                                              eval.spell_data.ot_if_hit, 
+                                              eval.spell_data.ot_duration, 
+                                              math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                              math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                              eval.spell_data.ot_num_ticks), 
+                                232.0/255, 225.0/255, 32.0/255);
+            end
+
             if eval.spell_data.ot_crit_if_hit ~= 0 then
                 -- over time can crit (e.g. arcane missiles)
-                tooltip:AddLine(string.format("  Critical %s: %d over %d sec (%d-%d per tick for %d ticks)",
+                tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
                                               eval.spell_data.ot_crit_if_hit, 
+                                              eval.spell_crit*100, 
                                               eval.spell_data.ot_duration, 
                                               math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
                                               math.ceil(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
@@ -4210,11 +4780,11 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             end
 
             if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg).." (incl: crits)");
+                tooltip:AddLine("  Expected "..effect..string.format(": %.1f",eval.spell_data.expectation).." (incl: crits)");
             elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-                tooltip:AddLine("  Average: "..string.format("%.1f",eval.spell_data.avg));
+                tooltip:AddLine("  Expected "..effect..string.format(": %.1f",eval.spell_data.expectation));
             else
-                tooltip:AddLine("  "..effect.." average: "..string.format("%.1f ",eval.spell_data.avg)..effect_extra_str);
+                tooltip:AddLine("  Expected "..effect..string.format(": %.1f ",eval.spell_data.expectation)..effect_extra_str);
             end
         end
         tooltip:AddLine(string.format("  %s: %.1f", 
@@ -4243,6 +4813,24 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             tooltip_spell_info(tooltip, spell.healing_version, spell_name, loadout);
         end
     end
+end
+
+function spell_diff(spell_id, spell_name, loadout, diff)
+
+    local spell_data = get_spell(spell_id);
+
+    local loadout_diffed = loadout_add(loadout, diff);
+
+    local expectation_loadout = evaluate_spell(spell_data, spell_name, loadout);
+    local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
+    
+
+    return {
+        expectation = expectation_loadout_diffed.spell_data.expectation - 
+            expectation_loadout.spell_data.expectation,
+        effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
+            expectation_loadout.spell_data.effect_per_sec,
+    };
 end
 
 local function loadout_by_item_tooltip()
@@ -4364,8 +4952,8 @@ local function print_spell(spell, spell_name, loadout)
 
         print("Spell evaluation");
         print(string.format("ot if hit: %.3f", eval.spell_data.ot_if_hit));
-        print(string.format("including hit/miss - avg: %.3f, effect_per_sec: %.3f, dmg per mana:%.3f, dmg_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
-                            eval.spell_data.avg, 
+        print(string.format("including hit/miss - expectation: %.3f, effect_per_sec: %.3f, dmg per mana:%.3f, dmg_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
+                            eval.spell_data.expectation, 
                             eval.spell_data.effect_per_sec, 
                             eval.spell_data.effect_per_cost, 
                             eval.dmg_per_sp, 
@@ -4376,18 +4964,346 @@ local function print_spell(spell, spell_name, loadout)
     end
 end
 
-local function diff_spell(spell_data, spell_name, loadout1, loadout2)
+--local function diff_spell(spell_data, spell_name, loadout1, loadout2)
+--
 
-    lhs = evaluate_spell(spell_data, spell_name, loadout1);
-    rhs = evaluate_spell(spell_data, spell_name, loadout2);
-    return {
-        avg = rhs.spell_data.avg - lhs.spell_data.avg,
-        effect_per_sec = rhs.spell_data.effect_per_sec - lhs.spell_data.effect_per_sec
+--    lhs = evaluate_spell(spell_data, spell_name, loadout1);
+--    rhs = evaluate_spell(spell_data, spell_name, loadout2);
+--    return {
+--        expectation = rhs.spell_data.expectation - lhs.spell_data.expectation,
+--        effect_per_sec = rhs.spell_data.effect_per_sec - lhs.spell_data.effect_per_sec
+--    };
+--end
+
+--sw_frame = {};
+
+local function ui_y_offset_incr(y) 
+    return y - 17;
+end
+
+local sw_frame = {};
+
+local function create_loadout_from_ui_diff(frame) 
+
+    local stats = frame.stats;
+
+    -- verify validity and run input expr 
+    for k, v in pairs(stats) do
+
+        local expr_str = v.editbox:GetText();
+        local is_valid_expr = string.match(expr_str, "[^-+0123456789. ()]") == nil
+        local expr = nil;
+        if is_valid_expr then
+            expr = loadstring("return "..expr_str..";");
+            if expr then
+                v.editbox_val = expr();
+                frame.is_valid = true;
+            end
+        end
+        if not is_valid_expr or not expr then
+
+            v.editbox_val = 0;
+            frame.is_valid = false;
+            return empty_loadout();
+        end
+    end
+
+    
+
+    local loadout = empty_loadout();
+
+    loadout.int = stats[stat_ids_in_ui.int].editbox_val;
+    loadout.spirit = stats[stat_ids_in_ui.spirit].editbox_val;
+
+    local loadout_crit = stats[stat_ids_in_ui.spell_crit].editbox_val;
+    for i = 1, 7 do
+        loadout.spell_crit_by_school[i] = loadout_crit/100;
+    end
+    loadout.healing_crit = loadout_crit/100;
+
+    local loadout_hit = stats[stat_ids_in_ui.spell_hit].editbox_val;
+    for i = 1, 7 do
+        loadout.spelldmg_hit_by_school[i] = loadout_hit/100;
+    end
+
+    local loadout_sp = stats[stat_ids_in_ui.sp].editbox_val;
+    for i = 1, 7 do
+        loadout.spelldmg_by_school[i] = loadout.spelldmg_by_school[i] + loadout_sp;
+    end
+
+    loadout.healingpower = loadout.healingpower + loadout_sp;
+
+    local loadout_spell_dmg = stats[stat_ids_in_ui.spell_damage].editbox_val;
+    for i = 1, 7 do
+        loadout.spelldmg_by_school[i] = loadout.spelldmg_by_school[i] + loadout_spell_dmg;
+    end
+
+    loadout.healingpower = loadout.healingpower + stats[stat_ids_in_ui.healing_power].editbox_val;
+
+    for i = 2, 7 do
+
+        local loadout_school_sp = stats[stat_ids_in_ui.holy_power - 2 + i].editbox_val;
+
+        loadout.spelldmg_by_school[i] = loadout.spelldmg_by_school[i] + loadout_school_sp;
+    end
+
+    frame.is_valid = true;
+
+    return loadout;
+end
+
+local function update_and_display_spell_diffs(frame)
+
+    frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
+
+    local loadout = current_loadout();
+
+    local loadout_diff = create_loadout_from_ui_diff(frame);
+
+    for k, v in pairs(frame.spells) do
+
+        local diff = spell_diff(k, v.name, loadout, loadout_diff);
+
+        frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+
+        if not v.name_str then
+            v.name_str = frame:CreateFontString(nil, "OVERLAY");
+            v.name_str:SetFontObject(font);
+
+            v.expectation = frame:CreateFontString(nil, "OVERLAY");
+            v.expectation:SetFontObject(font);
+
+            v.effect_per_sec = frame:CreateFontString(nil, "OVERLAY");
+            v.effect_per_sec:SetFontObject(font);
+
+            v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
+        end
+
+        v.name_str:SetPoint("TOPLEFT", 30, frame.line_y_offset);
+        v.name_str:SetText(v.name.." (Rank "..spells[k].rank..")");
+        v.name_str:SetTextColor(222/255, 192/255, 40/255);
+
+        if not frame.is_valid then
+
+            v.expectation:SetPoint("TOPRIGHT", -120, frame.line_y_offset);
+            v.expectation:SetText("NAN");
+
+            v.effect_per_sec:SetPoint("TOPRIGHT", -50, frame.line_y_offset);
+            v.effect_per_sec:SetText("NAN");
+            
+        else
+
+            local expectation_diff = tonumber(diff.expectation);
+
+            v.expectation:SetPoint("TOPRIGHT", -120, frame.line_y_offset);
+            v.effect_per_sec:SetPoint("TOPRIGHT", -50, frame.line_y_offset);
+
+            if expectation_diff < 0 then
+                v.expectation:SetText(string.format("%.3f", expectation_diff));
+                v.expectation:SetTextColor(195/255, 44/255, 11/255);
+
+                v.effect_per_sec:SetText(string.format("%.3f", tostring(diff.effect_per_sec)));
+                v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
+
+            elseif expectation_diff > 0 then
+                v.expectation:SetText(string.format("+%.3f", expectation_diff));
+                v.expectation:SetTextColor(33/255, 185/255, 21/255);
+
+                v.effect_per_sec:SetText(string.format("+%.3f", tostring(diff.effect_per_sec)));
+                v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
+
+            else
+                v.expectation:SetText("0");
+                v.expectation:SetTextColor(1, 1, 1);
+
+                v.effect_per_sec:SetText("0");
+                v.effect_per_sec:SetTextColor(1, 1, 1);
+
+            end
+                
+            v.cancel_button:SetScript("OnClick", function()
+
+                v.name_str:Hide();
+                v.expectation:Hide();
+                v.effect_per_sec:Hide();
+                v.cancel_button:Hide();
+
+                frame.spells[k] = nil; -- remove this spell
+                update_and_display_spell_diffs(frame);
+
+            end);
+
+            v.cancel_button:SetPoint("TOPRIGHT", -5, frame.line_y_offset + 5);
+            v.cancel_button:SetText("X");
+        end
+    end
+
+    -- footer
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+
+    if not frame.footer then
+        frame.footer = frame:CreateFontString(nil, "OVERLAY");
+    end
+    frame.footer:SetFontObject(font);
+    frame.footer:SetPoint("TOPLEFT", 30, frame.line_y_offset);
+    frame.footer:SetText("Add abilities by holding shift and hovering over them!");
+end
+
+function create_base_gui()
+
+    local frame_name = "sw_frame_";
+    sw_frame = CreateFrame("Frame", "test", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
+    sw_frame:SetWidth(400);
+    sw_frame:SetHeight(600);
+    
+    sw_frame:SetPoint("TOP",0,0);
+
+    sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.title:SetFontObject(font)
+    sw_frame.title:SetText("Stat Weights Classic");
+    sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
+
+    sw_frame.line_y_offset = -35;
+
+    sw_frame.stat_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_diff_header_left:SetFontObject(font);
+    sw_frame.stat_diff_header_left:SetPoint("TOPLEFT", 30, sw_frame.line_y_offset);
+    sw_frame.stat_diff_header_left:SetText("Stat");
+
+    sw_frame.stat_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_diff_header_center:SetFontObject(font);
+    sw_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -100, sw_frame.line_y_offset);
+    sw_frame.stat_diff_header_center:SetText("Difference");
+
+    sw_frame.line_y_offset = sw_frame.line_y_offset - 10;
+
+    local num_stats = 13;
+
+    sw_frame.stats = {
+        [1] = {
+            label_str = "Intellect"
+        },
+        [2] = {
+            label_str = "Spirit"
+        },
+        [3] = {
+            label_str = "Spell crit %"
+        },
+        [4] = {
+            label_str = "Spell hit %"
+        },
+        [5] = {
+            label_str = "Spell power"
+        },
+        [6] = {
+            label_str = "Spell damage"
+        },
+        [7] = {
+            label_str = "Healing power"
+        },
+        [8] = {
+            label_str = "Holy spell power"
+        },
+        [9] = {
+            label_str = "Fire spell power"
+        },
+        [10] = {
+            label_str = "Nature spell power"
+        },
+        [11] = {
+            label_str = "Frost spell power"
+        },
+        [12] = {
+            label_str = "Shadow spell power"
+        },
+        [13] = {
+            label_str = "Arcane spell power"
+        }
     };
+
+    for i = 1 , num_stats do
+
+        v = sw_frame.stats[i];
+
+        sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+        v.label = sw_frame:CreateFontString(nil, "OVERLAY");
+
+        v.label:SetFontObject(font);
+        v.label:SetPoint("TOPLEFT", 30, sw_frame.line_y_offset);
+        v.label:SetText(v.label_str);
+        v.label:SetTextColor(222/255, 192/255, 40/255);
+
+
+        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..i, sw_frame, "InputBoxTemplate");
+        v.editbox:SetPoint("TOPRIGHT", -100, sw_frame.line_y_offset);
+        v.editbox:SetText("0");
+        v.editbox:SetAutoFocus(false);
+        v.editbox:SetSize(60, 10);
+        v.editbox:SetScript("OnTextChanged", function()
+            if tonumber(v.editbox:GetText()) then
+                update_and_display_spell_diffs(sw_frame);
+            else 
+                v.editbox:SetText("0");
+            end
+        end);
+        --v.editbox:SetScript("OnEditFocusLost", function()
+        --    if not tonumber(v.editbox:GetText()) then
+        --        print("setting 0");
+        --        v.editbox:SetText("0");
+        --    end
+        --end);
+    end
+
+    -- header for spells
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+    sw_frame.line_y_offset_before_dynamic_spells = sw_frame.line_y_offset;
+
+    sw_frame.spell_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.spell_diff_header_left:SetFontObject(font);
+    sw_frame.spell_diff_header_left:SetPoint("TOPLEFT", 30, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_left:SetText("Spell");
+
+    sw_frame.spell_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.spell_diff_header_center:SetFontObject(font);
+    sw_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -120, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_center:SetText("Expected");
+
+    sw_frame.spell_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.spell_diff_header_left:SetFontObject(font);
+    sw_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -50, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_left:SetText("Per sec");
+
+    -- always have at least one
+    sw_frame.spells = {};
+    local _, class = UnitClass("player");
+
+    if class == "MAGE" then
+        sw_frame.spells[10181] = {
+            name = "Frostbolt";
+        };
+    elseif class == "DRUID" then
+
+        sw_frame.spells[25297] = {
+            name = "Healing Touch";
+        };
+    end
+
+    update_and_display_spell_diffs(sw_frame);
+
+    sw_frame:Hide();
 end
 
 local function command(msg, editbox)
-    print_loadout(current_loadout());
+    if msg == "loadout" then
+        print_loadout(current_loadout());
+    else
+        sw_frame:Show();
+    end
 end
 
 ItemRefTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
@@ -4411,12 +5327,12 @@ GameTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
 
     --print("--------------------------------------");
     --print("diff on item using frostbolt10");
-    --print("delta - avg:" ,  diff.avg, "effect_per_sec:", diff.effect_per_sec);
+    --print("delta - expectation:" ,  diff.expectation, "effect_per_sec:", diff.effect_per_sec);
 end)
 
 GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
-    local name, spell_id = tooltip:GetSpell();
+    local spell_name, spell_id = tooltip:GetSpell();
 
     local spell = get_spell(spell_id);
 
@@ -4425,15 +5341,23 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
     --local spell_name, _ = GetSpellInfo(spell_id);
 
     --print_spell(spell, spell_name, loadout);
-    tooltip_spell_info(GameTooltip, spell, name, loadout);
+    tooltip_spell_info(GameTooltip, spell, spell_name, loadout);
+
+    if spell and IsShiftKeyDown() and sw_frame:IsShown() and not sw_frame.spells[spell_id]then
+        sw_frame.spells[spell_id] = {
+            name = spell_name,
+        }
+
+        update_and_display_spell_diffs(sw_frame);
+    end
 
 end)
 
-SLASH_STAT_WEIGHTS1 = '/sw'
-SLASH_STAT_WEIGHTS2 = '/stat-weights'
+SLASH_STAT_WEIGHTS1 = "/sw"
+SLASH_STAT_WEIGHTS2 = "/stat-weights"
+SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
+SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-
-
-
+create_base_gui();
 
