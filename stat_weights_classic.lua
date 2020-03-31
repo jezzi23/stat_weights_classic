@@ -5550,7 +5550,8 @@ function create_base_gui()
 
     sw_frame:SetScript("OnLeave", function(self)
         
-        if sw_frame:IsShown() and SpellBookFrame:IsShown() then    
+        if sw_frame:IsShown() and SpellBookFrame:IsShown() and not MouseIsOver(sw_frame, 0, 0, 0, 0) then    
+
             for key, val in pairs(sw_frame.stats) do
                 val.editbox:ClearFocus();
             end
