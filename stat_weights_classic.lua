@@ -5300,37 +5300,37 @@ local function update_and_display_spell_diffs(frame)
             v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
         end
 
-        v.name_str:SetPoint("TOPLEFT", 30, frame.line_y_offset);
+        v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
         v.name_str:SetText(v.name.." (Rank "..spells[k].rank..")");
         v.name_str:SetTextColor(222/255, 192/255, 40/255);
 
         if not frame.is_valid then
 
-            v.expectation:SetPoint("TOPRIGHT", -120, frame.line_y_offset);
+            v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
             v.expectation:SetText("NAN");
 
-            v.effect_per_sec:SetPoint("TOPRIGHT", -50, frame.line_y_offset);
+            v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
             v.effect_per_sec:SetText("NAN");
             
         else
 
             local expectation_diff = tonumber(diff.expectation);
 
-            v.expectation:SetPoint("TOPRIGHT", -120, frame.line_y_offset);
-            v.effect_per_sec:SetPoint("TOPRIGHT", -50, frame.line_y_offset);
+            v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
+            v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
 
             if expectation_diff < 0 then
-                v.expectation:SetText(string.format("%.3f", expectation_diff));
+                v.expectation:SetText(string.format("%.2f", expectation_diff));
                 v.expectation:SetTextColor(195/255, 44/255, 11/255);
 
-                v.effect_per_sec:SetText(string.format("%.3f", tostring(diff.effect_per_sec)));
+                v.effect_per_sec:SetText(string.format("%.2f", tostring(diff.effect_per_sec)));
                 v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
 
             elseif expectation_diff > 0 then
-                v.expectation:SetText(string.format("+%.3f", expectation_diff));
+                v.expectation:SetText(string.format("+%.2f", expectation_diff));
                 v.expectation:SetTextColor(33/255, 185/255, 21/255);
 
-                v.effect_per_sec:SetText(string.format("+%.3f", tostring(diff.effect_per_sec)));
+                v.effect_per_sec:SetText(string.format("+%.2f", tostring(diff.effect_per_sec)));
                 v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
 
             else
@@ -5354,7 +5354,9 @@ local function update_and_display_spell_diffs(frame)
 
             end);
 
-            v.cancel_button:SetPoint("TOPRIGHT", -5, frame.line_y_offset + 5);
+            v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
+            v.cancel_button:SetHeight(20);
+            v.cancel_button:SetWidth(25);
             v.cancel_button:SetText("X");
         end
     end
@@ -5367,14 +5369,14 @@ local function update_and_display_spell_diffs(frame)
         frame.footer = frame:CreateFontString(nil, "OVERLAY");
     end
     frame.footer:SetFontObject(font);
-    frame.footer:SetPoint("TOPLEFT", 30, frame.line_y_offset);
+    frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
     frame.footer:SetText("Add abilities by holding shift and hovering over them!");
 end
 
 function create_base_gui()
 
     local frame_name = "sw_frame";
-    sw_frame = CreateFrame("Frame", frame_name, UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
+    sw_frame = CreateFrame("Frame", frame_name, SpellBookFrame, "BasicFrameTemplate, BasicFrameTemplateWithInset");
 
     sw_frame:RegisterEvent("ADDON_LOADED");
     sw_frame:RegisterEvent("PLAYER_LOGOUT");
@@ -5399,11 +5401,25 @@ function create_base_gui()
     end
     );
 
-    sw_frame:SetWidth(400);
-    sw_frame:SetHeight(600);
+    sw_frame:SetWidth(320);
+    sw_frame:SetHeight(500);
+    sw_frame:SetPoint("RIGHT", SpellBookFrame, "RIGHT", 360, 20);
 
-    
-    sw_frame:SetPoint("TOP",0,0);
+    local sw_toggle_button = CreateFrame("Button", "button", SpellBookFrame, "UIPanelButtonTemplate"); 
+
+    sw_toggle_button:SetPoint("TOPRIGHT", -40, -40);
+    sw_toggle_button:SetWidth(160);
+    sw_toggle_button:SetHeight(25);
+    sw_toggle_button:SetText("Stat Weights Classic -->");
+
+    sw_toggle_button:SetScript("OnClick", function()
+
+        if sw_frame:IsShown() then
+            sw_frame:Hide();
+        else
+            sw_frame:Show();
+        end
+    end);
 
     sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.title:SetFontObject(font)
@@ -5414,15 +5430,15 @@ function create_base_gui()
 
     sw_frame.stat_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_diff_header_left:SetFontObject(font);
-    sw_frame.stat_diff_header_left:SetPoint("TOPLEFT", 30, sw_frame.line_y_offset);
+    sw_frame.stat_diff_header_left:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
     sw_frame.stat_diff_header_left:SetText("Stat");
 
     sw_frame.stat_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_diff_header_center:SetFontObject(font);
-    sw_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -100, sw_frame.line_y_offset);
+    sw_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -50, sw_frame.line_y_offset);
     sw_frame.stat_diff_header_center:SetText("Difference");
 
-    sw_frame.line_y_offset = sw_frame.line_y_offset - 10;
+    --sw_frame.line_y_offset = sw_frame.line_y_offset - 10;
 
     local num_stats = 13;
 
@@ -5477,16 +5493,16 @@ function create_base_gui()
         v.label = sw_frame:CreateFontString(nil, "OVERLAY");
 
         v.label:SetFontObject(font);
-        v.label:SetPoint("TOPLEFT", 30, sw_frame.line_y_offset);
+        v.label:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
         v.label:SetText(v.label_str);
         v.label:SetTextColor(222/255, 192/255, 40/255);
 
 
         v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..i, sw_frame, "InputBoxTemplate");
-        v.editbox:SetPoint("TOPRIGHT", -100, sw_frame.line_y_offset);
+        v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.line_y_offset);
         v.editbox:SetText("0");
         v.editbox:SetAutoFocus(false);
-        v.editbox:SetSize(60, 10);
+        v.editbox:SetSize(100, 10);
         v.editbox:SetScript("OnTextChanged", function()
             if tonumber(v.editbox:GetText()) then
                 update_and_display_spell_diffs(sw_frame);
@@ -5511,17 +5527,17 @@ function create_base_gui()
 
     sw_frame.spell_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.spell_diff_header_left:SetPoint("TOPLEFT", 30, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_left:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
     sw_frame.spell_diff_header_left:SetText("Spell");
 
     sw_frame.spell_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -120, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -115, sw_frame.line_y_offset);
     sw_frame.spell_diff_header_center:SetText("Expected");
 
     sw_frame.spell_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -50, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -45, sw_frame.line_y_offset);
     sw_frame.spell_diff_header_left:SetText("Per sec");
 
     -- always have at least one
@@ -5566,6 +5582,7 @@ local function command(msg, editbox)
     if msg == "loadout" then
         print_loadout(current_loadout());
     else
+        SpellBookFrame:Show();
         sw_frame:Show();
     end
 end
