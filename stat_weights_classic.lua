@@ -1,5 +1,5 @@
 
-local version =  0.1;
+local version =  "1.0.0";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
@@ -4378,6 +4378,7 @@ end
 
 local function print_loadout(loadout)
 
+    print("Stat Weights Classic - Version: "..version);
     print(loadout.name);
     print("int: "..loadout.int..", spirit: "..loadout.spirit);
     print("heal: "..loadout.healingpower..", heal_crit: ".. string.format("%.3f", loadout.healing_crit));
