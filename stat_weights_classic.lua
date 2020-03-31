@@ -4618,7 +4618,6 @@ local function spell_info(base_min, base_max,
        spell_name ~= "Tranquility" and spell_name == "Hurricane" then
 
         cast_time = cast_time - 0.5 * crit;
-        print(cast_time);
     end
 
     local expectation_st = expectation;
@@ -5211,8 +5210,13 @@ local function create_loadout_from_ui_diff(frame)
     -- verify validity and run input expr 
     for k, v in pairs(stats) do
 
+
         local expr_str = v.editbox:GetText();
+        
+        local is_whitespace_expr = expr_str and string.match(expr_str, "%S") == nil;
+        --local is_whitespace_expr = string.format(expr_str, "[^ \t\n]") == nil;
         local is_valid_expr = string.match(expr_str, "[^-+0123456789. ()]") == nil
+
         local expr = nil;
         if is_valid_expr then
             expr = loadstring("return "..expr_str..";");
@@ -5221,15 +5225,15 @@ local function create_loadout_from_ui_diff(frame)
                 frame.is_valid = true;
             end
         end
-        if not is_valid_expr or not expr then
+        if is_whitespace_expr or not is_valid_expr or not expr then
 
             v.editbox_val = 0;
-            frame.is_valid = false;
-            return empty_loadout();
+            if not is_whitespace_expr then
+                frame.is_valid = false;
+                return empty_loadout();
+            end
         end
     end
-
-    
 
     local loadout = empty_loadout();
 
@@ -5403,7 +5407,7 @@ function create_base_gui()
 
     sw_frame:SetWidth(320);
     sw_frame:SetHeight(500);
-    sw_frame:SetPoint("RIGHT", SpellBookFrame, "RIGHT", 360, 20);
+    sw_frame:SetPoint("RIGHT", SpellBookFrame, "RIGHT", 340, 20);
 
     local sw_toggle_button = CreateFrame("Button", "button", SpellBookFrame, "UIPanelButtonTemplate"); 
 
@@ -5500,15 +5504,12 @@ function create_base_gui()
 
         v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..i, sw_frame, "InputBoxTemplate");
         v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.line_y_offset);
-        v.editbox:SetText("0");
+        v.editbox:SetText("");
         v.editbox:SetAutoFocus(false);
         v.editbox:SetSize(100, 10);
         v.editbox:SetScript("OnTextChanged", function()
-            if tonumber(v.editbox:GetText()) then
-                update_and_display_spell_diffs(sw_frame);
-            else 
-                v.editbox:SetText("0");
-            end
+
+            update_and_display_spell_diffs(sw_frame);
         end);
         --v.editbox:SetScript("OnEditFocusLost", function()
         --    if not tonumber(v.editbox:GetText()) then
@@ -5572,6 +5573,14 @@ function create_base_gui()
             sw_frame.spells[15208] = {
                 name = "Lightning Bolt";
             };
+        elseif class == "PRIEST" then
+
+            sw_frame.spells[25314] = {
+                name = "Greater Heal";
+            };
+            sw_frame.spells[25315] = {
+                name = "Renew";
+            };
         end
     end
 
@@ -5582,7 +5591,12 @@ local function command(msg, editbox)
     if msg == "loadout" then
         print_loadout(current_loadout());
     else
-        SpellBookFrame:Show();
+        if SpellBookFrame:IsShown() then
+
+        else
+            ToggleFrame(SpellBookFrame);
+        end
+
         sw_frame:Show();
     end
 end
