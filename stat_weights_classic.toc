@@ -1,4 +1,5 @@
 ## Interface: 11303
 ## Title: Stat Weights Classic
 ## Notes: Demo
+## SavedVariablesPerCharacter: __sw__persistent_spells_diff
 stat_weights_classic.lua

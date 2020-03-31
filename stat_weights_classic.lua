@@ -5197,7 +5197,6 @@ end
 --    };
 --end
 
---sw_frame = {};
 
 local function ui_y_offset_incr(y) 
     return y - 17;
@@ -5374,10 +5373,35 @@ end
 
 function create_base_gui()
 
-    local frame_name = "sw_frame_";
-    sw_frame = CreateFrame("Frame", "test", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
+    local frame_name = "sw_frame";
+    sw_frame = CreateFrame("Frame", frame_name, UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
+
+    sw_frame:RegisterEvent("ADDON_LOADED");
+    sw_frame:RegisterEvent("PLAYER_LOGOUT");
+    sw_frame:SetScript("OnEvent", function(self, event)
+
+        if event == "ADDON_LOADED" then
+            if __sw__persistent_spells_diff then
+
+                self.spells = __sw__persistent_spells_diff;
+
+                update_and_display_spell_diffs(self);
+            end
+        elseif event ==  "PLAYER_LOGOUT"  then
+
+            -- clear previous ui elements from spells table
+            __sw__persistent_spells_diff = {};
+            for k,v in pairs(self.spells) do
+                __sw__persistent_spells_diff[k] = {};
+                __sw__persistent_spells_diff[k].name = v.name;
+            end
+        end
+    end
+    );
+
     sw_frame:SetWidth(400);
     sw_frame:SetHeight(600);
+
     
     sw_frame:SetPoint("TOP",0,0);
 
@@ -5534,8 +5558,6 @@ function create_base_gui()
             };
         end
     end
-
-    update_and_display_spell_diffs(sw_frame);
 
     sw_frame:Hide();
 end
