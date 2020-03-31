@@ -1887,7 +1887,7 @@ local function create_spells()
                 lvl_req             = 20,
                 mana                = 95,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             [8949] = {
                 base_min            = 146.0,
@@ -1900,7 +1900,7 @@ local function create_spells()
                 lvl_req             = 26,
                 mana                = 135,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             [8950] = {
                 base_min            = 212.0,
@@ -1913,7 +1913,7 @@ local function create_spells()
                 lvl_req             = 34,
                 mana                = 180,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             [8951] = {
                 base_min            = 293.0,
@@ -1926,7 +1926,7 @@ local function create_spells()
                 lvl_req             = 42,
                 mana                = 230,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             [9875] = {
                 base_min            = 378.0,
@@ -1939,7 +1939,7 @@ local function create_spells()
                 lvl_req             = 50,
                 mana                = 275,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             [9876] = {
                 base_min            = 451.0,
@@ -1952,7 +1952,7 @@ local function create_spells()
                 lvl_req             = 58,
                 mana                = 315,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             [25298] = {
                 base_min            = 496.0,
@@ -1965,7 +1965,7 @@ local function create_spells()
                 lvl_req             = 60,
                 mana                = 340,
                 flags               = 0,
-                school              = magic_school.nature
+                school              = magic_school.arcane
             },
             -- insect swarm
             [5570] = {
@@ -3210,9 +3210,141 @@ local function create_spells()
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             }
+            -- lightning bolt
+            --[403] = {
+            --    base_min            = 15.0,
+            --    base_max            = 17.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 1.5,
+            --    rank                = 1,
+            --    lvl_req             = 1,
+            --    mana                = 15,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[529] = {
+            --    base_min            = 28.0,
+            --    base_max            = 33.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 2.0,
+            --    rank                = 2,
+            --    lvl_req             = 8,
+            --    mana                = 30,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[548] = {
+            --    base_min            = 48.0,
+            --    base_max            = 57.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 2.5,
+            --    rank                = 3,
+            --    lvl_req             = 14,
+            --    mana                = 45,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[915] = {
+            --    base_min            = 88.0,
+            --    base_max            = 100.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 3.0,
+            --    rank                = 4,
+            --    lvl_req             = 20,
+            --    mana                = 75,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[943] = {
+            --    base_min            = 131.0,
+            --    base_max            = 149.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 3.0,
+            --    rank                = 5,
+            --    lvl_req             = 26,
+            --    mana                = 105,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[6041] = {
+            --    base_min            = 179.0,
+            --    base_max            = 202.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 3.0,
+            --    rank                = 6,
+            --    lvl_req             = 32,
+            --    mana                = 135,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[548] = {
+            --    base_min            = 48.0,
+            --    base_max            = 57.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 2.5,
+            --    rank                = 3,
+            --    lvl_req             = 14,
+            --    mana                = 45,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[548] = {
+            --    base_min            = 48.0,
+            --    base_max            = 57.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 2.5,
+            --    rank                = 3,
+            --    lvl_req             = 14,
+            --    mana                = 45,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[548] = {
+            --    base_min            = 48.0,
+            --    base_max            = 57.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 2.5,
+            --    rank                = 3,
+            --    lvl_req             = 14,
+            --    mana                = 45,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
+            --[548] = {
+            --    base_min            = 48.0,
+            --    base_max            = 57.0, 
+            --    over_time           = 0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 2.5,
+            --    rank                = 3,
+            --    lvl_req             = 14,
+            --    mana                = 45,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --},
         };
     elseif class == "PALADIN" then
         return {
+            -- flash of light
             [19750] = {
                 base_min            = 67.0,
                 base_max            = 77.0, 
@@ -3528,13 +3660,15 @@ local function empty_loadout()
         spiritual_guidance = 0,
         illumination  = 0,
         master_of_elements  = 0,
+        natures_grace = 0,
         
         -- indexable by ability name
         ability_crit = {},
         ability_effect_mod= {},
         ability_cast_mod = {},
         ability_extra_ticks = {},
-        ability_cost_mod = {}
+        ability_cost_mod = {},
+        ability_crit_mod = {}
     };
 end
 
@@ -3580,9 +3714,9 @@ local function loadout_copy(loadout)
     cpy.lvl =  loadout.lvl;
     cpy.target_lvl =  loadout.target_lvl;
     cpy.int =  loadout.int;
-    cpy.spirit =  loadout.spirit;
+    cpy.spirit = loadout.spirit;
 
-    cpy.healingpower =  loadout.healingpower;
+    cpy.healingpower = loadout.healingpower;
 
     cpy.spelldmg_by_school = {};
     cpy.spell_crit_by_school = {};
@@ -3598,6 +3732,7 @@ local function loadout_copy(loadout)
     cpy.spiritual_guidance = loadout.spiritual_guidance;
     cpy.illumination = loadout.illumination;
     cpy.master_of_elements = loadout.master_of_elements;
+    cpy.natures_grace = loadout.natures_grace;
 
     cpy.stat_mod = {};
 
@@ -3606,6 +3741,7 @@ local function loadout_copy(loadout)
     cpy.ability_cast_mod = {};
     cpy.ability_extra_ticks = {};
     cpy.ability_cost_mod = {};
+    cpy.ability_crit_mod = {};
 
     for i = 1, 7 do
         cpy.spelldmg_by_school[i] = loadout.spelldmg_by_school[i];
@@ -3635,6 +3771,9 @@ local function loadout_copy(loadout)
     end
     for k, v in pairs(loadout.ability_cost_mod) do
         cpy.ability_cost_mod[k] = v;
+    end
+    for k, v in pairs(loadout.ability_crit_mod) do
+        cpy.ability_crit_mod[k] = v;
     end
 
 
@@ -3822,13 +3961,13 @@ local function apply_talents(loadout)
         -- improved moonfire
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Moonfire"] then
-                new_loadout.ability_cast_mod["Moonfire"] = 0;
+            if not new_loadout.ability_effect_mod["Moonfire"] then
+                new_loadout.ability_effect_mod["Moonfire"] = 0;
             end
             if not new_loadout.ability_crit["Moonfire"] then
-                new_loadout.ability_ccrit["Moonfire"] = 0;
+                new_loadout.ability_crit["Moonfire"] = 0;
             end
-            new_loadout.ability_cast_mod["Moonfire"] = new_loadout.ability_cast_mod["Wrath"] + pts * 0.02;
+            new_loadout.ability_effect_mod["Moonfire"] = new_loadout.ability_effect_mod["Moonfire"] + pts * 0.02;
             new_loadout.ability_crit["Moonfire"] = new_loadout.ability_crit["Moonfire"] + pts * 0.02;
         end
 
@@ -3836,8 +3975,17 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 11);
         if pts ~= 0 then
 
-            new_loadout.spell_crit_mod_by_school[4] = 1 + (new_loadout.spell_crit_mod_by_school[4] - 1) * (1 + pts * 0.2);
-            new_loadout.spell_crit_mod_by_school[7] = 1 + (new_loadout.spell_crit_mod_by_school[7] - 1) * (1 + pts * 0.2);
+            if not new_loadout.ability_crit_mod[v] then
+                new_loadout.ability_crit_mod["Moonfire"] = 0;
+                new_loadout.ability_crit_mod["Starfire"] = 0;
+                new_loadout.ability_crit_mod["Wrath"] = 0;
+            end
+            new_loadout.ability_crit_mod["Moonfire"] = 
+                (new_loadout.spell_crit_mod_by_school[magic_school.arcane] - 1) * (pts * 0.2);
+            new_loadout.ability_crit_mod["Starfire"] = 
+                (new_loadout.spell_crit_mod_by_school[magic_school.arcane] - 1) * (pts * 0.2);
+            new_loadout.ability_crit_mod["Wrath"] = 
+                (new_loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * (pts * 0.2);
         end
 
         -- improved starfire
@@ -3849,7 +3997,13 @@ local function apply_talents(loadout)
             new_loadout.ability_cast_mod["Starfire"] = new_loadout.ability_cast_mod["Starfire"] + pts * 0.1;
         end
 
-        -- improved starfire
+        -- nature's grace
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
+        if pts ~= 0 then
+            new_loadout.natures_grace = pts;
+        end
+
+        -- moonglow
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
         if pts ~= 0 then
             local abilities = {"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation"};
@@ -4193,7 +4347,12 @@ local function current_loadout()
        end
    end
 
-   local spell_hit = GetSpellHitModifier()/100;
+   -- right after load GetSpellHitModifier seems to sometimes returns a nil.... so check first I guess
+   local spell_hit = 0;
+   local real_hit = GetSpellHitModifier();
+   if real_hit then
+       spell_hit = real_hit/100;
+   end
    for i = 1, 7 do
        loadout.spelldmg_hit_by_school[i] = spell_hit;
    end
@@ -4279,6 +4438,10 @@ local function print_loadout(loadout)
     end
     for k, v in pairs(loadout.ability_cost_mod) do
         print("cost: ", k, string.format("%.3f", v));
+    end
+
+    for k, v in pairs(loadout.ability_crit_mod) do
+        print("crit mod: ", k, string.format("%.3f", v));
     end
 end
 
@@ -4419,7 +4582,7 @@ local function spell_info(base_min, base_max,
         base_dur = 0.0;
     end
 
-    if loadout.ignite ~= 0 and school == magic_school.fire then
+    if loadout.ignite and loadout.ignite ~= 0 and school == magic_school.fire then
         -- dont include dot for calcs
          ignite_min = loadout.ignite * 0.08 * min_crit_if_hit;
          ignite_max = loadout.ignite * 0.08 * max_crit_if_hit;
@@ -4451,8 +4614,24 @@ local function spell_info(base_min, base_max,
     local expectation_direct = (min + max) / 2;
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
-    local effect_per_sec_direct = expectation_direct/cast_time;
+    if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time >= 2 and 
+       spell_name ~= "Tranquility" and spell_name == "Hurricane" then
+
+        cast_time = cast_time - 0.5 * crit;
+        print(cast_time);
+    end
+
+    local expectation_st = expectation;
+    if spell_name == "Chain Heal" then
+        expectation = 1.75 * expectation_st;
+    elseif spell_name == "Prayer of Healing" then
+        expectation = 5 * expectation_st;
+    elseif spell_name == "Tranquility" then
+        expectation = 5 * expectation_st;
+    end
+
     local effect_per_sec = expectation/cast_time;
+
 
     return {
         min_noncrit = min_noncrit_if_hit,
@@ -4466,7 +4645,6 @@ local function spell_info(base_min, base_max,
 
         --including crit/hit
         expectation_direct = expectation_direct,
-        effect_per_sec_direct = effect_per_sec_direct,
 
         ot_num_ticks = ot_ticks,
         ot_duration = ot_dur + ot_extra_ticks * ot_freq,
@@ -4475,9 +4653,13 @@ local function spell_info(base_min, base_max,
         ot = expected_ot,
 
         expectation = expectation,
+        expectation_st = expectation_st,
         effect_per_sec = effect_per_sec,
 
         effect_per_cost = expectation/mana,
+        cost_per_sec = mana / cast_time,
+
+        cast_time = cast_time,
 
         mana = mana
     };
@@ -4509,6 +4691,12 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         ot_crit_delta_1 = crit_delta_1;
     end
 
+    local spell_crit_mod = loadout.spell_crit_mod_by_school[spell_data.school];
+    if not loadout.ability_crit_mod[spell_name] then
+        loadout.ability_crit_mod[spell_name] = 0;
+    end
+    spell_crit_mod = spell_crit_mod + loadout.ability_crit_mod[spell_name];
+
     local cast_speed = spell_data.cast_time;
     if not loadout.ability_cast_mod[spell_name] then
         loadout.ability_cast_mod[spell_name] = 0;
@@ -4534,7 +4722,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
     else
         -- TODO: see if frostbolts should be done like the heal before
         spell_mod = spell_mod + loadout.spell_dmg_mod_by_school[spell_data.school];
-        spell_mod = spell_mod + loadout.ability_effect_mod[spell_name];
+        spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
     end
 
     local hit = spell_hit(loadout.lvl, loadout.target_lvl, loadout.spelldmg_hit_by_school[spell_data.school]);
@@ -4568,10 +4756,11 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         cost = cost * (1 - loadout.healing_crit * (loadout.illumination * 0.2));
     end
 
-    if loadout.master_of_elements ~= 0  and 
+    if loadout.master_of_elements ~= 0 and 
        (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) ~= 0 then
         cost = cost * (1 - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1));
     end
+
 
     -- the game seems to round mana up/down to the nearest
     cost = tonumber(string.format("%.0f", cost));
@@ -4583,9 +4772,9 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
         spell_power,
-        crit,
-        ot_crit,
-        loadout.spell_crit_mod_by_school[spell_data.school],
+        min(1, crit),
+        min(1, ot_crit),
+        spell_crit_mod,
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
@@ -4598,9 +4787,9 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
         spell_power + 1,
-        crit,
-        ot_crit,
-        loadout.spell_crit_mod_by_school[spell_data.school],
+        min(1, crit),
+        min(1, ot_crit),
+        spell_crit_mod,
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
@@ -4612,9 +4801,9 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
         spell_power,
-        crit_delta_1,
-        ot_crit_delta_1,
-        loadout.spell_crit_mod_by_school[spell_data.school],
+        min(1, crit_delta_1),
+        min(1, ot_crit_delta_1),
+        spell_crit_mod,
         hit,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
@@ -4626,15 +4815,16 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
         spell_power,
-        crit,
-        ot_crit,
-        loadout.spell_crit_mod_by_school[spell_data.school],
+        min(1, crit),
+        min(1, ot_crit),
+        spell_crit_mod,
         hit_delta_1,
         spell_mod, spell_mod_base,
         direct_coef, over_time_coef,
         cost, spell_data.school,
         spell_name, loadout
     );
+
 
     local dmg_1_sp_delta = dmg_1_extra_sp.expectation - normal_dmg.expectation;
     local dmg_1_crit_delta = dmg_1_extra_crit.expectation - normal_dmg.expectation;
@@ -4652,7 +4842,6 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_crit = crit,
         spell_hit = hit
     };
-
 end
 
 local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
@@ -4673,12 +4862,14 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             effect = "Heal";
             effect_per_sec = "HPS";
             effect_per_cost = "Heal per Mana";
+            cost_per_sec = "Mana per sec";
             effect_per_sp = "Heal per healing power";
             sp_name = "Healing power";
         else
             effect = "Damage";
             effect_per_sec = "DPS";
             effect_per_cost = "Damage per Mana";
+            cost_per_sec = "Mana per sec";
             effect_per_sp = "Damage per spell power";
             sp_name = "Spell power";
         end
@@ -4692,13 +4883,22 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
         if eval.spell_data.min_noncrit ~= 0 then
             if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
-                tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d-%d", 
-                                              effect, 
-                                              eval.spell_hit*100,
-                                              math.ceil(eval.spell_data.min_noncrit), 
-                                              math.floor(eval.spell_data.max_noncrit)),
-                                232.0/255, 225.0/255, 32.0/255);
+                if eval.spell_hit ~= 1 then
+                    tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d-%d", 
+                                                  effect, 
+                                                  eval.spell_hit*100,
+                                                  math.ceil(eval.spell_data.min_noncrit), 
+                                                  math.floor(eval.spell_data.max_noncrit)),
+                                    232.0/255, 225.0/255, 32.0/255);
+                else
+                    tooltip:AddLine(string.format("  Normal %s: %d-%d", 
+                                                  effect, 
+                                                  math.ceil(eval.spell_data.min_noncrit), 
+                                                  math.floor(eval.spell_data.max_noncrit)),
+                                    232.0/255, 225.0/255, 32.0/255);
+                end
             else
+
                 tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d", 
                                               effect,
                                               eval.spell_hit*100,
@@ -4708,7 +4908,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             end
             if eval.spell_crit ~= 0 then
                 if loadout.ignite ~= 0 and eval.spell_data.ignite_min > 0 then
-                    tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d-%d (ignites for %d-%d)", 
+                    tooltip:AddLine(string.format("  Critical %s (%.1f%% crit): %d-%d (ignites for %d-%d)", 
                                                   effect, 
                                                   eval.spell_crit*100, 
                                                   math.ceil(eval.spell_data.min_crit), 
@@ -4717,7 +4917,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                                   math.floor(eval.spell_data.ignite_max)),
                                    194.0/255, 52.0/255, 23.0/255);
                 else
-                    tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d-%d", 
+                    tooltip:AddLine(string.format("  Critical %s (%.1f%% crit): %d-%d", 
                                                   effect, 
                                                   eval.spell_crit*100, 
                                                   math.ceil(eval.spell_data.min_crit), 
@@ -4733,10 +4933,10 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             -- round over time num for niceyness
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
 
-            if eval.spell_hit ~= 1.0 then
+            if eval.spell_hit ~= 1 then
                 tooltip:AddLine(string.format("  %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
-                                              eval.spell_hit,
+                                              eval.spell_hit * 100,
                                               eval.spell_data.ot_if_hit, 
                                               eval.spell_data.ot_duration, 
                                               math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
@@ -4755,12 +4955,12 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                 232.0/255, 225.0/255, 32.0/255);
             end
 
-            if eval.spell_data.ot_crit_if_hit ~= 0 then
+            if bit.band(spell_flags.over_time_crit, spell.flags) ~= 0 then
                 -- over time can crit (e.g. arcane missiles)
-                tooltip:AddLine(string.format("  Critical %s (%.1f%%): %d over %d sec (%d-%d per tick for %d ticks)",
+                tooltip:AddLine(string.format("  Critical %s (%.1f%% crit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
-                                              eval.spell_data.ot_crit_if_hit, 
                                               eval.spell_crit*100, 
+                                              eval.spell_data.ot_crit_if_hit, 
                                               eval.spell_data.ot_duration, 
                                               math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
                                               math.ceil(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
@@ -4770,48 +4970,71 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             end
         end
 
-        local effect_extra_str = "";
-        if spell.base_min > 0 then
+        
+      local effect_extra_str = "";
+      if loadout.ignite ~= 0 then
+          if spell_name == "Fireball" then
+              effect_extra_str = " (incl: ignite - excl: fireball dot)";
+          elseif spell_name == "Pyroblast" then
+              effect_extra_str = " (incl: ignite & pyro dot)";
+          else
+              effect_extra_str = " (incl: ignite )";
+          end
+      else
+          if spell_name == "Fireball" then
+              effect_extra_str = " (excl: fireball dot)";
+          elseif spell_name == "Pyroblast" then
+              effect_extra_str = " (incl: pyro dot)";
+          elseif spell.over_time > 0 and eval.spell_data.expectation ~= eval.spell_data.ot then
+              effect_extra_str = "(incl: over time)";
+          end
+      end
+      if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell_data.cast_time > 1.5 then
+          effect_extra_str = " (incl: nature's grace)";
+      end
 
-            if spell_name == "Fireball" then
-                effect_extra_str = "(incl: crits/miss, ignite - excl: fireball dot)";
-            elseif spell_name == "Pyroblast" then
-                effect_extra_str = "(incl: crits/miss, ignite & pyro dot)";
-            end
+      if spell_name == "Prayer of Healing" or spell_name == "Chain Heal" or spell_name == "Tranquility" then
+          effect_extra_str = " (incl: full aoe effect)";
+      elseif bit.band(spell.flags, spell_flags.aoe) ~= 0 and 
+              eval.spell_data.expectation == eval.spell_data.expectation_st then
 
-            if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                tooltip:AddLine("  Expected "..effect..string.format(": %.1f",eval.spell_data.expectation).." (incl: crits)");
-            elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-                tooltip:AddLine("  Expected "..effect..string.format(": %.1f",eval.spell_data.expectation));
-            else
-                tooltip:AddLine("  Expected "..effect..string.format(": %.1f ",eval.spell_data.expectation)..effect_extra_str);
-            end
-        end
-        tooltip:AddLine(string.format("  %s: %.1f", 
-                                      effect_per_sec,
-                                      eval.spell_data.effect_per_sec));
-        tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
-        tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
-        tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
+          effect_extra_str = "(incl: single target)";
+      end
 
-        if bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0 then
-            tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
-        end
 
-        -- debug tooltip stuff
-        if __sw__debug__ then
-            tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
-                            1.0, 1.0, 1.0);
-            tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
-            tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
-        end
+      tooltip:AddLine("  Expected "..effect..string.format(": %.1f ",eval.spell_data.expectation)..effect_extra_str);
 
-        end_tooltip_section(tooltip);
+      if eval.spell_data.base_min ~= 0.0 and eval.spell_data.expectation ~=  eval.spell_data.expectation_st then
 
-        if spell.healing_version then
-            -- used for holy nova
-            tooltip_spell_info(tooltip, spell.healing_version, spell_name, loadout);
-        end
+        tooltip:AddLine("  Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single target)");
+      end
+
+      tooltip:AddLine(string.format("  %s: %.1f", 
+                                    effect_per_sec,
+                                    eval.spell_data.effect_per_sec));
+      tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
+      tooltip:AddLine("  "..cost_per_sec..": "..string.format("%.1f",eval.spell_data.cost_per_sec), 0.0, 1.0, 1.0);
+      tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
+      tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
+
+      if (bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0) then
+          tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+      end
+
+      -- debug tooltip stuff
+      if __sw__debug__ then
+          tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
+                          1.0, 1.0, 1.0);
+          tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
+          tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
+      end
+
+      end_tooltip_section(tooltip);
+
+      if spell.healing_version then
+          -- used for holy nova
+          tooltip_spell_info(tooltip, spell.healing_version, spell_name, loadout);
+      end
     end
 end
 
@@ -4824,7 +5047,6 @@ function spell_diff(spell_id, spell_name, loadout, diff)
     local expectation_loadout = evaluate_spell(spell_data, spell_name, loadout);
     local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
     
-
     return {
         expectation = expectation_loadout_diffed.spell_data.expectation - 
             expectation_loadout.spell_data.expectation,
@@ -5280,17 +5502,37 @@ function create_base_gui()
 
     -- always have at least one
     sw_frame.spells = {};
-    local _, class = UnitClass("player");
 
-    if class == "MAGE" then
-        sw_frame.spells[10181] = {
-            name = "Frostbolt";
-        };
-    elseif class == "DRUID" then
+    if UnitLevel("player") == 60 then
+        local _, class = UnitClass("player");
 
-        sw_frame.spells[25297] = {
-            name = "Healing Touch";
-        };
+        if class == "MAGE" then
+            sw_frame.spells[10181] = {
+                name = "Frostbolt";
+            };
+        elseif class == "DRUID" then
+
+            sw_frame.spells[25297] = {
+                name = "Healing Touch";
+            };
+            sw_frame.spells[9876] = {
+                name = "Starfire";
+            };
+
+        elseif class == "PALADIN" then
+
+            sw_frame.spells[19943] = {
+                name = "Flash of Light";
+            };
+        elseif class == "SHAMAN" then
+
+            sw_frame.spells[10396] = {
+                name = "Healing Wave";
+            };
+            sw_frame.spells[15208] = {
+                name = "Lightning Bolt";
+            };
+        end
     end
 
     update_and_display_spell_diffs(sw_frame);
@@ -5360,4 +5602,6 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 create_base_gui();
+
+--__sw__debug__ = 1;
 
