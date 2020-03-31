@@ -4615,7 +4615,7 @@ local function spell_info(base_min, base_max,
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
     if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time >= 2 and 
-       spell_name ~= "Tranquility" and spell_name == "Hurricane" then
+        spell_name ~= "Tranquility" and spell_name == "Hurricane" then
 
         cast_time = cast_time - 0.5 * crit;
     end
@@ -4770,7 +4770,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
-        spell_power,
+        max(0, spell_power),
         min(1, crit),
         min(1, ot_crit),
         spell_crit_mod,
@@ -4785,7 +4785,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
-        spell_power + 1,
+        max(0, spell_power + 1) ,
         min(1, crit),
         min(1, ot_crit),
         spell_crit_mod,
@@ -4799,7 +4799,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
-        spell_power,
+        max(0, spell_power),
         min(1, crit_delta_1),
         min(1, ot_crit_delta_1),
         spell_crit_mod,
@@ -4813,7 +4813,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
         cast_speed,
-        spell_power,
+        max(0, spell_power),
         min(1, crit),
         min(1, ot_crit),
         spell_crit_mod,
@@ -5411,7 +5411,7 @@ function create_base_gui()
 
     local sw_toggle_button = CreateFrame("Button", "button", SpellBookFrame, "UIPanelButtonTemplate"); 
 
-    sw_toggle_button:SetPoint("TOPRIGHT", -40, -40);
+    sw_toggle_button:SetPoint("TOPRIGHT", -40, -34);
     sw_toggle_button:SetWidth(160);
     sw_toggle_button:SetHeight(25);
     sw_toggle_button:SetText("Stat Weights Classic -->");
@@ -5439,12 +5439,30 @@ function create_base_gui()
 
     sw_frame.stat_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_diff_header_center:SetFontObject(font);
-    sw_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -50, sw_frame.line_y_offset);
+    sw_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.line_y_offset);
     sw_frame.stat_diff_header_center:SetText("Difference");
+
+
+    local num_stats = 13;
+
+    sw_frame.clear_button = CreateFrame("Button", "button", sw_frame, "UIPanelButtonTemplate"); 
+    sw_frame.clear_button:SetScript("OnClick", function()
+
+        for i = 1, num_stats do
+
+            sw_frame.stats[i].editbox:SetText("");
+        end
+
+        update_and_display_spell_diffs(sw_frame);
+    end);
+
+    sw_frame.clear_button:SetPoint("TOPRIGHT", -30, sw_frame.line_y_offset + 3);
+    sw_frame.clear_button:SetHeight(15);
+    sw_frame.clear_button:SetWidth(50);
+    sw_frame.clear_button:SetText("Clear");
 
     --sw_frame.line_y_offset = sw_frame.line_y_offset - 10;
 
-    local num_stats = 13;
 
     sw_frame.stats = {
         [1] = {
@@ -5511,12 +5529,21 @@ function create_base_gui()
 
             update_and_display_spell_diffs(sw_frame);
         end);
-        --v.editbox:SetScript("OnEditFocusLost", function()
-        --    if not tonumber(v.editbox:GetText()) then
-        --        print("setting 0");
-        --        v.editbox:SetText("0");
-        --    end
-        --end);
+
+        v.editbox:SetScript("OnEnterPressed", function(self)
+
+        	self:ClearFocus()
+        end)
+        
+        v.editbox:SetScript("OnEscapePressed", function(self)
+        	self:ClearFocus()
+        end)
+
+        v.editbox:SetScript("OnTabPressed", function(self)
+            local next_index = 1 + (i %num_stats);
+        	self:ClearFocus()
+            sw_frame.stats[next_index].editbox:SetFocus();
+        end)
     end
 
     -- header for spells
