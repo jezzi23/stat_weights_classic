@@ -5534,18 +5534,28 @@ function create_base_gui()
         v.editbox:SetScript("OnEnterPressed", function(self)
 
         	self:ClearFocus()
-        end)
+        end);
         
         v.editbox:SetScript("OnEscapePressed", function(self)
         	self:ClearFocus()
-        end)
+        end);
 
         v.editbox:SetScript("OnTabPressed", function(self)
             local next_index = 1 + (i %num_stats);
         	self:ClearFocus()
             sw_frame.stats[next_index].editbox:SetFocus();
-        end)
+        end);
+
     end
+
+    sw_frame:SetScript("OnLeave", function(self)
+        
+        if sw_frame:IsShown() and SpellBookFrame:IsShown() then    
+            for key, val in pairs(sw_frame.stats) do
+                val.editbox:ClearFocus();
+            end
+        end
+    end)
 
     -- header for spells
 
