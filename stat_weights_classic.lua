@@ -31,8 +31,7 @@ local spell_flags = {
     aoe = bit.lshift(1,1),
     snare = bit.lshift(1,2),
     heal = bit.lshift(1,3),
-    pyro_dot = bit.lshift(1,4), -- pyro is an exception to scaling rules
-    flat_dot = bit.lshift(1,5), -- 0 scaling on dots
+    --pyro_dot = bit.lshift(1,4), -- pyro is an exception to scaling rules
     absorb = bit.lshift(1,6),
     over_time_crit = bit.lshift(1,7),
 };
@@ -52,6 +51,70 @@ local stat_ids_in_ui = {
     shadow_power = 12,
     arcane_power = 13
 };
+
+local set_tiers = {
+    pve_0 = 1,
+    pve_0_5 = 2,
+    pve_1 = 3,
+    pve_2 = 4,
+    pve_3 = 5,
+    pvp_1 = 6,
+    pvp_2 = 7
+};
+
+local spell_name_to_id = {
+    -- Mage
+    ["Frostbolt"]               = 116,
+    ["Frost Nova"]              = 122,
+    ["Cone of Cold"]            = 120,
+    ["Blizzard"]                = 10,
+    ["Fireball"]                = 133,
+    ["Fire Blast"]              = 2136,
+    ["Scorch"]                  = 2948,
+    ["Pyroblast"]               = 11366,
+    ["Blast Wave"]              = 11113,
+    ["Flamestrike"]             = 2120,
+    ["Arcane Missiles"]         = 5143,
+    ["Arcane Explosion"]        = 1449,
+    -- Druid
+    ["Healing Touch"]           = 5185,
+    ["Rejuvenation"]            = 774,
+    ["Tranquility"]             = 740,
+    ["Regrowth"]                = 8936,
+    ["Moonfire"]                = 8921,
+    ["Wrath"]                   = 5176,
+    ["Starfire"]                = 2912,
+    ["Insect Swarm"]            = 5570,
+    ["Hurricane"]               = 16914,
+    ["Entangling Roots"]        = 339,
+    -- Priest
+    ["Lesser Heal"]             = 2050,
+    ["Heal"]                    = 2054,
+    ["Greater Heal"]            = 2060,
+    ["Flash Heal"]              = 2061,
+    ["Prayer of Healing"]       = 596,
+    ["Renew"]                   = 139,
+    ["Power Word: Shield"]      = 17,
+    ["Holy Nova"]               = 15237,
+    -- Shaman
+    ["Healing Stream Totem"]    = 5394,
+    ["Lesser Healing"]          = 8004,
+    ["Healing Weave"]           = 331,
+    ["Chain Heal"]              = 1064,
+    ["Lightning Bolt"]          = 403,
+    ["Chain Lightning"]         = 421,
+    ["Earth Shock"]             = 8042,
+    ["Magma Totem"]             = 8190,
+    ["Flame Shock"]             = 8050,
+    ["Frost Shock"]             = 8056,
+    ["Fire Nova Totem"]         = 1535,
+    ["Searing Totem"]           = 3599,
+    -- Paladin
+    ["Flash of Light"]          = 19750,
+    ["Holy Light"]              = 635,
+    ["Holy Shock"]              = 20473
+};
+
 
 local function create_spells()
     
@@ -411,7 +474,7 @@ local function create_spells()
                 rank                = 1,
                 lvl_req             = 1,
                 mana                = 30,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [143] = {
@@ -424,7 +487,7 @@ local function create_spells()
                 rank                = 2,
                 lvl_req             = 6,
                 mana                = 45,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [145] = {
@@ -437,7 +500,7 @@ local function create_spells()
                 rank                = 3,
                 lvl_req             = 12,
                 mana                = 65,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [3140] = {
@@ -450,7 +513,7 @@ local function create_spells()
                 rank                = 4,
                 lvl_req             = 18,
                 mana                = 95,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [8400] = {
@@ -463,7 +526,7 @@ local function create_spells()
                 rank                = 5,
                 lvl_req             = 24,
                 mana                = 140,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [8401] = {
@@ -476,7 +539,7 @@ local function create_spells()
                 rank                = 6,
                 lvl_req             = 30,
                 mana                = 185,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [8402] = {
@@ -489,7 +552,7 @@ local function create_spells()
                 rank                = 7,
                 lvl_req             = 36,
                 mana                = 220,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [10148] = {
@@ -502,7 +565,7 @@ local function create_spells()
                 rank                = 8,
                 lvl_req             = 42,
                 mana                = 260,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [10149] = {
@@ -515,7 +578,7 @@ local function create_spells()
                 rank                = 9,
                 lvl_req             = 48,
                 mana                = 305,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [10150] = {
@@ -528,7 +591,7 @@ local function create_spells()
                 rank                = 10,
                 lvl_req             = 54,
                 mana                = 350,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [10151] = {
@@ -541,7 +604,7 @@ local function create_spells()
                 rank                = 11,
                 lvl_req             = 60,
                 mana                = 395,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             [25306] = {
@@ -554,7 +617,7 @@ local function create_spells()
                 rank                = 12,
                 lvl_req             = 60,
                 mana                = 410,
-                flags               = spell_flags.flat_dot,
+                flags               = 0,
                 school              = magic_school.fire
             },
             -- fire blast
@@ -991,7 +1054,7 @@ local function create_spells()
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
-            -- arcane missile
+            -- arcane missiles
             [5143] = {
                 base_min            = 0.0,
                 base_max            = 0.0 ,
@@ -2042,7 +2105,7 @@ local function create_spells()
                 over_time_duration  = 10.0,
                 cast_time           = 10,
                 rank                = 1,
-                lvl_req              = 40,
+                lvl_req             = 40,
                 mana                = 880,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.nature,
@@ -2895,6 +2958,7 @@ local function create_spells()
         }; 
     elseif class == "SHAMAN" then
         return {
+            -- healing stream totem
             [5394] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
@@ -3209,138 +3273,535 @@ local function create_spells()
                 mana                = 405,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
-            }
+            },
             -- lightning bolt
-            --[403] = {
-            --    base_min            = 15.0,
-            --    base_max            = 17.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 1.5,
-            --    rank                = 1,
-            --    lvl_req             = 1,
-            --    mana                = 15,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[529] = {
-            --    base_min            = 28.0,
-            --    base_max            = 33.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 2.0,
-            --    rank                = 2,
-            --    lvl_req             = 8,
-            --    mana                = 30,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[548] = {
-            --    base_min            = 48.0,
-            --    base_max            = 57.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 2.5,
-            --    rank                = 3,
-            --    lvl_req             = 14,
-            --    mana                = 45,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[915] = {
-            --    base_min            = 88.0,
-            --    base_max            = 100.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 3.0,
-            --    rank                = 4,
-            --    lvl_req             = 20,
-            --    mana                = 75,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[943] = {
-            --    base_min            = 131.0,
-            --    base_max            = 149.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 3.0,
-            --    rank                = 5,
-            --    lvl_req             = 26,
-            --    mana                = 105,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[6041] = {
-            --    base_min            = 179.0,
-            --    base_max            = 202.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 3.0,
-            --    rank                = 6,
-            --    lvl_req             = 32,
-            --    mana                = 135,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[548] = {
-            --    base_min            = 48.0,
-            --    base_max            = 57.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 2.5,
-            --    rank                = 3,
-            --    lvl_req             = 14,
-            --    mana                = 45,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[548] = {
-            --    base_min            = 48.0,
-            --    base_max            = 57.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 2.5,
-            --    rank                = 3,
-            --    lvl_req             = 14,
-            --    mana                = 45,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[548] = {
-            --    base_min            = 48.0,
-            --    base_max            = 57.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 2.5,
-            --    rank                = 3,
-            --    lvl_req             = 14,
-            --    mana                = 45,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
-            --[548] = {
-            --    base_min            = 48.0,
-            --    base_max            = 57.0, 
-            --    over_time           = 0,
-            --    over_time_tick_freq = 0,
-            --    over_time_duration  = 0.0,
-            --    cast_time           = 2.5,
-            --    rank                = 3,
-            --    lvl_req             = 14,
-            --    mana                = 45,
-            --    flags               = 0,
-            --    school              = magic_school.nature,
-            --},
+            [403] = {
+                base_min            = 15.0,
+                base_max            = 17.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 1,
+                mana                = 15,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [529] = {
+                base_min            = 28.0,
+                base_max            = 33.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 2,
+                lvl_req             = 8,
+                mana                = 30,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [548] = {
+                base_min            = 48.0,
+                base_max            = 57.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 3,
+                lvl_req             = 14,
+                mana                = 45,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [915] = {
+                base_min            = 88.0,
+                base_max            = 100.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 4,
+                lvl_req             = 20,
+                mana                = 75,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [943] = {
+                base_min            = 131.0,
+                base_max            = 149.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 5,
+                lvl_req             = 26,
+                mana                = 105,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [6041] = {
+                base_min            = 179.0,
+                base_max            = 202.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 6,
+                lvl_req             = 32,
+                mana                = 135,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10391] = {
+                base_min            = 235.0,
+                base_max            = 264.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 7,
+                lvl_req             = 38,
+                mana                = 165,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10392] = {
+                base_min            = 291.0,
+                base_max            = 326.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 8,
+                lvl_req             = 44,
+                mana                = 195,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [15207] = {
+                base_min            = 357.0,
+                base_max            = 400.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 3,
+                lvl_req             = 50,
+                mana                = 230,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [15208] = {
+                base_min            = 428.0,
+                base_max            = 477.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 10,
+                lvl_req             = 56,
+                mana                = 265,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            -- chain lightning
+            [421] = {
+                base_min            = 200.0,
+                base_max            = 227.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 1,
+                lvl_req             = 32,
+                mana                = 280,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [930] = {
+                base_min            = 288.0,
+                base_max            = 323.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 40,
+                lvl_req             = 2,
+                mana                = 380,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [2860] = {
+                base_min            = 391.0,
+                base_max            = 438.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 3,
+                lvl_req             = 48,
+                mana                = 490,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10605] = {
+                base_min            = 505.0,
+                base_max            = 564.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.5,
+                rank                = 4,
+                lvl_req             = 56,
+                mana                = 605,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            -- earth shock
+            [8042] = {
+                base_min            = 19.0,
+                base_max            = 22.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 4,
+                mana                = 30,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [8044] = {
+                base_min            = 35.0,
+                base_max            = 38.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 8,
+                mana                = 50,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [8045] = {
+                base_min            = 65.0,
+                base_max            = 69.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 14,
+                mana                = 85,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [8046] = {
+                base_min            = 126.0,
+                base_max            = 134.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 24,
+                mana                = 145,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10412] = {
+                base_min            = 235.0,
+                base_max            = 249.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 36,
+                mana                = 240,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10413] = {
+                base_min            = 372.0,
+                base_max            = 394.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 48,
+                mana                = 345,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10414] = {
+                base_min            = 517.0,
+                base_max            = 545.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 7,
+                lvl_req             = 60,
+                mana                = 450,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            -- magma totem
+            [8190] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 22 * 4,
+                over_time_tick_freq = 2,
+                over_time_duration  = 20.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 26,
+                mana                = 230,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [10585] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 37 * 4,
+                over_time_tick_freq = 2,
+                over_time_duration  = 20.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 36,
+                mana                = 360,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [10586] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 54 * 4,
+                over_time_tick_freq = 2,
+                over_time_duration  = 20.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 46,
+                mana                = 500,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [10587] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 75 * 4,
+                over_time_tick_freq = 2,
+                over_time_duration  = 20.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 56,
+                mana                = 650,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            -- flame shock
+            [8050] = {
+                base_min            = 25.0,
+                base_max            = 25.0, 
+                over_time           = 25,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 10,
+                mana                = 55,
+                flags               = 0,
+                school              = magic_school.fire,
+            },
+            [8052] = {
+                base_min            = 51.0,
+                base_max            = 51.0, 
+                over_time           = 48,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 18,
+                mana                = 95,
+                flags               = 0,
+                school              = magic_school.fire,
+            },
+            [8053] = {
+                base_min            = 95.0,
+                base_max            = 95.0, 
+                over_time           = 96,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 28,
+                mana                = 160,
+                flags               = 0,
+                school              = magic_school.fire,
+            },
+            [10447] = {
+                base_min            = 164.0,
+                base_max            = 164.0, 
+                over_time           = 168,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 40,
+                mana                = 250,
+                flags               = 0,
+                school              = magic_school.fire,
+            },
+            [10448] = {
+                base_min            = 245.0,
+                base_max            = 245.0, 
+                over_time           = 256,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 52,
+                mana                = 345,
+                flags               = 0,
+                school              = magic_school.fire,
+            },
+            [29228] = {
+                base_min            = 292.0,
+                base_max            = 320.0, 
+                over_time           = 25,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 60,
+                mana                = 410,
+                flags               = 0,
+                school              = magic_school.fire,
+            },
+            -- frost shock
+            [8056] = {
+                base_min            = 95.0,
+                base_max            = 101.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 115,
+                flags               = spell_flags.snare,
+                school              = magic_school.frost,
+            },
+            [8058] = {
+                base_min            = 215.0,
+                base_max            = 230.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 34,
+                mana                = 225,
+                flags               = spell_flags.snare,
+                school              = magic_school.frost,
+            },
+            [10472] = {
+                base_min            = 345.0,
+                base_max            = 366.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 46,
+                mana                = 325,
+                flags               = spell_flags.snare,
+                school              = magic_school.frost,
+            },
+            [10473] = {
+                base_min            = 492.0,
+                base_max            = 520.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 58,
+                mana                = 430,
+                flags               = spell_flags.snare,
+                school              = magic_school.frost,
+            },
+            -- TODO: searing totem
+            -- fire nova totem
+            [1535] = {
+                base_min            = 53.0,
+                base_max            = 62.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 12,
+                mana                = 95,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [8498] = {
+                base_min            = 110.0,
+                base_max            = 124.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 22,
+                mana                = 170,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [8499] = {
+                base_min            = 195.0,
+                base_max            = 219.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 32,
+                mana                = 280,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [11314] = {
+                base_min            = 295.0,
+                base_max            = 331.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 42,
+                mana                = 395,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            },
+            [11315] = {
+                base_min            = 413.0,
+                base_max            = 459.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 52,
+                mana                = 520,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire,
+            }
         };
     elseif class == "PALADIN" then
         return {
@@ -3632,6 +4093,11 @@ local function get_spell(spell_id)
     return spells[spell_id];
 end
 
+local function localized_spell_name(english_name)
+    local name, _, _, _, _, _, _ = GetSpellInfo(spell_name_to_id[english_name]);
+    return name;
+end
+
 local function empty_loadout()
 
     return  {
@@ -3836,10 +4302,11 @@ local function apply_talents(loadout)
         --  improved arcane explosion
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
         if pts ~= 0 then
-            if not new_loadout.ability_crit["Arcane Explosion"] then
-                new_loadout.ability_crit["Arcane Explosion"] = 0;
+            local ae = localized_spell_name("Arcane Explosion");
+            if not new_loadout.ability_crit[ae] then
+                new_loadout.ability_crit[ae] = 0;
             end
-            new_loadout.ability_crit["Arcane Explosion"] = new_loadout.ability_crit["Arcane Explosion"] + pts * 0.02;
+            new_loadout.ability_crit[ae] = new_loadout.ability_crit[ae] + pts * 0.02;
         end
         -- arcane instability
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 15);
@@ -3852,10 +4319,11 @@ local function apply_talents(loadout)
         -- improved fireball
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 1);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Fireball"] then
-                new_loadout.ability_cast_mod["Fireball"] = 0;
+            local fb = localized_spell_name("Fireball");
+            if not new_loadout.ability_cast_mod[fb] then
+                new_loadout.ability_cast_mod[fb] = 0;
             end
-            new_loadout.ability_cast_mod["Fireball"] = new_loadout.ability_cast_mod["Fireball"] + pts * 0.1;
+            new_loadout.ability_cast_mod[fb] = new_loadout.ability_cast_mod[fb] + pts * 0.1;
         end
         -- ignite
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 3);
@@ -3865,22 +4333,25 @@ local function apply_talents(loadout)
         -- incinerate
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 6);
         if pts ~= 0 then
-            if not new_loadout.ability_crit["Scorch"] then
-                new_loadout.ability_crit["Scorch"] = 0;
+            local scorch = localized_spell_name("Scorch");
+            local fb = localized_spell_name("Fire Blast");
+            if not new_loadout.ability_crit[scorch] then
+                new_loadout.ability_crit[scorch] = 0;
             end
-            if not new_loadout.ability_crit["Fire Blast"] then
-                new_loadout.ability_crit["Fire Blast"] = 0;
+            if not new_loadout.ability_crit[fb] then
+                new_loadout.ability_crit[fb] = 0;
             end
-            new_loadout.ability_crit["Scorch"] = new_loadout.ability_crit["Scorch"] + pts * 0.02;
-            new_loadout.ability_crit["Fire Blast"] = new_loadout.ability_crit["Fire Blast"] + pts * 0.02;
+            new_loadout.ability_crit[scorch] = new_loadout.ability_crit[scorch] + pts * 0.02;
+            new_loadout.ability_crit[fb] = new_loadout.ability_crit[fb] + pts * 0.02;
         end
         -- improved flamestrike
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 7);
         if pts ~= 0 then
-            if not new_loadout.ability_crit["Flamestrike"] then
-                new_loadout.ability_crit["Flamestrike"] = 0;
+            local fs = localized_spell_name("Flamestrike");
+            if not new_loadout.ability_crit[fs] then
+                new_loadout.ability_crit[fs] = 0;
             end
-            new_loadout.ability_crit["Flamestrike"] = new_loadout.ability_crit["Flamestrike"] + pts * 0.05;
+            new_loadout.ability_crit[fs] = new_loadout.ability_crit[fs] + pts * 0.05;
         end
         -- master of elements
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 9);
@@ -3902,10 +4373,11 @@ local function apply_talents(loadout)
         -- improved frostbolt
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Frostbolt"] then
-                new_loadout.ability_cast_mod["Frostbolt"] = 0;
+            local fb = localized_spell_name("Frostbolt");
+            if not new_loadout.ability_cast_mod[fb] then
+                new_loadout.ability_cast_mod[fb] = 0;
             end
-            new_loadout.ability_cast_mod["Frostbolt"] = new_loadout.ability_cast_mod["Frostbolt"] + pts * 0.1;
+            new_loadout.ability_cast_mod[fb] = new_loadout.ability_cast_mod[fb] + pts * 0.1;
         end
         -- elemental precision
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 3);
@@ -3918,7 +4390,8 @@ local function apply_talents(loadout)
         -- ice shards
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 4);
         if pts ~= 0 then
-            new_loadout.spell_crit_mod_by_school[5] = 1 + (new_loadout.spell_crit_mod_by_school[5] - 1) * (1 + pts * 0.2);
+            new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * (1 + pts * 0.2);
         end
         -- piercing ice
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 8);
@@ -3928,7 +4401,11 @@ local function apply_talents(loadout)
         -- frost channeling
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 12);
         if pts ~= 0 then
+
             local cold_spells = {"Frostbolt", "Blizzard", "Cone of Cold", "Frost Nova"};
+            for k, v in pairs(cold_spells) do
+                cold_spells[k] = localized_spell_name(v);
+            end
 
             for k, v in pairs(cold_spells) do
                 if not new_loadout.ability_cost_mod[v] then
@@ -3942,59 +4419,66 @@ local function apply_talents(loadout)
         -- imrpoved cone of cold
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
         if pts ~= 0 then
-            if not new_loadout.ability_effect_mod["Cone of Cold"] then
-                new_loadout.ability_effect_mod["Cone of Cold"] = 0;
+            local coc = localized_spell_name("Cone of Cold");
+            if not new_loadout.ability_effect_mod[coc] then
+                new_loadout.ability_effect_mod[coc] = 0;
             end
-            new_loadout.ability_effect_mod["Cone of Cold"] = new_loadout.ability_effect_mod["Cone of Cold"] + pts * 0.15;
+            new_loadout.ability_effect_mod[coc] = new_loadout.ability_effect_mod[coc] + pts * 0.15;
         end
     elseif class == "DRUID" then
 
         -- improved wrath
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Wrath"] then
-                new_loadout.ability_cast_mod["Wrath"] = 0;
+            local wrath = localized_spell_name("Wrath");
+            if not new_loadout.ability_cast_mod[wrath] then
+                new_loadout.ability_cast_mod[wrath] = 0;
             end
-            new_loadout.ability_cast_mod["Wrath"] = new_loadout.ability_cast_mod["Wrath"] + pts * 0.1;
+            new_loadout.ability_cast_mod[wrath] = new_loadout.ability_cast_mod[wrath] + pts * 0.1;
         end
 
         -- improved moonfire
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
         if pts ~= 0 then
-            if not new_loadout.ability_effect_mod["Moonfire"] then
-                new_loadout.ability_effect_mod["Moonfire"] = 0;
+            local mf = localized_spell_name("Moonfire");
+            if not new_loadout.ability_effect_mod[mf] then
+                new_loadout.ability_effect_mod[mf] = 0;
             end
-            if not new_loadout.ability_crit["Moonfire"] then
-                new_loadout.ability_crit["Moonfire"] = 0;
+            if not new_loadout.ability_crit[mf] then
+                new_loadout.ability_crit[mf] = 0;
             end
-            new_loadout.ability_effect_mod["Moonfire"] = new_loadout.ability_effect_mod["Moonfire"] + pts * 0.02;
-            new_loadout.ability_crit["Moonfire"] = new_loadout.ability_crit["Moonfire"] + pts * 0.02;
+            new_loadout.ability_effect_mod[mf] = new_loadout.ability_effect_mod[mf] + pts * 0.02;
+            new_loadout.ability_crit[mf] = new_loadout.ability_crit[mf] + pts * 0.02;
         end
 
         -- vengeance
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 11);
         if pts ~= 0 then
 
+            local mf = localized_spell_name("Moonfire");
+            local sf = localized_spell_name("Starfire");
+            local wrath = localized_spell_name("Wrath");
             if not new_loadout.ability_crit_mod[v] then
-                new_loadout.ability_crit_mod["Moonfire"] = 0;
-                new_loadout.ability_crit_mod["Starfire"] = 0;
-                new_loadout.ability_crit_mod["Wrath"] = 0;
+                new_loadout.ability_crit_mod[mf] = 0;
+                new_loadout.ability_crit_mod[sf] = 0;
+                new_loadout.ability_crit_mod[wrath] = 0;
             end
-            new_loadout.ability_crit_mod["Moonfire"] = 
+            new_loadout.ability_crit_mod[mf] = 
                 (new_loadout.spell_crit_mod_by_school[magic_school.arcane] - 1) * (pts * 0.2);
-            new_loadout.ability_crit_mod["Starfire"] = 
+            new_loadout.ability_crit_mod[sf] = 
                 (new_loadout.spell_crit_mod_by_school[magic_school.arcane] - 1) * (pts * 0.2);
-            new_loadout.ability_crit_mod["Wrath"] = 
+            new_loadout.ability_crit_mod[wrath] = 
                 (new_loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * (pts * 0.2);
         end
 
         -- improved starfire
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 12);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Starfire"] then
-                new_loadout.ability_cast_mod["Starfire"] = 0;
+            local sf = localized_spell_name("Starfire");
+            if not new_loadout.ability_cast_mod[sf] then
+                new_loadout.ability_cast_mod[sf] = 0;
             end
-            new_loadout.ability_cast_mod["Starfire"] = new_loadout.ability_cast_mod["Starfire"] + pts * 0.1;
+            new_loadout.ability_cast_mod[sf] = new_loadout.ability_cast_mod[sf] + pts * 0.1;
         end
 
         -- nature's grace
@@ -4007,6 +4491,10 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
         if pts ~= 0 then
             local abilities = {"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation"};
+
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
             for k, v in pairs(abilities) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
@@ -4021,6 +4509,9 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 15);
         if pts ~= 0 then
             local abilities = {"Starfire", "Moonfire", "Wrath"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
             for k, v in pairs(abilities) do
                 if not new_loadout.ability_effect_mod[v] then
                     new_loadout.ability_effect_mod[v] = 0;
@@ -4040,16 +4531,20 @@ local function apply_talents(loadout)
         -- improved healing touch
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 3);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Healing Touch"] then
-                new_loadout.ability_cast_mod["Healing Touch"] = 0;
+            local ht = localized_spell_name("Healing Touch");
+            if not new_loadout.ability_cast_mod[ht] then
+                new_loadout.ability_cast_mod[ht] = 0;
             end
-            new_loadout.ability_cast_mod["Healing Touch"] = new_loadout.ability_cast_mod["Healing Touch"] + pts * 0.1;
+            new_loadout.ability_cast_mod[ht] = new_loadout.ability_cast_mod[ht] + pts * 0.1;
         end
 
         -- tranquil spirit
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 9);
         if pts ~= 0 then
             local abilities = {"Healing Touch", "Tranquility"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
             for k, v in pairs(abilities) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
@@ -4063,10 +4558,11 @@ local function apply_talents(loadout)
         -- improved rejuvenation
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 10);
         if pts ~= 0 then
-            if not new_loadout.ability_effect_mod["Rejuvenation"] then
-                new_loadout.ability_effect_mod["Rejuvenation"] = 0;
+            local rejuv = localized_spell_name("Rejuvenation");
+            if not new_loadout.ability_effect_mod[rejuv] then
+                new_loadout.ability_effect_mod[rejuv] = 0;
             end
-            new_loadout.ability_effect_mod["Rejuvenation"] = new_loadout.ability_effect_mod["Rejuvenation"] + pts * 0.05;
+            new_loadout.ability_effect_mod[rejuv] = new_loadout.ability_effect_mod[rejuv] + pts * 0.05;
         end
 
         -- gift of nature
@@ -4078,21 +4574,23 @@ local function apply_talents(loadout)
         -- improved regrowth
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
         if pts ~= 0 then
-            if not new_loadout.ability_crit["Regrowth"] then
-                new_loadout.ability_crit["Regrowth"] = 0;
+            local regrowth = localized_spell_name("Regrowth");
+            if not new_loadout.ability_crit[regrowth] then
+                new_loadout.ability_crit[regrowth] = 0;
             end
-            new_loadout.ability_crit["Regrowth"] = new_loadout.ability_crit["Regrowth"] + pts * 0.10;
+            new_loadout.ability_crit[regrowth] = new_loadout.ability_crit[regrowth] + pts * 0.10;
         end
     elseif class == "PRIEST" then
 
         -- improved power word: shield
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
         if pts ~= 0 then
-            if not new_loadout.ability_effect_mod["Power Word: Shield"] then
-                new_loadout.ability_effect_mod["Power Word: Shield"] = 0;
+            local shield = localized_spell_name("Power Word: Shield");
+            if not new_loadout.ability_effect_mod[shield] then
+                new_loadout.ability_effect_mod[shield] = 0;
             end
-            new_loadout.ability_effect_mod["Power Word: Shield"] = 
-                new_loadout.ability_effect_mod["Power Word: Shield"] + pts * 0.05;
+            new_loadout.ability_effect_mod[shield] = 
+                new_loadout.ability_effect_mod[shield] + pts * 0.05;
         end
 
         -- mental agility 
@@ -4100,6 +4598,9 @@ local function apply_talents(loadout)
         if pts ~= 0 then
 
             local instants = {"Power Word: Shield", "Renew", "Holy Nova"};
+            for k, v in pairs(instants) do
+                instants[k] = localized_spell_name(v);
+            end
             for k, v in pairs(instants) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
@@ -4113,11 +4614,11 @@ local function apply_talents(loadout)
         -- improved renew
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 2);
         if pts ~= 0 then
-
-            if not new_loadout.ability_effect_mod["Renew"] then
-                new_loadout.ability_effect_mod["Renew"] = 0;
+            local renew = localized_spell_name("Renew");
+            if not new_loadout.ability_effect_mod[renew] then
+                new_loadout.ability_effect_mod[renew] = 0;
             end
-            new_loadout.ability_effect_mod["Renew"] = new_loadout.ability_effect_mod["Renew"] + pts * 0.05;
+            new_loadout.ability_effect_mod[renew] = new_loadout.ability_effect_mod[renew] + pts * 0.05;
         end
         -- holy specialization
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 3);
@@ -4133,6 +4634,9 @@ local function apply_talents(loadout)
 
             local abilities = {"Smite", "Holy Fire", "Heal", "Greater Heal"};
             for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+            for k, v in pairs(abilities) do
                 if not new_loadout.ability_cast_mod[v] then
                     new_loadout.ability_cast_mod[v] = 0;
                 end
@@ -4146,6 +4650,9 @@ local function apply_talents(loadout)
         if pts ~= 0 then
 
             local abilities = {"Lesser Heal", "Heal", "Greater Heal"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
             for k, v in pairs(abilities) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
@@ -4161,6 +4668,9 @@ local function apply_talents(loadout)
 
             local abilities = {"Smite", "Holy Fire"};
             for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+            for k, v in pairs(abilities) do
                 if not new_loadout.ability_effect_mod[v] then
                     new_loadout.ability_effect_mod[v] = 0;
                 end
@@ -4173,12 +4683,12 @@ local function apply_talents(loadout)
         -- improved prayer of healing
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 12);
         if pts ~= 0 then
-
-            if not new_loadout.ability_cost_mod["Prayer of Healing"] then
-                new_loadout.ability_cost_mod["Prayer of Healing"] = 0;
+            local poh = localized_spell_name("Prayer of Healing");
+            if not new_loadout.ability_cost_mod[poh] then
+                new_loadout.ability_cost_mod[poh] = 0;
             end
-            new_loadout.ability_cost_mod["Prayer of Healing"] = 
-                new_loadout.ability_cost_mod["Prayer of Healing"] + pts * 0.1;
+            new_loadout.ability_cost_mod[poh] = 
+                new_loadout.ability_cost_mod[poh] + pts * 0.1;
         end
         -- spiritual guidance 
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 14);
@@ -4194,13 +4704,118 @@ local function apply_talents(loadout)
 
     elseif class == "SHAMAN" then
 
+        -- convection
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
+        if pts ~= 0 then
+            local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_cost_mod[v] then
+                    new_loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.02;
+            end
+        end
+
+        -- concussion
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        if pts ~= 0 then
+            local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_effect_mod[v] then
+                    new_loadout.ability_effect_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.01;
+            end
+        end
+
+        -- call of flame
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
+        if pts ~= 0 then
+            local abilities = {"Magma Totem", "Searing Totem", "Fire Nova Totem"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_effect_mod[v] then
+                    new_loadout.ability_effect_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.05;
+            end
+        end
+
+        -- call of thunder
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
+        if pts ~= 0 then
+            local abilities = {"Lightning Bolt", "Chain Lightning"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_crit[v] then
+                    new_loadout.ability_crit[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + pts * 0.01;
+            end
+        end
+
+        -- elemental fury
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
+        if pts ~= 0 then
+            new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * (1 + pts * 0.2);
+            new_loadout.spell_crit_mod_by_school[magic_school.fire] = 
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.fire] - 1) * (1 + pts * 0.2);
+            new_loadout.spell_crit_mod_by_school[magic_school.nature] = 
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * (1 + pts * 0.2);
+        end
+
+        -- lightning mastery
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        if pts ~= 0 then
+
+            local abilities = {"Lightning Bolt", "Chain Lightning"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_cast_mod[v] then
+                    new_loadout.ability_cast_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_cast_mod[v] = new_loadout.ability_cast_mod[v] + pts * 0.02;
+            end
+
+
+        end
+
         -- improved healing wave
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
         if pts ~= 0 then
-            if not new_loadout.ability_cast_mod["Healing Wave"] then
-                new_loadout.ability_cast_mod["Healing Wave"] = 0;
+            local hw = localized_spell_name("Healing Wave");
+            if not new_loadout.ability_cast_mod[hw] then
+                new_loadout.ability_cast_mod[hw] = 0;
             end
-            new_loadout.ability_cast_mod["Healing Wave"] = new_loadout.ability_cast_mod["Healing Wave"] + pts * 0.1;
+            new_loadout.ability_cast_mod[hw] = new_loadout.ability_cast_mod[hw] + pts * 0.1;
         end
 
         -- tidal focus
@@ -4208,6 +4823,10 @@ local function apply_talents(loadout)
         if pts ~= 0 then
 
             local abilities = {"Lesser Heal", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
+
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
             for k, v in pairs(abilities) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
@@ -4226,6 +4845,10 @@ local function apply_talents(loadout)
             local totems = {"Healing Stream Totem"};
 
             for k, v in pairs(totems) do
+                totems[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(totems) do
                 if not new_loadout.ability_cost_mod[v] then
                     new_loadout.ability_cost_mod[v] = 0;
                 end
@@ -4239,6 +4862,9 @@ local function apply_talents(loadout)
         if pts ~= 0 then
 
             local totems = {"Healing Stream Totem"};
+            for k, v in pairs(totems) do
+                totems[k] = localized_spell_name(v);
+            end
 
             for k, v in pairs(totems) do
                 if not new_loadout.ability_effect_mod[v] then
@@ -4255,8 +4881,11 @@ local function apply_talents(loadout)
 
             new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01;
 
-            -- TODO: lightning shield? any more lightning spells??
             local lightning_spells = {"Lightning Bolt", "Chain Lightning"};
+
+            for k, v in pairs(lightning_spells) do
+                lightning_spells[k] = localized_spell_name(v);
+            end
 
             for k, v in pairs(lightning_spells) do
                 if not new_loadout.ability_crit[v] then
@@ -4275,13 +4904,12 @@ local function apply_talents(loadout)
 
         end
 
-
     elseif class == "PALADIN" then
 
         -- divine intellect
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
         if pts ~= 0 then
-            new_loadout.stat_mod = new_loadout.stat_mod[stat.int] + pts * 0.02;
+            new_loadout.stat_mod[stat.int] = new_loadout.stat_mod[stat.int] + pts * 0.02;
         end
 
         -- healing light
@@ -4289,6 +4917,9 @@ local function apply_talents(loadout)
         if pts ~= 0 then
 
             local abilities = {"Holy Light", "Flash of Light"};
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
 
             for k, v in pairs(abilities) do
                 if not new_loadout.ability_effect_mod[v] then
@@ -4317,6 +4948,60 @@ local function apply_talents(loadout)
 
     return new_loadout;
 end
+
+--local function apply_set_bonuses(loadout)
+--
+--    local new_loadout = loadout;
+--
+--    new_loadout.set_bonus = {};
+--
+--    for i = 1, 7 do 
+--        new_loadout.set_bonus[i] = 0;
+--    end
+--
+--    local name = "";
+--
+--    local _, class = UnitClass("player");
+--    if class == "PRIEST" then
+--    
+--        for item = 1, 18 do
+--            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
+--            if string.match("of Prophecy", name) then
+--                new_loadout.set_bonus[set_tiers.pve_1] = new_loadout.set_bonus[set_tiers.pve_1] + 1;
+--            end
+--        end
+--    elseif class == "DRUID" then
+--
+--        for item = 1, 18 do
+--            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
+--            if string.match("Cenarion", name) then
+--                new_loadout.set_bonus[set_tiers.pve_1] = new_loadout.set_bonus[set_tiers.pve_1] + 1;
+--            end
+--            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
+--            if string.match("Stormrage", name) then
+--                new_loadout.set_bonus[set_tiers.pve_2] = new_loadout.set_bonus[set_tiers.pve_2] + 1;
+--            end
+--        end
+--    elseif class == "Shaman" then
+--
+--        for item = 1, 18 do
+--            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
+--            if string.match("Earthfury", name) then
+--                new_loadout.set_bonus[set_tiers.pve_1] = new_loadout.set_bonus[set_tiers.pve_1] + 1;
+--            end
+--            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
+--            if string.match("of Ten Storms", name) then
+--                new_loadout.set_bonus[set_tiers.pve_2] = new_loadout.set_bonus[set_tiers.pve_2] + 1;
+--            end
+--            if string.match("Champion's Mail", name) or string.match("Champion's Mail", name) then
+--                new_loadout.set_bonus[set_tiers.pve_2] = new_loadout.set_bonus[set_tiers.pve_2] + 1;
+--            end
+--        end
+--    end
+--
+--    return new_laodout;
+--end
+
 
 local function current_loadout()
 
@@ -4362,9 +5047,11 @@ local function current_loadout()
 
    loadout.spell_crit_mod_by_school = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
 
-   loadout_with_talents = apply_talents(loadout);
+   loadout = apply_talents(loadout);
 
-   return loadout_with_talents;
+   --loadout = apply_set_bonuses(loadout);
+
+   return loadout;
 end
 
 local function begin_tooltip_section(tooltip)
@@ -4432,13 +5119,13 @@ local function print_loadout(loadout)
         print("crit: ", k, string.format("%.3f", v));
     end
     for k, v in pairs(loadout.ability_cast_mod) do
-        print("cast: ", k, string.format("%.3f", v));
+        print("cast mod: ", k, string.format("%.3f", v));
     end
     for k, v in pairs(loadout.ability_extra_ticks) do
         print("extra ticks: ", k, string.format("%.3f", v));
     end
     for k, v in pairs(loadout.ability_cost_mod) do
-        print("cost: ", k, string.format("%.3f", v));
+        print("cost mod: ", k, string.format("%.3f", v));
     end
 
     for k, v in pairs(loadout.ability_crit_mod) do
@@ -4616,18 +5303,19 @@ local function spell_info(base_min, base_max,
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
     if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time >= 2 and 
-        spell_name ~= "Tranquility" and spell_name == "Hurricane" then
-
+        spell_name ~= "Tranquility" and spell_name ~= "Hurricane" then
         cast_time = cast_time - 0.5 * crit;
     end
 
     local expectation_st = expectation;
     if spell_name == "Chain Heal" then
-        expectation = 1.75 * expectation_st;
+        expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
     elseif spell_name == "Prayer of Healing" then
         expectation = 5 * expectation_st;
     elseif spell_name == "Tranquility" then
         expectation = 5 * expectation_st;
+    elseif spell_name == "Chain Lightning" then
+        expectation = (1 + 0.7 + 0.7 * 0.7) * expectation_st;
     end
 
     local effect_per_sec = expectation/cast_time;
@@ -5048,6 +5736,7 @@ function spell_diff(spell_id, spell_name, loadout, diff)
     local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
     
     return {
+        diff.diff_ratio = 100 * (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
         expectation = expectation_loadout_diffed.spell_data.expectation - 
             expectation_loadout.spell_data.expectation,
         effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
@@ -5296,6 +5985,9 @@ local function update_and_display_spell_diffs(frame)
             v.name_str = frame:CreateFontString(nil, "OVERLAY");
             v.name_str:SetFontObject(font);
 
+            v.change = frame:CreateFontString(nil, "OVERLAY");
+            v.change:SetFontObject(font);
+
             v.expectation = frame:CreateFontString(nil, "OVERLAY");
             v.expectation:SetFontObject(font);
 
@@ -5311,6 +6003,9 @@ local function update_and_display_spell_diffs(frame)
 
         if not frame.is_valid then
 
+            v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
+            v.change:SetText("NAN");
+
             v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
             v.expectation:SetText("NAN");
 
@@ -5319,26 +6014,37 @@ local function update_and_display_spell_diffs(frame)
             
         else
 
-            local expectation_diff = tonumber(diff.expectation);
-
+            v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
             v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
             v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
 
-            if expectation_diff < 0 then
-                v.expectation:SetText(string.format("%.2f", expectation_diff));
+            if diff.expectation < 0 then
+
+                v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
+                v.change:SetTextColor(195/255, 44/255, 11/255);
+
+                v.expectation:SetText(string.format("%.2f", diff.expectation));
                 v.expectation:SetTextColor(195/255, 44/255, 11/255);
 
-                v.effect_per_sec:SetText(string.format("%.2f", tostring(diff.effect_per_sec)));
+                v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
                 v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
 
-            elseif expectation_diff > 0 then
-                v.expectation:SetText(string.format("+%.2f", expectation_diff));
+            elseif diff.expectation > 0 then
+
+                v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
+                v.change:SetTextColor(33/255, 185/255, 21/255);
+
+                v.expectation:SetText(string.format("+%.2f", diff.expectation));
                 v.expectation:SetTextColor(33/255, 185/255, 21/255);
 
-                v.effect_per_sec:SetText(string.format("+%.2f", tostring(diff.effect_per_sec)));
+                v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
                 v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
 
             else
+
+                v.change:SetText("0 %");
+                v.change:SetTextColor(1, 1, 1);
+
                 v.expectation:SetText("0");
                 v.expectation:SetTextColor(1, 1, 1);
 
@@ -5349,6 +6055,7 @@ local function update_and_display_spell_diffs(frame)
                 
             v.cancel_button:SetScript("OnClick", function()
 
+                v.change:Hide();
                 v.name_str:Hide();
                 v.expectation:Hide();
                 v.effect_per_sec:Hide();
@@ -5406,9 +6113,9 @@ function create_base_gui()
     end
     );
 
-    sw_frame:SetWidth(320);
-    sw_frame:SetHeight(500);
-    sw_frame:SetPoint("RIGHT", SpellBookFrame, "RIGHT", 340, 20);
+    sw_frame:SetWidth(370);
+    sw_frame:SetHeight(600);
+    sw_frame:SetPoint("RIGHT", SpellBookFrame, "RIGHT", 380, 10);
 
     local sw_toggle_button = CreateFrame("Button", "button", SpellBookFrame, "UIPanelButtonTemplate"); 
 
@@ -5431,7 +6138,46 @@ function create_base_gui()
     sw_frame.title:SetText("Stat Weights Classic");
     sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
 
-    sw_frame.line_y_offset = -35;
+    sw_frame.line_y_offset = -15;
+
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+    sw_frame.instructions_label = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.instructions_label:SetFontObject(font);
+    sw_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
+    sw_frame.instructions_label:SetText("Type into the fields below to compare stats against your current");
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+    sw_frame.instructions_label = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.instructions_label:SetFontObject(font);
+    sw_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
+    sw_frame.instructions_label:SetText("loadout (it can do simple addition/subtraction math). The");
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+    sw_frame.instructions_label = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.instructions_label:SetFontObject(font);
+    sw_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
+    sw_frame.instructions_label:SetText("change in spell effectiveness is displayed in terms of \"Expected\""); 
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+    sw_frame.instructions_label = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.instructions_label:SetFontObject(font);
+    sw_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
+    sw_frame.instructions_label:SetText("as shown in the spell's tooltip which considers all your stats");
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+    sw_frame.instructions_label = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.instructions_label:SetFontObject(font);
+    sw_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.line_y_offset);
+    sw_frame.instructions_label:SetText("to give you the average spell outcome.");
+
+    sw_frame.line_y_offset = ui_y_offset_incr(sw_frame.line_y_offset);
+
+    sw_frame.line_y_offset = sw_frame.line_y_offset - 10;
 
     sw_frame.stat_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_diff_header_left:SetFontObject(font);
@@ -5526,9 +6272,15 @@ function create_base_gui()
         v.editbox:SetText("");
         v.editbox:SetAutoFocus(false);
         v.editbox:SetSize(100, 10);
-        v.editbox:SetScript("OnTextChanged", function()
+        v.editbox:SetScript("OnTextChanged", function(self)
 
-            update_and_display_spell_diffs(sw_frame);
+            if string.match(self:GetText(), "[a-zA-Z]") ~= nil then
+                self:ClearFocus();
+                self:SetText("");
+                self:SetFocus();
+            else 
+                update_and_display_spell_diffs(sw_frame);
+            end
         end);
 
         v.editbox:SetScript("OnEnterPressed", function(self)
@@ -5541,22 +6293,30 @@ function create_base_gui()
         end);
 
         v.editbox:SetScript("OnTabPressed", function(self)
-            local next_index = 1 + (i %num_stats);
+
+            local next_index = 0;
+            if IsShiftKeyDown() then
+            next_index = 1 + ((i-2) %num_stats);
+            else
+            next_index = 1 + (i %num_stats);
+
+            end
         	self:ClearFocus()
             sw_frame.stats[next_index].editbox:SetFocus();
         end);
-
     end
 
-    sw_frame:SetScript("OnLeave", function(self)
-        
-        if sw_frame:IsShown() and SpellBookFrame:IsShown() and not MouseIsOver(sw_frame, 0, 0, 0, 0) then    
+    sw_frame.stats[stat_ids_in_ui.sp].editbox:SetText("1");
 
-            for key, val in pairs(sw_frame.stats) do
-                val.editbox:ClearFocus();
-            end
-        end
-    end)
+    --sw_frame:SetScript("OnLeave", function(self)
+    --    
+    --    if sw_frame:IsShown() and SpellBookFrame:IsShown() and not MouseIsOver(sw_frame, 0, 0, 0, 0) then
+
+    --        for key, val in pairs(sw_frame.stats) do
+    --            val.editbox:ClearFocus();
+    --        end
+    --    end
+    --end)
 
     -- header for spells
 
@@ -5572,13 +6332,18 @@ function create_base_gui()
 
     sw_frame.spell_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -115, sw_frame.line_y_offset);
-    sw_frame.spell_diff_header_center:SetText("Expected");
+    sw_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -180, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_center:SetText("Change");
+
+    sw_frame.spell_diff_header_center = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.spell_diff_header_center:SetFontObject(font);
+    sw_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -105, sw_frame.line_y_offset);
+    sw_frame.spell_diff_header_center:SetText("DMG/HEAL");
 
     sw_frame.spell_diff_header_left = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.spell_diff_header_left:SetFontObject(font);
     sw_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -45, sw_frame.line_y_offset);
-    sw_frame.spell_diff_header_left:SetText("Per sec");
+    sw_frame.spell_diff_header_left:SetText("DPS/HPS");
 
     -- always have at least one
     sw_frame.spells = {};
@@ -5592,7 +6357,7 @@ function create_base_gui()
             };
         elseif class == "DRUID" then
 
-            sw_frame.spells[25297] = {
+            sw_frame.spells[9889] = {
                 name = "Healing Touch";
             };
             sw_frame.spells[9876] = {
