@@ -1,5 +1,5 @@
 
-local version =  "1.0.0";
+local version =  "1.0.1";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
@@ -5162,7 +5162,7 @@ local function spell_coef(spell_info, spell_name)
     end
     
     if spell_info.over_time_duration < 15 then
-        if spell_name == "Arcane Missiles" then
+        if spell_name == localized_spell_name("Arcane Missiles") then
             -- for arcane missiles max scaling is at 5 secs channel at 1.2 coef
             ot_coef = 1.2 * spell_info.over_time_duration/5;
         elseif spell_info.cast_time == spell_info.over_time_duration then
@@ -5173,17 +5173,17 @@ local function spell_coef(spell_info, spell_name)
     end
 
     -- special coefs
-    if spell_name == "Power Word: Shield" then
+    if spell_name == localized_spell_name("Power Word: Shield") then
         direct_coef = 0.1;
         ot_coef = 0;
-    elseif spell_name == "Healing Stream Totem" then
+    elseif spell_name == localized_spell_name("Healing Stream Totem") then
         direct_coef = 0.0;
         ot_coef = 0.65;
-    elseif spell_name == "Insect Swarm" then
+    elseif spell_name == localized_spell_name("Insect Swarm") then
         -- insect swarm seems to have 15/15 scaling isntead of 12/15
         direct_coef = 0.0;
         ot_coef = 1.0;
-    elseif spell_name == "Entangling Roots" then
+    elseif spell_name == localized_spell_name("Entangling Roots") then
         -- scales of cast time, not ot duration
         ot_coef = 0.0;
         direct_coef = math.min(1.0, math.max(1.5/3.5, spell_info.cast_time/3.5));
@@ -5191,10 +5191,10 @@ local function spell_coef(spell_info, spell_name)
     -- distribute direct and ot coefs if both
     if spell_info.base_min > 0 and spell_info.over_time > 0 then
         -- pyroblast and fireball dots are special...
-        if spell_name == "Pyroblast" then
+        if spell_name == localized_spell_name("Pyroblast") then
             direct_coef = 1.0;
             ot_coef = 0.65;
-        elseif spell_name == "Fireball" then
+        elseif spell_name == localized_spell_name("Fireball") then
             direct_coef = 1.0;
             ot_coef = 0;
         else
@@ -5215,7 +5215,7 @@ local function spell_coef(spell_info, spell_name)
         ot_coef = ot_coef * 0.95;
     end
 
-    if spell_name == "Holy Nova" then
+    if spell_name == localized_spell_name("Holy Nova") then
         direct_coef = direct_coef/2;
     end
 
@@ -5264,7 +5264,7 @@ local function spell_info(base_min, base_max,
     local ignite_max = 0;
 
     --if loadout.ignite ~= 0 and 
-    if spell_name == "Fireball" then
+    if spell_name == localized_spell_name("Fireball") then
         -- dont include dot for calcs
         base_ot = 0.0;
         base_dur = 0.0;
@@ -5303,18 +5303,18 @@ local function spell_info(base_min, base_max,
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
     if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time >= 2 and 
-        spell_name ~= "Tranquility" and spell_name ~= "Hurricane" then
+        spell_name ~= localized_spell_name("Tranquility") and spell_name ~= localized_spell_name("Hurricane") then
         cast_time = cast_time - 0.5 * crit;
     end
 
     local expectation_st = expectation;
-    if spell_name == "Chain Heal" then
+    if spell_name == localized_spell_name("Chain Heal") then
         expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
-    elseif spell_name == "Prayer of Healing" then
+    elseif spell_name == localized_spell_name("Prayer of Healing") then
         expectation = 5 * expectation_st;
-    elseif spell_name == "Tranquility" then
+    elseif spell_name == localized_spell_name("Tranquility") then
         expectation = 5 * expectation_st;
-    elseif spell_name == "Chain Lightning" then
+    elseif spell_name == localized_spell_name("Chain Lightning") then
         expectation = (1 + 0.7 + 0.7 * 0.7) * expectation_st;
     end
 
@@ -5661,17 +5661,17 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         
       local effect_extra_str = "";
       if loadout.ignite ~= 0 then
-          if spell_name == "Fireball" then
+          if spell_name == localized_spell_name("Fireball") then
               effect_extra_str = " (incl: ignite - excl: fireball dot)";
-          elseif spell_name == "Pyroblast" then
+          elseif spell_name == localized_spell_name("Pyroblast") then
               effect_extra_str = " (incl: ignite & pyro dot)";
           else
               effect_extra_str = " (incl: ignite )";
           end
       else
-          if spell_name == "Fireball" then
+          if spell_name == localized_spell_name("Fireball") then
               effect_extra_str = " (excl: fireball dot)";
-          elseif spell_name == "Pyroblast" then
+          elseif spell_name == localized_spell_name("Pyroblast") then
               effect_extra_str = " (incl: pyro dot)";
           elseif spell.over_time > 0 and eval.spell_data.expectation ~= eval.spell_data.ot then
               effect_extra_str = "(incl: over time)";
@@ -5681,7 +5681,10 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           effect_extra_str = " (incl: nature's grace)";
       end
 
-      if spell_name == "Prayer of Healing" or spell_name == "Chain Heal" or spell_name == "Tranquility" then
+      if spell_name == localized_spell_name("Prayer of Healing") or 
+         spell_name == localized_spell_name("Chain Heal") or 
+         spell_name == localized_spell_name("Tranquility") then
+
           effect_extra_str = " (incl: full aoe effect)";
       elseif bit.band(spell.flags, spell_flags.aoe) ~= 0 and 
               eval.spell_data.expectation == eval.spell_data.expectation_st then
@@ -5736,101 +5739,13 @@ function spell_diff(spell_id, spell_name, loadout, diff)
     local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
     
     return {
-        diff.diff_ratio = 100 * (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
+        diff_ratio = 100 * 
+            (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
         expectation = expectation_loadout_diffed.spell_data.expectation - 
             expectation_loadout.spell_data.expectation,
         effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
-            expectation_loadout.spell_data.effect_per_sec,
+            expectation_loadout.spell_data.effect_per_sec
     };
-end
-
-local function loadout_by_item_tooltip()
-
-    local loadout = empty_loadout();
-    loadout.name = "Single item loadout - Primary";
-
-    for i = 1, GameTooltip:NumLines() do
-
-        repeat 
-            line = getfenv()["GameTooltipTextLeft"..i]:GetText();
-
-            local stat_val = string.match(line, "%d+");
-            -- attribute like int and + spell dmg from green items
-
-            local attribute_basic = string.match(line, "[+-]%d+ .*");
-            local attribute_sp = string.match(line, "Equip: .* by .*");
-
-            local val = tonumber(stat_val);
-
-            if stat_val then
-                if string.sub(stat_val, 1, 1) == "-" then
-                    val = -val;
-                end
-            else
-                do break end; -- scuffed continue
-            end
-
-            if attribute_basic then
-                -- check for negative stats
-                
-                if string.match(attribute_basic, "Intellect") then
-                    loadout.int = loadout.int + val;
-                elseif string.match(attribute_basic, "Spirit") then
-                    loadout.spirit = loadout.spirit + val;
-                elseif string.match(attribute_basic, "Holy Spell Damage") then
-                    loadout.spelldmg_by_school[2] = loadout.spelldmg_by_school[2] + val;
-                elseif string.match(attribute_basic, "Fire Spell Damage") then
-                    loadout.spelldmg_by_school[3] = loadout.spelldmg_by_school[3] + val;
-                elseif string.match(attribute_basic, "Nature Spell Damage") then
-                    loadout.spelldmg_by_school[4] = loadout.spelldmg_by_school[4] + val;
-                elseif string.match(attribute_basic, "Frost Spell Damage") then
-                    loadout.spelldmg_by_school[5] = loadout.spelldmg_by_school[5] + val;
-                elseif string.match(attribute_basic, "Shadow Spell Damage") then
-                    loadout.spelldmg_by_school[6] = loadout.spelldmg_by_school[6] + val;
-                elseif string.match(attribute_basic, "Arcane Spell Damage") then
-                    loadout.spelldmg_by_school[7] = loadout.spelldmg_by_school[7] + val;
-                end
-                do break end; -- scuffed continue
-            end
-
-            if attribute_sp then
-                if string.match(attribute_sp, "damage and healing done by magical spells and") then
-                    for i = 1, 7 do
-                        loadout.spelldmg_by_school[i] = loadout.spelldmg_by_school[i] + val;
-                    end
-                    loadout.healingpower = loadout.healingpower + val;
-                elseif string.match(attribute_sp, "Increases healing done by spells and") then
-                    loadout.healingpower = loadout.healingpower + val;
-                elseif string.match(attribute_sp, "Increases damage done by Holy spells and") then
-                    loadout.spelldmg_by_school[2] = loadout.spelldmg_by_school[2] + val;
-                elseif string.match(attribute_sp, "Increases damage done by Fire spells and") then
-                    loadout.spelldmg_by_school[3] = loadout.spelldmg_by_school[3] + val;
-                elseif string.match(attribute_sp, "Increases damage done by Nature spells and") then
-                    loadout.spelldmg_by_school[4] = loadout.spelldmg_by_school[4] + val;
-                elseif string.match(attribute_sp, "Increases damage done by Frost spells and") then
-                    loadout.spelldmg_by_school[5] = loadout.spelldmg_by_school[5] + val;
-                elseif string.match(attribute_sp, "Increases damage done by Shadow spells and") then
-                    loadout.spelldmg_by_school[6] = loadout.spelldmg_by_school[6] + val;
-                elseif string.match(attribute_sp, "Increases damage done by Arcane spells and") then
-                    loadout.spelldmg_by_school[7] = loadout.spelldmg_by_school[7] + val;
-                elseif string.match(attribute_sp, "Improves your chance to hit with spells by") then
-                    for i = 1, 7 do
-                        loadout.spelldmg_hit_by_school[i] = loadout.spelldmg_hit_by_school[i] + val * 0.01;
-                    end
-                elseif string.match(attribute_sp, "Improves your chance to get a critical strike with spells by") then
-                    for i = 1, 7 do
-                        loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + val * 0.01;
-                        loadout.healing_crit = loadout.healing_crit + val * 0.01;
-                    end
-                end
-                do break end; -- scuffed continue
-            end
-
-        until true
-
-    end
-
-    return loadout;
 end
 
 local function print_spell(spell, spell_name, loadout)
@@ -6353,37 +6268,37 @@ function create_base_gui()
 
         if class == "MAGE" then
             sw_frame.spells[10181] = {
-                name = "Frostbolt";
+                name = localized_spell_name("Frostbolt");
             };
         elseif class == "DRUID" then
 
             sw_frame.spells[9889] = {
-                name = "Healing Touch";
+                name = localized_spell_name("Healing Touch");
             };
             sw_frame.spells[9876] = {
-                name = "Starfire";
+                name = localized_spell_name("Starfire");
             };
 
         elseif class == "PALADIN" then
 
             sw_frame.spells[19943] = {
-                name = "Flash of Light";
+                name = localized_spell_name("Flash of Light");
             };
         elseif class == "SHAMAN" then
 
             sw_frame.spells[10396] = {
-                name = "Healing Wave";
+                name = localized_spell_name("Healing Wave");
             };
             sw_frame.spells[15208] = {
-                name = "Lightning Bolt";
+                name = localized_spell_name("Lightning Bolt");
             };
         elseif class == "PRIEST" then
 
             sw_frame.spells[25314] = {
-                name = "Greater Heal";
+                name = localized_spell_name("Greater Heal");
             };
             sw_frame.spells[25315] = {
-                name = "Renew";
+                name = localized_spell_name("Renew");
             };
         end
     end
@@ -6404,30 +6319,6 @@ local function command(msg, editbox)
         sw_frame:Show();
     end
 end
-
-ItemRefTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
-  --local name, link = tooltip:GetItem();
-  --print("Itemref: Hovering Item", name, link);
-end)
-
-GameTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
-    
-    --local name, link = tooltip:GetItem();
-    --print("Gametooltip : Hovering Item");
-
-    --item_loadout = loadout_by_item_tooltip();
-
-    ----print_loadout(item_loadout);
-    ---- add tooltip loadout to current loadout
-    --before = current_loadout();
-    --after = loadout_add(before, item_loadout);
-
-    --diff = diff_spell(10181, before, after);
-
-    --print("--------------------------------------");
-    --print("diff on item using frostbolt10");
-    --print("delta - expectation:" ,  diff.expectation, "effect_per_sec:", diff.effect_per_sec);
-end)
 
 GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
