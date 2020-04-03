@@ -31,7 +31,6 @@ local spell_flags = {
     aoe = bit.lshift(1,1),
     snare = bit.lshift(1,2),
     heal = bit.lshift(1,3),
-    --pyro_dot = bit.lshift(1,4), -- pyro is an exception to scaling rules
     absorb = bit.lshift(1,6),
     over_time_crit = bit.lshift(1,7),
 };
@@ -4698,6 +4697,8 @@ local function empty_loadout()
         illumination  = 0,
         master_of_elements  = 0,
         natures_grace = 0,
+
+        num_set_pieces = {0, 0, 0, 0, 0, 0, 0},
         
         -- indexable by ability name
         ability_crit = {},
@@ -4787,6 +4788,12 @@ local function loadout_copy(loadout)
         cpy.spell_dmg_mod_by_school[i] = loadout.spell_dmg_mod_by_school[i];
         cpy.spell_crit_mod_by_school[i] = loadout.spell_crit_mod_by_school[i];
     end
+
+    cpy.num_set_pieces = {};
+    for i = set_tiers.pve_0, set_tiers.pvp_2 do
+        cpy.num_set_pieces[i] = loadout.num_set_pieces[i];
+    end
+
 
     for i = 1, 5 do
         cpy.stat_mod[i] = loadout.stat_mod[i];
@@ -4987,7 +4994,7 @@ local function apply_talents(loadout)
                 new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.05;
             end
         end
-        -- imrpoved cone of cold
+        -- improved cone of cold
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
         if pts ~= 0 then
             local coc = localized_spell_name("Cone of Cold");
@@ -5542,58 +5549,156 @@ local function apply_talents(loadout)
     return new_loadout;
 end
 
---local function apply_set_bonuses(loadout)
---
---    local new_loadout = loadout;
---
---    new_loadout.set_bonus = {};
---
---    for i = 1, 7 do 
---        new_loadout.set_bonus[i] = 0;
---    end
---
---    local name = "";
---
---    local _, class = UnitClass("player");
---    if class == "PRIEST" then
---    
---        for item = 1, 18 do
---            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
---            if string.match("of Prophecy", name) then
---                new_loadout.set_bonus[set_tiers.pve_1] = new_loadout.set_bonus[set_tiers.pve_1] + 1;
---            end
---        end
---    elseif class == "DRUID" then
---
---        for item = 1, 18 do
---            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
---            if string.match("Cenarion", name) then
---                new_loadout.set_bonus[set_tiers.pve_1] = new_loadout.set_bonus[set_tiers.pve_1] + 1;
---            end
---            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
---            if string.match("Stormrage", name) then
---                new_loadout.set_bonus[set_tiers.pve_2] = new_loadout.set_bonus[set_tiers.pve_2] + 1;
---            end
---        end
---    elseif class == "Shaman" then
---
---        for item = 1, 18 do
---            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
---            if string.match("Earthfury", name) then
---                new_loadout.set_bonus[set_tiers.pve_1] = new_loadout.set_bonus[set_tiers.pve_1] + 1;
---            end
---            name, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(GetInventoryItemLink("player", item));
---            if string.match("of Ten Storms", name) then
---                new_loadout.set_bonus[set_tiers.pve_2] = new_loadout.set_bonus[set_tiers.pve_2] + 1;
---            end
---            if string.match("Champion's Mail", name) or string.match("Champion's Mail", name) then
---                new_loadout.set_bonus[set_tiers.pve_2] = new_loadout.set_bonus[set_tiers.pve_2] + 1;
---            end
---        end
---    end
---
---    return new_laodout;
---end
+local function create_set_bonuses()
+
+    local _, class = UnitClass("player");
+
+    local set_tier_ids = {};
+
+    if class == "PRIEST" then
+        -- of prophecy
+        for i = 16811, 16819 do
+            set_tier_ids[i] = set_tiers.pve_1;
+        end
+
+    elseif class == "DRUID" then
+        -- stormrage
+        for i = 16897, 16904 do
+            set_tier_ids[i] = set_tiers.pve_2;
+        end
+    elseif class == "SHAMAN" then
+        -- earthfury
+        for i = 16837, 16844 do
+            set_tier_ids[i] = set_tiers.pve_1;
+        end
+        -- ten storms
+        for i = 16943, 16950 do
+            set_tier_ids[i] = set_tiers.pve_2;
+        end
+        -- pvp set has non linear ids
+        set_tier_ids[22857] = set_tiers.pvp_1;
+        set_tier_ids[22867] = set_tiers.pvp_1;
+        set_tier_ids[22876] = set_tiers.pvp_1;
+        set_tier_ids[22887] = set_tiers.pvp_1;
+        set_tier_ids[23259] = set_tiers.pvp_1;
+        set_tier_ids[23260] = set_tiers.pvp_1;
+
+        set_tier_ids[16577] = set_tiers.pvp_2;
+        set_tier_ids[16578] = set_tiers.pvp_2;
+        set_tier_ids[16580] = set_tiers.pvp_2;
+        set_tier_ids[16573] = set_tiers.pvp_2;
+        set_tier_ids[16574] = set_tiers.pvp_2;
+        set_tier_ids[16579] = set_tiers.pvp_2;
+    end
+
+    return set_tier_ids;
+end
+
+local set_bonuses = create_set_bonuses();
+
+local function apply_set_bonuses(loadout)
+
+    local new_loadout = loadout;
+
+    -- go through equipment to find set pieces
+
+    for item = 1, 18 do
+        local id = GetInventoryItemID("player", item);
+        if set_bonuses[id] then
+            -- incr counter
+            new_loadout.num_set_pieces[set_bonuses[id]] = new_loadout.num_set_pieces[set_bonuses[id]] + 1;
+        end
+    end
+
+    local _, class = UnitClass("player");
+    if class == "PRIEST" then
+        if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
+
+            new_loadout.healing_crit = new_loadout.healing_crit + 0.02;
+               
+            if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+        
+                local poh = localized_spell_name("Prayer of Healing");
+                if not new_loadout.ability_crit[poh] then
+                    new_loadout.ability_crit[poh] = 0;
+                end
+                new_loadout.ability_crit[poh] = new_loadout.ability_crit[poh] + 0.25;
+            end
+        end
+    
+    elseif class == "DRUID" then
+
+        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
+
+            local regrowth = localized_spell_name("Regrowth");
+            if not new_loadout.ability_cast_mod[regrowth] then
+                new_loadout.ability_cast_mod[regorwth] = 0;
+            end
+            new_loadout.ability_cast_mod[regrowth] = new_loadout.ability_cast_mod[regrowth] + 0.2;
+               
+            if new_loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
+        
+                local rejuv = localized_spell_name("Rejuvenation");
+                if not new_loadout.ability_extra_ticks[rejuv] then
+                    new_loadout.ability_extra_ticks[rejuv] = 0;
+                end
+                new_loadout.ability_extra_ticks[rejuv] = new_loadout.ability_extra_ticks[rejuv] + 1;
+            end
+        end
+
+    elseif class == "SHAMAN" then
+
+        if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
+
+            local abilities = {"Lesser Healing", "Healing Wave"};
+
+            local lh = localized_spell_name("Lesser Healing");
+            local hw = localized_spell_name("Healing Wave");
+
+            if not new_loadout.ability_cost_mod[lh] then
+                new_loadout.ability_cost_mod[lh] = 0;
+            end
+            if not new_loadout.ability_cost_mod[hw] then
+                new_loadout.ability_cost_mod[hw] = 0;
+            end
+
+            if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+                
+                new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 3 * 0.25 * 0.35;
+            else
+                new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 0.25 * 0.35;
+            end
+            -- 8 set bonus for healing wave bounce is done within spell_info function
+
+        end
+
+        -- 3 set bonus for chain healing is done within spell_info function
+        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
+
+            new_loadout.healing_crit = new_loadout.healing_crit + 0.03;
+        end
+
+        if new_loadout.num_set_pieces[set_tiers.pvp_1] >= 5 or 
+           new_loadout.num_set_pieces[set_tiers.pvp_2] >= 5 then
+
+            local abilities = {"Flame Shock", "Earth Shock", "Frost Shock"};
+
+            for k, v in pairs(abilities) do
+                abilities[k] = localized_spell_name(v);
+            end
+            for k, v in pairs(abilities) do
+                if not new_loadout.ability_crit[v] then
+                    new_loadout.ability_crit[v] = 0;
+                end
+            end
+            for k, v in pairs(abilities) do
+                new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + 0.02;
+            end
+        end
+    end
+
+    return new_loadout;
+end
 
 local function current_loadout()
 
@@ -5641,7 +5746,7 @@ local function current_loadout()
 
    loadout = apply_talents(loadout);
 
-   --loadout = apply_set_bonuses(loadout);
+   loadout = apply_set_bonuses(loadout);
 
    return loadout;
 end
@@ -5703,6 +5808,16 @@ local function print_loadout(loadout)
                         loadout.spell_dmg_mod_by_school[5],
                         loadout.spell_dmg_mod_by_school[6],
                         loadout.spell_dmg_mod_by_school[7]));
+
+    print("num set pieces: {", 
+          loadout.num_set_pieces[1],
+          loadout.num_set_pieces[2],
+          loadout.num_set_pieces[3],
+          loadout.num_set_pieces[4],
+          loadout.num_set_pieces[5],
+          loadout.num_set_pieces[6],
+          loadout.num_set_pieces[7],
+          "}");
 
     for k, v in pairs(loadout.ability_effect_mod) do
         print("mod: ", k, string.format("%.3f", v));
@@ -5903,8 +6018,15 @@ local function spell_info(base_min, base_max,
     end
 
     local expectation_st = expectation;
+
     if spell_name == localized_spell_name("Chain Heal") then
-        expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
+        if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+            expectation = (1 + 1.3*.05 + 1.3*1.3*0.5*0.5);
+        else
+            expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
+        end
+    elseif spell_name == localized_spell_name("Healing Wave") and loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+        expectation = (1 + 0.2 + 0.2*0.2);
     elseif spell_name == localized_spell_name("Prayer of Healing") then
         expectation = 5 * expectation_st;
     elseif spell_name == localized_spell_name("Tranquility") then
