@@ -5614,7 +5614,9 @@ local function apply_set_bonuses(loadout)
     if class == "PRIEST" then
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
 
-            new_loadout.healing_crit = new_loadout.healing_crit + 0.02;
+            -- NOTE: the tooltip specifies 2% holy crit chance but internally
+            --       seems to increase all spell crits by 2%, according to GetSpellCritChance API...
+            --new_loadout.healing_crit = new_loadout.healing_crit + 0.02;
                
             if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
         
@@ -5675,7 +5677,9 @@ local function apply_set_bonuses(loadout)
         -- 3 set bonus for chain healing is done within spell_info function
         if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
 
-            new_loadout.healing_crit = new_loadout.healing_crit + 0.03;
+            -- NOTE: the tooltip specifies 3% nature crit chance but internally
+            --       seems to increase all spell crits by 3%, according to GetSpellCritChance API...
+            --new_loadout.healing_crit = new_loadout.healing_crit + 0.03;
         end
 
         if new_loadout.num_set_pieces[set_tiers.pvp_1] >= 5 or 
@@ -5927,6 +5931,8 @@ local function spell_coef(spell_info, spell_name)
 
     if spell_name == localized_spell_name("Holy Nova") then
         direct_coef = direct_coef/2;
+    elseif spell_name == localized_spell_name("Devouring Plague") then
+        ot_coef = ot_coef/2;
     end
 
     direct_coef = direct_coef * spell_scaling(spell_info.lvl_req);
@@ -6282,21 +6288,21 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         begin_tooltip_section(tooltip);
 
         if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-            tooltip:AddLine(string.format("Loadout: %s", loadout.name));
+            tooltip:AddLine(string.format("Stat Weights Classic: %s", loadout.name), 1, 1,1);
         else
-            tooltip:AddLine(string.format("Loadout: %s - target lvl %d", loadout.name, loadout.target_lvl));
+            tooltip:AddLine(string.format("Stat Weights Classic: %s - target lvl %d", loadout.name, loadout.target_lvl), 1, 1, 1);
         end
         if eval.spell_data.min_noncrit ~= 0 then
             if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
                 if eval.spell_hit ~= 1 then
-                    tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d-%d", 
+                    tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
                                                   effect, 
                                                   eval.spell_hit*100,
                                                   math.ceil(eval.spell_data.min_noncrit), 
                                                   math.floor(eval.spell_data.max_noncrit)),
                                     232.0/255, 225.0/255, 32.0/255);
                 else
-                    tooltip:AddLine(string.format("  Normal %s: %d-%d", 
+                    tooltip:AddLine(string.format("Normal %s: %d-%d", 
                                                   effect, 
                                                   math.ceil(eval.spell_data.min_noncrit), 
                                                   math.floor(eval.spell_data.max_noncrit)),
@@ -6304,7 +6310,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 end
             else
 
-                tooltip:AddLine(string.format("  Normal %s (%.1f%% hit): %d", 
+                tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
                                               effect,
                                               eval.spell_hit*100,
                                               math.floor(eval.spell_data.min_noncrit)),
@@ -6313,21 +6319,21 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             end
             if eval.spell_crit ~= 0 then
                 if loadout.ignite ~= 0 and eval.spell_data.ignite_min > 0 then
-                    tooltip:AddLine(string.format("  Critical %s (%.1f%% crit): %d-%d (ignites for %d-%d)", 
+                    tooltip:AddLine(string.format("Critical %s (%.1f%% crit): %d-%d (ignites for %d-%d)", 
                                                   effect, 
                                                   eval.spell_crit*100, 
                                                   math.ceil(eval.spell_data.min_crit), 
                                                   math.floor(eval.spell_data.max_crit),
                                                    math.ceil(eval.spell_data.ignite_min), 
                                                   math.floor(eval.spell_data.ignite_max)),
-                                   194.0/255, 52.0/255, 23.0/255);
+                                   252.0/255, 69.0/255, 3.0/255);
                 else
-                    tooltip:AddLine(string.format("  Critical %s (%.1f%% crit): %d-%d", 
+                    tooltip:AddLine(string.format("Critical %s (%.1f%% crit): %d-%d", 
                                                   effect, 
                                                   eval.spell_crit*100, 
                                                   math.ceil(eval.spell_data.min_crit), 
                                                   math.floor(eval.spell_data.max_crit)),
-                                   194.0/255, 52.0/255, 23.0/255);
+                                   252.0/255, 69.0/255, 3.0/255);
                 end
             end
         end
@@ -6339,7 +6345,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
 
             if eval.spell_hit ~= 1 then
-                tooltip:AddLine(string.format("  %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
+                tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
                                               eval.spell_hit * 100,
                                               eval.spell_data.ot_if_hit, 
@@ -6350,7 +6356,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                 232.0/255, 225.0/255, 32.0/255);
 
             else
-                tooltip:AddLine(string.format("  %s: %d over %d sec (%d-%d per tick for %d ticks)",
+                tooltip:AddLine(string.format("%s: %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
                                               eval.spell_data.ot_if_hit, 
                                               eval.spell_data.ot_duration, 
@@ -6362,7 +6368,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
             if bit.band(spell_flags.over_time_crit, spell.flags) ~= 0 then
                 -- over time can crit (e.g. arcane missiles)
-                tooltip:AddLine(string.format("  Critical %s (%.1f%% crit): %d over %d sec (%d-%d per tick for %d ticks)",
+                tooltip:AddLine(string.format("Critical %s (%.1f%% crit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
                                               eval.spell_crit*100, 
                                               eval.spell_data.ot_crit_if_hit, 
@@ -6370,7 +6376,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                               math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
                                               math.ceil(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
                                               eval.spell_data.ot_num_ticks), 
-                           194.0/255, 52.0/255, 23.0/255);
+                           252.0/255, 69.0/255, 3.0/255);
                     
             end
         end
@@ -6405,36 +6411,35 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           effect_extra_str = " (incl: full aoe effect)";
       elseif bit.band(spell.flags, spell_flags.aoe) ~= 0 and 
               eval.spell_data.expectation == eval.spell_data.expectation_st then
-
           effect_extra_str = "(incl: single target)";
       end
 
 
-      tooltip:AddLine("  Expected "..effect..string.format(": %.1f ",eval.spell_data.expectation)..effect_extra_str);
+      tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell_data.expectation)..effect_extra_str);
 
       if eval.spell_data.base_min ~= 0.0 and eval.spell_data.expectation ~=  eval.spell_data.expectation_st then
 
-        tooltip:AddLine("  Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single target)");
+        tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single target)");
       end
 
-      tooltip:AddLine(string.format("  %s: %.1f", 
+      tooltip:AddLine(string.format("%s: %.1f", 
                                     effect_per_sec,
                                     eval.spell_data.effect_per_sec));
-      tooltip:AddLine("  "..effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
-      tooltip:AddLine("  "..cost_per_sec..": "..string.format("%.1f",eval.spell_data.cost_per_sec), 0.0, 1.0, 1.0);
-      tooltip:AddLine("  "..effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
-      tooltip:AddLine("  "..sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
+      tooltip:AddLine(effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
+      tooltip:AddLine(cost_per_sec..": "..string.format("%.1f",eval.spell_data.cost_per_sec), 0.0, 1.0, 1.0);
+      tooltip:AddLine(effect_per_sp..": "..string.format("%.1f",eval.dmg_per_sp), 0.0, 1.0, 0.0);
+      tooltip:AddLine(sp_name.." per 1% crit: "..string.format("%.1f",eval.sp_per_crit), 0.0, 1.0, 0.0);
 
       if (bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0) then
-          tooltip:AddLine("  "..sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+          tooltip:AddLine(sp_name.." per 1%  hit: "..string.format("%.1f",eval.sp_per_hit), 0.0, 1.0, 0.0);
       end
 
       -- debug tooltip stuff
       if __sw__debug__ then
-          tooltip:AddLine("  ".."Base "..effect..": "..spell.base_min.."-"..spell.base_max,
+          tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max,
                           1.0, 1.0, 1.0);
-          tooltip:AddLine("  ".."Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
-          tooltip:AddLine(string.format("  Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
+          tooltip:AddLine("Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
+          tooltip:AddLine(string.format("Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
       end
 
       end_tooltip_section(tooltip);
