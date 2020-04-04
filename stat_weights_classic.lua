@@ -4820,7 +4820,6 @@ local function loadout_copy(loadout)
         cpy.ability_crit_mod[k] = v;
     end
 
-
     return cpy;
 end
 
@@ -6027,7 +6026,7 @@ local function spell_info(base_min, base_max,
 
     if spell_name == localized_spell_name("Chain Heal") then
         if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-            expectation = (1 + 1.3*.05 + 1.3*1.3*0.5*0.5);
+            expectation = (1 + 1.3*.05 + 1.3*1.3*0.5*0.5) * expectation_st;
         else
             expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
         end
@@ -6451,9 +6450,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
     end
 end
 
-function spell_diff(spell_id, spell_name, loadout, diff)
-
-    local spell_data = get_spell(spell_id);
+function spell_diff(spell_data, spell_name, loadout, diff)
 
     local loadout_diffed = loadout_add(loadout, diff);
 
@@ -6604,6 +6601,115 @@ local function create_loadout_from_ui_diff(frame)
     return loadout;
 end
 
+local function display_spell_diff(spell_data, spell_diff_line, loadout, loadout_diff, frame)
+
+    local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff);
+
+    local v = spell_diff_line;
+    
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+    
+    if not v.name_str then
+        v.name_str = frame:CreateFontString(nil, "OVERLAY");
+        v.name_str:SetFontObject(font);
+    
+        v.change = frame:CreateFontString(nil, "OVERLAY");
+        v.change:SetFontObject(font);
+    
+        v.expectation = frame:CreateFontString(nil, "OVERLAY");
+        v.expectation:SetFontObject(font);
+    
+        v.effect_per_sec = frame:CreateFontString(nil, "OVERLAY");
+        v.effect_per_sec:SetFontObject(font);
+    
+        v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
+    end
+    
+    v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
+    if v.name == localized_spell_name("Holy Nova") and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+        v.name_str:SetText(v.name.." HEAL (Rank "..spell_data.rank..")");
+    elseif v.name == localized_spell_name("Holy Nova") then
+        v.name_str:SetText(v.name.." DMG (Rank "..spell_data.rank..")");
+    else
+        v.name_str:SetText(v.name.." (Rank "..spell_data.rank..")");
+    end
+
+    v.name_str:SetTextColor(222/255, 192/255, 40/255);
+    
+    if not frame.is_valid then
+    
+        v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
+        v.change:SetText("NAN");
+    
+        v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
+        v.expectation:SetText("NAN");
+    
+        v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
+        v.effect_per_sec:SetText("NAN");
+        
+    else
+    
+        v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
+        v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
+        v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
+    
+        if diff.expectation < 0 then
+    
+            v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
+            v.change:SetTextColor(195/255, 44/255, 11/255);
+    
+            v.expectation:SetText(string.format("%.2f", diff.expectation));
+            v.expectation:SetTextColor(195/255, 44/255, 11/255);
+    
+            v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
+            v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
+    
+        elseif diff.expectation > 0 then
+    
+            v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
+            v.change:SetTextColor(33/255, 185/255, 21/255);
+    
+            v.expectation:SetText(string.format("+%.2f", diff.expectation));
+            v.expectation:SetTextColor(33/255, 185/255, 21/255);
+    
+            v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
+            v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
+    
+        else
+    
+            v.change:SetText("0 %");
+            v.change:SetTextColor(1, 1, 1);
+    
+            v.expectation:SetText("0");
+            v.expectation:SetTextColor(1, 1, 1);
+    
+            v.effect_per_sec:SetText("0");
+            v.effect_per_sec:SetTextColor(1, 1, 1);
+    
+        end
+            
+        v.cancel_button:SetScript("OnClick", function()
+    
+            v.change:Hide();
+            v.name_str:Hide();
+            v.expectation:Hide();
+            v.effect_per_sec:Hide();
+            v.cancel_button:Hide();
+    
+            --frame.spells[] = nil; -- remove this spell
+            spell_diff_line = nil;
+            update_and_display_spell_diffs(frame);
+    
+        end);
+    
+        v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
+        v.cancel_button:SetHeight(20);
+        v.cancel_button:SetWidth(25);
+        v.cancel_button:SetText("X");
+    end
+
+end
+
 local function update_and_display_spell_diffs(frame)
 
     frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
@@ -6613,100 +6719,11 @@ local function update_and_display_spell_diffs(frame)
     local loadout_diff = create_loadout_from_ui_diff(frame);
 
     for k, v in pairs(frame.spells) do
+        display_spell_diff(spells[k], v, loadout, loadout_diff, frame);
 
-        local diff = spell_diff(k, v.name, loadout, loadout_diff);
-
-        frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-
-        if not v.name_str then
-            v.name_str = frame:CreateFontString(nil, "OVERLAY");
-            v.name_str:SetFontObject(font);
-
-            v.change = frame:CreateFontString(nil, "OVERLAY");
-            v.change:SetFontObject(font);
-
-            v.expectation = frame:CreateFontString(nil, "OVERLAY");
-            v.expectation:SetFontObject(font);
-
-            v.effect_per_sec = frame:CreateFontString(nil, "OVERLAY");
-            v.effect_per_sec:SetFontObject(font);
-
-            v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
-        end
-
-        v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-        v.name_str:SetText(v.name.." (Rank "..spells[k].rank..")");
-        v.name_str:SetTextColor(222/255, 192/255, 40/255);
-
-        if not frame.is_valid then
-
-            v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
-            v.change:SetText("NAN");
-
-            v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-            v.expectation:SetText("NAN");
-
-            v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
-            v.effect_per_sec:SetText("NAN");
-            
-        else
-
-            v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
-            v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-            v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
-
-            if diff.expectation < 0 then
-
-                v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
-                v.change:SetTextColor(195/255, 44/255, 11/255);
-
-                v.expectation:SetText(string.format("%.2f", diff.expectation));
-                v.expectation:SetTextColor(195/255, 44/255, 11/255);
-
-                v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
-                v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
-
-            elseif diff.expectation > 0 then
-
-                v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
-                v.change:SetTextColor(33/255, 185/255, 21/255);
-
-                v.expectation:SetText(string.format("+%.2f", diff.expectation));
-                v.expectation:SetTextColor(33/255, 185/255, 21/255);
-
-                v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
-                v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
-
-            else
-
-                v.change:SetText("0 %");
-                v.change:SetTextColor(1, 1, 1);
-
-                v.expectation:SetText("0");
-                v.expectation:SetTextColor(1, 1, 1);
-
-                v.effect_per_sec:SetText("0");
-                v.effect_per_sec:SetTextColor(1, 1, 1);
-
-            end
-                
-            v.cancel_button:SetScript("OnClick", function()
-
-                v.change:Hide();
-                v.name_str:Hide();
-                v.expectation:Hide();
-                v.effect_per_sec:Hide();
-                v.cancel_button:Hide();
-
-                frame.spells[k] = nil; -- remove this spell
-                update_and_display_spell_diffs(frame);
-
-            end);
-
-            v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
-            v.cancel_button:SetHeight(20);
-            v.cancel_button:SetWidth(25);
-            v.cancel_button:SetText("X");
+        -- for spells with both heal and dmg
+        if spells[k].healing_version then
+            display_spell_diff(spells[k].healing_version, v, loadout, loadout_diff, frame);
         end
     end
 
@@ -6933,9 +6950,9 @@ function create_base_gui()
 
             local next_index = 0;
             if IsShiftKeyDown() then
-            next_index = 1 + ((i-2) %num_stats);
+                next_index = 1 + ((i-2) %num_stats);
             else
-            next_index = 1 + (i %num_stats);
+                next_index = 1 + (i %num_stats);
 
             end
         	self:ClearFocus()
