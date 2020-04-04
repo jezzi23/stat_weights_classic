@@ -31,8 +31,8 @@ local spell_flags = {
     aoe = bit.lshift(1,1),
     snare = bit.lshift(1,2),
     heal = bit.lshift(1,3),
-    absorb = bit.lshift(1,6),
-    over_time_crit = bit.lshift(1,7),
+    absorb = bit.lshift(1,4),
+    over_time_crit = bit.lshift(1,5)
 };
 
 local stat_ids_in_ui = {
@@ -5804,7 +5804,7 @@ local function apply_buffs(loadout)
                 -- at 100% hp: 10 % haste
                 -- at less or equal than 40% hp: 30 % haste
                 -- interpolate between 10% and 30% haste at 40% - 100% hp
-                local haste_mod = 0.1 + 0.2 * (1 -((hp_perc - 0.4)*(5/3)))
+                local haste_mod = 0.1 + 0.2 * (1 -((math.max(0.4, hp_perc) - 0.4)*(5/3)))
                 new_loadout.haste_mod = new_loadout.haste_mod + haste_mod;
             end
         end
