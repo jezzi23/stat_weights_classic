@@ -3446,6 +3446,32 @@ local function create_spells()
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
+            [17314] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 330.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 3.0,
+                cast_time           = 3.0,
+                rank                = 5,
+                lvl_req             = 52,
+                mana                = 165,
+                flags               = spell_flags.snare,
+                school              = magic_school.shadow,
+            },
+            [18807] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 426.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 3.0,
+                cast_time           = 3.0,
+                rank                = 6,
+                lvl_req             = 60,
+                mana                = 205,
+                flags               = spell_flags.snare,
+                school              = magic_school.shadow,
+            },
             -- devouring plague
             [2944] = {
                 base_min            = 0.0,
@@ -4688,7 +4714,11 @@ local function empty_loadout()
         spell_dmg_mod_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_crit_mod_by_school = {0, 0, 0, 0, 0, 0, 0},
 
+        spell_heal_mod_base = 0,
         spell_heal_mod = 0,
+
+        haste_mod = 0,
+        cost_mod = 0,
 
         stat_mod = {0, 0, 0, 0, 0},
 
@@ -4738,7 +4768,11 @@ local function negate_loadout(loadout)
     for i = 1, 7 do
         negated.spell_crit_mod_by_school[i] = -loadout.spell_crit_mod_by_school[i];
     end
+    negated.spell_heal_mod_base = -negated.spell_heal_mod_base;
     negated.spell_heal_mod = -negated.spell_heal_mod;
+
+    negated.haste_mod = -negated.haste_mod;
+    negated.cost_mod = -negated.cost_mod;
 
     return negated;
 end
@@ -4763,7 +4797,11 @@ local function loadout_copy(loadout)
     cpy.spell_dmg_mod_by_school = {};
     cpy.spell_crit_mod_by_school = {};
 
+    cpy.spell_heal_mod_base = loadout.spell_heal_mod_base;
     cpy.spell_heal_mod = loadout.spell_heal_mod;
+
+    cpy.haste_mod = loadout.haste_mod;
+    cpy.cost_mod = loadout.cost_mod;
 
 
     cpy.ignite = loadout.ignite;
@@ -4799,6 +4837,7 @@ local function loadout_copy(loadout)
         cpy.stat_mod[i] = loadout.stat_mod[i];
     end
 
+    cpy.spell_heal_mod_base = loadout.spell_heal_mod_base;
     cpy.spell_heal_mod = loadout.spell_heal_mod;
 
     for k, v in pairs(loadout.ability_crit) do
@@ -4858,7 +4897,11 @@ local function loadout_add(primary, diff)
         added.spell_crit_mod_by_school[i] = primary.spell_crit_mod_by_school[i] + diff.spell_crit_mod_by_school[i];
     end
 
+    added.spell_heal_mod_base = primary.spell_heal_mod_base + diff.spell_heal_mod_base;
     added.spell_heal_mod = primary.spell_heal_mod + diff.spell_heal_mod;
+
+    added.haste_mod = primary.haste_mod + diff.haste_mod;
+    added.cost_mod = primary.cost_mod + diff.cost_mod;
 
     return added;
 end
@@ -5145,7 +5188,7 @@ local function apply_talents(loadout)
         -- gift of nature
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 12);
         if pts ~= 0 then
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
+            new_loadout.spell_heal_mod_base = new_loadout.spell_heal_mod_base + pts * 0.02;
         end
 
         -- improved regrowth
@@ -5275,7 +5318,7 @@ local function apply_talents(loadout)
         -- spiritual healing
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 15);
         if pts ~= 0 then
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
+            new_loadout.spell_heal_mod_base = new_loadout.spell_heal_mod_base + pts * 0.02;
         end
 
         -- improved shadow word: pain
@@ -5499,7 +5542,7 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
         if pts ~= 0 then
 
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
+            new_loadout.spell_heal_mod_base = new_loadout.spell_heal_mod_base + pts * 0.02;
 
         end
 
@@ -5547,6 +5590,7 @@ local function apply_talents(loadout)
 
     return new_loadout;
 end
+
 
 local function create_set_bonuses()
 
@@ -5703,6 +5747,88 @@ local function apply_set_bonuses(loadout)
     return new_loadout;
 end
 
+local function apply_buffs(loadout)
+
+    local new_loadout = loadout;
+
+    local _, class = UnitClass("player");
+
+    if class == "MAGE" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- arcane power
+            if spell_id == 12042 then
+                for j = 2, 7 do 
+                    new_loadout.spell_dmg_mod_by_school[j] = new_loadout.spell_dmg_mod_by_school[j] + 0.3;
+                end
+                new_loadout.cost_mod = new_loadout.cost_mod - 0.3;
+            -- mind quickening gem bfuff
+            elseif spell_id == 23723 then
+                new_loadout.haste_mod = new_loadout.haste_mod - 0.33;
+            end
+        end
+    elseif class == "PRIEST" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- shadow form
+            if spell_id == 15473 then
+                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
+                    new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.3;
+            end
+        end
+    end
+
+    local _, race = UnitRace("player");
+    if race == "Troll" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- berserking
+            if spell_id == 26297 or spell_id == 20554 or spell_id == 26635 then
+
+                local max_hp = UnitHealthMax("player");
+                local hp = UnitHealth("player");
+                local hp_perc = 0;
+                if max_hp ~= 0 then
+                    hp_perc = hp/max_hp;
+                end
+
+                -- at 100% hp: 10 % haste
+                -- at less or equal than 40% hp: 30 % haste
+                -- interpolate between 10% and 30% haste at 40% - 100% hp
+                local haste_mod = 0.1 + 0.2 * (1 -((hp_perc - 0.4)*(5/3)))
+                new_loadout.haste_mod = new_loadout.haste_mod + haste_mod;
+            end
+        end
+    end
+
+    for i = 1, 40  do
+        local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+        if not name then
+            break;
+        end
+        -- power infusion
+        if spell_id == 10060 then
+
+            for j = 2, 7 do 
+                new_loadout.spell_dmg_mod_by_school[j] = new_loadout.spell_dmg_mod_by_school[j] + 0.2;
+            end
+            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + 0.2;
+        end
+    end
+
+    return new_loadout;
+    
+end
+
 local function current_loadout()
 
    local loadout = empty_loadout();
@@ -5751,6 +5877,8 @@ local function current_loadout()
 
    loadout = apply_set_bonuses(loadout);
 
+   loadout = apply_buffs(loadout);
+
    return loadout;
 end
 
@@ -5778,6 +5906,7 @@ local function print_loadout(loadout)
           loadout.spelldmg_by_school[6],
           loadout.spelldmg_by_school[7]);
     print("spell heal: ", loadout.healingpower);
+    print("spell heal mod base: ", loadout.spell_heal_mod_base);
     print("spell heal mod: ", loadout.spell_heal_mod);
     print(string.format("spell crit schools: %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
                         loadout.spell_crit_by_school[1],
@@ -6112,6 +6241,9 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         loadout.ability_cast_mod[spell_name] = 0;
     end
     cast_speed = cast_speed - loadout.ability_cast_mod[spell_name];
+
+    -- apply global haste
+    cast_speed = cast_speed * (1 - loadout.haste_mod);
     cast_speed = math.max(cast_speed, 1.5);
 
     local spell_mod = 1;
@@ -6121,8 +6253,8 @@ local function evaluate_spell(spell_data, spell_name, loadout)
     end
 
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
-        spell_mod = 1;
-        spell_mod_base = 1 + loadout.spell_heal_mod;
+        spell_mod = 1 + loadout.spell_heal_mod;
+        spell_mod_base = 1 + loadout.spell_heal_mod_base;
         spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
 
     elseif bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
@@ -6160,7 +6292,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
 
     local cost = spell_data.mana;
     if loadout.ability_cost_mod[spell_name] then
-        cost = cost * (1 - loadout.ability_cost_mod[spell_name]);
+        cost = cost * (1 - loadout.ability_cost_mod[spell_name] - loadout.cost_mod);
     end
     if loadout.illumination ~= 0  and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         cost = cost * (1 - loadout.healing_crit * (loadout.illumination * 0.2));
@@ -6170,7 +6302,6 @@ local function evaluate_spell(spell_data, spell_name, loadout)
        (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) ~= 0 then
         cost = cost * (1 - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1));
     end
-
 
     -- the game seems to round mana up/down to the nearest
     cost = tonumber(string.format("%.0f", cost));
@@ -6437,8 +6568,9 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
       if __sw__debug__ then
           tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max,
                           1.0, 1.0, 1.0);
-          tooltip:AddLine("Cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
+          tooltip:AddLine("Average cost: "..eval.spell_data.mana, 1.0, 1.0, 1.0);
           tooltip:AddLine(string.format("Coef: %.3f, %.3f", direct_coef, ot_coef), 1.0, 1.0, 1.0);
+          tooltip:AddLine("Average cast: "..eval.spell_data.cast_time, 1.0, 1.0, 1.0);
       end
 
       end_tooltip_section(tooltip);
@@ -6954,7 +7086,7 @@ function create_base_gui()
         v.editbox:SetSize(100, 10);
         v.editbox:SetScript("OnTextChanged", function(self)
 
-            if string.match(self:GetText(), "[a-zA-Z]") ~= nil then
+            if string.match(self:GetText(), "[^-+0123456789. ()]") ~= nil then
                 self:ClearFocus();
                 self:SetText("");
                 self:SetFocus();
