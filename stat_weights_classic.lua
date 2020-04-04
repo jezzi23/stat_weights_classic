@@ -6601,11 +6601,53 @@ local function create_loadout_from_ui_diff(frame)
     return loadout;
 end
 
-local function display_spell_diff(spell_data, spell_diff_line, loadout, loadout_diff, frame)
+
+local display_spell_diff = nil;
+
+local function update_and_display_spell_diffs(frame)
+
+    frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
+
+    local loadout = current_loadout();
+
+    local loadout_diff = create_loadout_from_ui_diff(frame);
+
+    for k, v in pairs(frame.spells) do
+        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false);
+
+        -- for spells with both heal and dmg
+        if spells[k].healing_version then
+            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true);
+        end
+    end
+
+    -- footer
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+
+    if not frame.footer then
+        frame.footer = frame:CreateFontString(nil, "OVERLAY");
+    end
+    frame.footer:SetFontObject(font);
+    frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
+    frame.footer:SetText("Add abilities by holding shift and hovering over them!");
+end
+
+
+display_spell_diff = function(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
 
     local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff);
 
-    local v = spell_diff_line;
+    local v = nil;
+    if is_duality_spell then
+        if not spell_diff_line.duality then
+            spell_diff_line.duality = {};
+        end
+        spell_diff_line.duality.name = spell_diff_line.name;
+        v = spell_diff_line.duality;
+    else
+        v = spell_diff_line;
+    end
     
     frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
     
@@ -6622,14 +6664,20 @@ local function display_spell_diff(spell_data, spell_diff_line, loadout, loadout_
         v.effect_per_sec = frame:CreateFontString(nil, "OVERLAY");
         v.effect_per_sec:SetFontObject(font);
     
-        v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
+
+        if not spell_data.healing_version then
+            v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
+        end
     end
     
     v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    if v.name == localized_spell_name("Holy Nova") and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
-        v.name_str:SetText(v.name.." HEAL (Rank "..spell_data.rank..")");
-    elseif v.name == localized_spell_name("Holy Nova") then
-        v.name_str:SetText(v.name.." DMG (Rank "..spell_data.rank..")");
+    if is_duality_spell and 
+        bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+
+        v.name_str:SetText(v.name.." H (Rank "..spell_data.rank..")");
+    elseif v.name == localized_spell_name("Holy Nova") or v.name == localized_spell_name("Holy Shock") then
+
+        v.name_str:SetText(v.name.." D (Rank "..spell_data.rank..")");
     else
         v.name_str:SetText(v.name.." (Rank "..spell_data.rank..")");
     end
@@ -6688,55 +6736,33 @@ local function display_spell_diff(spell_data, spell_diff_line, loadout, loadout_
     
         end
             
-        v.cancel_button:SetScript("OnClick", function()
+
+        if not spell_data.healing_version then
+            v.cancel_button:SetScript("OnClick", function()
     
-            v.change:Hide();
-            v.name_str:Hide();
-            v.expectation:Hide();
-            v.effect_per_sec:Hide();
-            v.cancel_button:Hide();
+                v.change:Hide();
+                v.name_str:Hide();
+                v.expectation:Hide();
+                v.effect_per_sec:Hide();
+                v.cancel_button:Hide();
+
+                -- in case this was the duality spell, i.e. healing counterpart 
+                frame.spells[spell_id].change:Hide();
+                frame.spells[spell_id].name_str:Hide();
+                frame.spells[spell_id].expectation:Hide();
+                frame.spells[spell_id].effect_per_sec:Hide();
+
+                frame.spells[spell_id] = nil;
+                update_and_display_spell_diffs(frame);
     
-            --frame.spells[] = nil; -- remove this spell
-            spell_diff_line = nil;
-            update_and_display_spell_diffs(frame);
+            end);
     
-        end);
-    
-        v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
-        v.cancel_button:SetHeight(20);
-        v.cancel_button:SetWidth(25);
-        v.cancel_button:SetText("X");
-    end
-
-end
-
-local function update_and_display_spell_diffs(frame)
-
-    frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
-
-    local loadout = current_loadout();
-
-    local loadout_diff = create_loadout_from_ui_diff(frame);
-
-    for k, v in pairs(frame.spells) do
-        display_spell_diff(spells[k], v, loadout, loadout_diff, frame);
-
-        -- for spells with both heal and dmg
-        if spells[k].healing_version then
-            display_spell_diff(spells[k].healing_version, v, loadout, loadout_diff, frame);
+            v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
+            v.cancel_button:SetHeight(20);
+            v.cancel_button:SetWidth(25);
+            v.cancel_button:SetText("X");
         end
     end
-
-    -- footer
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-
-    if not frame.footer then
-        frame.footer = frame:CreateFontString(nil, "OVERLAY");
-    end
-    frame.footer:SetFontObject(font);
-    frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    frame.footer:SetText("Add abilities by holding shift and hovering over them!");
 end
 
 function create_base_gui()
@@ -7007,42 +7033,42 @@ function create_base_gui()
 
         if class == "MAGE" then
             sw_frame.spells[10181] = {
-                name = localized_spell_name("Frostbolt");
+                name = localized_spell_name("Frostbolt")
             };
         elseif class == "DRUID" then
 
             sw_frame.spells[9889] = {
-                name = localized_spell_name("Healing Touch");
+                name = localized_spell_name("Healing Touch")
             };
             sw_frame.spells[9876] = {
-                name = localized_spell_name("Starfire");
+                name = localized_spell_name("Starfire")
             };
 
         elseif class == "PALADIN" then
 
             sw_frame.spells[19943] = {
-                name = localized_spell_name("Flash of Light");
+                name = localized_spell_name("Flash of Light")
             };
         elseif class == "SHAMAN" then
 
             sw_frame.spells[10396] = {
-                name = localized_spell_name("Healing Wave");
+                name = localized_spell_name("Healing Wave")
             };
             sw_frame.spells[15208] = {
-                name = localized_spell_name("Lightning Bolt");
+                name = localized_spell_name("Lightning Bolt")
             };
         elseif class == "PRIEST" then
 
             sw_frame.spells[25314] = {
-                name = localized_spell_name("Greater Heal");
+                name = localized_spell_name("Greater Heal")
             };
             sw_frame.spells[25315] = {
-                name = localized_spell_name("Renew");
+                name = localized_spell_name("Renew")
             };
         end
     end
 
-    sw_frame:Hide();
+    sw_frame:Hide()
 end
 
 local function command(msg, editbox)
@@ -7074,7 +7100,7 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
     if spell and IsShiftKeyDown() and sw_frame:IsShown() and not sw_frame.spells[spell_id]then
         sw_frame.spells[spell_id] = {
-            name = spell_name,
+            name = spell_name
         }
 
         update_and_display_spell_diffs(sw_frame);
