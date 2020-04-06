@@ -7056,14 +7056,12 @@ local function apply_set_bonuses(loadout)
     if class == "PRIEST" then
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 3 then
 
-            print("found 3 set");
             local flash = localized_spell_name("Flash Heal");
             if not new_loadout.ability_cast_mod[flash] then
                 new_loadout.ability_cast_mod[flash] = 0;
             end
             new_loadout.ability_cast_mod[flash] = new_loadout.ability_cast_mod[flash] + 0.1;
 
-            print("flash heal mod: ", new_loadout.ability_cast_mod[flash]);
             
             if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
 
@@ -7707,7 +7705,6 @@ local function evaluate_spell(spell_data, spell_name, loadout)
     if spell_name == localized_spell_name("Flash Heal") or spell_name == localized_spell_name("Regrowth") then
         -- from set bonuses, flash heal and regrowth seem to be the only exceptions to ignore 1.5 gcd on all spells
         cast_speed = math.max(cast_speed, 1.3);
-        print("we should be here ", cast_speed);
     else
         cast_speed = math.max(cast_speed, 1.5);
     end
