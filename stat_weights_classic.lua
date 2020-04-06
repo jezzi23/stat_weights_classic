@@ -7,7 +7,9 @@ local font = "GameFontHighlightSmall";
 
 --TODO: Known spells that are incorrectly evaluated
         -- Holy Nova
-        -- Regrowth
+        -- Curse of Agony dmg ramps up
+
+-- TODO before 1.0.3: normalize pvp set bonuses to allys too - only did horde so far
 
 local magic_school = {
      physical = 1,
@@ -117,7 +119,25 @@ local spell_name_to_id = {
     -- Paladin
     ["Flash of Light"]          = 19750,
     ["Holy Light"]              = 635,
-    ["Holy Shock"]              = 20473
+    ["Holy Shock"]              = 20473,
+    ["Hammer of Wrath"]         = 24275,
+    ["Consecration"]            = 26573,
+    ["Exorcism"]                = 879,
+    ["Holy Wrath"]              = 2812,
+    -- Warlock
+    ["Curse of Agony"]          = 980,
+    ["Siphon Life"]             = 18265,
+    ["Death Coil"]              = 6789,
+    ["Corruption"]              = 172,
+    ["Drain Life"]              = 689,
+    ["Drain Soul"]              = 1120,
+    ["Shadow Bolt"]             = 686,
+    ["Searing Pain"]            = 5676,
+    ["Soul Fire"]               = 6353,
+    ["Hellfire"]                = 1949,
+    ["Rain of Fire"]            = 5740,
+    ["Immolate"]                = 348,
+    ["Conflagrate"]             = 17962
 };
 
 
@@ -4676,11 +4696,1191 @@ local function create_spells()
                     flags               = spell_flags.heal,
                     school              = magic_school.holy,
                 }
+            }, 
+            -- hammer of wrath
+            [24275] = {
+                base_min            = 316.0,
+                base_max            = 348.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.0,
+                rank                = 1,
+                lvl_req             = 44,
+                mana                = 295,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [24274] = {
+                base_min            = 412.0,
+                base_max            = 455.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.0,
+                rank                = 2,
+                lvl_req             = 52,
+                mana                = 360,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [24239] = {
+                base_min            = 504.0,
+                base_max            = 556.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.0,
+                rank                = 3,
+                lvl_req             = 60,
+                mana                = 425,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            -- consecration
+            [26573] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 64,
+                over_time_tick_freq = 1,
+                over_time_duration  = 8.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 135,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            },
+            [20116] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 120,
+                over_time_tick_freq = 1,
+                over_time_duration  = 8.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 30,
+                mana                = 235,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            },
+            [20922] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 192,
+                over_time_tick_freq = 1,
+                over_time_duration  = 8.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 40,
+                mana                = 320,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            },
+            [20923] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 280,
+                over_time_tick_freq = 1,
+                over_time_duration  = 8.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 50,
+                mana                = 435,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            },
+            [20924] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 384,
+                over_time_tick_freq = 1,
+                over_time_duration  = 8.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 60,
+                mana                = 565,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            },
+            -- exorcism
+            [879] = {
+                base_min            = 90.0,
+                base_max            = 102.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 85,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [5614] = {
+                base_min            = 160.0,
+                base_max            = 180.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 28,
+                mana                = 135,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [5615] = {
+                base_min            = 227.0,
+                base_max            = 255.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 36,
+                mana                = 180,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [10312] = {
+                base_min            = 316.0,
+                base_max            = 354.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 44,
+                mana                = 235,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [10313] = {
+                base_min            = 407.0,
+                base_max            = 453.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 52,
+                mana                = 285,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            [10314] = {
+                base_min            = 505.0,
+                base_max            = 563.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 60,
+                mana                = 345,
+                flags               = 0,
+                school              = magic_school.holy
+            },
+            -- holy wrath
+            [2812] = {
+                base_min            = 368.0,
+                base_max            = 435.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 1,
+                lvl_req             = 50,
+                mana                = 645,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            },
+            [10318] = {
+                base_min            = 490.0,
+                base_max            = 576.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.0,
+                rank                = 2,
+                lvl_req             = 60,
+                mana                = 805,
+                flags               = spell_flags.aoe,
+                school              = magic_school.holy
+            }
+        };
+
+    elseif class == "WARLOCK" then
+        return {
+            -- curse of agony
+            [980] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 84,
+                over_time_tick_freq = 2,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 8,
+                mana                = 25,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [1014] = {
+                base_min            = .0,
+                base_max            = 0.0, 
+                over_time           = 180,
+                over_time_tick_freq = 2,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 18,
+                mana                = 50,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [6217] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 324,
+                over_time_tick_freq = 2,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 28,
+                mana                = 90,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11711] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 504,
+                over_time_tick_freq = 2,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 38,
+                mana                = 130,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11712] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 780,
+                over_time_tick_freq = 2,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 48,
+                mana                = 170,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11713] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 1044,
+                over_time_tick_freq = 2,
+                over_time_duration  = 24.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 58,
+                mana                = 215,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            -- siphon life
+            [18265] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 15,
+                over_time_tick_freq = 3,
+                over_time_duration  = 30.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 30,
+                mana                = 150,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18879] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 22,
+                over_time_tick_freq = 3,
+                over_time_duration  = 30.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 38,
+                mana                = 205,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18880] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 33,
+                over_time_tick_freq = 3,
+                over_time_duration  = 30.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 48,
+                mana                = 285,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18881] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 15,
+                over_time_tick_freq = 3,
+                over_time_duration  = 45.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 58,
+                mana                = 365,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            -- death coil
+            [6789] = {
+                base_min            = 301.0,
+                base_max            = 301.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 42,
+                mana                = 430,
+                flags               = spell_flags.snare,
+                school              = magic_school.shadow
+            },
+            [17925] = {
+                base_min            = 391.0,
+                base_max            = 391.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 50,
+                mana                = 495,
+                flags               = spell_flags.snare,
+                school              = magic_school.shadow
+            },
+            [17926] = {
+                base_min            = 476.0,
+                base_max            = 476.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 58,
+                mana                = 565,
+                flags               = spell_flags.snare,
+                school              = magic_school.shadow
+            },
+            -- corruption
+            [172] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 40,
+                over_time_tick_freq = 3,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 4,
+                mana                = 35,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [6222] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 90,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 14,
+                mana                = 55,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [6223] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 222,
+                over_time_tick_freq = 3,
+                over_time_duration  = 18.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 24,
+                mana                = 100,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [7648] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 324,
+                over_time_tick_freq = 3,
+                over_time_duration  = 18.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 34,
+                mana                = 160,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11671] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 486,
+                over_time_tick_freq = 3,
+                over_time_duration  = 18.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 44,
+                mana                = 225,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11672] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 666,
+                over_time_tick_freq = 3,
+                over_time_duration  = 18.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 54,
+                mana                = 290,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [25311] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 822,
+                over_time_tick_freq = 3,
+                over_time_duration  = 18.0,
+                cast_time           = 1.5,
+                rank                = 7,
+                lvl_req             = 60,
+                mana                = 340,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            -- drain life
+            [689] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 10 * 5,
+                over_time_tick_freq = 1,
+                over_time_duration  = 5.0,
+                cast_time           = 5.0,
+                rank                = 1,
+                lvl_req             = 14,
+                mana                = 55,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [699] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 17 * 5,
+                over_time_tick_freq = 1,
+                over_time_duration  = 5.0,
+                cast_time           = 5.0,
+                rank                = 2,
+                lvl_req             = 22,
+                mana                = 85,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [709] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 29 * 5,
+                over_time_tick_freq = 1,
+                over_time_duration  = 5.0,
+                cast_time           = 5.0,
+                rank                = 3,
+                lvl_req             = 30,
+                mana                = 135,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [7651] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 41 * 5,
+                over_time_tick_freq = 1,
+                over_time_duration  = 5.0,
+                cast_time           = 5.0,
+                rank                = 4,
+                lvl_req             = 38,
+                mana                = 185,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11699] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 55 * 5,
+                over_time_tick_freq = 1,
+                over_time_duration  = 5.0,
+                cast_time           = 5.0,
+                rank                = 5,
+                lvl_req             = 46,
+                mana                = 240,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11700] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 71 * 5,
+                over_time_tick_freq = 1,
+                over_time_duration  = 5.0,
+                cast_time           = 5.0,
+                rank                = 6,
+                lvl_req             = 54,
+                mana                = 300,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            -- drain soul
+            [1120] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 55,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 1,
+                lvl_req             = 10,
+                mana                = 55,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [8288] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 155,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 2,
+                lvl_req             = 24,
+                mana                = 125,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [8289] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 295,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 3,
+                lvl_req             = 38,
+                mana                = 210,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11675] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 455,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 4,
+                lvl_req             = 52,
+                mana                = 290,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            --shadow bolt
+            [686] = {
+                base_min            = 13.0,
+                base_max            = 18.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.7,
+                rank                = 1,
+                lvl_req             = 1,
+                mana                = 25,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [695] = {
+                base_min            = 26.0,
+                base_max            = 32.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.2,
+                rank                = 2,
+                lvl_req             = 6,
+                mana                = 40,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [705] = {
+                base_min            = 52.0,
+                base_max            = 61.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 2.8,
+                rank                = 3,
+                lvl_req             = 12,
+                mana                = 70,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [1088] = {
+                base_min            = 92.0,
+                base_max            = 104.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 4,
+                lvl_req             = 20,
+                mana                = 110,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [1106] = {
+                base_min            = 150.0,
+                base_max            = 170.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 5,
+                lvl_req             = 28,
+                mana                = 160,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [7641] = {
+                base_min            = 213.0,
+                base_max            = 240.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 6,
+                lvl_req             = 36,
+                mana                = 210,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11659] = {
+                base_min            = 292.0,
+                base_max            = 327.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 7,
+                lvl_req             = 44,
+                mana                = 265,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11660] = {
+                base_min            = 373.0,
+                base_max            = 415.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 8,
+                lvl_req             = 52,
+                mana                = 315,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [11661] = {
+                base_min            = 455.0,
+                base_max            = 507.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 9,
+                lvl_req             = 60,
+                mana                = 370,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [25307] = {
+                base_min            = 482.0,
+                base_max            = 538.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 3.0,
+                rank                = 10,
+                lvl_req             = 60,
+                mana                = 380,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            -- searing pain
+            [5676] = {
+                base_min            = 38.0,
+                base_max            = 47.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 18,
+                mana                = 45,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [17919] = {
+                base_min            = 65.0,
+                base_max            = 77.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 26,
+                mana                = 68,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [17920] = {
+                base_min            = 93.0,
+                base_max            = 112.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 34,
+                mana                = 91,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [17921] = {
+                base_min            = 131.0,
+                base_max            = 155.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 42,
+                mana                = 118,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [17922] = {
+                base_min            = 168.0,
+                base_max            = 199.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 50,
+                mana                = 141,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [17923] = {
+                base_min            = 208.0,
+                base_max            = 244.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 58,
+                mana                = 168,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            -- soul fire
+            [6353] = {
+                base_min            = 640.0,
+                base_max            = 801.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 6.0,
+                rank                = 1,
+                lvl_req             = 48,
+                mana                = 305,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [17924] = {
+                base_min            = 715.0,
+                base_max            = 894.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 6.0,
+                rank                = 2,
+                lvl_req             = 56,
+                mana                = 335,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            -- hellfire
+            [1949] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 87.0*15,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 3,
+                lvl_req             = 30,
+                mana                = 645,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            [11683] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 144.0*15,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 2,
+                lvl_req             = 42,
+                mana                = 975,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            [11684] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 213.0*15,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 15.0,
+                rank                = 3,
+                lvl_req             = 54,
+                mana                = 1300,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            -- rain of fire
+            [5740] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 168.0,
+                over_time_tick_freq = 2,
+                over_time_duration  = 8.0,
+                cast_time           = 8.0,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 295,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            [6219] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 384.0,
+                over_time_tick_freq = 2,
+                over_time_duration  = 8.0,
+                cast_time           = 8.0,
+                rank                = 2,
+                lvl_req             = 34,
+                mana                = 605,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            [11677] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 620.0,
+                over_time_tick_freq = 2,
+                over_time_duration  = 8.0,
+                cast_time           = 8.0,
+                rank                = 3,
+                lvl_req             = 46,
+                mana                = 885,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            [11678] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 904.0,
+                over_time_tick_freq = 2,
+                over_time_duration  = 8.0,
+                cast_time           = 8.0,
+                rank                = 4,
+                lvl_req             = 58,
+                mana                = 1185,
+                flags               = spell_flags.aoe,
+                school              = magic_school.fire
+            },
+            -- immolate
+            [348] = {
+                base_min            = 11.0,
+                base_max            = 11.0, 
+                over_time           = 20.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 1,
+                lvl_req             = 1,
+                mana                = 25,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [707] = {
+                base_min            = 24.0,
+                base_max            = 24.0, 
+                over_time           = 40.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 2,
+                lvl_req             = 10,
+                mana                = 45,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [1094] = {
+                base_min            = 53.0,
+                base_max            = 53.0, 
+                over_time           = 90.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 3,
+                lvl_req             = 20,
+                mana                = 90,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [2941] = {
+                base_min            = 101.0,
+                base_max            = 101.0, 
+                over_time           = 165.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 4,
+                lvl_req             = 30,
+                mana                = 155,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [11665] = {
+                base_min            = 148.0,
+                base_max            = 148.0, 
+                over_time           = 255.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 5,
+                lvl_req             = 40,
+                mana                = 220,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [11667] = {
+                base_min            = 208.0,
+                base_max            = 208.0, 
+                over_time           = 365.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 6,
+                lvl_req             = 50,
+                mana                = 295,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [11668] = {
+                base_min            = 258.0,
+                base_max            = 258.0, 
+                over_time           = 485.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 7,
+                lvl_req             = 60,
+                mana                = 370,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [25309] = {
+                base_min            = 279.0,
+                base_max            = 279.0, 
+                over_time           = 510.0,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 2.0,
+                rank                = 8,
+                lvl_req             = 60,
+                mana                = 380,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            -- shadowburn
+            [17877] = {
+                base_min            = 91.0,
+                base_max            = 104.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 20,
+                mana                = 105,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18867] = {
+                base_min            = 123.0,
+                base_max            = 140.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 24,
+                mana                = 103,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18868] = {
+                base_min            = 196.0,
+                base_max            = 221.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 32,
+                mana                = 190,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18869] = {
+                base_min            = 274.0,
+                base_max            = 307.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 40,
+                mana                = 245,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18870] = {
+                base_min            = 365.0,
+                base_max            = 408.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 48,
+                mana                = 305,
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            [18871] = {
+                base_min            = 462.0,
+                base_max            = 514.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 56,
+                mana                = 365, 
+                flags               = 0,
+                school              = magic_school.shadow
+            },
+            -- conflagrate
+            [17962] = {
+                base_min            = 249.0,
+                base_max            = 316.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 40,
+                mana                = 165, 
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [18930] = {
+                base_min            = 326.0,
+                base_max            = 407.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 48,
+                mana                = 200, 
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [18931] = {
+                base_min            = 395.0,
+                base_max            = 491.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 54,
+                mana                = 230, 
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [18932] = {
+                base_min            = 447.0,
+                base_max            = 557.0, 
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 60,
+                mana                = 255, 
+                flags               = 0,
+                school              = magic_school.fire
             }
         };
     end
     return {};
 end
+
 
 local spells = create_spells();
 
@@ -4727,6 +5927,7 @@ local function empty_loadout()
         illumination  = 0,
         master_of_elements  = 0,
         natures_grace = 0,
+        improved_immolate = 0,
 
         num_set_pieces = {0, 0, 0, 0, 0, 0, 0},
         
@@ -4736,7 +5937,8 @@ local function empty_loadout()
         ability_cast_mod = {},
         ability_extra_ticks = {},
         ability_cost_mod = {},
-        ability_crit_mod = {}
+        ability_crit_mod = {},
+        ability_hit = {}
     };
 end
 
@@ -4809,6 +6011,7 @@ local function loadout_copy(loadout)
     cpy.illumination = loadout.illumination;
     cpy.master_of_elements = loadout.master_of_elements;
     cpy.natures_grace = loadout.natures_grace;
+    cpy.improved_immolate = loadout.improved_immolate;
 
     cpy.stat_mod = {};
 
@@ -4818,6 +6021,7 @@ local function loadout_copy(loadout)
     cpy.ability_extra_ticks = {};
     cpy.ability_cost_mod = {};
     cpy.ability_crit_mod = {};
+    cpy.ability_hit = {};
 
     for i = 1, 7 do
         cpy.spelldmg_by_school[i] = loadout.spelldmg_by_school[i];
@@ -4857,6 +6061,9 @@ local function loadout_copy(loadout)
     end
     for k, v in pairs(loadout.ability_crit_mod) do
         cpy.ability_crit_mod[k] = v;
+    end
+    for k, v in pairs(loadout.ability_hit) do
+        cpy.ability_hit[k] = v;
     end
 
     return cpy;
@@ -5083,6 +6290,7 @@ local function apply_talents(loadout)
                 new_loadout.ability_crit_mod[sf] = 0;
                 new_loadout.ability_crit_mod[wrath] = 0;
             end
+            -- TODO: uhh why do it like this?
             new_loadout.ability_crit_mod[mf] = 
                 (new_loadout.spell_crit_mod_by_school[magic_school.arcane] - 1) * (pts * 0.2);
             new_loadout.ability_crit_mod[sf] = 
@@ -5230,7 +6438,21 @@ local function apply_talents(loadout)
                 new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.02;
             end
         end
-        -- TODO: force of will
+        -- force of will
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        if pts ~= 0 then
+
+            new_loadout.spell_crit_by_school[magic_school.holy] = 
+                new_loadout.spell_crit_by_school[magic_school.holy] + 0.01 * pts;
+            new_loadout.spell_crit_by_school[magic_school.shadow] = 
+                new_loadout.spell_crit_by_school[magic_school.shadow] + 0.01 * pts;
+
+            for i = 2, 7 do
+                new_loadout.spell_dmg_mod_by_school[i] = 
+                    new_loadout.spell_dmg_mod_by_school[i] + 0.01 * pts;
+            end
+        end
+
         -- improved renew
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 2);
         if pts ~= 0 then
@@ -5586,6 +6808,151 @@ local function apply_talents(loadout)
             new_loadout.spell_crit_by_school[magic_school.holy] = 
                 new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
+
+    elseif class == "WARLOCK" then
+        local affl = {"Corruption", "Siphon Life", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul"};
+        for k, v in pairs(affl) do
+            affl[k] = localized_spell_name(v);
+        end
+        local destr = {"Shadow Bolt", "Searing Pain", "Soul Fire", "Hellfire", "Rain of Fire", "Immolate", "Shadowburn", "Conflagrate"};
+        for k, v in pairs(destr) do
+            destr[k] = localized_spell_name(v);
+        end
+
+
+        -- suppression
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
+        if pts ~= 0 then
+
+            for k, v in pairs(affl) do
+                if not new_loadout.ability_hit[v] then
+                    new_loadout.ability_hit[v] = 0;
+                end
+            end
+            for k, v in pairs(affl) do
+                new_loadout.ability_hit[v] = 
+                    new_loadout.ability_hit[v] + pts * 0.02;
+            end
+        end
+        -- improved corruption
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        if pts ~= 0 then
+            local corruption = localized_spell_name("Corruption");
+
+            if not new_loadout.ability_cast_mod[corruption] then
+                new_loadout.ability_cast_mod[corruption] = 0;
+            end
+
+            new_loadout.ability_cast_mod[corruption] = 
+                new_loadout.ability_cast_mod[corruption] + pts * 0.4;
+        end
+
+        -- improved curse of agony
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 7);
+        if pts ~= 0 then
+            local coa = localized_spell_name("Curse of Agony");
+
+            if not new_loadout.ability_effect_mod[coa] then
+                new_loadout.ability_effect_mod[coa] = 0;
+            end
+
+            new_loadout.ability_effect_mod[coa] = 
+                new_loadout.ability_effect_mod[coa] + pts * 0.02;
+        end
+        -- shadow mastery
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 16);
+        if pts ~= 0 then
+
+            new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
+                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + pts * 0.02;
+        end
+
+        -- TODO: improved shadow bolt
+        --local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
+
+        -- cataclysm
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
+        if pts ~= 0 then
+
+            for k, v in pairs(destr) do
+                if not new_loadout.ability_cost_mod[v] then
+                    new_loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(destr) do
+                new_loadout.ability_cost_mod[v] = 
+                    new_loadout.ability_cost_mod[v] + pts * 0.01;
+            end
+        end
+        -- bane
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 3);
+        if pts ~= 0 then
+            local imm = localized_spell_name("Immolate");
+            local sb = localized_spell_name("Shadow Bolt");
+            local sf = localized_spell_name("Soul Fire");
+
+            if not new_loadout.ability_cast_mod[imm] then
+                new_loadout.ability_cast_mod[imm] = 0;
+            end
+            if not new_loadout.ability_cast_mod[sb] then
+                new_loadout.ability_cast_mod[sb] = 0;
+            end
+            if not new_loadout.ability_cast_mod[sf] then
+                new_loadout.ability_cast_mod[sf] = 0;
+            end
+
+            new_loadout.ability_cast_mod[imm] = new_loadout.ability_cast_mod[imm] + pts * 0.01;
+            new_loadout.ability_cast_mod[sb] = new_loadout.ability_cast_mod[sb] + pts * 0.01;
+            new_loadout.ability_cast_mod[sf] = new_loadout.ability_cast_mod[sf] + pts * 0.04;
+        end
+        -- devastation
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 7);
+        if pts ~= 0 then
+
+            for k, v in pairs(destr) do
+                if not new_loadout.ability_crit[v] then
+                    new_loadout.ability_crit[v] = 0;
+                end
+            end
+            for k, v in pairs(destr) do
+                new_loadout.ability_crit[v] = 
+                    new_loadout.ability_crit[v] + pts * 0.01;
+            end
+        end
+        -- improved searing pain
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 11);
+        if pts ~= 0 then
+            local sp = localized_spell_name("Searing Pain");
+            if not new_loadout.ability_crit[sp] then
+                new_loadout.ability_crit[sp] = 0;
+            end
+            new_loadout.ability_crit[sp] = new_loadout.ability_crit[sp] + pts * 0.02;
+        end
+
+        -- improved immolate
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 13);
+        new_loadout.improved_immolate = pts;
+
+        -- ruin 
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
+        if pts ~= 0 then
+
+            for k, v in pairs(destr) do
+                if not new_loadout.ability_crit_mod[v] then
+                    new_loadout.ability_crit_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(destr) do
+                new_loadout.ability_crit_mod[v] = 
+                    new_loadout.ability_crit_mod[v] + 0.5;
+            end
+        end
+        --emberstorm
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
+        if pts ~= 0 then
+            new_loadout.spell_dmg_mod_by_school[magic_school.fire] =
+                new_loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
+        end
     end
 
     return new_loadout;
@@ -5632,6 +6999,40 @@ local function create_set_bonuses()
         set_tier_ids[16573] = set_tiers.pvp_2;
         set_tier_ids[16574] = set_tiers.pvp_2;
         set_tier_ids[16579] = set_tiers.pvp_2;
+
+    elseif class == "WARLOCK" then
+        for i = 16803, 16810 do
+            set_tier_ids[i] = set_tiers.pve_1;
+        end
+
+        -- ally
+        set_tier_ids[23296] = set_tiers.pvp_1;
+        set_tier_ids[23297] = set_tiers.pvp_1;
+        set_tier_ids[23283] = set_tiers.pvp_1;
+        set_tier_ids[23311] = set_tiers.pvp_1;
+        set_tier_ids[23282] = set_tiers.pvp_1;
+        set_tier_ids[23310] = set_tiers.pvp_1;
+
+        set_tier_ids[17581] = set_tiers.pvp_2;
+        set_tier_ids[17580] = set_tiers.pvp_2;
+        set_tier_ids[17583] = set_tiers.pvp_2;
+        set_tier_ids[17584] = set_tiers.pvp_2;
+        set_tier_ids[17579] = set_tiers.pvp_2;
+        set_tier_ids[17578] = set_tiers.pvp_2;
+        -- horde
+        set_tier_ids[22865] = set_tiers.pvp_1;
+        set_tier_ids[22855] = set_tiers.pvp_1;
+        set_tier_ids[23255] = set_tiers.pvp_1;
+        set_tier_ids[23256] = set_tiers.pvp_1;
+        set_tier_ids[22881] = set_tiers.pvp_1;
+        set_tier_ids[22884] = set_tiers.pvp_1;
+
+        set_tier_ids[17586] = set_tiers.pvp_2;
+        set_tier_ids[17588] = set_tiers.pvp_2;
+        set_tier_ids[17593] = set_tiers.pvp_2;
+        set_tier_ids[17591] = set_tiers.pvp_2;
+        set_tier_ids[17590] = set_tiers.pvp_2;
+        set_tier_ids[17592] = set_tiers.pvp_2;
     end
 
     return set_tier_ids;
@@ -5742,6 +7143,37 @@ local function apply_set_bonuses(loadout)
                 new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + 0.02;
             end
         end
+
+    elseif class == "WARLOCK" then
+
+        if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+
+            local shadow = {
+                "Curse of Agony", "Corruption", "Drain Soul", "Siphon Life", 
+                "Death Coil", "Drain Life", "Shadow Bolt", "Shadowburn"
+            };
+
+            for k, v in pairs(shadow) do
+                shadow[k] = localized_spell_name(v);
+            end
+            for k, v in pairs(shadow) do
+                if not new_loadout.ability_cost_mod[v] then
+                    new_loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(shadow) do
+                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + 0.15;
+            end
+
+        end
+        if new_loadout.num_set_pieces[set_tiers.pvp_1] >= 4 or new_loadout.num_set_pieces[set_tiers.pvp_1] >= 3 then
+
+            local imm = localized_spell_name("Immolate");
+            if not new_loadout.ability_cast_mod[imm] then
+                new_loadout.ability_cast_mod[imm] = 0;
+            end
+            new_loadout.ability_cast_mod[imm] = new_loadout.ability_cast_mod[imm] + 0.2;
+        end
     end
 
     return new_loadout;
@@ -5754,7 +7186,7 @@ local function apply_buffs(loadout)
     local _, class = UnitClass("player");
 
     if class == "MAGE" then
-        for i = 1, 40  do
+      for i = 1, 40  do
             local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
             if not name then
                 break;
@@ -5779,7 +7211,7 @@ local function apply_buffs(loadout)
             -- shadow form
             if spell_id == 15473 then
                 new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
-                    new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.3;
+                    new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
             end
         end
     end
@@ -5823,6 +7255,7 @@ local function apply_buffs(loadout)
             end
             new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + 0.2;
         end
+        -- TODO: holy dmg aura from palas
     end
 
     return new_loadout;
@@ -5970,6 +7403,9 @@ local function print_loadout(loadout)
     for k, v in pairs(loadout.ability_crit_mod) do
         print("crit mod: ", k, string.format("%.3f", v));
     end
+    for k, v in pairs(loadout.ability_hit) do
+        print("hit: ", k, string.format("%.3f", v));
+    end
 end
 
 local function spell_scaling(lvl)
@@ -6061,6 +7497,12 @@ local function spell_coef(spell_info, spell_name)
         direct_coef = direct_coef/2;
     elseif spell_name == localized_spell_name("Devouring Plague") then
         ot_coef = ot_coef/2;
+    elseif spell_name == localized_spell_name("Siphon Life") then
+        ot_coef = ot_coef/2;
+    elseif spell_name == localized_spell_name("Death Coil") then
+        direct_coef = direct_coef/2;
+    elseif spell_name == localized_spell_name("Drain Life") then
+        ot_coef = ot_coef/2;
     end
 
     direct_coef = direct_coef * spell_scaling(spell_info.lvl_req);
@@ -6083,8 +7525,17 @@ local function spell_info(base_min, base_max,
         print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
     end 
 
+    -- improved immolate only works on direct damage -,-
+
+    local base_mod_before_improved_immolate = base_mod;
+    if spell_name == localized_spell_name("Immolate") then
+        base_mod = base_mod + loadout.improved_immolate * 0.05;
+    end
+
     local min_noncrit_if_hit = (base_min * base_mod + sp * direct_coef) * mod;
     local max_noncrit_if_hit = (base_max * base_mod + sp * direct_coef) * mod;
+
+    local base_mod = base_mod_before_improved_immolate;
 
     local min_crit_if_hit = min_noncrit_if_hit * crit_mod;
     local max_crit_if_hit = max_noncrit_if_hit * crit_mod;
@@ -6308,6 +7759,12 @@ local function evaluate_spell(spell_data, spell_name, loadout)
 
     local direct_coef, over_time_coef = spell_coef(spell_data, spell_name);
 
+
+    if __sw__debug__ then
+        print("--------------------");
+        print(spell_name, spell_data.rank);
+    end
+
     local normal_dmg = spell_info(
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, extra_ticks,
@@ -6424,22 +7881,25 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
         if eval.spell_data.min_noncrit ~= 0 then
             if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
+                -- dmg spells with real direct range
                 if eval.spell_hit ~= 1 then
                     tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
                                                   effect, 
                                                   eval.spell_hit*100,
-                                                  math.ceil(eval.spell_data.min_noncrit), 
-                                                  math.floor(eval.spell_data.max_noncrit)),
+                                                  math.floor(eval.spell_data.min_noncrit), 
+                                                  math.ceil(eval.spell_data.max_noncrit)),
                                     232.0/255, 225.0/255, 32.0/255);
+                -- heal spells with real direct range
                 else
                     tooltip:AddLine(string.format("Normal %s: %d-%d", 
                                                   effect, 
-                                                  math.ceil(eval.spell_data.min_noncrit), 
-                                                  math.floor(eval.spell_data.max_noncrit)),
+                                                  math.floor(eval.spell_data.min_noncrit), 
+                                                  math.ceil(eval.spell_data.max_noncrit)),
                                     232.0/255, 225.0/255, 32.0/255);
                 end
             else
 
+                -- TODO: priest absorb is showing this...
                 tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
                                               effect,
                                               eval.spell_hit*100,
@@ -6452,17 +7912,17 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                     tooltip:AddLine(string.format("Critical %s (%.1f%% crit): %d-%d (ignites for %d-%d)", 
                                                   effect, 
                                                   eval.spell_crit*100, 
-                                                  math.ceil(eval.spell_data.min_crit), 
-                                                  math.floor(eval.spell_data.max_crit),
-                                                   math.ceil(eval.spell_data.ignite_min), 
-                                                  math.floor(eval.spell_data.ignite_max)),
+                                                  math.floor(eval.spell_data.min_crit), 
+                                                  math.ceil(eval.spell_data.max_crit),
+                                                  math.floor(eval.spell_data.ignite_min), 
+                                                  math.ceil(eval.spell_data.ignite_max)),
                                    252.0/255, 69.0/255, 3.0/255);
                 else
                     tooltip:AddLine(string.format("Critical %s (%.1f%% crit): %d-%d", 
                                                   effect, 
                                                   eval.spell_crit*100, 
-                                                  math.ceil(eval.spell_data.min_crit), 
-                                                  math.floor(eval.spell_data.max_crit)),
+                                                  math.floor(eval.spell_data.min_crit), 
+                                                  math.ceil(eval.spell_data.max_crit)),
                                    252.0/255, 69.0/255, 3.0/255);
                 end
             end
@@ -6474,6 +7934,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             -- round over time num for niceyness
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
 
+            -- TODO: might want to do a special case for curse of agony as its ticks varies over duration
             if eval.spell_hit ~= 1 then
                 tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
