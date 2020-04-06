@@ -9,8 +9,6 @@ local font = "GameFontHighlightSmall";
         -- Holy Nova
         -- Curse of Agony dmg ramps up
 
--- TODO before 1.0.3: normalize pvp set bonuses to allys too - only did horde so far
-
 local magic_school = {
      physical = 1,
      holy     = 2,
@@ -4928,7 +4926,7 @@ local function create_spells()
                 school              = magic_school.shadow
             },
             [1014] = {
-                base_min            = .0,
+                base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 180,
                 over_time_tick_freq = 2,
@@ -7056,22 +7054,31 @@ local function apply_set_bonuses(loadout)
 
     local _, class = UnitClass("player");
     if class == "PRIEST" then
-        if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
+        if new_loadout.num_set_pieces[set_tiers.pve_1] >= 3 then
 
-            -- NOTE: the tooltip specifies 2% holy crit chance but internally
-            --       seems to increase all spell crits by 2%, according to GetSpellCritChance API...
-            --new_loadout.healing_crit = new_loadout.healing_crit + 0.02;
-               
-            if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
-        
-                local poh = localized_spell_name("Prayer of Healing");
-                if not new_loadout.ability_crit[poh] then
-                    new_loadout.ability_crit[poh] = 0;
+            local flash = localized_spell_name("Flash Heal");
+            if not new_loadout.ability_cast_mod[flash] then
+                new_loadout.ability_cast_mod[flash] = 0;
+            end
+            new_loadout.ability_cast_mod[flash] = new_loadout.ability_cast_mod[flash] + 0.1;
+            
+            if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
+
+                -- NOTE: the tooltip specifies 2% holy crit chance but internally
+                --       seems to increase all spell crits by 2%, according to GetSpellCritChance API...
+                --new_loadout.healing_crit = new_loadout.healing_crit + 0.02;
+                   
+                if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+            
+                    local poh = localized_spell_name("Prayer of Healing");
+                    if not new_loadout.ability_crit[poh] then
+                        new_loadout.ability_crit[poh] = 0;
+                    end
+                    new_loadout.ability_crit[poh] = new_loadout.ability_crit[poh] + 0.25;
                 end
-                new_loadout.ability_crit[poh] = new_loadout.ability_crit[poh] + 0.25;
             end
         end
-    
+
     elseif class == "DRUID" then
 
         if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
@@ -7096,8 +7103,6 @@ local function apply_set_bonuses(loadout)
 
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
 
-            local abilities = {"Lesser Healing", "Healing Wave"};
-
             local lh = localized_spell_name("Lesser Healing");
             local hw = localized_spell_name("Healing Wave");
 
@@ -7114,6 +7119,7 @@ local function apply_set_bonuses(loadout)
             else
                 new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 0.25 * 0.35;
             end
+            new_loadout.ability_cost_mod[lh] = new_loadout.ability_cost_mod[lw] + 0.25 * 0.35;
             -- 8 set bonus for healing wave bounce is done within spell_info function
 
         end
@@ -7166,7 +7172,7 @@ local function apply_set_bonuses(loadout)
             end
 
         end
-        if new_loadout.num_set_pieces[set_tiers.pvp_1] >= 4 or new_loadout.num_set_pieces[set_tiers.pvp_1] >= 3 then
+        if new_loadout.num_set_pieces[set_tiers.pvp_1] >= 4 or new_loadout.num_set_pieces[set_tiers.pvp_2] >= 3 then
 
             local imm = localized_spell_name("Immolate");
             if not new_loadout.ability_cast_mod[imm] then
@@ -7611,7 +7617,7 @@ local function spell_info(base_min, base_max,
             expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
         end
     elseif spell_name == localized_spell_name("Healing Wave") and loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
-        expectation = (1 + 0.2 + 0.2*0.2);
+        expectation = (1 + 0.2 + 0.2*0.2) * expectation_st;
     elseif spell_name == localized_spell_name("Prayer of Healing") then
         expectation = 5 * expectation_st;
     elseif spell_name == localized_spell_name("Tranquility") then
@@ -7621,7 +7627,6 @@ local function spell_info(base_min, base_max,
     end
 
     local effect_per_sec = expectation/cast_time;
-
 
     return {
         min_noncrit = min_noncrit_if_hit,
@@ -7695,7 +7700,14 @@ local function evaluate_spell(spell_data, spell_name, loadout)
 
     -- apply global haste
     cast_speed = cast_speed * (1 - loadout.haste_mod);
-    cast_speed = math.max(cast_speed, 1.5);
+
+    if spell_name == localized_spell_name("Flash Heal") or spell_name == localized_spell_name("Regrowth") then
+        -- from set bonuses, flash heal and regrowth seem to be the only exceptions to ignore 1.5 gcd on all spells
+        cast_speed = math.max(cast_speed, 1.3);
+    else
+        cast_speed = math.max(cast_speed, 1.5);
+    end
+    
 
     local spell_mod = 1;
     local spell_mod_base = 1;
