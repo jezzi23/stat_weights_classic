@@ -7206,7 +7206,7 @@ local function apply_buffs(loadout)
                 new_loadout.cost_mod = new_loadout.cost_mod - 0.3;
             -- mind quickening gem bfuff
             elseif spell_id == 23723 then
-                new_loadout.haste_mod = new_loadout.haste_mod - 0.33;
+                new_loadout.haste_mod = new_loadout.haste_mod + 0.33;
             end
         end
     elseif class == "PRIEST" then
