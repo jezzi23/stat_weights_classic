@@ -7086,7 +7086,7 @@ local function apply_set_bonuses(loadout)
 
             local regrowth = localized_spell_name("Regrowth");
             if not new_loadout.ability_cast_mod[regrowth] then
-                new_loadout.ability_cast_mod[regorwth] = 0;
+                new_loadout.ability_cast_mod[regrowth] = 0;
             end
             new_loadout.ability_cast_mod[regrowth] = new_loadout.ability_cast_mod[regrowth] + 0.2;
                
@@ -7120,7 +7120,7 @@ local function apply_set_bonuses(loadout)
             else
                 new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 0.25 * 0.35;
             end
-            new_loadout.ability_cost_mod[lh] = new_loadout.ability_cost_mod[lw] + 0.25 * 0.35;
+            new_loadout.ability_cost_mod[lh] = new_loadout.ability_cost_mod[lh] + 0.25 * 0.35;
             -- 8 set bonus for healing wave bounce is done within spell_info function
 
         end
