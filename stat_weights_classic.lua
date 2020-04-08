@@ -7552,7 +7552,7 @@ local function spell_coef(spell_info, spell_name)
         direct_coef = 0.1;
         ot_coef = 0;
     elseif spell_name == localized_spell_name("Lightning Shield") then
-        direct_coef = 1.0;
+        direct_coef = 1/3;
         ot_coef = 0;
     elseif spell_name == localized_spell_name("Healing Stream Totem") then
         direct_coef = 0.0;
@@ -7709,7 +7709,7 @@ local function spell_info(base_min, base_max,
 
     if spell_name == localized_spell_name("Chain Heal") then
         if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-            expectation = (1 + 1.3*.05 + 1.3*1.3*0.5*0.5) * expectation_st;
+            expectation = (1 + 1.3*0.5 + 1.3*1.3*0.5*0.5) * expectation_st;
         else
             expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
         end
@@ -8108,6 +8108,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
       if spell_name == localized_spell_name("Prayer of Healing") or 
          spell_name == localized_spell_name("Chain Heal") or 
+         spell_name == localized_spell_name("Chain Heal") or 
          spell_name == localized_spell_name("Tranquility") then
 
           effect_extra_str = " (incl: full effect)";
@@ -8121,7 +8122,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
       if eval.spell_data.base_min ~= 0.0 and eval.spell_data.expectation ~=  eval.spell_data.expectation_st then
 
-        tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single target)");
+        tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single hit)");
       end
 
       tooltip:AddLine(string.format("%s: %.1f", 
