@@ -1,5 +1,5 @@
 
-local version =  "1.0.3";
+local version =  "1.0.4";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
@@ -108,6 +108,7 @@ local spell_name_to_id = {
     ["Chain Heal"]              = 1064,
     ["Lightning Bolt"]          = 403,
     ["Chain Lightning"]         = 421,
+    ["Lightning Shield"]        = 324,
     ["Earth Shock"]             = 8042,
     ["Magma Totem"]             = 8190,
     ["Flame Shock"]             = 8050,
@@ -4072,6 +4073,98 @@ local function create_spells()
                 flags               = 0,
                 school              = magic_school.nature,
             },
+            -- lightning shield
+            [324] = {
+                base_min            = 13.0,
+                base_max            = 13.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 8,
+                mana                = 45,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [325] = {
+                base_min            = 29.0,
+                base_max            = 29.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 16,
+                mana                = 80,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [905] = {
+                base_min            = 51.0,
+                base_max            = 51.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 24,
+                mana                = 125,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [945] = {
+                base_min            = 80.0,
+                base_max            = 80.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 32,
+                mana                = 180,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [8134] = {
+                base_min            = 114.0,
+                base_max            = 114.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 40,
+                mana                = 240,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10431] = {
+                base_min            = 154.0,
+                base_max            = 154.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 48,
+                mana                = 305,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
+            [10432] = {
+                base_min            = 198.0,
+                base_max            = 198.0, 
+                over_time           = 0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 7,
+                lvl_req             = 56,
+                mana                = 370,
+                flags               = 0,
+                school              = magic_school.nature,
+            },
             -- earth shock
             [8042] = {
                 base_min            = 19.0,
@@ -7458,6 +7551,9 @@ local function spell_coef(spell_info, spell_name)
     if spell_name == localized_spell_name("Power Word: Shield") then
         direct_coef = 0.1;
         ot_coef = 0;
+    elseif spell_name == localized_spell_name("Lightning Shield") then
+        direct_coef = 1.0;
+        ot_coef = 0;
     elseif spell_name == localized_spell_name("Healing Stream Totem") then
         direct_coef = 0.0;
         ot_coef = 0.65;
@@ -7619,6 +7715,8 @@ local function spell_info(base_min, base_max,
         end
     elseif spell_name == localized_spell_name("Healing Wave") and loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
         expectation = (1 + 0.2 + 0.2*0.2) * expectation_st;
+    elseif spell_name == localized_spell_name("Lightning Shield") then
+        expectation = 3 * expectation_st;
     elseif spell_name == localized_spell_name("Prayer of Healing") then
         expectation = 5 * expectation_st;
     elseif spell_name == localized_spell_name("Tranquility") then
@@ -8012,10 +8110,10 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
          spell_name == localized_spell_name("Chain Heal") or 
          spell_name == localized_spell_name("Tranquility") then
 
-          effect_extra_str = " (incl: full aoe effect)";
+          effect_extra_str = " (incl: full effect)";
       elseif bit.band(spell.flags, spell_flags.aoe) ~= 0 and 
               eval.spell_data.expectation == eval.spell_data.expectation_st then
-          effect_extra_str = "(incl: single target)";
+          effect_extra_str = "(incl: single effect)";
       end
 
 
