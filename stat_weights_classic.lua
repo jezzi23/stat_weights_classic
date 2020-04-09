@@ -6759,8 +6759,16 @@ local function apply_talents(loadout)
             for k, v in pairs(abilities) do
                 new_loadout.ability_cast_mod[v] = new_loadout.ability_cast_mod[v] + pts * 0.02;
             end
+        end
 
-
+        -- improved lightning shield
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 6);
+        if pts ~= 0 then
+            local ls = localized_spell_name("Lightning Shield");
+            if not new_loadout.ability_effect_mod[ls] then
+                new_loadout.ability_effect_mod[ls] = 0;
+            end
+            new_loadout.ability_effect_mod[ls] = new_loadout.ability_effect_mod[ls] + pts * 0.05;
         end
 
         -- improved healing wave
@@ -6831,12 +6839,13 @@ local function apply_talents(loadout)
             end
         end
 
+        -- tidal mastery
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 11);
         if pts ~= 0 then
 
             new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01;
 
-            local lightning_spells = {"Lightning Bolt", "Chain Lightning"};
+            local lightning_spells = {"Lightning Bolt", "Chain Lightning", "Lightning Shield"};
 
             for k, v in pairs(lightning_spells) do
                 lightning_spells[k] = localized_spell_name(v);
@@ -6852,6 +6861,7 @@ local function apply_talents(loadout)
             end
         end
 
+        -- purification
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
         if pts ~= 0 then
 
@@ -7700,9 +7710,15 @@ local function spell_info(base_min, base_max,
     local expectation_direct = (min + max) / 2;
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
-    if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time >= 2 and 
+    if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time > 1.5 and 
         spell_name ~= localized_spell_name("Tranquility") and spell_name ~= localized_spell_name("Hurricane") then
-        cast_time = cast_time - 0.5 * crit;
+        local cast_reduction = 0.5;
+        if cast_time - 1.5 < 0.5 then
+            --cast_time is between ]1.5:2]
+            -- partially account for natures grace as the cast is lower than 2 and natures grace doesnt ignore gcd
+            cast_reduction = cast_time - 1.5; -- i.e. between [0:0.5]
+        end
+        cast_time = cast_time - cast_reduction * crit;
     end
 
     local expectation_st = expectation;
@@ -8122,7 +8138,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
       if eval.spell_data.base_min ~= 0.0 and eval.spell_data.expectation ~=  eval.spell_data.expectation_st then
 
-        tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single hit)");
+        tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single effect)");
       end
 
       tooltip:AddLine(string.format("%s: %.1f", 
