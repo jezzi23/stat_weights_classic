@@ -7219,7 +7219,8 @@ local function apply_set_bonuses(loadout)
 
             if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
                 
-                new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 3 * 0.25 * 0.35;
+                local probability_of_atleast_one_mana_proc = 1 - (1-0.25)*(1-0.25)*(1-0.25);
+                new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + probability_of_atleast_one_mana_proc * 0.35;
             else
                 new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 0.25 * 0.35;
             end
