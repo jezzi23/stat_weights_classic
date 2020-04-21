@@ -58,7 +58,8 @@ local set_tiers = {
     pve_2 = 4,
     pve_3 = 5,
     pvp_1 = 6,
-    pvp_2 = 7
+    pvp_2 = 7,
+    pve_2_5 = 8
 };
 
 local spell_name_to_id = {
@@ -6020,7 +6021,7 @@ local function empty_loadout()
         natures_grace = 0,
         improved_immolate = 0,
 
-        num_set_pieces = {0, 0, 0, 0, 0, 0, 0},
+        num_set_pieces = {0, 0, 0, 0, 0, 0, 0, 0},
         
         -- indexable by ability name
         ability_crit = {},
@@ -6123,10 +6124,9 @@ local function loadout_copy(loadout)
     end
 
     cpy.num_set_pieces = {};
-    for i = set_tiers.pve_0, set_tiers.pvp_2 do
+    for i = set_tiers.pve_0, set_tiers.pve_2_5 do
         cpy.num_set_pieces[i] = loadout.num_set_pieces[i];
     end
-
 
     for i = 1, 5 do
         cpy.stat_mod[i] = loadout.stat_mod[i];
@@ -7077,6 +7077,14 @@ local function create_set_bonuses()
         for i = 16897, 16904 do
             set_tier_ids[i] = set_tiers.pve_2;
         end
+
+        -- zg
+        set_tier_ids[19955] = set_tiers.pve_2_5;
+        set_tier_ids[19613] = set_tiers.pve_2_5;
+        set_tier_ids[19840] = set_tiers.pve_2_5;
+        set_tier_ids[19839] = set_tiers.pve_2_5;
+        set_tier_ids[19838] = set_tiers.pve_2_5;
+
     elseif class == "SHAMAN" then
         -- earthfury
         for i = 16837, 16844 do
@@ -7134,6 +7142,31 @@ local function create_set_bonuses()
         set_tier_ids[17591] = set_tiers.pvp_2;
         set_tier_ids[17590] = set_tiers.pvp_2;
         set_tier_ids[17592] = set_tiers.pvp_2;
+
+        -- zg
+        set_tier_ids[19957] = set_tiers.pve_2_5;
+        set_tier_ids[19605] = set_tiers.pve_2_5;
+        set_tier_ids[19848] = set_tiers.pve_2_5;
+        set_tier_ids[19849] = set_tiers.pve_2_5;
+        set_tier_ids[20033] = set_tiers.pve_2_5;
+
+    elseif class == "MAGE" then
+
+        -- zg
+        set_tier_ids[19601] = set_tiers.pve_2_5;
+        set_tier_ids[19959] = set_tiers.pve_2_5;
+        set_tier_ids[19846] = set_tiers.pve_2_5;
+        set_tier_ids[20034] = set_tiers.pve_2_5;
+        set_tier_ids[19845] = set_tiers.pve_2_5;
+
+    elseif class == "PALADIN" then
+
+        -- zg
+        set_tier_ids[19588] = set_tiers.pve_2_5;
+        set_tier_ids[19952] = set_tiers.pve_2_5;
+        set_tier_ids[19827] = set_tiers.pve_2_5;
+        set_tier_ids[19826] = set_tiers.pve_2_5;
+        set_tier_ids[19825] = set_tiers.pve_2_5;
     end
 
     return set_tier_ids;
@@ -7154,6 +7187,7 @@ local function apply_set_bonuses(loadout)
             new_loadout.num_set_pieces[set_bonuses[id]] = new_loadout.num_set_pieces[set_bonuses[id]] + 1;
         end
     end
+
 
     local _, class = UnitClass("player");
     if class == "PRIEST" then
@@ -7185,13 +7219,29 @@ local function apply_set_bonuses(loadout)
 
     elseif class == "DRUID" then
 
+        -- check for special items giving special things...
+        for item = 1, 18 do
+            local id = GetInventoryItemID("player", item);
+            if id == 19613 then -- pristine enchanted south seas kelp
+                if not new_loadout.ability_crit[localized_spell_name("Starfire")] then
+                    new_loadout.ability_crit[localized_spell_name("Starfire")] = 0;
+                end
+                if not new_loadout.ability_crit[localized_spell_name("Wrath")] then
+                    new_loadout.ability_crit[localized_spell_name("Wrath")] = 0;
+                end
+                new_loadout.ability_crit[localized_spell_name("Starfire")] = 
+                    new_loadout.ability_crit[localized_spell_name("Starfire")] + 0.02;
+                new_loadout.ability_crit[localized_spell_name("Wrath")] = 
+                    new_loadout.ability_crit[localized_spell_name("Wrath")] + 0.02;
+            end
+        end
+
         if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
 
             local regrowth = localized_spell_name("Regrowth");
             if not new_loadout.ability_cast_mod[regrowth] then
                 new_loadout.ability_cast_mod[regrowth] = 0;
             end
-            new_loadout.ability_cast_mod[regrowth] = new_loadout.ability_cast_mod[regrowth] + 0.2;
                
             if new_loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
         
@@ -7201,6 +7251,16 @@ local function apply_set_bonuses(loadout)
                 end
                 new_loadout.ability_extra_ticks[rejuv] = new_loadout.ability_extra_ticks[rejuv] + 1;
             end
+        end
+
+        if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
+
+            local sf = localized_spell_name("Starfire");
+            if not new_loadout.ability_crit[sf] then
+                new_loadout.ability_crit[sf] = 0;
+            end
+
+            new_loadout.ability_crit[sf] = new_loadout.ability_crit[sf] + 0.03;
         end
 
     elseif class == "SHAMAN" then
@@ -7285,6 +7345,42 @@ local function apply_set_bonuses(loadout)
             end
             new_loadout.ability_cast_mod[imm] = new_loadout.ability_cast_mod[imm] + 0.2;
         end
+
+        if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 3 then
+
+            -- unsure if this 2% bonus works on base spell or on spell power bonus
+            -- ...assume base for now as with other similar talents
+            local corr = localized_spell_name("Corruption");
+
+            if not new_loadout.ability_effect_mod[corr] then
+                new_loadout.ability_effect_mod[corr] = 0;
+            end
+            new_loadout.ability_effect_mod[corr] = new_loadout.ability_effect_mod[corr] + 0.02;
+        end
+
+    elseif class == "MAGE" then
+
+        if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
+
+            local fs = localized_spell_name("Flamestrike");
+            if not new_loadout.ability_cast_mod[fs] then
+                new_loadout.ability_cast_mod[fs] = 0;
+            end
+            new_loadout.ability_cast_mod[fs] = new_loadout.ability_cast_mod[fs] + 0.5;
+
+        end
+
+    elseif class == "PALADIN" then
+
+        if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
+
+            local hl = localized_spell_name("Holy Light");
+            if not new_loadout.ability_cast_mod[hl] then
+                new_loadout.ability_cast_mod[hl] = 0;
+            end
+            new_loadout.ability_cast_mod[hl] = new_loadout.ability_cast_mod[hl] + 0.1;
+
+        end
     end
 
     return new_loadout;
@@ -7323,6 +7419,100 @@ local function apply_buffs(loadout)
             if spell_id == 15473 then
                 new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
                     new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
+            end
+        end
+    elseif class == "WARLOCK" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- hazza'rah's charm of destruction
+            if spell_id == 24543 then
+                local destr = {"Shadow Bolt", "Searing Pain", "Soul Fire", "Hellfire", "Rain of Fire", "Immolate", "Shadowburn", "Conflagrate"};
+                for k, v in pairs(destr) do
+                    destr[k] = localized_spell_name(v);
+                end
+
+                for k, v in pairs(destr) do
+                    if not new_loadout.ability_crit[v] then
+                        new_loadout.ability_crit[v] = 0;
+                    end
+                end
+                for k, v in pairs(destr) do
+                    new_loadout.ability_crit[v] = 
+                        new_loadout.ability_crit[v] + 0.1;
+                end
+            end
+        end
+    elseif class == "SHAMAN" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- wushoolay's charm of spirits
+            if spell_id == 24499 then
+                local ls = localized_spell_name("Lightning Shield");
+                if not new_loadout.ability_effect_mod[ls] then
+                    new_loadout.ability_effect_mod[ls] = 0;
+                end
+                new_loadout.ability_effect_mod[ls] = new_loadout.ability_effect_mod[ls] + 1;
+            end
+        end
+    elseif class == "DRUID" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- nimble healing touch
+            if spell_id == 24542 then
+                new_loadout.ability_cast_mod[localized_spell_name("Healing Touch")] =
+                    new_loadout.ability_cast_mod[localized_spell_name("Healing Touch")] + 0.4;
+                
+                local healing_abilities = {"Healing Touch", "Rejuvenation", "Regrowth", "Tranquility"};
+
+                for k, v in pairs(healing_abilities) do
+                    healing_abilities[k] = localized_spell_name(v);
+                end
+
+                for k, v in pairs(healing_abilities) do
+                    if not new_loadout.ability_cost_mod[v] then
+                        new_loadout.ability_cost_mod[v] = 0;
+                    end
+                end
+                for k, v in pairs(healing_abilities) do
+                    new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + 0.05;
+                end
+            end
+        end
+    elseif class == "PALADIN" then
+        for i = 1, 40  do
+            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
+            if not name then
+                break;
+            end
+            -- hazza'rah's charm of healing
+            if spell_id == 24546 then
+                new_loadout.ability_cast_mod[localized_spell_name("Holy Light")] =
+                    new_loadout.ability_cast_mod[localized_spell_name("Holy Light")] + 0.4;
+                
+                local healing_abilities = {"Holy Light", "Flash of Light", "Holy Shock"};
+
+
+                for k, v in pairs(healing_abilities) do
+                    healing_abilities[k] = localized_spell_name(v);
+                end
+
+                for k, v in pairs(healing_abilities) do
+                    if not new_loadout.ability_cost_mod[v] then
+                        new_loadout.ability_cost_mod[v] = 0;
+                    end
+                end
+                for k, v in pairs(healing_abilities) do
+                    new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + 0.05;
+                end
             end
         end
     end
@@ -7365,7 +7555,15 @@ local function apply_buffs(loadout)
                 new_loadout.spell_dmg_mod_by_school[j] = new_loadout.spell_dmg_mod_by_school[j] + 0.2;
             end
             new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + 0.2;
+        -- zg buff
+        elseif spell_id == 24425 then
+            for j = 1, 5 do
+
+                new_loadout.stat_mod[j] = new_loadout.stat_mod[j] + 0.15;
+
+            end
         end
+
         -- TODO: holy dmg aura from palas
     end
 
@@ -7485,6 +7683,16 @@ local function print_loadout(loadout)
                         loadout.spell_dmg_mod_by_school[6],
                         loadout.spell_dmg_mod_by_school[7]));
 
+    print(string.format("spell haste mod: %.3f", loadout.haste_mod));
+    print(string.format("spell cost mod: %.3f", loadout.cost_mod));
+    print(string.format("stat mods : %.3f, %.3f, %.3f, %.3f, %.3f",
+                        loadout.stat_mod[1],
+                        loadout.stat_mod[2],
+                        loadout.stat_mod[3],
+                        loadout.stat_mod[4],
+                        loadout.stat_mod[5]));
+
+
     print("num set pieces: {", 
           loadout.num_set_pieces[1],
           loadout.num_set_pieces[2],
@@ -7493,6 +7701,7 @@ local function print_loadout(loadout)
           loadout.num_set_pieces[5],
           loadout.num_set_pieces[6],
           loadout.num_set_pieces[7],
+          loadout.num_set_pieces[8],
           "}");
 
     for k, v in pairs(loadout.ability_effect_mod) do
