@@ -1,5 +1,5 @@
 
-local version =  "1.0.4";
+local version =  "1.0.5";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
