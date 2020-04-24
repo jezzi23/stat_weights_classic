@@ -137,7 +137,8 @@ local spell_name_to_id = {
     ["Hellfire"]                = 1949,
     ["Rain of Fire"]            = 5740,
     ["Immolate"]                = 348,
-    ["Conflagrate"]             = 17962
+    ["Conflagrate"]             = 17962,
+    ["Shadowburn"]              = 17877
 };
 
 
@@ -5353,7 +5354,7 @@ local function create_spells()
                 base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 55,
-                over_time_tick_freq = 1,
+                over_time_tick_freq = 3,
                 over_time_duration  = 15.0,
                 cast_time           = 15.0,
                 rank                = 1,
@@ -5366,7 +5367,7 @@ local function create_spells()
                 base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 155,
-                over_time_tick_freq = 1,
+                over_time_tick_freq = 3,
                 over_time_duration  = 15.0,
                 cast_time           = 15.0,
                 rank                = 2,
@@ -5379,7 +5380,7 @@ local function create_spells()
                 base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 295,
-                over_time_tick_freq = 1,
+                over_time_tick_freq = 3,
                 over_time_duration  = 15.0,
                 cast_time           = 15.0,
                 rank                = 3,
@@ -5392,7 +5393,7 @@ local function create_spells()
                 base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 455,
-                over_time_tick_freq = 1,
+                over_time_tick_freq = 3,
                 over_time_duration  = 15.0,
                 cast_time           = 15.0,
                 rank                = 4,
@@ -7007,9 +7008,9 @@ local function apply_talents(loadout)
                 new_loadout.ability_cast_mod[sf] = 0;
             end
 
-            new_loadout.ability_cast_mod[imm] = new_loadout.ability_cast_mod[imm] + pts * 0.01;
-            new_loadout.ability_cast_mod[sb] = new_loadout.ability_cast_mod[sb] + pts * 0.01;
-            new_loadout.ability_cast_mod[sf] = new_loadout.ability_cast_mod[sf] + pts * 0.04;
+            new_loadout.ability_cast_mod[imm] = new_loadout.ability_cast_mod[imm] + pts * 0.1;
+            new_loadout.ability_cast_mod[sb] = new_loadout.ability_cast_mod[sb] + pts * 0.1;
+            new_loadout.ability_cast_mod[sf] = new_loadout.ability_cast_mod[sf] + pts * 0.4;
         end
         -- devastation
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 7);
@@ -7413,8 +7414,7 @@ local function apply_buffs(loadout)
                 new_loadout.haste_mod = new_loadout.haste_mod + 0.33;
             -- hazza'rah's charm of magic
             elseif spell_id == 24544 then
-                new_loadout.spell_crit_by_school[magic_school.arcane] =
-                    new_loadout.spell_crit_by_school[magic_school.arcane] + 0.05;
+                -- 5% arcane crit should already be given by GetCritChance API...
                 new_loadout.spell_crit_mod_by_school[magic_school.arcane] =
                     new_loadout.spell_crit_mod_by_school[magic_school.arcane] + 0.5;
             end
@@ -7453,6 +7453,17 @@ local function apply_buffs(loadout)
                     new_loadout.ability_crit[v] = 
                         new_loadout.ability_crit[v] + 0.1;
                 end
+            -- amplify curse
+            elseif spell_id == 18288 then
+                local coa = localized_spell_name("Curse of Agony");
+    
+                if not new_loadout.ability_effect_mod[coa] then
+                    new_loadout.ability_effect_mod[coa] = 0;
+                end
+    
+                new_loadout.ability_effect_mod[coa] = 
+                    new_loadout.ability_effect_mod[coa] + 0.5;
+    
             end
         end
     elseif class == "SHAMAN" then
@@ -7836,6 +7847,8 @@ local function spell_coef(spell_info, spell_name)
         direct_coef = direct_coef/2;
     elseif spell_name == localized_spell_name("Drain Life") then
         ot_coef = ot_coef/2;
+    elseif spell_name == localized_spell_name("Drain Soul") then
+        ot_coef = ot_coef/2;
     end
 
     direct_coef = direct_coef * spell_scaling(spell_info.lvl_req);
@@ -7859,7 +7872,6 @@ local function spell_info(base_min, base_max,
     end 
 
     -- improved immolate only works on direct damage -,-
-
     local base_mod_before_improved_immolate = base_mod;
     if spell_name == localized_spell_name("Immolate") then
         base_mod = base_mod + loadout.improved_immolate * 0.05;
@@ -7921,11 +7933,17 @@ local function spell_info(base_min, base_max,
         end
     end
 
-    local expected_ot = hit * ot;
-
     local expectation_ot_if_hit = (1 - ot_crit) * ot + ot_crit * ot_if_crit;
-
     local expected_ot = hit * expectation_ot_if_hit;
+    -- soul drain, life drain, mind flay are all directed casts that can only miss on the channel itself
+    -- 1.5 sec gcd is always implied which is the only penalty for misses
+    if spell_name == localized_spell_name("Drain Soul") or 
+       spell_name == localized_spell_name("Drain Life") or
+       spell_name == localized_spell_name("Mind Flay") then
+
+        local channel_ratio_time_lost_to_miss = 1 - (ot_dur - 1.5)/ot_dur;
+        expected_ot = expectation_ot_if_hit - (1 - hit) * channel_ratio_time_lost_to_miss * expectation_ot_if_hit;
+    end
 
     local expectation_direct = (min + max) / 2;
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
@@ -7942,8 +7960,9 @@ local function spell_info(base_min, base_max,
     end
 
     if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
-        -- a reasonably good estimate, 
+        -- a reasonably good, generous estimate, 
         -- assumes all other warlocks in raid/party have same crit chance/improved shadowbolt talent
+        -- and just spam shadow bolt allt fight, other abilities like shadowburn/mind blast will skew this estimate
         local sb_dmg_bonus = loadout.improved_shadowbolt * 0.04;
         local improved_sb_uptime = 1 - math.pow(1-crit, 4);
 
@@ -8297,17 +8316,30 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             -- round over time num for niceyness
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
 
-            -- TODO: might want to do a special case for curse of agony as its ticks varies over duration
             if eval.spell_hit ~= 1 then
-                tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
-                                              effect,
-                                              eval.spell_hit * 100,
-                                              eval.spell_data.ot_if_hit, 
-                                              eval.spell_data.ot_duration, 
-                                              math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                              math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                              eval.spell_data.ot_num_ticks), 
-                                232.0/255, 225.0/255, 32.0/255);
+                if spell_name == localized_spell_name("Curse of Agony") then
+                    tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%.0f-%.0f-%.0f per tick for %d ticks)",
+                                                  effect,
+                                                  eval.spell_hit * 100,
+                                                  eval.spell_data.ot_if_hit, 
+                                                  eval.spell_data.ot_duration, 
+                                                  eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * 0.6,
+                                                  eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks,
+                                                  eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * 1.4,
+                                                  eval.spell_data.ot_num_ticks), 
+                                    232.0/255, 225.0/255, 32.0/255);
+                else
+                    tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
+                                                  effect,
+                                                  eval.spell_hit * 100,
+                                                  eval.spell_data.ot_if_hit, 
+                                                  eval.spell_data.ot_duration, 
+                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                                  math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
+                                                  eval.spell_data.ot_num_ticks), 
+                                    232.0/255, 225.0/255, 32.0/255);
+                end
+                
 
             else
                 tooltip:AddLine(string.format("%s: %d over %d sec (%d-%d per tick for %d ticks)",
@@ -8355,7 +8387,8 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           end
       end
       if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
-          effect_extra_str = string.format(" (incl: %.1f%% improved shadow bolt uptime)", 1 - math.pow(1-eval.spell_crit, 4));
+          effect_extra_str = string.format(" (incl: %.1f%% improved shadow bolt uptime)", 
+                                           100*(1 - math.pow(1-eval.spell_crit, 4)));
       end
       if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell_data.cast_time > 1.5 then
           effect_extra_str = " (incl: nature's grace)";
@@ -8992,15 +9025,18 @@ function create_base_gui()
         local _, class = UnitClass("player");
 
         if class == "MAGE" then
-            sw_frame.spells[10181] = {
+            sw_frame.spells[10181] = {-- pre AQ
                 name = localized_spell_name("Frostbolt")
+            };
+            sw_frame.spells[10151] = {-- pre AQ
+                name = localized_spell_name("Fireball")
             };
         elseif class == "DRUID" then
 
-            sw_frame.spells[9889] = {
+            sw_frame.spells[9889] = {-- pre AQ
                 name = localized_spell_name("Healing Touch")
             };
-            sw_frame.spells[9876] = {
+            sw_frame.spells[9876] = {-- pre AQ
                 name = localized_spell_name("Starfire")
             };
 
@@ -9009,9 +9045,12 @@ function create_base_gui()
             sw_frame.spells[19943] = {
                 name = localized_spell_name("Flash of Light")
             };
+            sw_frame.spells[10329] = {-- pre AQ
+                name = localized_spell_name("Holy Light")
+            };
         elseif class == "SHAMAN" then
 
-            sw_frame.spells[10396] = {
+            sw_frame.spells[10396] = {--pre AQ
                 name = localized_spell_name("Healing Wave")
             };
             sw_frame.spells[15208] = {
@@ -9019,11 +9058,22 @@ function create_base_gui()
             };
         elseif class == "PRIEST" then
 
-            sw_frame.spells[25314] = {
+            sw_frame.spells[10965] = { -- pre AQ
                 name = localized_spell_name("Greater Heal")
             };
-            sw_frame.spells[25315] = {
+            sw_frame.spells[10929] = { -- pre AQ
                 name = localized_spell_name("Renew")
+            };
+        elseif class == "WARLOCK" then
+
+            sw_frame.spells[11661] = {-- pre AQ
+                name = localized_spell_name("Shadow Bolt")
+            };
+            sw_frame.spells[11672] = {-- pre AQ
+                name = localized_spell_name("Corruption")
+            };
+            sw_frame.spells[11713] = {
+                name = localized_spell_name("Curse of Agony")
             };
         end
     end
