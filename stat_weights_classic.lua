@@ -7843,7 +7843,7 @@ local function spell_coef(spell_info, spell_name)
     end
 
     if spell_name == localized_spell_name("Holy Nova") then
-        direct_coef = direct_coef/1.25;
+        direct_coef = direct_coef/1.2;
     elseif spell_name == localized_spell_name("Devouring Plague") then
         ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Siphon Life") then
@@ -8087,7 +8087,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_mod = 1 + loadout.spell_heal_mod;
 
         if spell_name ~= localized_spell_name("Holy Nova") then
-
+            -- holy nova actually doesnt get bonus healing on base, maybe because its both dmg and heal
             spell_mod_base = 1 + loadout.spell_heal_mod_base;
         end
         spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
@@ -8101,11 +8101,6 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_mod = spell_mod + loadout.spell_dmg_mod_by_school[spell_data.school];
         spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
 
-        -- TODO: 
-        -- testing special case for holy nova
-        --if spell_name == localized_spell_name("Holy Nova") then
-        --    spell_mod_base = spell_mod_base + loadout.spell_heal_mod_base;
-        --end
     end
 
     local extra_hit = 0;
