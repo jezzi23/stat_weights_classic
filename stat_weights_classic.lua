@@ -6027,7 +6027,8 @@ local function empty_loadout()
         
         -- indexable by ability name
         ability_crit = {},
-        ability_effect_mod= {},
+        ability_base_mod = {},
+        ability_effect_mod = {},
         ability_cast_mod = {},
         ability_extra_ticks = {},
         ability_cost_mod = {},
@@ -6111,6 +6112,7 @@ local function loadout_copy(loadout)
     cpy.stat_mod = {};
 
     cpy.ability_crit = {};
+    cpy.ability_base_mod = {};
     cpy.ability_effect_mod = {};
     cpy.ability_cast_mod = {};
     cpy.ability_extra_ticks = {};
@@ -6140,6 +6142,9 @@ local function loadout_copy(loadout)
 
     for k, v in pairs(loadout.ability_crit) do
         cpy.ability_crit[k] = v;
+    end
+    for k, v in pairs(loadout.ability_base_mod) do
+        cpy.ability_base_mod[k] = v;
     end
     for k, v in pairs(loadout.ability_effect_mod) do
         cpy.ability_effect_mod[k] = v;
@@ -6341,10 +6346,10 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
         if pts ~= 0 then
             local coc = localized_spell_name("Cone of Cold");
-            if not new_loadout.ability_effect_mod[coc] then
-                new_loadout.ability_effect_mod[coc] = 0;
+            if not new_loadout.ability_base_mod[coc] then
+                new_loadout.ability_base_mod[coc] = 0;
             end
-            new_loadout.ability_effect_mod[coc] = new_loadout.ability_effect_mod[coc] + pts * 0.15;
+            new_loadout.ability_base_mod[coc] = new_loadout.ability_base_mod[coc] + pts * 0.15;
         end
     elseif class == "DRUID" then
 
@@ -6362,13 +6367,13 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
         if pts ~= 0 then
             local mf = localized_spell_name("Moonfire");
-            if not new_loadout.ability_effect_mod[mf] then
-                new_loadout.ability_effect_mod[mf] = 0;
+            if not new_loadout.ability_base_mod[mf] then
+                new_loadout.ability_base_mod[mf] = 0;
             end
             if not new_loadout.ability_crit[mf] then
                 new_loadout.ability_crit[mf] = 0;
             end
-            new_loadout.ability_effect_mod[mf] = new_loadout.ability_effect_mod[mf] + pts * 0.02;
+            new_loadout.ability_base_mod[mf] = new_loadout.ability_base_mod[mf] + pts * 0.02;
             new_loadout.ability_crit[mf] = new_loadout.ability_crit[mf] + pts * 0.02;
         end
 
@@ -6435,12 +6440,12 @@ local function apply_talents(loadout)
                 abilities[k] = localized_spell_name(v);
             end
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_effect_mod[v] then
-                    new_loadout.ability_effect_mod[v] = 0;
+                if not new_loadout.ability_base_mod[v] then
+                    new_loadout.ability_base_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.02;
+                new_loadout.ability_base_mod[v] = new_loadout.ability_base_mod[v] + pts * 0.02;
             end
         end
 
@@ -6481,10 +6486,10 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 10);
         if pts ~= 0 then
             local rejuv = localized_spell_name("Rejuvenation");
-            if not new_loadout.ability_effect_mod[rejuv] then
-                new_loadout.ability_effect_mod[rejuv] = 0;
+            if not new_loadout.ability_base_mod[rejuv] then
+                new_loadout.ability_base_mod[rejuv] = 0;
             end
-            new_loadout.ability_effect_mod[rejuv] = new_loadout.ability_effect_mod[rejuv] + pts * 0.05;
+            new_loadout.ability_base_mod[rejuv] = new_loadout.ability_base_mod[rejuv] + pts * 0.05;
         end
 
         -- gift of nature
@@ -6508,11 +6513,11 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
         if pts ~= 0 then
             local shield = localized_spell_name("Power Word: Shield");
-            if not new_loadout.ability_effect_mod[shield] then
-                new_loadout.ability_effect_mod[shield] = 0;
+            if not new_loadout.ability_base_mod[shield] then
+                new_loadout.ability_base_mod[shield] = 0;
             end
-            new_loadout.ability_effect_mod[shield] = 
-                new_loadout.ability_effect_mod[shield] + pts * 0.05;
+            new_loadout.ability_base_mod[shield] = 
+                new_loadout.ability_base_mod[shield] + pts * 0.05;
         end
 
         -- mental agility 
@@ -6551,10 +6556,10 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 2);
         if pts ~= 0 then
             local renew = localized_spell_name("Renew");
-            if not new_loadout.ability_effect_mod[renew] then
-                new_loadout.ability_effect_mod[renew] = 0;
+            if not new_loadout.ability_base_mod[renew] then
+                new_loadout.ability_base_mod[renew] = 0;
             end
-            new_loadout.ability_effect_mod[renew] = new_loadout.ability_effect_mod[renew] + pts * 0.05;
+            new_loadout.ability_base_mod[renew] = new_loadout.ability_base_mod[renew] + pts * 0.05;
         end
         -- holy specialization
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 3);
@@ -6607,13 +6612,13 @@ local function apply_talents(loadout)
                 abilities[k] = localized_spell_name(v);
             end
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_effect_mod[v] then
-                    new_loadout.ability_effect_mod[v] = 0;
+                if not new_loadout.ability_base_mod[v] then
+                    new_loadout.ability_base_mod[v] = 0;
                 end
             end
             -- TODO: multiplicative or additive?
             for k, v in pairs(abilities) do
-                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.05;
+                new_loadout.ability_base_mod[v] = new_loadout.ability_base_mod[v] + pts * 0.05;
             end
         end
         -- improved prayer of healing
@@ -6647,17 +6652,34 @@ local function apply_talents(loadout)
             end
             new_loadout.ability_extra_ticks[swp] = new_loadout.ability_extra_ticks[swp] + pts;
         end
-        --shadow focus
+        -- shadow focus
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 5);
         if pts ~= 0 then
             new_loadout.spelldmg_hit_by_school[magic_school.shadow] = 
                 new_loadout.spelldmg_hit_by_school[magic_school.shadow] + pts * 0.02;
         end
-        --darkness
+        -- darkness
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
         if pts ~= 0 then
-            new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
-                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + pts * 0.02;
+            
+            local swp = localized_spell_name("Shadow Word: Pain");
+            local mf = localized_spell_name("Mind Flay");
+            local mb = localized_spell_name("Mind Blast");
+
+            if not new_loadout.ability_base_mod[swp] then
+                new_loadout.ability_base_mod[swp] = 0;
+            end
+            new_loadout.ability_base_mod[swp] = new_loadout.ability_base_mod[swp] + 0.02 * pts;
+            
+            if not new_loadout.ability_base_mod[mf] then
+                new_loadout.ability_base_mod[mf] = 0;
+            end
+            new_loadout.ability_base_mod[mf] = new_loadout.ability_base_mod[mf] + 0.02 * pts;
+
+            if not new_loadout.ability_base_mod[mb] then
+                new_loadout.ability_base_mod[mb] = 0;
+            end
+            new_loadout.ability_base_mod[mb] = new_loadout.ability_base_mod[mb] + 0.02 * pts;
         end
 
     elseif class == "SHAMAN" then
@@ -6689,12 +6711,12 @@ local function apply_talents(loadout)
             end
 
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_effect_mod[v] then
-                    new_loadout.ability_effect_mod[v] = 0;
+                if not new_loadout.ability_base_mod[v] then
+                    new_loadout.ability_base_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.01;
+                new_loadout.ability_base_mod[v] = new_loadout.ability_base_mod[v] + pts * 0.01;
             end
         end
 
@@ -6707,12 +6729,12 @@ local function apply_talents(loadout)
             end
 
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_effect_mod[v] then
-                    new_loadout.ability_effect_mod[v] = 0;
+                if not new_loadout.ability_base_mod[v] then
+                    new_loadout.ability_base_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.05;
+                new_loadout.ability_base_mod[v] = new_loadout.ability_base_mod[v] + pts * 0.05;
             end
         end
 
@@ -6768,10 +6790,10 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 6);
         if pts ~= 0 then
             local ls = localized_spell_name("Lightning Shield");
-            if not new_loadout.ability_effect_mod[ls] then
-                new_loadout.ability_effect_mod[ls] = 0;
+            if not new_loadout.ability_base_mod[ls] then
+                new_loadout.ability_base_mod[ls] = 0;
             end
-            new_loadout.ability_effect_mod[ls] = new_loadout.ability_effect_mod[ls] + pts * 0.05;
+            new_loadout.ability_base_mod[ls] = new_loadout.ability_base_mod[ls] + pts * 0.05;
         end
 
         -- improved healing wave
@@ -6833,12 +6855,12 @@ local function apply_talents(loadout)
             end
 
             for k, v in pairs(totems) do
-                if not new_loadout.ability_effect_mod[v] then
-                    new_loadout.ability_effect_mod[v] = 0;
+                if not new_loadout.ability_base_mod[v] then
+                    new_loadout.ability_base_mod[v] = 0;
                 end
             end
             for k, v in pairs(totems) do
-                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.05;
+                new_loadout.ability_base_mod[v] = new_loadout.ability_base_mod[v] + pts * 0.05;
             end
         end
 
@@ -6890,12 +6912,12 @@ local function apply_talents(loadout)
             end
 
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_effect_mod[v] then
-                    new_loadout.ability_effect_mod[v] = 0;
+                if not new_loadout.ability_base_mod[v] then
+                    new_loadout.ability_base_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_effect_mod[v] = new_loadout.ability_effect_mod[v] + pts * 0.04;
+                new_loadout.ability_base_mod[v] = new_loadout.ability_base_mod[v] + pts * 0.04;
             end
         end
         -- illumination
@@ -6956,12 +6978,12 @@ local function apply_talents(loadout)
         if pts ~= 0 then
             local coa = localized_spell_name("Curse of Agony");
 
-            if not new_loadout.ability_effect_mod[coa] then
-                new_loadout.ability_effect_mod[coa] = 0;
+            if not new_loadout.ability_base_mod[coa] then
+                new_loadout.ability_base_mod[coa] = 0;
             end
 
-            new_loadout.ability_effect_mod[coa] = 
-                new_loadout.ability_effect_mod[coa] + pts * 0.02;
+            new_loadout.ability_base_mod[coa] = 
+                new_loadout.ability_base_mod[coa] + pts * 0.02;
         end
         -- shadow mastery
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 16);
@@ -7357,10 +7379,10 @@ local function apply_set_bonuses(loadout)
             -- ...assume base for now as with other similar talents
             local corr = localized_spell_name("Corruption");
 
-            if not new_loadout.ability_effect_mod[corr] then
-                new_loadout.ability_effect_mod[corr] = 0;
+            if not new_loadout.ability_base_mod[corr] then
+                new_loadout.ability_base_mod[corr] = 0;
             end
-            new_loadout.ability_effect_mod[corr] = new_loadout.ability_effect_mod[corr] + 0.02;
+            new_loadout.ability_base_mod[corr] = new_loadout.ability_base_mod[corr] + 0.02;
         end
 
     elseif class == "MAGE" then
@@ -7457,12 +7479,12 @@ local function apply_buffs(loadout)
             elseif spell_id == 18288 then
                 local coa = localized_spell_name("Curse of Agony");
     
-                if not new_loadout.ability_effect_mod[coa] then
-                    new_loadout.ability_effect_mod[coa] = 0;
+                if not new_loadout.ability_base_mod[coa] then
+                    new_loadout.ability_base_mod[coa] = 0;
                 end
     
-                new_loadout.ability_effect_mod[coa] = 
-                    new_loadout.ability_effect_mod[coa] + 0.5;
+                new_loadout.ability_base_mod[coa] = 
+                    new_loadout.ability_base_mod[coa] + 0.5;
     
             end
         end
@@ -7475,10 +7497,10 @@ local function apply_buffs(loadout)
             -- wushoolay's charm of spirits
             if spell_id == 24499 then
                 local ls = localized_spell_name("Lightning Shield");
-                if not new_loadout.ability_effect_mod[ls] then
-                    new_loadout.ability_effect_mod[ls] = 0;
+                if not new_loadout.ability_base_mod[ls] then
+                    new_loadout.ability_base_mod[ls] = 0;
                 end
-                new_loadout.ability_effect_mod[ls] = new_loadout.ability_effect_mod[ls] + 1;
+                new_loadout.ability_base_mod[ls] = new_loadout.ability_base_mod[ls] + 1;
             end
         end
     elseif class == "DRUID" then
@@ -7730,8 +7752,11 @@ local function print_loadout(loadout)
           loadout.num_set_pieces[8],
           "}");
 
-    for k, v in pairs(loadout.ability_effect_mod) do
-        print("mod: ", k, string.format("%.3f", v));
+    for k, v in pairs(loadout.ability_base_mod) do
+        print("base mod: ", k, string.format("%.3f", v));
+    end
+    for k, v in pairs(loadout.ability_base_mod) do
+        print("effect mod: ", k, string.format("%.3f", v));
     end
     for k, v in pairs(loadout.ability_crit) do
         print("crit: ", k, string.format("%.3f", v));
@@ -7844,6 +7869,8 @@ local function spell_coef(spell_info, spell_name)
 
     if spell_name == localized_spell_name("Holy Nova") then
         direct_coef = direct_coef/1.25;
+    elseif spell_name == localized_spell_name("Mind Flay") then
+        ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Devouring Plague") then
         ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Siphon Life") then
@@ -8076,9 +8103,11 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         cast_speed = math.max(cast_speed, 1.5);
     end
     
-
     local spell_mod = 1;
     local spell_mod_base = 1;
+    if not loadout.ability_base_mod[spell_name] then
+        loadout.ability_base_mod[spell_name] = 0;
+    end
     if not loadout.ability_effect_mod[spell_name] then
         loadout.ability_effect_mod[spell_name] = 0;
     end
@@ -8090,17 +8119,12 @@ local function evaluate_spell(spell_data, spell_name, loadout)
             -- holy nova actually doesnt get bonus healing on base, maybe because its both dmg and heal
             spell_mod_base = 1 + loadout.spell_heal_mod_base;
         end
-        spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
-
-    elseif bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
-        spell_mod = 1;
-        spell_mod_base = 1;
+        spell_mod_base = spell_mod_base + loadout.ability_base_mod[spell_name];
         spell_mod = spell_mod + loadout.ability_effect_mod[spell_name];
     else
-        -- TODO: see if frostbolts should be done like the heal before
-        spell_mod = spell_mod + loadout.spell_dmg_mod_by_school[spell_data.school];
-        spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
-
+        spell_mod_base = spell_mod_base + loadout.ability_base_mod[spell_name];
+        spell_mod = spell_mod * (1 + loadout.spell_dmg_mod_by_school[spell_data.school]);
+        spell_mod = spell_mod * (1 + loadout.ability_effect_mod[spell_name]);
     end
 
     local extra_hit = 0;
