@@ -6020,6 +6020,7 @@ local function empty_loadout()
         master_of_elements  = 0,
         natures_grace = 0,
         improved_immolate = 0,
+        improved_shadowbolt = 0,
 
         num_set_pieces = {0, 0, 0, 0, 0, 0, 0, 0},
         
@@ -6104,6 +6105,7 @@ local function loadout_copy(loadout)
     cpy.master_of_elements = loadout.master_of_elements;
     cpy.natures_grace = loadout.natures_grace;
     cpy.improved_immolate = loadout.improved_immolate;
+    cpy.improved_shadowbolt = loadout.improved_shadowbolt;
 
     cpy.stat_mod = {};
 
@@ -6968,8 +6970,11 @@ local function apply_talents(loadout)
                 new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + pts * 0.02;
         end
 
-        -- TODO: improved shadow bolt
-        --local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
+        -- improved shadow bolt
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
+        if pts ~= 0 then
+           new_loadout.improved_shadowbolt = pts; 
+        end
 
         -- cataclysm
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
@@ -7286,7 +7291,6 @@ local function apply_set_bonuses(loadout)
             end
             new_loadout.ability_cost_mod[lh] = new_loadout.ability_cost_mod[lh] + 0.25 * 0.35;
             -- 8 set bonus for healing wave bounce is done within spell_info function
-
         end
 
         -- 3 set bonus for chain healing is done within spell_info function
@@ -7407,6 +7411,12 @@ local function apply_buffs(loadout)
             -- mind quickening gem bfuff
             elseif spell_id == 23723 then
                 new_loadout.haste_mod = new_loadout.haste_mod + 0.33;
+            -- hazza'rah's charm of magic
+            elseif spell_id == 24544 then
+                new_loadout.spell_crit_by_school[magic_school.arcane] =
+                    new_loadout.spell_crit_by_school[magic_school.arcane] + 0.05;
+                new_loadout.spell_crit_mod_by_school[magic_school.arcane] =
+                    new_loadout.spell_crit_mod_by_school[magic_school.arcane] + 0.5;
             end
         end
     elseif class == "PRIEST" then
@@ -7931,6 +7941,15 @@ local function spell_info(base_min, base_max,
         cast_time = cast_time - cast_reduction * crit;
     end
 
+    if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
+        -- a reasonably good estimate, 
+        -- assumes all other warlocks in raid/party have same crit chance/improved shadowbolt talent
+        local sb_dmg_bonus = loadout.improved_shadowbolt * 0.04;
+        local improved_sb_uptime = 1 - math.pow(1-crit, 4);
+
+        expectation = expectation * (1 + sb_dmg_bonus * improved_sb_uptime);
+    end
+
     local expectation_st = expectation;
 
     if spell_name == localized_spell_name("Chain Heal") then
@@ -8055,7 +8074,14 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
     end
 
-    local hit = spell_hit(loadout.lvl, loadout.target_lvl, loadout.spelldmg_hit_by_school[spell_data.school]);
+    local extra_hit = 0;
+    if loadout.ability_hit[spell_name] then
+        extra_hit = loadout.spelldmg_hit_by_school[spell_data.school] + loadout.ability_hit[spell_name];
+    else
+        extra_hit = loadout.spelldmg_hit_by_school[spell_data.school];
+    end
+
+    local hit = spell_hit(loadout.lvl, loadout.target_lvl, extra_hit);
     local hit_delta_1 = hit + 0.01;
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 or bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
         hit = 1.0;
@@ -8327,6 +8353,9 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           elseif spell.over_time > 0 and eval.spell_data.expectation ~= eval.spell_data.ot then
               effect_extra_str = "(incl: over time)";
           end
+      end
+      if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
+          effect_extra_str = string.format(" (incl: %.1f%% improved shadow bolt uptime)", 1 - math.pow(1-eval.spell_crit, 4));
       end
       if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell_data.cast_time > 1.5 then
           effect_extra_str = " (incl: nature's grace)";
