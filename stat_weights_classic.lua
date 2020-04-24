@@ -6663,18 +6663,24 @@ local function apply_talents(loadout)
         if pts ~= 0 then
             
             local swp = localized_spell_name("Shadow Word: Pain");
+            local dp = localized_spell_name("Devouring Plague");
             local mf = localized_spell_name("Mind Flay");
             local mb = localized_spell_name("Mind Blast");
 
-            if not new_loadout.ability_base_mod[swp] then
-                new_loadout.ability_base_mod[swp] = 0;
+            if not new_loadout.ability_effect_mod[swp] then
+                new_loadout.ability_effect_mod[swp] = 0;
             end
-            new_loadout.ability_base_mod[swp] = new_loadout.ability_base_mod[swp] + 0.02 * pts;
+            new_loadout.ability_effect_mod[swp] = new_loadout.ability_effect_mod[swp] + 0.02 * pts;
+
+            if not new_loadout.ability_effect_mod[dp] then
+                new_loadout.ability_effect_mod[dp] = 0;
+            end
+            new_loadout.ability_effect_mod[dp] = new_loadout.ability_effect_mod[dp] + 0.02 * pts;
             
-            if not new_loadout.ability_base_mod[mf] then
-                new_loadout.ability_base_mod[mf] = 0;
+            if not new_loadout.ability_effect_mod[mf] then
+                new_loadout.ability_effect_mod[mf] = 0;
             end
-            new_loadout.ability_base_mod[mf] = new_loadout.ability_base_mod[mf] + 0.02 * pts;
+            new_loadout.ability_effect_mod[mf] = new_loadout.ability_effect_mod[mf] + 0.02 * pts;
 
             if not new_loadout.ability_base_mod[mb] then
                 new_loadout.ability_base_mod[mb] = 0;
@@ -7755,7 +7761,7 @@ local function print_loadout(loadout)
     for k, v in pairs(loadout.ability_base_mod) do
         print("base mod: ", k, string.format("%.3f", v));
     end
-    for k, v in pairs(loadout.ability_base_mod) do
+    for k, v in pairs(loadout.ability_effect_mod) do
         print("effect mod: ", k, string.format("%.3f", v));
     end
     for k, v in pairs(loadout.ability_crit) do
