@@ -8085,7 +8085,11 @@ local function evaluate_spell(spell_data, spell_name, loadout)
 
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         spell_mod = 1 + loadout.spell_heal_mod;
-        spell_mod_base = 1 + loadout.spell_heal_mod_base;
+
+        if spell_name ~= localized_spell_name("Holy Nova") then
+
+            spell_mod_base = 1 + loadout.spell_heal_mod_base;
+        end
         spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
 
     elseif bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
@@ -8097,11 +8101,11 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_mod = spell_mod + loadout.spell_dmg_mod_by_school[spell_data.school];
         spell_mod_base = spell_mod_base + loadout.ability_effect_mod[spell_name];
 
+        -- TODO: 
         -- testing special case for holy nova
-        
-        if spell_name == localized_spell_name("Holy Nova") then
-            spell_mod_base = spell_mod_base + loadout.spell_heal_mod_base;
-        end
+        --if spell_name == localized_spell_name("Holy Nova") then
+        --    spell_mod_base = spell_mod_base + loadout.spell_heal_mod_base;
+        --end
     end
 
     local extra_hit = 0;
