@@ -7878,7 +7878,8 @@ local function spell_coef(spell_info, spell_name)
     elseif spell_name == localized_spell_name("Mind Flay") then
         ot_coef = 0.45;
     elseif spell_name == localized_spell_name("Devouring Plague") then
-        ot_coef = ot_coef/2;
+        --ot_coef = ot_coef/2;
+        ot_coef = 0.45;
     elseif spell_name == localized_spell_name("Siphon Life") then
         ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Death Coil") then
