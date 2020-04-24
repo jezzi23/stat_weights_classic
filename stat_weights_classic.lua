@@ -1,5 +1,5 @@
 
-local version =  "1.0.5";
+local version =  "1.0.6";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
@@ -7579,12 +7579,17 @@ local function apply_buffs(loadout)
         -- zg buff
         elseif spell_id == 24425 then
             for j = 1, 5 do
-
                 new_loadout.stat_mod[j] = new_loadout.stat_mod[j] + 0.15;
 
             end
+        elseif spell_id == 23768 then
+        -- darkmoon faire dmg buff
+        -- look into if it should be additive or multiplicative to other school dmg mods
+            for i = 1, 7 do
+                new_loadout.spell_dmg_mod_by_school[i] = new_loadout.spell_dmg_mod_by_school[i] + 0.1;
+            end
+            
         end
-
         -- TODO: holy dmg aura from palas
     end
 
@@ -7837,9 +7842,9 @@ local function spell_coef(spell_info, spell_name)
         ot_coef = ot_coef * 0.95;
     end
 
-    if spell_name == localized_spell_name("Holy Nova") then
-        direct_coef = direct_coef/2;
-    elseif spell_name == localized_spell_name("Devouring Plague") then
+    --if spell_name == localized_spell_name("Holy Nova") then
+    --    direct_coef = direct_coef/2;
+    if spell_name == localized_spell_name("Devouring Plague") then
         ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Siphon Life") then
         ot_coef = ot_coef/2;
