@@ -7843,7 +7843,7 @@ local function spell_coef(spell_info, spell_name)
     end
 
     if spell_name == localized_spell_name("Holy Nova") then
-        direct_coef = direct_coef/1.2;
+        direct_coef = direct_coef/1.25;
     elseif spell_name == localized_spell_name("Devouring Plague") then
         ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Siphon Life") then
