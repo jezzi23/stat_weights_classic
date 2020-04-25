@@ -6513,11 +6513,11 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
         if pts ~= 0 then
             local shield = localized_spell_name("Power Word: Shield");
-            if not new_loadout.ability_base_mod[shield] then
-                new_loadout.ability_base_mod[shield] = 0;
+            if not new_loadout.ability_effect_mod[shield] then
+                new_loadout.ability_effect_mod[shield] = 0;
             end
-            new_loadout.ability_base_mod[shield] = 
-                new_loadout.ability_base_mod[shield] + pts * 0.05;
+            new_loadout.ability_effect_mod[shield] = 
+                new_loadout.ability_effect_mod[shield] + pts * 0.05;
         end
 
         -- mental agility 
@@ -7874,12 +7874,11 @@ local function spell_coef(spell_info, spell_name)
     end
 
     if spell_name == localized_spell_name("Holy Nova") then
-        direct_coef = direct_coef/1.25;
+        direct_coef = direct_coef * 0.7;
     elseif spell_name == localized_spell_name("Mind Flay") then
         ot_coef = 0.45;
     elseif spell_name == localized_spell_name("Devouring Plague") then
-        --ot_coef = ot_coef/2;
-        ot_coef = 0.45;
+        ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Siphon Life") then
         ot_coef = ot_coef/2;
     elseif spell_name == localized_spell_name("Death Coil") then
@@ -8122,10 +8121,10 @@ local function evaluate_spell(spell_data, spell_name, loadout)
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         spell_mod = 1 + loadout.spell_heal_mod;
 
-        if spell_name ~= localized_spell_name("Holy Nova") then
+        --if spell_name ~= localized_spell_name("Holy Nova") then
             -- holy nova actually doesnt get bonus healing on base, maybe because its both dmg and heal
-            spell_mod_base = 1 + loadout.spell_heal_mod_base;
-        end
+        spell_mod_base = 1 + loadout.spell_heal_mod_base;
+        --end
         spell_mod_base = spell_mod_base + loadout.ability_base_mod[spell_name];
         spell_mod = spell_mod + loadout.ability_effect_mod[spell_name];
     else
