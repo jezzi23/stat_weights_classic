@@ -1,13 +1,9 @@
 
-local version =  "1.0.6";
+local version =  "1.1.0";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
 local font = "GameFontHighlightSmall";
-
---TODO: Known spells that are incorrectly evaluated
-        -- Holy Nova
-        -- Curse of Agony dmg ramps up
 
 local magic_school = {
      physical = 1,
@@ -5089,7 +5085,7 @@ local function create_spells()
             [18265] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
-                over_time           = 15,
+                over_time           = 150,
                 over_time_tick_freq = 3,
                 over_time_duration  = 30.0,
                 cast_time           = 1.5,
@@ -5102,7 +5098,7 @@ local function create_spells()
             [18879] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
-                over_time           = 22,
+                over_time           = 220,
                 over_time_tick_freq = 3,
                 over_time_duration  = 30.0,
                 cast_time           = 1.5,
@@ -5115,7 +5111,7 @@ local function create_spells()
             [18880] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
-                over_time           = 33,
+                over_time           = 330,
                 over_time_tick_freq = 3,
                 over_time_duration  = 30.0,
                 cast_time           = 1.5,
@@ -5128,9 +5124,9 @@ local function create_spells()
             [18881] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
-                over_time           = 15,
+                over_time           = 450,
                 over_time_tick_freq = 3,
-                over_time_duration  = 45.0,
+                over_time_duration  = 30.0,
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 58,
@@ -7492,6 +7488,10 @@ local function apply_buffs(loadout)
                 new_loadout.ability_base_mod[coa] = 
                     new_loadout.ability_base_mod[coa] + 0.5;
     
+            -- demonic sacrifice - succubus i.e. touch of shadow
+            elseif spell_id == 18791 then
+                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
+                    new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
             end
         end
     elseif class == "SHAMAN" then
