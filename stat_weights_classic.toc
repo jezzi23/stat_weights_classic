@@ -1,5 +1,5 @@
 ## Interface: 11303
 ## Title: Stat Weights Classic
 ## Notes: Advanced spell tooltips and stat comparisons for gear upgrades
-## SavedVariablesPerCharacter: __sw__persistent_spells_diff
+## SavedVariablesPerCharacter: __sw__persistent_data_per_char
 stat_weights_classic.lua
