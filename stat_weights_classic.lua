@@ -7220,6 +7220,16 @@ local function create_set_bonuses()
         set_tier_ids[20034] = set_tiers.pve_2_5;
         set_tier_ids[19845] = set_tiers.pve_2_5;
 
+        -- t2
+        set_tier_ids[16818] = set_tiers.pve_2;
+        set_tier_ids[16912] = set_tiers.pve_2;
+        set_tier_ids[16913] = set_tiers.pve_2;
+        set_tier_ids[16914] = set_tiers.pve_2;
+        set_tier_ids[16915] = set_tiers.pve_2;
+        set_tier_ids[16916] = set_tiers.pve_2;
+        set_tier_ids[16917] = set_tiers.pve_2;
+        set_tier_ids[16918] = set_tiers.pve_2;
+
     elseif class == "PALADIN" then
 
         -- zg
@@ -7248,7 +7258,6 @@ local function apply_set_bonuses(loadout)
             new_loadout.num_set_pieces[set_bonuses[id]] = new_loadout.num_set_pieces[set_bonuses[id]] + 1;
         end
     end
-
 
     local _, class = UnitClass("player");
     if class == "PRIEST" then
@@ -8041,6 +8050,11 @@ local function spell_info(base_min, base_max,
         cast_time = cast_time - cast_reduction * crit;
     end
 
+    local _, class = UnitClass("player");
+    if class == "MAGE" and base_min > 0 and loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
+        cast_time = cast_time - math.max(0, (cast_time - 1.5)) * 0.1;
+    end
+
     if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
         -- a reasonably good, generous estimate, 
         -- assumes all other warlocks in raid/party have same crit chance/improved shadowbolt talent
@@ -8145,6 +8159,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
 
     -- apply global haste
     cast_speed = cast_speed * (1 - loadout.haste_mod);
+
 
     if spell_name == localized_spell_name("Flash Heal") or spell_name == localized_spell_name("Regrowth") then
         -- from set bonuses, flash heal and regrowth seem to be the only exceptions to ignore 1.5 gcd on all spells
