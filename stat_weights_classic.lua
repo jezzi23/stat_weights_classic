@@ -1,5 +1,5 @@
 
-local version =  "1.1.0";
+local version =  "1.2.0";
 -- TODO: add libstub here
 --local icon_lib = LibStub("LibDBIcon-1.0");
 
@@ -34,6 +34,54 @@ local spell_flags = {
     heal = bit.lshift(1,3),
     absorb = bit.lshift(1,4),
     over_time_crit = bit.lshift(1,5)
+};
+
+local buffs1 = {
+    ony                         = { flag = bit.lshift(1,1),  id = 22888, name = "Ony/Nef"}, -- ok casters
+    wcb                         = { flag = bit.lshift(1,2),  id = 16609, name = "WCB"}, 
+    songflower                  = { flag = bit.lshift(1,3),  id = 15366, name = "Songflower"}, -- ok casters
+    spirit_of_zandalar          = { flag = bit.lshift(1,4),  id = 24425, name = "Spirit of Zandalar"}, -- ok
+    greater_arcane_elixir       = { flag = bit.lshift(1,5),  id = 17539, name = "Greater Arcane Elixir"},
+    elixir_of_greater_firepower = { flag = bit.lshift(1,6),  id = 26276, name = "Elixir of Greater Fire power"},
+    elixir_of_shadow_power      = { flag = bit.lshift(1,7),  id = 11474, name = "Elixir of Shadow power"},
+    elixir_of_frost_power       = { flag = bit.lshift(1,8),  id = 21920, name = "Elixir of Frost Power"},
+    runn_tum_tuber_surprise     = { flag = bit.lshift(1,9),  id = 22730, name = "10 Intellect Food"},
+    power_infusion              = { flag = bit.lshift(1,10), id = 10060, name = "Power Infusion"},-- ok
+    arcane_power                = { flag = bit.lshift(1,11), id = 12042, name = "Arcane Power"},-- ok
+    int                         = { flag = bit.lshift(1,12), id = 10157, name = "Arcane Intellect"}, --ok
+    int_aoe                     = { flag = bit.lshift(1,12), id = 23028, name = "Arcane Brilliance"}, --ok
+    motw                        = { flag = bit.lshift(1,13), id = 24752, name = "Mark of the Wild"}, --ok
+    motw_aoe                    = { flag = bit.lshift(1,13), id = 21850, name = "Gift of the Wild"}, --ok
+    spirit                      = { flag = bit.lshift(1,14), id = 27841, name = "Divine Spirit"}, --ok
+    spirit_aoe                  = { flag = bit.lshift(1,14), id = 27681, name = "Prayer Spirit"}, --ok
+    mind_quickening_gem         = { flag = bit.lshift(1,15), id = 23723, name = "Mind Quickening Gem"},-- ok
+    dmf_dmg                     = { flag = bit.lshift(1,16), id = 23768, name = "DMF Damage"},-- ok
+    dmt_crit                    = { flag = bit.lshift(1,17), id = 22820, name = "DMT Spell Crit"},-- ok
+    dmt_ap                      = { flag = bit.lshift(1,18), id = 22817, name = "DMT Attack Power"},
+    dmt_hp                      = { flag = bit.lshift(1,19), id = 22818, name = "DMT HP"},
+    hazzrahs_charm_of_magic     = { flag = bit.lshift(1,20), id = 24544, name = "Hazza'rah'Charm of Magic"},-- ok
+    hazzrahs_charm_of_destr     = { flag = bit.lshift(1,21), id = 24544, name = "Hazza'rah'Charm of Destruction"},-- ok
+    amplify_curse               = { flag = bit.lshift(1,22), id = 18288, name = "Amplify Curse"},-- ok
+    demonic_sacrifice           = { flag = bit.lshift(1,23), id = 18791, name = "Demonic Sacrifice (Succubus)"},-- ok
+    hazzrahs_charm_of_healing   = { flag = bit.lshift(1,24), id = 24546, name = "Hazza'rah'Charm of Healing"},-- ok
+    shadow_form                 = { flag = bit.lshift(1,25), id = 15473, name = "Shadow Form"},-- ok
+    wushoolays_charm_of_spirits = { flag = bit.lshift(1,26), id = 24499, name = "Wushoolay's Charm of Spirits"},-- ok
+    wushoolays_charm_of_nature  = { flag = bit.lshift(1,27), id = 24542, name = "Wushoolay's Charm of Nature"},-- ok
+    berserking_rogue            = { flag = bit.lshift(1,28), id = 26297, name = "Berserking 10%"},
+    berserking_warrior          = { flag = bit.lshift(1,29), id = 26296, name = "Berserking 10%"},
+    berserking                  = { flag = bit.lshift(1,30), id = 20554, name = "Berserking 10%"} -- ok casters
+};
+
+local target_buffs1 = {
+    amplify_magic               = { flag = bit.lshift(1,1), id = 10170, name = "Amplify Magic"},
+    dampen_magic                = { flag = bit.lshift(1,2), id = 10174, name = "Dampen Magic"},
+    blessing_of_light           = { flag = bit.lshift(1,3), id = 19979, name = "Blessing of Light"}
+};
+
+local target_debuffs1 = {
+    curse_of_the_elements       = { flag = bit.lshift(1,1), id = 11722, name = "Curse of the Elements"},
+    wc                          = { flag = bit.lshift(1,2), id = 12579, name = "Winter's Chill"},
+  --improved_scorch             = { flag = bit.lshift(1,3), id = 22888, name = "Improved Scorch"},
 };
 
 local stat_ids_in_ui = {
@@ -103,6 +151,10 @@ local spell_name_to_id = {
     ["Flamestrike"]             = 2120,
     ["Arcane Missiles"]         = 5143,
     ["Arcane Explosion"]        = 1449,
+    ["Amplify Magic"]           = 1008,
+    ["Dampen Magic"]            = 604,
+    ["Arcane Intellect"]        = 1459,
+    ["Arcane Brilliance"]       = 23028,
     -- Druid
     ["Healing Touch"]           = 5185,
     ["Rejuvenation"]            = 774,
@@ -114,6 +166,8 @@ local spell_name_to_id = {
     ["Insect Swarm"]            = 5570,
     ["Hurricane"]               = 16914,
     ["Entangling Roots"]        = 339,
+    ["Mark of the Wild"]        = 1126,
+    ["Gift of the Wild"]        = 21849,
     -- Priest
     ["Lesser Heal"]             = 2050,
     ["Heal"]                    = 2054,
@@ -129,6 +183,8 @@ local spell_name_to_id = {
     ["Shadow Word: Pain"]       = 589,
     ["Mind Flay"]               = 15407,
     ["Devouring Plague"]        = 2944,
+    ["Divine Spirit"]           = 14752,
+    ["Prayer of Spirit"]        = 27681,
     -- Shaman
     ["Healing Stream Totem"]    = 5394,
     ["Lesser Healing"]          = 8004,
@@ -151,6 +207,7 @@ local spell_name_to_id = {
     ["Consecration"]            = 26573,
     ["Exorcism"]                = 879,
     ["Holy Wrath"]              = 2812,
+    ["Blessing of Light"]       = 19977,
     -- Warlock
     ["Curse of Agony"]          = 980,
     ["Siphon Life"]             = 18265,
@@ -165,7 +222,8 @@ local spell_name_to_id = {
     ["Rain of Fire"]            = 5740,
     ["Immolate"]                = 348,
     ["Conflagrate"]             = 17962,
-    ["Shadowburn"]              = 17877
+    ["Shadowburn"]              = 17877,
+    ["Curse of the Elements"]   = 1490
 };
 
 
@@ -184,7 +242,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 4,
-                mana                = 25,
+                cost                = 25,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -197,7 +255,7 @@ local function create_spells()
                 cast_time           = 1.8,
                 rank                = 2,
                 lvl_req             = 8,
-                mana                = 35,
+                cost                = 35,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -210,7 +268,7 @@ local function create_spells()
                 cast_time           = 2.2,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 50,
+                cost                = 50,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -223,7 +281,7 @@ local function create_spells()
                 cast_time           = 2.6,
                 rank                = 4,
                 lvl_req             = 20,
-                mana                = 65,
+                cost                = 65,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -236,7 +294,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 5,
                 lvl_req             = 26,
-                mana                = 100,
+                cost                = 100,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -249,7 +307,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 6,
                 lvl_req             = 32,
-                mana                = 130,
+                cost                = 130,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -262,7 +320,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 7,
                 lvl_req             = 38,
-                mana                = 160,
+                cost                = 160,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -275,7 +333,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 8,
                 lvl_req             = 44,
-                mana                = 195,
+                cost                = 195,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost 
             },
@@ -288,7 +346,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 9,
                 lvl_req             = 50,
-                mana                = 225,
+                cost                = 225,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -301,7 +359,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 10,
                 lvl_req             = 56,
-                mana                = 260,
+                cost                = 260,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -314,7 +372,7 @@ local function create_spells()
                 cast_time           = 3,
                 rank                = 11,
                 lvl_req             = 60,
-                mana                = 290,
+                cost                = 290,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost
             },
@@ -328,7 +386,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 10,
-                mana                = 55,
+                cost                = 55,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -341,7 +399,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 26,
-                mana                = 85,
+                cost                = 85,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -354,7 +412,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 40,
-                mana                = 115,
+                cost                = 115,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -367,7 +425,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 54,
-                mana                = 145,
+                cost                = 145,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -381,7 +439,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 26,
-                mana                = 210,
+                cost                = 210,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -394,7 +452,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 34,
-                mana                = 290,
+                cost                = 290,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -407,7 +465,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 42,
-                mana                = 380,
+                cost                = 380,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -420,7 +478,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 50,
-                mana                = 465,
+                cost                = 465,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -433,7 +491,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 58,
-                mana                = 555,
+                cost                = 555,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.frost
             },
@@ -447,7 +505,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 320,
+                cost                = 320,
                 flags               = spell_flags.aoe,
                 school              = magic_school.frost
             },
@@ -460,7 +518,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 520,
+                cost                = 520,
                 flags               = spell_flags.aoe,
                 school              = magic_school.frost
             },
@@ -473,7 +531,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 3,
                 lvl_req             = 36,
-                mana                = 720,
+                cost                = 720,
                 flags               = spell_flags.aoe,
                 school              = magic_school.frost
             },
@@ -486,7 +544,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 4,
                 lvl_req             = 44,
-                mana                = 935,
+                cost                = 935,
                 flags               = spell_flags.aoe,
                 school              = magic_school.frost
             },
@@ -499,7 +557,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 1160,
+                cost                = 1160,
                 flags               = spell_flags.aoe,
                 school              = magic_school.frost
             },
@@ -512,7 +570,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 1400,
+                cost                = 1400,
                 flags               = spell_flags.aoe,
                 school              = magic_school.frost
             },
@@ -526,7 +584,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 30,
+                cost                = 30,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -539,7 +597,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 6,
-                mana                = 45,
+                cost                = 45,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -552,7 +610,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 12,
-                mana                = 65,
+                cost                = 65,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -565,7 +623,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 18,
-                mana                = 95,
+                cost                = 95,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -578,7 +636,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 5,
                 lvl_req             = 24,
-                mana                = 140,
+                cost                = 140,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -591,7 +649,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 6,
                 lvl_req             = 30,
-                mana                = 185,
+                cost                = 185,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -604,7 +662,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 7,
                 lvl_req             = 36,
-                mana                = 220,
+                cost                = 220,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -617,7 +675,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 8,
                 lvl_req             = 42,
-                mana                = 260,
+                cost                = 260,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -630,7 +688,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 9,
                 lvl_req             = 48,
-                mana                = 305,
+                cost                = 305,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -643,7 +701,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 10,
                 lvl_req             = 54,
-                mana                = 350,
+                cost                = 350,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -656,7 +714,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 11,
                 lvl_req             = 60,
-                mana                = 395,
+                cost                = 395,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -669,7 +727,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 12,
                 lvl_req             = 60,
-                mana                = 410,
+                cost                = 410,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -683,7 +741,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 6,
-                mana                = 40,
+                cost                = 40,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -696,7 +754,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 14,
-                mana                = 75,
+                cost                = 75,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -709,7 +767,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 22,
-                mana                = 115,
+                cost                = 115,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -722,7 +780,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 30,
-                mana                = 165,
+                cost                = 165,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -735,7 +793,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 38,
-                mana                = 220,
+                cost                = 220,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -748,7 +806,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 46,
-                mana                = 280,
+                cost                = 280,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -761,7 +819,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 54,
-                mana                = 340,
+                cost                = 340,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -775,7 +833,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 22, 
-                mana                = 50,
+                cost                = 50,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -788,7 +846,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 65,
+                cost                = 65,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -801,7 +859,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 34,
-                mana                = 80,
+                cost                = 80,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -814,7 +872,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 40,
-                mana                = 100,
+                cost                = 100,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -827,7 +885,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 46,
-                mana                = 115,
+                cost                = 115,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -840,7 +898,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 52,
-                mana                = 135,
+                cost                = 135,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -853,7 +911,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 58,
-                mana                = 150,
+                cost                = 150,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -867,7 +925,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 125,
+                cost                = 125,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -880,7 +938,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 2,
                 lvl_req             = 24,
-                mana                = 150,
+                cost                = 150,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -893,7 +951,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 3,
                 lvl_req             = 30,
-                mana                = 195,
+                cost                = 195,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -906,7 +964,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 4,
                 lvl_req             = 36,
-                mana                = 240,
+                cost                = 240,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -919,7 +977,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 5,
                 lvl_req             = 42,
-                mana                = 285,
+                cost                = 285,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -932,7 +990,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 6,
                 lvl_req             = 48,
-                mana                = 335,
+                cost                = 335,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -945,7 +1003,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 7,
                 lvl_req             = 54,
-                mana                = 385,
+                cost                = 385,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -958,7 +1016,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 8,
                 lvl_req             = 60,
-                mana                = 440,
+                cost                = 440,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -972,7 +1030,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 60, 
-                mana                = 215,
+                cost                = 215,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.fire
             },
@@ -985,7 +1043,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 60,
-                mana                = 270,
+                cost                = 270,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.fire
             },
@@ -998,7 +1056,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 60,
-                mana                = 355,
+                cost                = 355,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.fire
             },
@@ -1011,7 +1069,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 60,
-                mana                = 450,
+                cost                = 450,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.fire
             },
@@ -1024,7 +1082,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 60,
-                mana                = 545,
+                cost                = 545,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.fire
             },
@@ -1038,7 +1096,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 1,
                 lvl_req             = 16, 
-                mana                = 195,
+                cost                = 195,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -1051,7 +1109,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 2,
                 lvl_req             = 24, 
-                mana                = 330,
+                cost                = 330,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -1064,7 +1122,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 3,
                 lvl_req             = 32, 
-                mana                = 490,
+                cost                = 490,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -1077,7 +1135,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 40, 
-                mana                = 650,
+                cost                = 650,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -1090,7 +1148,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 48, 
-                mana                = 815,
+                cost                = 815,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -1103,7 +1161,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 6,
                 lvl_req             = 56, 
-                mana                = 990,
+                cost                = 990,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -1117,7 +1175,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 1,
                 lvl_req             = 8, 
-                mana                = 85,
+                cost                = 85,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1130,7 +1188,7 @@ local function create_spells()
                 cast_time           = 4.0,
                 rank                = 2,
                 lvl_req             = 16, 
-                mana                = 140,
+                cost                = 140,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1143,7 +1201,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 3,
                 lvl_req             = 24, 
-                mana                = 235,
+                cost                = 235,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1156,7 +1214,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 4,
                 lvl_req             = 32, 
-                mana                = 320,
+                cost                = 320,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1169,7 +1227,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 5,
                 lvl_req             = 40, 
-                mana                = 410,
+                cost                = 410,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1182,7 +1240,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 6,
                 lvl_req             = 48, 
-                mana                = 500,
+                cost                = 500,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1195,7 +1253,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 7,
                 lvl_req             = 56, 
-                mana                = 595,
+                cost                = 595,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1208,7 +1266,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 8,
                 lvl_req             = 56, 
-                mana                = 635,
+                cost                = 635,
                 flags               = spell_flags.over_time_crit,
                 school              = magic_school.arcane
             },
@@ -1222,7 +1280,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 14, 
-                mana                = 75,
+                cost                = 75,
                 flags               = spell_flags.aoe,
                 school              = magic_school.arcane
             },
@@ -1235,7 +1293,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 22,
-                mana                = 120,
+                cost                = 120,
                 flags               = spell_flags.aoe,
                 school              = magic_school.arcane
             },
@@ -1248,7 +1306,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 30,
-                mana                = 185,
+                cost                = 185,
                 flags               = spell_flags.aoe,
                 school              = magic_school.arcane
             },
@@ -1261,7 +1319,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 38,
-                mana                = 250,
+                cost                = 250,
                 flags               = spell_flags.aoe,
                 school              = magic_school.arcane
             },
@@ -1274,7 +1332,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 46,
-                mana                = 315,
+                cost                = 315,
                 flags               = spell_flags.aoe,
                 school              = magic_school.arcane
             },
@@ -1287,7 +1345,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 54,
-                mana                = 390,
+                cost                = 390,
                 flags               = spell_flags.aoe,
                 school              = magic_school.arcane
             }
@@ -1305,7 +1363,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 25,
+                cost                = 25,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1318,7 +1376,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 8,
-                mana                = 55,
+                cost                = 55,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1331,7 +1389,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 110,
+                cost                = 110,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1344,7 +1402,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 20,
-                mana                = 185,
+                cost                = 185,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1357,7 +1415,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 5,
                 lvl_req             = 26,
-                mana                = 270,
+                cost                = 270,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1370,7 +1428,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 6,
                 lvl_req             = 32,
-                mana                = 335,
+                cost                = 335,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1383,7 +1441,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 7,
                 lvl_req             = 38,
-                mana                = 405,
+                cost                = 405,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1396,7 +1454,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 8,
                 lvl_req             = 44,
-                mana                = 495,
+                cost                = 495,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1409,7 +1467,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 9,
                 lvl_req             = 50,
-                mana                = 600,
+                cost                = 600,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1422,7 +1480,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 10,
                 lvl_req             = 56,
-                mana                = 720,
+                cost                = 720,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1435,7 +1493,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 11,
                 lvl_req             = 60,
-                mana                = 800,
+                cost                = 800,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1449,7 +1507,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 4,
-                mana                = 25,
+                cost                = 25,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1462,7 +1520,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 10,
-                mana                = 40,
+                cost                = 40,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1475,7 +1533,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 16,
-                mana                = 75,
+                cost                = 75,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1488,7 +1546,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 22,
-                mana                = 105,
+                cost                = 105,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1501,7 +1559,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 28,
-                mana                = 135,
+                cost                = 135,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1514,7 +1572,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 34,
-                mana                = 160,
+                cost                = 160,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1527,7 +1585,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 40,
-                mana                = 195,
+                cost                = 195,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1540,7 +1598,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 8,
                 lvl_req             = 46,
-                mana                = 235,
+                cost                = 235,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1553,7 +1611,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 9,
                 lvl_req             = 52,
-                mana                = 280,
+                cost                = 280,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1566,7 +1624,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 10,
                 lvl_req             = 58,
-                mana                = 335,
+                cost                = 335,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1579,7 +1637,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 11,
                 lvl_req             = 60,
-                mana                = 360,
+                cost                = 360,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1594,7 +1652,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 1,
                 lvl_req             = 30,
-                mana                = 375,
+                cost                = 375,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.nature
             },
@@ -1607,7 +1665,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 2,
                 lvl_req             = 40,
-                mana                = 505,
+                cost                = 505,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.nature
             },
@@ -1620,7 +1678,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 3,
                 lvl_req             = 50,
-                mana                = 695,
+                cost                = 695,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.nature
             },
@@ -1633,7 +1691,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 4,
                 lvl_req             = 30,
-                mana                = 925,
+                cost                = 925,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.nature
             },
@@ -1647,7 +1705,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 1,
                 lvl_req             = 12,
-                mana                = 120,
+                cost                = 120,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1660,7 +1718,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 18,
-                mana                = 205,
+                cost                = 205,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1673,7 +1731,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 3,
                 lvl_req             = 24,
-                mana                = 280,
+                cost                = 280,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1686,7 +1744,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 4,
                 lvl_req             = 30,
-                mana                = 350,
+                cost                = 350,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1699,7 +1757,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 5,
                 lvl_req             = 36,
-                mana                = 420,
+                cost                = 420,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1712,7 +1770,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 6,
                 lvl_req             = 42,
-                mana                = 510,
+                cost                = 510,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1725,7 +1783,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 7,
                 lvl_req             = 48,
-                mana                = 615,
+                cost                = 615,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1738,7 +1796,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 8,
                 lvl_req             = 54,
-                mana                = 740,
+                cost                = 740,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1751,7 +1809,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 9,
                 lvl_req             = 60,
-                mana                = 880,
+                cost                = 880,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature
             },
@@ -1765,7 +1823,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 4,
-                mana                = 25,
+                cost                = 25,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1778,7 +1836,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 10,
-                mana                = 50,
+                cost                = 50,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1791,7 +1849,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 16,
-                mana                = 75,
+                cost                = 75,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1804,7 +1862,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 22,
-                mana                = 105,
+                cost                = 105,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1817,7 +1875,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 28,
-                mana                = 150,
+                cost                = 150,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1830,7 +1888,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 34,
-                mana                = 190,
+                cost                = 190,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1843,7 +1901,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 40,
-                mana                = 235,
+                cost                = 235,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1856,7 +1914,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 8,
                 lvl_req             = 46,
-                mana                = 280,
+                cost                = 280,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1869,7 +1927,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 9,
                 lvl_req             = 52,
-                mana                = 325,
+                cost                = 325,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1882,7 +1940,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 109,
                 lvl_req             = 58,
-                mana                = 375,
+                cost                = 375,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -1896,7 +1954,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 20,
+                cost                = 20,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1909,7 +1967,7 @@ local function create_spells()
                 cast_time           = 1.7,
                 rank                = 2,
                 lvl_req             = 6,
-                mana                = 35,
+                cost                = 35,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1922,7 +1980,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 55,
+                cost                = 55,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1935,7 +1993,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 4,
                 lvl_req             = 22,
-                mana                = 70,
+                cost                = 70,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1948,7 +2006,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 5,
                 lvl_req             = 30,
-                mana                = 100,
+                cost                = 100,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1961,7 +2019,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 6,
                 lvl_req             = 38,
-                mana                = 125,
+                cost                = 125,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1974,7 +2032,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 7,
                 lvl_req             = 46,
-                mana                = 155,
+                cost                = 155,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -1987,7 +2045,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 8,
                 lvl_req             = 54,
-                mana                = 180,
+                cost                = 180,
                 flags               = 0,
                 school              = magic_school.nature
             },
@@ -2001,7 +2059,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 95,
+                cost                = 95,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2014,7 +2072,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 2,
                 lvl_req             = 26,
-                mana                = 135,
+                cost                = 135,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2027,7 +2085,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 3,
                 lvl_req             = 34,
-                mana                = 180,
+                cost                = 180,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2040,7 +2098,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 4,
                 lvl_req             = 42,
-                mana                = 230,
+                cost                = 230,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2053,7 +2111,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 5,
                 lvl_req             = 50,
-                mana                = 275,
+                cost                = 275,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2066,7 +2124,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 6,
                 lvl_req             = 58,
-                mana                = 315,
+                cost                = 315,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2079,7 +2137,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 7,
                 lvl_req             = 60,
-                mana                = 340,
+                cost                = 340,
                 flags               = 0,
                 school              = magic_school.arcane
             },
@@ -2093,7 +2151,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 45,
+                cost                = 45,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2106,7 +2164,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 30,
-                mana                = 85,
+                cost                = 85,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2119,7 +2177,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 40,
-                mana                = 100,
+                cost                = 100,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2132,7 +2190,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 50,
-                mana                = 140,
+                cost                = 140,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2145,7 +2203,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 60,
-                mana                = 160,
+                cost                = 160,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2159,7 +2217,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 1,
                 lvl_req             = 40,
-                mana                = 880,
+                cost                = 880,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.nature,
             },
@@ -2172,7 +2230,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 2,
                 lvl_req             = 50,
-                mana                = 1180,
+                cost                = 1180,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.nature
             },
@@ -2185,7 +2243,7 @@ local function create_spells()
                 cast_time           = 10,
                 rank                = 3,
                 lvl_req             = 60,
-                mana                = 1495,
+                cost                = 1495,
                 flags               = bit.bor(spell_flags.snare, spell_flags.aoe),
                 school              = magic_school.nature
             },
@@ -2199,7 +2257,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 8,
-                mana                = 50,
+                cost                = 50,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2212,7 +2270,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 18,
-                mana                = 65,
+                cost                = 65,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2225,7 +2283,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 28,
-                mana                = 80,
+                cost                = 80,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2238,7 +2296,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 38,
-                mana                = 95,
+                cost                = 95,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2251,7 +2309,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 48,
-                mana                = 110,
+                cost                = 110,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             },
@@ -2264,7 +2322,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 58,
-                mana                = 125,
+                cost                = 125,
                 flags               = spell_flags.snare,
                 school              = magic_school.nature
             }
@@ -2282,7 +2340,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 30,
+                cost                = 30,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2295,7 +2353,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 4,
-                mana                = 45,
+                cost                = 45,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2308,7 +2366,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 10,
-                mana                = 75,
+                cost                = 75,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2322,7 +2380,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 1,
                 lvl_req             = 16,
-                mana                = 155,
+                cost                = 155,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2335,7 +2393,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 2,
                 lvl_req             = 22,
-                mana                = 205,
+                cost                = 205,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2348,7 +2406,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 3,
                 lvl_req             = 28,
-                mana                = 255,
+                cost                = 255,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2361,7 +2419,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 34,
-                mana                = 305,
+                cost                = 305,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2375,7 +2433,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 1,
                 lvl_req             = 40,
-                mana                = 370,
+                cost                = 370,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2388,7 +2446,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 2,
                 lvl_req             = 46,
-                mana                = 455,
+                cost                = 455,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2401,7 +2459,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 3,
                 lvl_req             = 52,
-                mana                = 545,
+                cost                = 545,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2414,7 +2472,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 58,
-                mana                = 655,
+                cost                = 655,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2427,7 +2485,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 60,
-                mana                = 710,
+                cost                = 710,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2441,7 +2499,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 125,
+                cost                = 125,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2454,7 +2512,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 26,
-                mana                = 155,
+                cost                = 155,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2467,7 +2525,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 32,
-                mana                = 185,
+                cost                = 185,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2480,7 +2538,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 38,
-                mana                = 215,
+                cost                = 215,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2493,7 +2551,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 44,
-                mana                = 265,
+                cost                = 265,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2506,7 +2564,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 50,
-                mana                = 315,
+                cost                = 315,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2519,7 +2577,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 56,
-                mana                = 380,
+                cost                = 380,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2533,7 +2591,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 1,
                 lvl_req             = 30,
-                mana                = 410,
+                cost                = 410,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.holy
             },
@@ -2546,7 +2604,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 2,
                 lvl_req             = 40,
-                mana                = 560,
+                cost                = 560,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.holy
             },
@@ -2559,7 +2617,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 3,
                 lvl_req             = 50,
-                mana                = 770,
+                cost                = 770,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.holy
             },
@@ -2572,7 +2630,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 60,
-                mana                = 1030,
+                cost                = 1030,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.holy
             },
@@ -2585,7 +2643,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 30,
-                mana                = 1070,
+                cost                = 1070,
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe),
                 school              = magic_school.holy
             },
@@ -2599,7 +2657,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 8,
-                mana                = 30,
+                cost                = 30,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2612,7 +2670,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 14,
-                mana                = 65,
+                cost                = 65,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2625,7 +2683,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 20,
-                mana                = 105,
+                cost                = 105,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2638,7 +2696,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 26,
-                mana                = 140,
+                cost                = 140,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2651,7 +2709,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 32,
-                mana                = 170,
+                cost                = 170,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2664,7 +2722,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 38,
-                mana                = 205,
+                cost                = 205,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2677,7 +2735,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 44,
-                mana                = 250,
+                cost                = 250,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2690,7 +2748,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 8,
                 lvl_req             = 50,
-                mana                = 305,
+                cost                = 305,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2703,7 +2761,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 9,
                 lvl_req             = 56,
-                mana                = 365,
+                cost                = 365,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2716,7 +2774,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 10,
                 lvl_req             = 60,
-                mana                = 410,
+                cost                = 410,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -2730,7 +2788,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 6,
-                mana                = 45,
+                cost                = 45,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2743,7 +2801,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 12,
-                mana                = 80,
+                cost                = 80,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2756,7 +2814,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 18,
-                mana                = 130,
+                cost                = 130,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2769,7 +2827,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 24,
-                mana                = 175,
+                cost                = 175,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2782,7 +2840,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 30,
-                mana                = 210,
+                cost                = 210,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2795,7 +2853,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 36,
-                mana                = 250,
+                cost                = 250,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2808,7 +2866,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 42,
-                mana                = 300,
+                cost                = 300,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2821,7 +2879,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 8,
                 lvl_req             = 48,
-                mana                = 355,
+                cost                = 355,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2834,7 +2892,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 9,
                 lvl_req             = 54,
-                mana                = 425,
+                cost                = 425,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2847,7 +2905,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 10,
                 lvl_req             = 60,
-                mana                = 500,
+                cost                = 500,
                 flags               = spell_flags.absorb,
                 school              = magic_school.holy
             },
@@ -2861,7 +2919,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 185,
+                cost                = 185,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy,
                 healing_version = {
@@ -2873,7 +2931,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 1,
                     lvl_req             = 20,
-                    mana                = 185,
+                    cost                = 185,
                     flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
                     school              = magic_school.holy,
                 }
@@ -2887,7 +2945,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 290,
+                cost                = 290,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy,
                 healing_version = {
@@ -2899,7 +2957,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 2,
                     lvl_req             = 28,
-                    mana                = 290,
+                    cost                = 290,
                     flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
                     school              = magic_school.holy,
                 }
@@ -2913,7 +2971,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 36,
-                mana                = 400,
+                cost                = 400,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy,
                 healing_version = {
@@ -2925,7 +2983,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 3,
                     lvl_req             = 36,
-                    mana                = 400,
+                    cost                = 400,
                     flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
                     school              = magic_school.holy,
                 }
@@ -2939,7 +2997,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 44,
-                mana                = 520,
+                cost                = 520,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy,
                 healing_version = {
@@ -2951,7 +3009,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 4,
                     lvl_req             = 44,
-                    mana                = 520,
+                    cost                = 520,
                     flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
                     school              = magic_school.holy,
                 }
@@ -2965,7 +3023,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 635,
+                cost                = 635,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy,
                 healing_version = {
@@ -2977,7 +3035,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 5,
                     lvl_req             = 52,
-                    mana                = 635,
+                    cost                = 635,
                     flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
                     school              = magic_school.holy,
                 }
@@ -2991,7 +3049,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 750,
+                cost                = 750,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy,
                 healing_version = {
@@ -3003,7 +3061,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 6,
                     lvl_req             = 60,
-                    mana                = 750,
+                    cost                = 750,
                     flags               = bit.bor(spell_flags.aoe, spell_flags.heal),
                     school              = magic_school.holy,
                 }
@@ -3018,7 +3076,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 85,
+                cost                = 85,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3031,7 +3089,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 2,
                 lvl_req             = 24,
-                mana                = 95,
+                cost                = 95,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3044,7 +3102,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 3,
                 lvl_req             = 30,
-                mana                = 125,
+                cost                = 125,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3057,7 +3115,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 4,
                 lvl_req             = 36,
-                mana                = 145,
+                cost                = 145,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3070,7 +3128,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 5,
                 lvl_req             = 42,
-                mana                = 170,
+                cost                = 170,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3083,7 +3141,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 6,
                 lvl_req             = 48,
-                mana                = 200,
+                cost                = 200,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3096,7 +3154,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 7,
                 lvl_req             = 7,
-                mana                = 230,
+                cost                = 230,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3109,7 +3167,7 @@ local function create_spells()
                 cast_time           = 3.5,
                 rank                = 8,
                 lvl_req             = 60,
-                mana                = 255,
+                cost                = 255,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3123,7 +3181,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 20,
+                cost                = 20,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3136,7 +3194,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 6,
-                mana                = 30,
+                cost                = 30,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3149,7 +3207,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 60,
+                cost                = 60,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3162,7 +3220,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 4,
                 lvl_req             = 22,
-                mana                = 95,
+                cost                = 95,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3175,7 +3233,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 5,
                 lvl_req             = 30,
-                mana                = 140,
+                cost                = 140,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3188,7 +3246,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 6,
                 lvl_req             = 38,
-                mana                = 185,
+                cost                = 185,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3201,7 +3259,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 7,
                 lvl_req             = 46,
-                mana                = 230,
+                cost                = 230,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3214,7 +3272,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 8,
                 lvl_req             = 54,
-                mana                = 280,
+                cost                = 280,
                 flags               = 0,
                 school              = magic_school.holy,
             },
@@ -3228,7 +3286,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 4,
-                mana                = 25,
+                cost                = 25,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3241,7 +3299,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 10,
-                mana                = 50,
+                cost                = 50,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3254,7 +3312,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 18,
-                mana                = 95,
+                cost                = 95,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3267,7 +3325,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 26,
-                mana                = 155,
+                cost                = 155,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3280,7 +3338,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 34,
-                mana                = 230,
+                cost                = 230,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3293,7 +3351,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 42,
-                mana                = 305,
+                cost                = 305,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3306,7 +3364,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 50,
-                mana                = 385,
+                cost                = 385,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3319,7 +3377,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 8,
                 lvl_req             = 58,
-                mana                = 470,
+                cost                = 470,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3333,7 +3391,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 10,
-                mana                = 50,
+                cost                = 50,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3346,7 +3404,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 16,
-                mana                = 80,
+                cost                = 80,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3359,7 +3417,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 22,
-                mana                = 110,
+                cost                = 110,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3372,7 +3430,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 28,
-                mana                = 150,
+                cost                = 150,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3385,7 +3443,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 34,
-                mana                = 185,
+                cost                = 185,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3398,7 +3456,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 40,
-                mana                = 225,
+                cost                = 225,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3411,7 +3469,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 46,
-                mana                = 265,
+                cost                = 265,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3424,7 +3482,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 8,
                 lvl_req             = 52,
-                mana                = 310,
+                cost                = 310,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3437,7 +3495,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 9,
                 lvl_req             = 58,
-                mana                = 350,
+                cost                = 350,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3451,7 +3509,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 45,
+                cost                = 45,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
@@ -3464,7 +3522,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 70,
+                cost                = 70,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
@@ -3477,7 +3535,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 3,
                 lvl_req             = 36,
-                mana                = 100,
+                cost                = 100,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
@@ -3490,7 +3548,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 44,
-                mana                = 135,
+                cost                = 135,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
@@ -3503,7 +3561,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 165,
+                cost                = 165,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
@@ -3516,7 +3574,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 205,
+                cost                = 205,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow,
             },
@@ -3530,7 +3588,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 215,
+                cost                = 215,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3543,7 +3601,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 350,
+                cost                = 350,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3556,7 +3614,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 36,
-                mana                = 495,
+                cost                = 495,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3569,7 +3627,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 44,
-                mana                = 645,
+                cost                = 645,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3582,7 +3640,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 810,
+                cost                = 810,
                 flags               = 0,
                 school              = magic_school.shadow,
             },
@@ -3595,9 +3653,88 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 985,
+                cost                = 985,
                 flags               = 0,
                 school              = magic_school.shadow,
+            },
+            -- starshards
+            [10797] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 84.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 6.0,
+                cast_time           = 6.0,
+                rank                = 1,
+                lvl_req             = 10,
+                cost                = 50,
+                flags               = 0,
+                school              = magic_school.arcane,
+            },
+            [19296] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 162.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 6.0,
+                cast_time           = 6.0,
+                rank                = 2,
+                lvl_req             = 18,
+                cost                = 85,
+                flags               = 0,
+                school              = magic_school.arcane,
+            },
+            [19299] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 288.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 6.0,
+                cast_time           = 6.0,
+                rank                = 3,
+                lvl_req             = 26,
+                cost                = 140,
+                flags               = 0,
+                school              = magic_school.arcane,
+            },
+            [19302] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 414.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 6.0,
+                cast_time           = 6.0,
+                rank                = 4,
+                lvl_req             = 34,
+                cost                = 190,
+                flags               = 0,
+                school              = magic_school.arcane,
+            },
+            [19303] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 570.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 6.0,
+                cast_time           = 6.0,
+                rank                = 5,
+                lvl_req             = 42,
+                cost                = 245,
+                flags               = 0,
+                school              = magic_school.arcane,
+            },
+            [19304] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 756.0,
+                over_time_tick_freq = 1,
+                over_time_duration  = 6.0,
+                cast_time           = 6.0,
+                rank                = 6,
+                lvl_req             = 50,
+                cost                = 300,
+                flags               = 0,
+                school              = magic_school.arcane,
             }
         }; 
     elseif class == "SHAMAN" then
@@ -3612,7 +3749,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 40,
+                cost                = 40,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3625,7 +3762,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 30,
-                mana                = 50,
+                cost                = 50,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3638,7 +3775,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 40,
-                mana                = 60,
+                cost                = 60,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3651,7 +3788,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 50,
-                mana                = 70,
+                cost                = 70,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3664,7 +3801,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 60,
-                mana                = 80,
+                cost                = 80,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3678,7 +3815,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 105,
+                cost                = 105,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3691,7 +3828,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 145,
+                cost                = 145,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3704,7 +3841,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 36,
-                mana                = 185,
+                cost                = 185,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3717,7 +3854,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 44,
-                mana                = 235,
+                cost                = 235,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3730,7 +3867,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 305,
+                cost                = 305,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3743,7 +3880,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 380,
+                cost                = 380,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3757,7 +3894,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 25,
+                cost                = 25,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3770,7 +3907,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 6,
-                mana                = 45,
+                cost                = 45,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3783,7 +3920,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 12,
-                mana                = 80,
+                cost                = 80,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3796,7 +3933,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 18,
-                mana                = 155,
+                cost                = 155,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3809,7 +3946,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 24,
-                mana                = 200,
+                cost                = 200,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3822,7 +3959,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 6,
                 lvl_req             = 32,
-                mana                = 265,
+                cost                = 265,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3835,7 +3972,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 7,
                 lvl_req             = 40,
-                mana                = 340,
+                cost                = 340,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3848,7 +3985,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 8,
                 lvl_req             = 48,
-                mana                = 440,
+                cost                = 440,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3861,7 +3998,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 9,
                 lvl_req             = 56,
-                mana                = 560,
+                cost                = 560,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3874,7 +4011,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 10,
                 lvl_req             = 60,
-                mana                = 620,
+                cost                = 620,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3888,7 +4025,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 1,
                 lvl_req             = 40,
-                mana                = 260,
+                cost                = 260,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3901,7 +4038,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 2,
                 lvl_req             = 46,
-                mana                = 315,
+                cost                = 315,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3914,7 +4051,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 54,
-                mana                = 405,
+                cost                = 405,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
             },
@@ -3928,7 +4065,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 15,
+                cost                = 15,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -3941,7 +4078,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 8,
-                mana                = 30,
+                cost                = 30,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -3954,7 +4091,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 45,
+                cost                = 45,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -3967,7 +4104,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 20,
-                mana                = 75,
+                cost                = 75,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -3980,7 +4117,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 26,
-                mana                = 105,
+                cost                = 105,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -3993,7 +4130,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 6,
                 lvl_req             = 32,
-                mana                = 135,
+                cost                = 135,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4006,7 +4143,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 7,
                 lvl_req             = 38,
-                mana                = 165,
+                cost                = 165,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4019,7 +4156,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 8,
                 lvl_req             = 44,
-                mana                = 195,
+                cost                = 195,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4032,7 +4169,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 3,
                 lvl_req             = 50,
-                mana                = 230,
+                cost                = 230,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4045,7 +4182,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 10,
                 lvl_req             = 56,
-                mana                = 265,
+                cost                = 265,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4059,7 +4196,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 1,
                 lvl_req             = 32,
-                mana                = 280,
+                cost                = 280,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4072,7 +4209,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 40,
                 lvl_req             = 2,
-                mana                = 380,
+                cost                = 380,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4085,7 +4222,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 48,
-                mana                = 490,
+                cost                = 490,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4098,7 +4235,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 4,
                 lvl_req             = 56,
-                mana                = 605,
+                cost                = 605,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4112,7 +4249,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 8,
-                mana                = 45,
+                cost                = 45,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4125,7 +4262,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 16,
-                mana                = 80,
+                cost                = 80,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4138,7 +4275,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 24,
-                mana                = 125,
+                cost                = 125,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4151,7 +4288,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 32,
-                mana                = 180,
+                cost                = 180,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4164,7 +4301,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 40,
-                mana                = 240,
+                cost                = 240,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4177,7 +4314,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 48,
-                mana                = 305,
+                cost                = 305,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4190,7 +4327,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 56,
-                mana                = 370,
+                cost                = 370,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4204,7 +4341,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 4,
-                mana                = 30,
+                cost                = 30,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4217,7 +4354,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 8,
-                mana                = 50,
+                cost                = 50,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4230,7 +4367,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 85,
+                cost                = 85,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4243,7 +4380,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 24,
-                mana                = 145,
+                cost                = 145,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4256,7 +4393,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 36,
-                mana                = 240,
+                cost                = 240,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4269,7 +4406,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 48,
-                mana                = 345,
+                cost                = 345,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4282,7 +4419,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 60,
-                mana                = 450,
+                cost                = 450,
                 flags               = 0,
                 school              = magic_school.nature,
             },
@@ -4296,7 +4433,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 26,
-                mana                = 230,
+                cost                = 230,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4309,7 +4446,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 36,
-                mana                = 360,
+                cost                = 360,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4322,7 +4459,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 46,
-                mana                = 500,
+                cost                = 500,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4335,7 +4472,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 56,
-                mana                = 650,
+                cost                = 650,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4349,7 +4486,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 10,
-                mana                = 55,
+                cost                = 55,
                 flags               = 0,
                 school              = magic_school.fire,
             },
@@ -4362,7 +4499,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 18,
-                mana                = 95,
+                cost                = 95,
                 flags               = 0,
                 school              = magic_school.fire,
             },
@@ -4375,7 +4512,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 28,
-                mana                = 160,
+                cost                = 160,
                 flags               = 0,
                 school              = magic_school.fire,
             },
@@ -4388,7 +4525,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 40,
-                mana                = 250,
+                cost                = 250,
                 flags               = 0,
                 school              = magic_school.fire,
             },
@@ -4401,7 +4538,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 345,
+                cost                = 345,
                 flags               = 0,
                 school              = magic_school.fire,
             },
@@ -4414,7 +4551,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 410,
+                cost                = 410,
                 flags               = 0,
                 school              = magic_school.fire,
             },
@@ -4428,7 +4565,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 115,
+                cost                = 115,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost,
             },
@@ -4441,7 +4578,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 34,
-                mana                = 225,
+                cost                = 225,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost,
             },
@@ -4454,7 +4591,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 46,
-                mana                = 325,
+                cost                = 325,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost,
             },
@@ -4467,7 +4604,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 58,
-                mana                = 430,
+                cost                = 430,
                 flags               = spell_flags.snare,
                 school              = magic_school.frost,
             },
@@ -4482,7 +4619,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 12,
-                mana                = 95,
+                cost                = 95,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4495,7 +4632,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 22,
-                mana                = 170,
+                cost                = 170,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4508,7 +4645,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 32,
-                mana                = 280,
+                cost                = 280,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4521,7 +4658,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 42,
-                mana                = 395,
+                cost                = 395,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             },
@@ -4534,7 +4671,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 520,
+                cost                = 520,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire,
             }
@@ -4551,7 +4688,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 35,
+                cost                = 35,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4564,7 +4701,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 26,
-                mana                = 50,
+                cost                = 50,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4577,7 +4714,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 34,
-                mana                = 70,
+                cost                = 70,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4590,7 +4727,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 42,
-                mana                = 90,
+                cost                = 90,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4603,7 +4740,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 50,
-                mana                = 115,
+                cost                = 115,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4616,7 +4753,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 58,
-                mana                = 140,
+                cost                = 140,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4630,7 +4767,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 35,
+                cost                = 35,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4643,7 +4780,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 2,
                 lvl_req             = 6,
-                mana                = 60,
+                cost                = 60,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4656,7 +4793,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 3,
                 lvl_req             = 14,
-                mana                = 110,
+                cost                = 110,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4669,7 +4806,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 4,
                 lvl_req             = 22,
-                mana                = 190,
+                cost                = 190,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4682,7 +4819,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 5,
                 lvl_req             = 30,
-                mana                = 275,
+                cost                = 275,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4695,7 +4832,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 6,
                 lvl_req             = 38,
-                mana                = 365,
+                cost                = 365,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4708,7 +4845,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 7,
                 lvl_req             = 46,
-                mana                = 465,
+                cost                = 465,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4721,7 +4858,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 8,
                 lvl_req             = 54,
-                mana                = 580,
+                cost                = 580,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4734,7 +4871,7 @@ local function create_spells()
                 cast_time           = 2.5,
                 rank                = 9,
                 lvl_req             = 60,
-                mana                = 660,
+                cost                = 660,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy
             },
@@ -4748,7 +4885,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 40,
-                mana                = 225,
+                cost                = 225,
                 flags               = 0,
                 school              = magic_school.holy,
                 healing_version = {
@@ -4760,7 +4897,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 1,
                     lvl_req             = 40,
-                    mana                = 225,
+                    cost                = 225,
                     flags               = spell_flags.heal,
                     school              = magic_school.holy,
                 }
@@ -4774,7 +4911,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 48,
-                mana                = 275,
+                cost                = 275,
                 flags               = 0,
                 school              = magic_school.holy,
                 healing_version = {
@@ -4786,7 +4923,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 1,
                     lvl_req             = 48,
-                    mana                = 275,
+                    cost                = 275,
                     flags               = spell_flags.heal,
                     school              = magic_school.holy,
                 }
@@ -4800,7 +4937,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 56,
-                mana                = 325,
+                cost                = 325,
                 flags               = 0,
                 school              = magic_school.holy,
                 healing_version = {
@@ -4812,7 +4949,7 @@ local function create_spells()
                     cast_time           = 1.5,
                     rank                = 3,
                     lvl_req             = 56,
-                    mana                = 325,
+                    cost                = 325,
                     flags               = spell_flags.heal,
                     school              = magic_school.holy,
                 }
@@ -4827,7 +4964,7 @@ local function create_spells()
                 cast_time           = 1.0,
                 rank                = 1,
                 lvl_req             = 44,
-                mana                = 295,
+                cost                = 295,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4840,7 +4977,7 @@ local function create_spells()
                 cast_time           = 1.0,
                 rank                = 2,
                 lvl_req             = 52,
-                mana                = 360,
+                cost                = 360,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4853,7 +4990,7 @@ local function create_spells()
                 cast_time           = 1.0,
                 rank                = 3,
                 lvl_req             = 60,
-                mana                = 425,
+                cost                = 425,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4867,7 +5004,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 135,
+                cost                = 135,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             },
@@ -4880,7 +5017,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 30,
-                mana                = 235,
+                cost                = 235,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             },
@@ -4893,7 +5030,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 40,
-                mana                = 320,
+                cost                = 320,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             },
@@ -4906,7 +5043,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 50,
-                mana                = 435,
+                cost                = 435,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             },
@@ -4919,7 +5056,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 60,
-                mana                = 565,
+                cost                = 565,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             },
@@ -4933,7 +5070,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 85,
+                cost                = 85,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4946,7 +5083,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 28,
-                mana                = 135,
+                cost                = 135,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4959,7 +5096,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 36,
-                mana                = 180,
+                cost                = 180,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4972,7 +5109,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 44,
-                mana                = 235,
+                cost                = 235,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4985,7 +5122,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 52,
-                mana                = 285,
+                cost                = 285,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -4998,7 +5135,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 60,
-                mana                = 345,
+                cost                = 345,
                 flags               = 0,
                 school              = magic_school.holy
             },
@@ -5012,7 +5149,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 1,
                 lvl_req             = 50,
-                mana                = 645,
+                cost                = 645,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             },
@@ -5025,7 +5162,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 60,
-                mana                = 805,
+                cost                = 805,
                 flags               = spell_flags.aoe,
                 school              = magic_school.holy
             }
@@ -5043,7 +5180,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 8,
-                mana                = 25,
+                cost                = 25,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5056,7 +5193,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 18,
-                mana                = 50,
+                cost                = 50,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5069,7 +5206,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 28,
-                mana                = 90,
+                cost                = 90,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5082,7 +5219,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 38,
-                mana                = 130,
+                cost                = 130,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5095,7 +5232,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 48,
-                mana                = 170,
+                cost                = 170,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5108,7 +5245,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 58,
-                mana                = 215,
+                cost                = 215,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5122,7 +5259,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 30,
-                mana                = 150,
+                cost                = 150,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5135,7 +5272,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 38,
-                mana                = 205,
+                cost                = 205,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5148,7 +5285,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 48,
-                mana                = 285,
+                cost                = 285,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5161,7 +5298,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 58,
-                mana                = 365,
+                cost                = 365,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5175,7 +5312,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 42,
-                mana                = 430,
+                cost                = 430,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow
             },
@@ -5188,7 +5325,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 50,
-                mana                = 495,
+                cost                = 495,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow
             },
@@ -5201,7 +5338,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 58,
-                mana                = 565,
+                cost                = 565,
                 flags               = spell_flags.snare,
                 school              = magic_school.shadow
             },
@@ -5215,7 +5352,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 4,
-                mana                = 35,
+                cost                = 35,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5228,7 +5365,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 14,
-                mana                = 55,
+                cost                = 55,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5241,7 +5378,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 24,
-                mana                = 100,
+                cost                = 100,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5254,7 +5391,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 34,
-                mana                = 160,
+                cost                = 160,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5267,7 +5404,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 44,
-                mana                = 225,
+                cost                = 225,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5280,7 +5417,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 54,
-                mana                = 290,
+                cost                = 290,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5293,7 +5430,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 7,
                 lvl_req             = 60,
-                mana                = 340,
+                cost                = 340,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5307,7 +5444,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 1,
                 lvl_req             = 14,
-                mana                = 55,
+                cost                = 55,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5320,7 +5457,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 2,
                 lvl_req             = 22,
-                mana                = 85,
+                cost                = 85,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5333,7 +5470,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 3,
                 lvl_req             = 30,
-                mana                = 135,
+                cost                = 135,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5346,7 +5483,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 4,
                 lvl_req             = 38,
-                mana                = 185,
+                cost                = 185,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5359,7 +5496,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 5,
                 lvl_req             = 46,
-                mana                = 240,
+                cost                = 240,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5372,7 +5509,7 @@ local function create_spells()
                 cast_time           = 5.0,
                 rank                = 6,
                 lvl_req             = 54,
-                mana                = 300,
+                cost                = 300,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5386,7 +5523,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 1,
                 lvl_req             = 10,
-                mana                = 55,
+                cost                = 55,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5399,7 +5536,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 2,
                 lvl_req             = 24,
-                mana                = 125,
+                cost                = 125,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5412,7 +5549,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 3,
                 lvl_req             = 38,
-                mana                = 210,
+                cost                = 210,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5425,7 +5562,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 4,
                 lvl_req             = 52,
-                mana                = 290,
+                cost                = 290,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5439,7 +5576,7 @@ local function create_spells()
                 cast_time           = 1.7,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 25,
+                cost                = 25,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5452,7 +5589,7 @@ local function create_spells()
                 cast_time           = 2.2,
                 rank                = 2,
                 lvl_req             = 6,
-                mana                = 40,
+                cost                = 40,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5465,7 +5602,7 @@ local function create_spells()
                 cast_time           = 2.8,
                 rank                = 3,
                 lvl_req             = 12,
-                mana                = 70,
+                cost                = 70,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5478,7 +5615,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 4,
                 lvl_req             = 20,
-                mana                = 110,
+                cost                = 110,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5491,7 +5628,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 5,
                 lvl_req             = 28,
-                mana                = 160,
+                cost                = 160,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5504,7 +5641,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 6,
                 lvl_req             = 36,
-                mana                = 210,
+                cost                = 210,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5517,7 +5654,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 7,
                 lvl_req             = 44,
-                mana                = 265,
+                cost                = 265,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5530,7 +5667,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 8,
                 lvl_req             = 52,
-                mana                = 315,
+                cost                = 315,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5543,7 +5680,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 9,
                 lvl_req             = 60,
-                mana                = 370,
+                cost                = 370,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5556,7 +5693,7 @@ local function create_spells()
                 cast_time           = 3.0,
                 rank                = 10,
                 lvl_req             = 60,
-                mana                = 380,
+                cost                = 380,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5570,7 +5707,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 18,
-                mana                = 45,
+                cost                = 45,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5583,7 +5720,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 26,
-                mana                = 68,
+                cost                = 68,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5596,7 +5733,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 34,
-                mana                = 91,
+                cost                = 91,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5609,7 +5746,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 42,
-                mana                = 118,
+                cost                = 118,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5622,7 +5759,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 50,
-                mana                = 141,
+                cost                = 141,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5635,7 +5772,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 58,
-                mana                = 168,
+                cost                = 168,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5649,7 +5786,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 1,
                 lvl_req             = 48,
-                mana                = 305,
+                cost                = 305,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5662,7 +5799,7 @@ local function create_spells()
                 cast_time           = 6.0,
                 rank                = 2,
                 lvl_req             = 56,
-                mana                = 335,
+                cost                = 335,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5676,7 +5813,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 3,
                 lvl_req             = 30,
-                mana                = 645,
+                cost                = 645,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5689,7 +5826,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 2,
                 lvl_req             = 42,
-                mana                = 975,
+                cost                = 975,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5702,7 +5839,7 @@ local function create_spells()
                 cast_time           = 15.0,
                 rank                = 3,
                 lvl_req             = 54,
-                mana                = 1300,
+                cost                = 1300,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5716,7 +5853,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 295,
+                cost                = 295,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5729,7 +5866,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 2,
                 lvl_req             = 34,
-                mana                = 605,
+                cost                = 605,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5742,7 +5879,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 3,
                 lvl_req             = 46,
-                mana                = 885,
+                cost                = 885,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5755,7 +5892,7 @@ local function create_spells()
                 cast_time           = 8.0,
                 rank                = 4,
                 lvl_req             = 58,
-                mana                = 1185,
+                cost                = 1185,
                 flags               = spell_flags.aoe,
                 school              = magic_school.fire
             },
@@ -5769,7 +5906,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 1,
                 lvl_req             = 1,
-                mana                = 25,
+                cost                = 25,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5782,7 +5919,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 2,
                 lvl_req             = 10,
-                mana                = 45,
+                cost                = 45,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5795,7 +5932,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 3,
                 lvl_req             = 20,
-                mana                = 90,
+                cost                = 90,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5808,7 +5945,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 4,
                 lvl_req             = 30,
-                mana                = 155,
+                cost                = 155,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5821,7 +5958,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 5,
                 lvl_req             = 40,
-                mana                = 220,
+                cost                = 220,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5834,7 +5971,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 6,
                 lvl_req             = 50,
-                mana                = 295,
+                cost                = 295,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5847,7 +5984,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 7,
                 lvl_req             = 60,
-                mana                = 370,
+                cost                = 370,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5860,7 +5997,7 @@ local function create_spells()
                 cast_time           = 2.0,
                 rank                = 8,
                 lvl_req             = 60,
-                mana                = 380,
+                cost                = 380,
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5874,7 +6011,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 20,
-                mana                = 105,
+                cost                = 105,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5887,7 +6024,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 24,
-                mana                = 103,
+                cost                = 103,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5900,7 +6037,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 32,
-                mana                = 190,
+                cost                = 190,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5913,7 +6050,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 40,
-                mana                = 245,
+                cost                = 245,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5926,7 +6063,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 5,
                 lvl_req             = 48,
-                mana                = 305,
+                cost                = 305,
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5939,7 +6076,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 6,
                 lvl_req             = 56,
-                mana                = 365, 
+                cost                = 365, 
                 flags               = 0,
                 school              = magic_school.shadow
             },
@@ -5953,7 +6090,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 40,
-                mana                = 165, 
+                cost                = 165, 
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5966,7 +6103,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 48,
-                mana                = 200, 
+                cost                = 200, 
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5979,7 +6116,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 3,
                 lvl_req             = 54,
-                mana                = 230, 
+                cost                = 230, 
                 flags               = 0,
                 school              = magic_school.fire
             },
@@ -5992,7 +6129,7 @@ local function create_spells()
                 cast_time           = 1.5,
                 rank                = 4,
                 lvl_req             = 60,
-                mana                = 255, 
+                cost                = 255, 
                 flags               = 0,
                 school              = magic_school.fire
             }
@@ -6016,26 +6153,30 @@ end
 
 local function empty_loadout()
 
-    return  {
+    return {
         name = "Empty loadout";
+        is_dynamic_loadout = true,
         lvl = 0,
-        target_lvl = 63,
-        int = 0,
-        spirit = 0,
+        target_lvl = 0,
+
+        stats = {0, 0, 0, 0, 0},
 
         spelldmg_by_school = {0, 0, 0, 0, 0, 0, 0},
         healingpower = 0,
 
-        --spell_crit = 0,
         spell_crit_by_school = {0, 0, 0, 0, 0, 0, 0},
         healing_crit = 0,
 
         spelldmg_hit_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_dmg_mod_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_crit_mod_by_school = {0, 0, 0, 0, 0, 0, 0},
+        target_spell_dmg_taken = {0, 0, 0, 0, 0, 0, 0},
 
         spell_heal_mod_base = 0,
         spell_heal_mod = 0,
+
+        dmg_mod = 0,
+        target_mod_res_by_school = {0, 0, 0, 0, 0, 0, 0},
 
         haste_mod = 0,
         cost_mod = 0,
@@ -6060,7 +6201,14 @@ local function empty_loadout()
         ability_extra_ticks = {},
         ability_cost_mod = {},
         ability_crit_mod = {},
-        ability_hit = {}
+        ability_hit = {},
+
+        always_assume_buffs = true,
+        always_assume_target_buffs = true,
+
+        class = "",
+        race = ""
+        
     };
 end
 
@@ -6068,8 +6216,9 @@ local function negate_loadout(loadout)
 
     local negated = loadout;
 
-    negated.int = -loadout.int;
-    negated.spirit = -loadout.spirit;
+    for i = 1, 5 do
+        negated.stats[i] = -loadout.negated.stats[i];
+    end
 
     for i = 1, 7 do
         negated.spelldmg_by_school[i] = -loadout.spelldmg_by_school[i];
@@ -6092,8 +6241,19 @@ local function negate_loadout(loadout)
     for i = 1, 7 do
         negated.spell_crit_mod_by_school[i] = -loadout.spell_crit_mod_by_school[i];
     end
+
+    for i = 1, 7 do
+        negated.target_spell_dmg_taken[i] = -loadout.target_spell_dmg_taken[i];
+    end
+
+    for i = 1, 7 do
+        negated.target_mod_res_by_school[i] = -loadout.target_mod_res_by_school[i];
+    end
+
     negated.spell_heal_mod_base = -negated.spell_heal_mod_base;
     negated.spell_heal_mod = -negated.spell_heal_mod;
+
+    negated.dmg_mod = -negated.dmg_mod;
 
     negated.haste_mod = -negated.haste_mod;
     negated.cost_mod = -negated.cost_mod;
@@ -6106,11 +6266,14 @@ local function loadout_copy(loadout)
 
     local cpy = {};
 
-    cpy.name =  loadout.name;
-    cpy.lvl =  loadout.lvl;
-    cpy.target_lvl =  loadout.target_lvl;
-    cpy.int =  loadout.int;
-    cpy.spirit = loadout.spirit;
+    cpy.name = loadout.name;
+    cpy.lvl = loadout.lvl;
+    cpy.target_lvl = loadout.target_lvl;
+
+    cpy.stats = {};
+    for i = 1, 5 do
+        cpy.stats[i] = loadout.stats[i];
+    end
 
     cpy.healingpower = loadout.healingpower;
 
@@ -6120,13 +6283,16 @@ local function loadout_copy(loadout)
     cpy.spelldmg_hit_by_school = {};
     cpy.spell_dmg_mod_by_school = {};
     cpy.spell_crit_mod_by_school = {};
+    cpy.target_spell_dmg_taken = {};
+    cpy.target_mod_res_by_school = {};
 
     cpy.spell_heal_mod_base = loadout.spell_heal_mod_base;
     cpy.spell_heal_mod = loadout.spell_heal_mod;
 
+    cpy.dmg_mod = loadout.dmg_mod;
+
     cpy.haste_mod = loadout.haste_mod;
     cpy.cost_mod = loadout.cost_mod;
-
 
     cpy.ignite = loadout.ignite;
     cpy.spiritual_guidance = loadout.spiritual_guidance;
@@ -6153,6 +6319,8 @@ local function loadout_copy(loadout)
         cpy.spelldmg_hit_by_school[i] = loadout.spelldmg_hit_by_school[i];
         cpy.spell_dmg_mod_by_school[i] = loadout.spell_dmg_mod_by_school[i];
         cpy.spell_crit_mod_by_school[i] = loadout.spell_crit_mod_by_school[i];
+        cpy.target_spell_dmg_taken[i] = loadout.target_spell_dmg_taken[i];
+        cpy.target_mod_res_by_school[i] = loadout.target_mod_res_by_school[i];
     end
 
     cpy.num_set_pieces = {};
@@ -6163,9 +6331,6 @@ local function loadout_copy(loadout)
     for i = 1, 5 do
         cpy.stat_mod[i] = loadout.stat_mod[i];
     end
-
-    cpy.spell_heal_mod_base = loadout.spell_heal_mod_base;
-    cpy.spell_heal_mod = loadout.spell_heal_mod;
 
     for k, v in pairs(loadout.ability_crit) do
         cpy.ability_crit[k] = v;
@@ -6192,6 +6357,9 @@ local function loadout_copy(loadout)
         cpy.ability_hit[k] = v;
     end
 
+    cpy.class = loadout.class;
+    cpy.race = loadout.race;
+
     return cpy;
 end
 
@@ -6199,8 +6367,9 @@ local function loadout_add(primary, diff)
 
     local added = loadout_copy(primary);
 
-    added.int = primary.int + diff.int * (1 + primary.stat_mod[stat.int]);
-    added.spirit = primary.spirit + diff.spirit * (1 + primary.stat_mod[stat.spirit]);
+    for i = 1, 5 do
+        added.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[stat.spirit]);
+    end
 
     local sp_gained_from_spirit = diff.spirit * (1 + primary.stat_mod[stat.spirit]) * primary.spiritual_guidance * 0.05;
 
@@ -6229,9 +6398,17 @@ local function loadout_add(primary, diff)
     for i = 1, 7 do
         added.spell_crit_mod_by_school[i] = primary.spell_crit_mod_by_school[i] + diff.spell_crit_mod_by_school[i];
     end
+    for i = 1, 7 do
+        added.target_spell_dmg_taken[i] = primary.target_spell_dmg_taken[i] + diff.target_spell_dmg_taken[i];
+    end
+    for i = 1, 7 do
+        added.target_mod_res_by_school[i] = primary.target_mod_res_by_school[i] + diff.target_mod_res_by_school[i];
+    end
 
     added.spell_heal_mod_base = primary.spell_heal_mod_base + diff.spell_heal_mod_base;
     added.spell_heal_mod = primary.spell_heal_mod + diff.spell_heal_mod;
+
+    added.dmg_mod = primary.dmg_mod + diff.dmg_mod;
 
     added.haste_mod = primary.haste_mod + diff.haste_mod;
     added.cost_mod = primary.cost_mod + diff.cost_mod;
@@ -6378,7 +6555,7 @@ local function apply_talents(loadout)
             end
             new_loadout.ability_base_mod[coc] = new_loadout.ability_base_mod[coc] + pts * 0.15;
         end
-    elseif class == "DRUID" then
+    elseif loadout.class == "DRUID" then
 
         -- improved wrath
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
@@ -6534,7 +6711,7 @@ local function apply_talents(loadout)
             end
             new_loadout.ability_crit[regrowth] = new_loadout.ability_crit[regrowth] + pts * 0.10;
         end
-    elseif class == "PRIEST" then
+    elseif loadout.class == "PRIEST" then
 
         -- improved power word: shield
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
@@ -6715,7 +6892,7 @@ local function apply_talents(loadout)
             new_loadout.ability_base_mod[mb] = new_loadout.ability_base_mod[mb] + 0.02 * pts;
         end
 
-    elseif class == "SHAMAN" then
+    elseif loadout.class == "SHAMAN" then
 
         -- convection
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
@@ -6927,7 +7104,7 @@ local function apply_talents(loadout)
 
         end
 
-    elseif class == "PALADIN" then
+    elseif loadout.class == "PALADIN" then
 
         -- divine intellect
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
@@ -6968,7 +7145,7 @@ local function apply_talents(loadout)
                 new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
 
-    elseif class == "WARLOCK" then
+    elseif loadout.class == "WARLOCK" then
         local affl = {"Corruption", "Siphon Life", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul"};
         for k, v in pairs(affl) do
             affl[k] = localized_spell_name(v);
@@ -7260,7 +7437,7 @@ local function apply_set_bonuses(loadout)
     end
 
     local _, class = UnitClass("player");
-    if class == "PRIEST" then
+    if loadout.class == "PRIEST" then
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 3 then
 
             local flash = localized_spell_name("Flash Heal");
@@ -7287,7 +7464,7 @@ local function apply_set_bonuses(loadout)
             end
         end
 
-    elseif class == "DRUID" then
+    elseif loadout.class == "DRUID" then
 
         -- check for special items giving special things...
         for item = 1, 18 do
@@ -7333,7 +7510,7 @@ local function apply_set_bonuses(loadout)
             new_loadout.ability_crit[sf] = new_loadout.ability_crit[sf] + 0.03;
         end
 
-    elseif class == "SHAMAN" then
+    elseif loadout.class == "SHAMAN" then
 
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
 
@@ -7349,8 +7526,8 @@ local function apply_set_bonuses(loadout)
 
             if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
                 
-                local probability_of_atleast_one_mana_proc = 1 - (1-0.25)*(1-0.25)*(1-0.25);
-                new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + probability_of_atleast_one_mana_proc * 0.35;
+                local probability_of_atleast_one_cost_proc = 1 - (1-0.25)*(1-0.25)*(1-0.25);
+                new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + probability_of_atleast_one_cost_proc * 0.35;
             else
                 new_loadout.ability_cost_mod[hw] = new_loadout.ability_cost_mod[hw] + 0.25 * 0.35;
             end
@@ -7384,7 +7561,7 @@ local function apply_set_bonuses(loadout)
             end
         end
 
-    elseif class == "WARLOCK" then
+    elseif loadout.class == "WARLOCK" then
 
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
 
@@ -7427,7 +7604,7 @@ local function apply_set_bonuses(loadout)
             new_loadout.ability_base_mod[corr] = new_loadout.ability_base_mod[corr] + 0.02;
         end
 
-    elseif class == "MAGE" then
+    elseif loadout.class == "MAGE" then
 
         if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
 
@@ -7439,7 +7616,7 @@ local function apply_set_bonuses(loadout)
 
         end
 
-    elseif class == "PALADIN" then
+    elseif loadout.class == "PALADIN" then
 
         if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
 
@@ -7455,240 +7632,502 @@ local function apply_set_bonuses(loadout)
     return new_loadout;
 end
 
-local function apply_buffs(loadout)
+local function detect_buffs(loadout)
 
     local new_loadout = loadout;
 
-    local _, class = UnitClass("player");
-
-    if class == "MAGE" then
-      for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
-            end
-            -- arcane power
-            if spell_id == 12042 then
-                for j = 2, 7 do 
-                    new_loadout.spell_dmg_mod_by_school[j] = new_loadout.spell_dmg_mod_by_school[j] + 0.3;
-                end
-                new_loadout.cost_mod = new_loadout.cost_mod - 0.3;
-            -- mind quickening gem bfuff
-            elseif spell_id == 23723 then
-                new_loadout.haste_mod = new_loadout.haste_mod + 0.33;
-            -- hazza'rah's charm of magic
-            elseif spell_id == 24544 then
-                -- 5% arcane crit should already be given by GetCritChance API...
-                new_loadout.spell_crit_mod_by_school[magic_school.arcane] =
-                    new_loadout.spell_crit_mod_by_school[magic_school.arcane] + 0.5;
-            end
-        end
-    elseif class == "PRIEST" then
-        for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
-            end
-            -- shadow form
-            if spell_id == 15473 then
-                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
-                    new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
-            end
-        end
-    elseif class == "WARLOCK" then
-        for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
-            end
-            -- hazza'rah's charm of destruction
-            if spell_id == 24543 then
-                local destr = {"Shadow Bolt", "Searing Pain", "Soul Fire", "Hellfire", "Rain of Fire", "Immolate", "Shadowburn", "Conflagrate"};
-                for k, v in pairs(destr) do
-                    destr[k] = localized_spell_name(v);
-                end
-
-                for k, v in pairs(destr) do
-                    if not new_loadout.ability_crit[v] then
-                        new_loadout.ability_crit[v] = 0;
-                    end
-                end
-                for k, v in pairs(destr) do
-                    new_loadout.ability_crit[v] = 
-                        new_loadout.ability_crit[v] + 0.1;
-                end
-            -- amplify curse
-            elseif spell_id == 18288 then
-                local coa = localized_spell_name("Curse of Agony");
-    
-                if not new_loadout.ability_base_mod[coa] then
-                    new_loadout.ability_base_mod[coa] = 0;
-                end
-    
-                new_loadout.ability_base_mod[coa] = 
-                    new_loadout.ability_base_mod[coa] + 0.5;
-    
-            -- demonic sacrifice - succubus i.e. touch of shadow
-            elseif spell_id == 18791 then
-                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
-                    new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
-            end
-        end
-    elseif class == "SHAMAN" then
-        for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
-            end
-            -- wushoolay's charm of spirits
-            if spell_id == 24499 then
-                local ls = localized_spell_name("Lightning Shield");
-                if not new_loadout.ability_base_mod[ls] then
-                    new_loadout.ability_base_mod[ls] = 0;
-                end
-                new_loadout.ability_base_mod[ls] = new_loadout.ability_base_mod[ls] + 1;
-            end
-        end
-    elseif class == "DRUID" then
-        for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
-            end
-            -- nimble healing touch
-            if spell_id == 24542 then
-                new_loadout.ability_cast_mod[localized_spell_name("Healing Touch")] =
-                    new_loadout.ability_cast_mod[localized_spell_name("Healing Touch")] + 0.4;
-                
-                local healing_abilities = {"Healing Touch", "Rejuvenation", "Regrowth", "Tranquility"};
-
-                for k, v in pairs(healing_abilities) do
-                    healing_abilities[k] = localized_spell_name(v);
-                end
-
-                for k, v in pairs(healing_abilities) do
-                    if not new_loadout.ability_cost_mod[v] then
-                        new_loadout.ability_cost_mod[v] = 0;
-                    end
-                end
-                for k, v in pairs(healing_abilities) do
-                    new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + 0.05;
-                end
-            end
-        end
-    elseif class == "PALADIN" then
-        for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
-            end
-            -- hazza'rah's charm of healing
-            if spell_id == 24546 then
-                new_loadout.ability_cast_mod[localized_spell_name("Holy Light")] =
-                    new_loadout.ability_cast_mod[localized_spell_name("Holy Light")] + 0.4;
-                
-                local healing_abilities = {"Holy Light", "Flash of Light", "Holy Shock"};
-
-
-                for k, v in pairs(healing_abilities) do
-                    healing_abilities[k] = localized_spell_name(v);
-                end
-
-                for k, v in pairs(healing_abilities) do
-                    if not new_loadout.ability_cost_mod[v] then
-                        new_loadout.ability_cost_mod[v] = 0;
-                    end
-                end
-                for k, v in pairs(healing_abilities) do
-                    new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + 0.05;
-                end
-            end
-        end
+    new_loadout.buffs = {};
+    for i = 1, 40  do
+          local name, _, count, _, _, _, src, _, _, spell_id = UnitBuff("player", i);
+          if not name then
+              new_loadout.buffs[spell_id] = {name = name, count = count, src = src};
+              new_loadout.buffs[name] = {count = count, id = id, src = src};
+              break;
+          end
+    end
+    new_loadout.target_buffs = {};
+    for i = 1, 40  do
+          local name, _, count, _, _, _, src, _, _, spell_id = UnitBuff("target", i);
+          if not name then
+              new_loadout.buffs[spell_id] = {name = name, count = count, src = src};
+              new_loadout.buffs[name] = {count = count, id = id, src = src};
+              break;
+          end
+    end
+    new_loadout.target_debuffs = {};
+    for i = 1, 40  do
+          local name, _, count, _, _, _, src, _, _, spell_id = UnitDebuff("target", i);
+          if not name then
+              new_loadout.buffs[spell_id] = {name = name, count = count, src = src};
+              new_loadout.buffs[name] = {count = count, id = id, src = src};
+              break;
+          end
     end
 
-    local _, race = UnitRace("player");
-    if race == "Troll" then
-        for i = 1, 40  do
-            local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-            if not name then
-                break;
+    return new_loadout;
+end
+
+local function apply_general_buffs(loadout, raw_stats_diff)
+
+    -- BUFFS
+    if bit.band(buffs1.ony.flag, loadout.buffs1) ~= 0 and not loadout.buffs[buffs1.ony.id] and 
+        loadout.always_assume_buffs then
+        for i = 2, 7 do
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + 0.1;
+        end
+    end
+    -- zg buff
+    if bit.band(buffs1.spirit_of_zandalar.flag, loadout.buffs1) ~= 0 then 
+
+        if not spell_id[buffs1.spirit_of_zandalar.id]  and loadout.always_assume_buffs then
+            -- buff wasnt actually on so increase stats
+            for i = 1, 5 do
+                raw_stats_diff.stats[i] = raw_stats_diff.stats[i] + loadout.stats[i] * 0.15;
             end
-            -- berserking
-            if spell_id == 26297 or spell_id == 20554 or spell_id == 26635 then
+        end
+        for i = 1, 5 do
+            loadout.stat_mod[i] = loadout.stat_mod[i] + 0.15;
+        end
+    end
+    if bit.band(buffs1.songflower.flag, loadout.buffs1) ~= 0 and not loadout.buffs1[buffs1.songflower.id] and
+        loadout.always_assume_buffs then
+        for i = 2, 7 do
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + 0.05;
+        end
+        for i = 1, 5 do
+            raw_stats_diff.stats[i] = raw_stats_diff.stats[i] + 15;
+        end
+    end
+    if bit.band(buffs1.dmf_dmg.flag, loadout.buffs1) ~= 0 and 
+        (loadout.always_assume_buffs or loadout.buffs1[buffs1.dmf_dmg.id]) then
+        loadout.dmg_mod = loadout.dmg_mod + 0.1;
+    end
+    -- TARGET BUFFS
+    -- TARGET DEBUFFS
+    if loadout.race == "Troll" and UnitCreatureType("target") == "Beast" then
+        loadout.dmg_mod = loadout.dmg_mod + 0.05;
+    end
+end
 
+local function apply_caster_buffs(loadout, raw_stats_diff)
+
+    -- SELF BUFFS
+    if bit.band(buffs1.power_infusion.flag, loadout.buffs1) ~= 0 and 
+        (loadout.always_assume_buffs or loadout.buffs1[buffs1.power_infusion.id]) then
+    
+        for j = 2, 7 do 
+            loadout.spell_dmg_mod_by_school[j] = loadout.spell_dmg_mod_by_school[j] + 0.2;
+        end
+        loadout.spell_heal_mod = loadout.spell_heal_mod + 0.2;
+    end
+    
+    if bit.band(buffs1.dmt_crit.flag, loadout.buffs1) ~= 0 and
+        (not loadout.buffs[buffs1.dmt_crit.id] and loadout.always_assume_buffs) then
+        for i = 2, 7 do
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + 0.03;
+        end
+    end
+    if loadout.race == "Troll" and bit.band(buffs1.berserking.flag, loadout.buffs1) ~= 0 then
+        if loadout.is_dynamic_loadout then
+    
                 if not sw_berserking_snapshot then
-
+    
                     local max_hp = UnitHealthMax("player");
                     local hp = UnitHealth("player");
                     local hp_perc = 0;
                     if max_hp ~= 0 then
                         hp_perc = hp/max_hp;
                     end
-
+    
                     -- at 100% hp: 10 % haste
                     -- at less or equal than 40% hp: 30 % haste
                     -- interpolate between 10% and 30% haste at 40% - 100% hp
-                    local haste_mod = 0.1 + 0.2 * (1 -((math.max(0.4, hp_perc) - 0.4)*(5/3)))
-
+                    local haste_mod = 0.1 + 0.2 * (1 -((math.max(0.4, hp_perc) - 0.4)*(5/3)));
+    
                     sw_berserking_snapshot = haste_mod;
-
+    
                 end
-                new_loadout.haste_mod = new_loadout.haste_mod + sw_berserking_snapshot;
-
+                loadout.haste_mod = loadout.haste_mod + sw_berserking_snapshot;
+    
             else
                 sw_berserking_snapshot = nil;
             end
+        elseif loadout.always_assume_buffs then -- static loadout
+            loadout.haste_mod = loadout.haste_mod + 0.1;
         end
     end
+    -- arcane intellect
+    if bit.band(buffs1.int.flag, loadout.buffs1) ~= 0 then
+        local int_buff = loadout.buffs[localized_spell_name("Arcane Intellect")];
+        local int_buff_aoe = loadout.buffs[localized_spell_name("Arcane Brilliance")];
 
-    for i = 1, 40  do
-        local name, _, _, _, _, _, _, _, _, spell_id = UnitBuff("player", i);
-        if not name then
-            break;
+        if not int_buff and not int_buff_aoe and loadout.always_assume_buffs then
+            raw_stats_diff.stats[stat.int] = raw_stats_diff.stats[stat.int] + 31;
         end
-        -- power infusion
-        if spell_id == 10060 then
+    end
+    -- motw
+    if bit.band(buffs1.motw.flag, loadout.buffs1) ~= 0 then
+        local motw_buff = loadout.buffs[localized_spell_name("Mark of the Wild")];
+        local motw_buff_aoe = loadout.buffs[localized_spell_name("Gift of the Wild")];
+        if not motw_buff and not motw_buff_aoe and loadout.always_assume_buffs then
+            for i = 1, 5 do
+                raw_stats_diff.stats[i] = raw_stats_diff.stats[i] + 16;
+            end
+        end
+    end
+    -- spirit buff
+    if bit.band(buffs1.spirit.flag, loadout.buffs1) ~= 0 then
+        local spirit_buff = loadout.buffs[localized_spell_name("Divine Spirit")];
+        local spirit_buff_aoe = loadout.buffs[localized_spell_name("Prayer of Spirit")];
+        if not spirit_buff and not spirit_buff_aoe and loadout.always_assume_buffs then
+            raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] + 40;
+        end
+    end
+    -- elixirs
+    if bit.band(buffs1.greater_arcane_elixir.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs and not loadout.buffs[buffs1.greater_arcane_elixir.id]) then
+        for i = 2, 7 do
+            loadout.spelldmg_by_school[i] = loadout.spelldmg_by_school[i] + 30;
+        end
+    end
+    if bit.band(buffs1.elixir_of_greater_firepower.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs and not loadout.buffs[buffs1.elixir_of_greater_firepower.id]) then
+        loadout.spelldmg_by_school[magic_school.fire] = loadout.spelldmg_by_school[magic_school.fire] + 40;
+    end
+    if bit.band(buffs1.elixir_of_shadow_power.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs and not loadout.buffs[buffs1.elixir_of_shadow_power.id]) then
+        loadout.spelldmg_by_school[magic_school.shadow] = loadout.spelldmg_by_school[magic_school.shadow] + 40;
+    end
+    if bit.band(buffs1.elixir_of_frost_power.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs and not loadout.buffs[buffs1.elixir_of_frost_power.id]) then
+        loadout.spelldmg_by_school[magic_school.frost] = loadout.spelldmg_by_school[magic_school.frost] + 15;
+    end
+    if bit.band(buffs1.runn_tum_tuber_surprise.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs and not loadout.buffs[buffs1.runn_tum_tuber_surprise.id]) then
 
+        raw_stats_diff.stats[stat.int] = raw_stats_diff.stats[stat.int] + 10;
+        
+    end
+
+    if bit.band(buffs1.spirit.flag, loadout.buffs1) ~= 0 then
+        local spirit_buff = loadout.buffs[localized_spell_name("Divine Spirit")];
+        local spirit_buff_aoe = loadout.buffs[localized_spell_name("Prayer of Spirit")];
+        if not spirit_buff and not spirit_buff_aoe and loadout.always_assume_buffs then
+            raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] + 40;
+        end
+    end
+    -- TARGET BUFFS
+    if bit.band(target_buffs1.amplify_magic.flag, loadout.target_buffs1) ~= 0 then
+        local heal_effect = 0;
+
+        local amp = loadout.buffs[localized_spell_name("Amplify Magic")];
+        if amp then
+            if amp.id == 1008 then
+                heal_effect = 30;
+            elseif amp.id == 8455 then
+                heal_effect = 60;
+            elseif amp.id == 10169 then
+                heal_effect = 100;
+            elseif amp.id == 10170 then
+                heal_effect = 150;
+            end
+        elseif loadout.always_assume_target_buffs  then
+            -- no amplify, assume max rank
+            -- TODO: maybe check for talents for improved effect and by buff caster src
+            heal_effect = 150;
+        end
+
+        if UnitIsEnemy("player", "target") then
             for j = 2, 7 do 
-                new_loadout.spell_dmg_mod_by_school[j] = new_loadout.spell_dmg_mod_by_school[j] + 0.2;
+                loadout.spelldmg_by_school[j] = loadout.spelldmg_by_school[j] + heal_effect/2;
             end
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + 0.2;
-        -- zg buff
-        elseif spell_id == 24425 then
-            for j = 1, 5 do
-                new_loadout.stat_mod[j] = new_loadout.stat_mod[j] + 0.15;
-
-            end
-        elseif spell_id == 23768 then
-        -- darkmoon faire dmg buff
-        -- look into if it should be additive or multiplicative to other school dmg mods
-            for i = 1, 7 do
-                new_loadout.spell_dmg_mod_by_school[i] = new_loadout.spell_dmg_mod_by_school[i] + 0.1;
-            end
-            
+        else
+            loadout.healingpower = loadout.healing_power + heal_effect;
         end
-        -- TODO: holy dmg aura from palas
+    end
+    if bit.band(target_buffs1.dampen_magic.flag, loadout.target_buffs1) ~= 0 then
+        local heal_effect = 0;
+
+        local damp = loadout.buffs[localized_spell_name("Dampen Magic")];
+        if damp then
+            if damp.id == 604 then
+                heal_effect = 20;
+            elseif damp.id == 8450 then
+                heal_effect = 40;
+            elseif damp.id == 8451 then
+                heal_effect = 80;
+            elseif damp.id == 10173 then
+                heal_effect = 120;
+            elseif damp.id == 10174 then
+                heal_effect = 180;
+            end
+        elseif loadout.always_assume_target_buffs then
+
+            -- no dampen, assume max rank
+            -- TODO: maybe check for talents for improved effect and by buff caster src
+            heal_effect = 180;
+        end
+
+        if UnitIsEnemy("player", "target") then
+            for j = 2, 7 do 
+                loadout.spelldmg_by_school[j] = loadout.spelldmg_by_school[j] - heal_effect/2;
+            end
+        else
+            loadout.healingpower = loadout.healing_power - heal_effect;
+        end
+    end
+    -- TARGET DEBUFFS
+    if bit.band(target_debuffs1.wc.flag, loadout.target_debuffs1) ~= 0 then
+        local frost_crit = 0;
+
+        -- TODO: is this id correct?
+        local winters_chill = loadout.target_debuffs[target_debuffs1.wc.id];
+        if winters_chill then
+            frost_crit = winters_chill.count * 0.02;
+        elseif loadout.always_assume_target_buffs then
+            -- assume 5 stacks
+            frost_crit = 0.1;
+        end
+
+        loadout.spell_crit_by_school[magic_school.frost] = loadout.spell_crit_by_school[magic_school.frost] + frost_crit;
+    end
+    if bit.band(target_debuffs1.curse_of_the_elements.flag, loadout.target_debuffs1) ~= 0 then
+        local fire_frost_dmg_taken = 0;
+        local resi = 0;
+
+        local cote = loadout.target_debuffs[localized_spell_name("Curse of the Elements")];
+        if cote.id == 1490 then
+            fire_frost_dmg_taken = 0.06;
+            resi = 45;
+        elseif cote.id == 11721 then
+            fire_frost_dmg_taken = 0.08;
+            resi = 60;
+        elseif cote.id == 11722 or loadout.always_assume_target_buffs then
+            fire_frost_dmg_taken = 0.1;
+            resi = 75;
+        end
+        loadout.spell_crit_by_school[magic_school.frost] = loadout.spell_crit_by_school[magic_school.frost] + frost_crit;
     end
 
-    return new_loadout;
-    
+
+    -- TODO: holy dmg aura from palas
 end
 
+local function apply_mage_buffs(loadout, raw_stats_diff)
+
+    if bit.band(buffs1.arcane_power.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs or loadout.buffs[buffs1.arcane_power.id]) then
+    
+        for j = 2, 7 do 
+            loadout.spell_dmg_mod_by_school[j] = loadout.spell_dmg_mod_by_school[j] + 0.3;
+        end
+        loadout.cost_mod = loadout.cost_mod - 0.3;
+    end
+    if bit.band(buffs1.mind_quickening_gem.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs or loadout.buffs[buffs1.mind_quickening_gem.id]) then
+
+        loadout.haste_mod = loadout.haste_mod + 0.33;
+    end
+    if bit.band(buffs1.hazzrahs_charm_of_magic.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs or loadout.buffs[buffs1.hazzrahs_charm_of_magic.id]) then
+        loadout.spell_crit_mod_by_school[magic_school.arcane] =
+            loadout.spell_crit_mod_by_school[magic_school.arcane] + 0.5;
+    end
+end
+
+local function apply_warlock_buffs(loadout, raw_stats_diff)
+    -- hazza'rah's charm of destruction
+    if bit.band(buffs1.hazzrahs_charm_of_destr.flag, loadout.buffs1) ~= 0  and 
+        (loadout.always_assume_buffs or loadout.buffs[buffs1.hazzrahs_charm_of_destr.id]) then
+
+        local destr = {"Shadow Bolt", "Searing Pain", "Soul Fire", "Hellfire", "Rain of Fire", "Immolate", "Shadowburn", "Conflagrate"};
+        for k, v in pairs(destr) do
+            destr[k] = localized_spell_name(v);
+        end
+    
+        for k, v in pairs(destr) do
+            if not loadout.ability_crit[v] then
+                loadout.ability_crit[v] = 0;
+            end
+        end
+        for k, v in pairs(destr) do
+            loadout.ability_crit[v] = 
+                loadout.ability_crit[v] + 0.1;
+        end
+    end
+    -- amplify curse
+    if bit.band(buffs1.amplify_curse.flag, loadout.buffs1) ~= 0 and
+        (loadout.always_assume_buffs or loadout.buffs[buffs1.amplify_curse.id]) then
+
+        local coa = localized_spell_name("Curse of Agony");
+    
+        if not loadout.ability_base_mod[coa] then
+            loadout.ability_base_mod[coa] = 0;
+        end
+    
+        loadout.ability_base_mod[coa] = 
+            loadout.ability_base_mod[coa] + 0.5;
+    
+    end
+    -- demonic sacrifice - succubus i.e. touch of shadow
+    if bit.band(buffs1.demonic_sacrifice.flag, loadout.buffs1) ~= 0 and
+       (loadout.always_assume_buffs or loadout.buffs[buffs1.demonic_sacrifice.id]) 
+        then
+        loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
+            loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
+    end
+end
+
+local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
+    -- BUFFS
+    -- hazza'rah's charm of healing
+    if bit.band(buffs1.hazzrahs_charm_of_healing.flag, loadout.buffs1) ~= 0 then
+
+        loadout.ability_cast_mod[localized_spell_name("Holy Light")] =
+            loadout.ability_cast_mod[localized_spell_name("Holy Light")] + 0.4;
+        
+        local healing_abilities = {"Holy Light", "Flash of Light", "Holy Shock"};
+    
+    
+        for k, v in pairs(healing_abilities) do
+            healing_abilities[k] = localized_spell_name(v);
+        end
+    
+        for k, v in pairs(healing_abilities) do
+            if not loadout.ability_cost_mod[v] then
+                loadout.ability_cost_mod[v] = 0;
+            end
+        end
+        for k, v in pairs(healing_abilities) do
+            loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + 0.05;
+        end
+    end
+
+    -- TARGET BUFFS
+    if (spell_name == localized_spell_name("Holy Light") or spell_name == localized_spell_name("Flash of Light")) and 
+        bit.band(target_buffs1.blessing_of_light.flag, loadout.target_buffs1) ~= 0 then
+
+        local hl_effect = 0;
+        local fh_effect = 0;
+
+        local bol = loadout.buffs[localized_spell_name("Blessing of Light")];
+        if bol then
+            if bol.id == 19977 then
+                hl_effect = 210;
+                fh_effect = 60;
+            elseif bol.id == 19978 then
+                hl_effect = 300;
+                fh_effect = 85;
+            elseif bol.id == 19979 then
+                hl_effect = 400;
+                fh_effect = 115;
+            end
+        elseif loadout.always_assume_target_buffs then
+            hl_effect = 400;
+            fh_effect = 115;
+        end
+
+        if not UnitIsEnemy("player", "target") then
+            if spell_name == localized_spell_name("Holy Light") then
+                loadout.healingpower = loadout.healing_power + hl_effect;
+            elseif spell_name == localized_spell_name("Flash of Light") then
+                loadout.healingpower = loadout.healing_power + fh;
+            end
+        end
+    end
+
+    -- TARGET DEBUFFS
+end
+
+local function apply_priest_buffs(loadout, raw_stats_diff)
+    -- shadow form
+    if bit.band(buffs1.shadow_form.flag, loadout.buffs1) ~= 0 then
+        loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
+            loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
+    end
+end
+
+local function apply_shaman_buffs(loadout, raw_stats_diff)
+    -- wushoolay's charm of spirits
+    if bit.band(buffs1.wushoolays_charm_of_spirits.flag, loadout.buffs1) ~= 0 and 
+       (loadout.always_assume_buffs or loadout.buffs[buffs1.wushoolays_charm_of_spirits.id]) then
+
+        local ls = localized_spell_name("Lightning Shield");
+        if not loadout.ability_base_mod[ls] then
+            loadout.ability_base_mod[ls] = 0;
+        end
+        loadout.ability_base_mod[ls] = loadout.ability_base_mod[ls] + 1;
+    end
+end
+
+local function apply_druid_buffs(loadout, raw_stats_diff)
+    -- wushoolay's charm of nature
+    if bit.band(buffs1.wushoolays_charm_of_nature.flag, loadout.buffs1) ~= 0 and
+       (loadout.always_assume_buffs or loadout.buffs[buffs1.wushoolays_charm_of_nature.id]) then
+
+        loadout.ability_cast_mod[localized_spell_name("Healing Touch")] =
+            loadout.ability_cast_mod[localized_spell_name("Healing Touch")] + 0.4;
+        
+        local healing_abilities = {"Healing Touch", "Rejuvenation", "Regrowth", "Tranquility"};
+    
+        for k, v in pairs(healing_abilities) do
+            healing_abilities[k] = localized_spell_name(v);
+        end
+    
+        for k, v in pairs(healing_abilities) do
+            if not loadout.ability_cost_mod[v] then
+                loadout.ability_cost_mod[v] = 0;
+            end
+        end
+        for k, v in pairs(healing_abilities) do
+            loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + 0.05;
+        end
+    end
+end
+
+local function apply_buffs(spell_name, loadout)
+
+    local stats_diff_loadout = empty_loadout();
+
+    if loadout.class == "MAGE" then
+        apply_mage_buffs(loadout, stat_diff_loadout);
+    elseif loadout.class == "PRIEST" then
+        apply_priest_buffs(loadout, stat_diff_loadout);
+    elseif loadout.class == "WARLOCK" then
+        apply_warlock_buffs(loadout, stat_diff_loadout);
+    elseif loadout.class == "SHAMAN" then
+        apply_shaman_buffs(loadout, stat_diff_loadout);
+    elseif loadout.class == "DRUID" then
+        apply_druid_buffs(loadout, stat_diff_loadout);
+    elseif loadout.class == "PALADIN" then
+        apply_paladin_buffs(loadout, stat_diff_loadout, spell_name);
+    end
+
+    if loadout.class == "MAGE" or loadout.class == "PRIEST" or loadout.class == "WARLOCK" or
+       loadout.class == "SHAMAN" or loadout.class == "DRUID" or loadout.class == "PALADIN" then
+        apply_caster_buffs(loadout);    
+    end
+
+    loadout = loadout_add(loadout, stats_diff_loadout);
+
+    return loadout;
+end
 
 local function current_loadout()
 
    local loadout = empty_loadout();
 
-   local _, int, _, _ = UnitStat("player", 4);
-   local _, spirit, _, _ = UnitStat("player", 5);
-
-   loadout.name = "Current loadout";
+   loadout.name = "Current Loadout";
 
    loadout.lvl = UnitLevel("player");
    loadout.target_lvl = loadout.lvl + 3;
-   
-   loadout.int = int;
-   loadout.spirit = spirit;
+
+   loadout.stats = {};
+   for i = 1, 5 do
+       local _, stat, _, _ = UnitStat("player", 4);
+
+       loadout.stats[i] =  stat;
+   end
 
    for i = 1, 7 do
        loadout.spelldmg_by_school[i] = GetSpellBonusDamage(i);
@@ -7723,7 +8162,7 @@ local function current_loadout()
 
    loadout = apply_set_bonuses(loadout);
 
-   loadout = apply_buffs(loadout);
+   loadout = detect_buffs(loadout);
 
    return loadout;
 end
@@ -7792,6 +8231,7 @@ local function print_loadout(loadout)
 
     print(string.format("spell haste mod: %.3f", loadout.haste_mod));
     print(string.format("spell cost mod: %.3f", loadout.cost_mod));
+    print(string.format("spell dmg mod : %.3f", loadout.dmg_mod));
     print(string.format("stat mods : %.3f, %.3f, %.3f, %.3f, %.3f",
                         loadout.stat_mod[1],
                         loadout.stat_mod[2],
@@ -7952,14 +8392,14 @@ local function spell_info(base_min, base_max,
                           base_ot, ot_freq, ot_dur, ot_extra_ticks,
                           cast_time, sp, 
                           crit, ot_crit, crit_mod, hit,
-                          mod, base_mod,
+                          global_mod, mod, base_mod,
                           direct_coef, ot_coef,
-                          mana, school,
+                          cost, school,
                           spell_name, loadout)
 
     -- tmp
     if __sw__debug__ then
-        print(sp, crit, crit_mod, hit, mod, base_mod, mana, cast_time);
+        print(sp, crit, crit_mod, hit, global_mod, mod, base_mod, cost, cast_time);
     end 
 
     -- improved immolate only works on direct damage -,-
@@ -8050,8 +8490,7 @@ local function spell_info(base_min, base_max,
         cast_time = cast_time - cast_reduction * crit;
     end
 
-    local _, class = UnitClass("player");
-    if class == "MAGE" and base_min > 0 and loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
+    if loadout.class == "MAGE" and base_min > 0 and loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
         cast_time = cast_time - math.max(0, (cast_time - 1.5)) * 0.1;
     end
 
@@ -8110,16 +8549,20 @@ local function spell_info(base_min, base_max,
         expectation_st = expectation_st,
         effect_per_sec = effect_per_sec,
 
-        effect_per_cost = expectation/mana,
-        cost_per_sec = mana / cast_time,
+        effect_per_cost = expectation/cost,
+        cost_per_sec = cost / cast_time,
 
         cast_time = cast_time,
 
-        mana = mana
+        cost = cost
     };
 end
 
 local function loadout_stats_for_spell(spell_data, spell_name, loadout)
+
+    loadout = loadout_cpy(loadout);
+
+    loadout = apply_buffs(spell_name, loadout);
 
     local crit = 0;
     local ot_crit = 0;
@@ -8167,6 +8610,8 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     else
         cast_speed = math.max(cast_speed, 1.5);
     end
+
+    local global_mod = 1; 
     
     local spell_mod = 1;
     local spell_mod_base = 1;
@@ -8187,6 +8632,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         spell_mod_base = spell_mod_base + loadout.ability_base_mod[spell_name];
         spell_mod = spell_mod + loadout.ability_effect_mod[spell_name];
     else
+        global_mod = global_mod + loadout.dmg_mod;
         spell_mod_base = spell_mod_base + loadout.ability_base_mod[spell_name];
         spell_mod = spell_mod * (1 + loadout.spell_dmg_mod_by_school[spell_data.school]);
         spell_mod = spell_mod * (1 + loadout.ability_effect_mod[spell_name]);
@@ -8222,7 +8668,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         spell_power = loadout.spelldmg_by_school[spell_data.school];
     end
 
-    local cost = spell_data.mana;
+    local cost = spell_data.cost;
     if loadout.ability_cost_mod[spell_name] then
         cost = cost * (1 - loadout.ability_cost_mod[spell_name] - loadout.cost_mod);
     end
@@ -8235,7 +8681,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         cost = cost * (1 - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1));
     end
 
-    -- the game seems to round mana up/down to the nearest
+    -- the game seems to round cost up/down to the nearest
     cost = tonumber(string.format("%.0f", cost));
 
     local direct_coef, over_time_coef = spell_coef(spell_data, spell_name);
@@ -8251,6 +8697,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         spell_crit_mod = spell_crit_mod,
         hit = hit,
         hit_delta_1 = hit_delta_1,
+        global_mod = global_mod,
         spell_mod = spell_mod,
         spell_mod_base = spell_mod_base,
         direct_coef = direct_coef,
@@ -8272,12 +8719,12 @@ local function evaluate_spell(spell_data, spell_name, loadout)
        spell_data.base_min, spell_data.base_max, 
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
-       max(0, stats.spell_power),
+       stats.spell_power,
        min(1, stats.crit),
        min(1, stats.ot_crit),
        stats.spell_crit_mod,
        stats.hit,
-       stats.spell_mod, stats.spell_mod_base,
+       stats.global_mod, stats.spell_mod, stats.spell_mod_base,
        stats.direct_coef, stats.over_time_coef,
        stats.cost, spell_data.school,
        spell_name, loadout
@@ -8287,12 +8734,12 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
-        max(0, stats.spell_power + 1),
+        stats.spell_power + 1,
         min(1, stats.crit),
         min(1, stats.ot_crit),
         stats.spell_crit_mod,
         stats.hit,
-        stats.spell_mod, stats.spell_mod_base,
+        stats.global_mod, stats.spell_mod, stats.spell_mod_base,
         stats.direct_coef, stats.over_time_coef,
         stats.cost, spell_data.school,
         spell_name, loadout
@@ -8306,7 +8753,7 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         min(1, stats.ot_crit_delta_1),
         stats.spell_crit_mod,
         stats.hit,
-        stats.spell_mod, stats.spell_mod_base,
+        stats.global_mod, stats.spell_mod, stats.spell_mod_base,
         stats.direct_coef, stats.over_time_coef,
         stats.cost, spell_data.school,
         spell_name, loadout
@@ -8315,12 +8762,12 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.base_min, spell_data.base_max, 
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
-        max(0, stats.spell_power),
+        stats.spell_power,
         min(1, stats.crit),
         min(1, stats.ot_crit),
         stats.spell_crit_mod,
         stats.hit_delta_1,
-        stats.spell_mod, stats.spell_mod_base,
+        stats.global_mod, stats.spell_mod, stats.spell_mod_base,
         stats.direct_coef, stats.over_time_coef,
         stats.cost, spell_data.school,
         spell_name, loadout
@@ -8577,7 +9024,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           tooltip:AddLine(string.format("Average cast time: %.3f sec", eval.spell_data.cast_time), 232.0/255, 225.0/255, 32.0/255);
       end
       if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
-          tooltip:AddLine("Average cost: "..eval.spell_data.mana, 232.0/255, 225.0/255, 32.0/255);
+          tooltip:AddLine("Average cost: "..eval.spell_data.cost, 232.0/255, 225.0/255, 32.0/255);
       end
 
       -- debug tooltip stuff
@@ -8633,7 +9080,7 @@ local function print_spell(spell, spell_name, loadout)
                             spell.school,
                             direct_coef,
                             ot_oef,
-                            spell.mana
+                            spell.cost
                             ));
 
         print(string.format("Spell noncrit: min %d, max %d", eval.spell_data.min_noncrit, eval.spell_data.max_noncrit));
@@ -8642,7 +9089,7 @@ local function print_spell(spell, spell_name, loadout)
 
         print("Spell evaluation");
         print(string.format("ot if hit: %.3f", eval.spell_data.ot_if_hit));
-        print(string.format("including hit/miss - expectation: %.3f, effect_per_sec: %.3f, dmg per mana:%.3f, effect_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
+        print(string.format("including hit/miss - expectation: %.3f, effect_per_sec: %.3f, effect per cost:%.3f, effect_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
                             eval.spell_data.expectation, 
                             eval.spell_data.effect_per_sec, 
                             eval.spell_data.effect_per_cost, 
@@ -8776,9 +9223,11 @@ local function update_and_display_spell_diffs(frame)
     end
     frame.footer:SetFontObject(font);
     frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    frame.footer:SetText("Add abilities by holding shift and hovering over them!");
+    frame.footer:SetText("Add abilities by holding SHIFT and HOVERING over them!");
 end
 
+local function update_and_display_loadouts()
+end
 
 display_spell_diff = function(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
 
@@ -8951,6 +9400,15 @@ local function default_sw_settings()
 
     return settings;
 end
+
+--local function default_sw_loadouts()
+--    local loadouts = {};
+--    loadouts[1].loadout = current_loadout();
+--    loadouts[1].buff_flags1 = 0;
+--    loadouts[1].buff_flags2 = 0;
+--
+--    return loadouts;
+--end
 
 function save_sw_settings()
 
@@ -9312,7 +9770,7 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.instructions_label = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.instructions_label:SetFontObject(font);
     sw_frame.stat_comparison_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.instructions_label:SetText("Type into the fields below to compare stats against your current");
+    sw_frame.stat_comparison_frame.instructions_label:SetText("Type into the fields below to compare stats against your chosen");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 
@@ -9578,6 +10036,16 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame:SetWidth(370);
     sw_frame.loadouts_frame:SetHeight(600);
     sw_frame.loadouts_frame:SetPoint("TOP", sw_frame, 0, -20);
+
+    sw_frame.loadouts_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs ", sw_frame.loadouts_frame);
+    sw_frame.loadouts_frame:SetWidth(150);
+    sw_frame.loadouts_frame:SetHeight(600);
+    sw_frame.loadouts_frame:SetPoint("TOPLEFT", sw_frame, 0, -20);
+
+    sw_frame.loadouts_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs ", sw_frame.loadouts_frame);
+    sw_frame.loadouts_frame:SetWidth(370-150);
+    sw_frame.loadouts_frame:SetHeight(600);
+    sw_frame.loadouts_frame:SetPoint("TOP", sw_frame, 0, -20);
 end
 
 function create_sw_base_gui()
@@ -9642,6 +10110,11 @@ function create_sw_base_gui()
                 __sw__persistent_data_per_char.settings = default_sw_settings();
             end
 
+            --if not __sw__persistent_data_per_char.loadouts then
+            --    __sw__persistent_data_per_char.loadouts = default_sw_loadouts();
+            --end
+
+
             sw_activate_tab(3);
             sw_frame:Hide();
 
@@ -9671,36 +10144,35 @@ function create_sw_base_gui()
     sw_frame.tab1:SetHeight(25);
     sw_frame.tab1:SetText("Settings");
     sw_frame.tab1:SetScript("OnClick", function()
-
         sw_activate_tab(1);
     end);
 
 
-    --sw_frame.tab2 = CreateFrame("Button", "loadouts_button", sw_frame, "UIPanelButtonTemplate"); 
-    --sw_frame.tab2:SetPoint("TOPLEFT", 110, -25);
-    --sw_frame.tab2:SetWidth(110);
-    --sw_frame.tab2:SetHeight(25);
-    --sw_frame.tab2:SetText("Loadouts");
+    sw_frame.tab2 = CreateFrame("Button", "loadouts_button", sw_frame, "UIPanelButtonTemplate"); 
+    sw_frame.tab2:SetPoint("TOPLEFT", 110, -25);
+    sw_frame.tab2:SetWidth(110);
+    sw_frame.tab2:SetHeight(25);
+    sw_frame.tab2:SetText("Loadouts");
 
-    --sw_frame.tab2:SetScript("OnClick", function()
-
-    --    sw_activate_tab(2);
-    --end);
+    sw_frame.tab2:SetScript("OnClick", function()
+        sw_activate_tab(2);
+    end);
 
     sw_frame.tab3 = CreateFrame("Button", "stat_comparison_button", sw_frame, "UIPanelButtonTemplate"); 
-    sw_frame.tab3:SetPoint("TOPLEFT", 110, -25);
+    sw_frame.tab3:SetPoint("TOPLEFT", 220, -25);
     sw_frame.tab3:SetWidth(125);
     sw_frame.tab3:SetHeight(25);
     sw_frame.tab3:SetText("Stat Comparison");
     sw_frame.tab3:SetScript("OnClick", function()
         sw_activate_tab(3);
     end);
-
 end
 
 local function command(msg, editbox)
     if msg == "print" then
         print_loadout(loadout_snapshot);
+    elseif msg == "loadout" or msg == "loadouts" then
+        sw_activate_tab(2);
     elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
         sw_activate_tab(1);
     elseif msg == "compare" or msg == "sc" or msg == "stat compare" then
@@ -9718,9 +10190,6 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
     local loadout = loadout_snapshot;
 
-    --local spell_name, _ = GetSpellInfo(spell_id);
-
-    --print_spell(spell, spell_name, loadout);
     tooltip_spell_info(GameTooltip, spell, spell_name, loadout);
 
     if spell and IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
@@ -9888,7 +10357,7 @@ function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
        spell_data.base_min, spell_data.base_max, 
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
-       max(0, stats.spell_power),
+       stats.spell_power,
        min(1, stats.crit),
        min(1, stats.ot_crit),
        stats.spell_crit_mod,
@@ -9926,9 +10395,6 @@ function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
             if spell_effect.ot_crit_if_hit > 0  then
                 frame_info.overlay_frames[i]:SetText(string.format("%d",
                     (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_crit_if_hit));
-            --elseif spell_effect.min_crit ~= 0.0 then
-            --    frame_info.overlay_frames[i]:SetText(string.format("%d", 
-            --        (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_));
             elseif spell_effect.min_crit ~= 0.0 then
                 frame_info.overlay_frames[i]:SetText(string.format("%d", 
                     (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_if_hit));
@@ -9940,7 +10406,7 @@ function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
         elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_cost then
             frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.effect_per_cost));
         elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cost then
-            frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.mana));
+            frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.cost));
         elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
             frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.cast_time));
         end
@@ -9963,6 +10429,7 @@ function update_spell_icons()
             if v.frame and v.frame:IsShown() then
                 if spells[id] then
                     local spell_name = GetSpellInfo(id);
+                    -- TODO: icon overlay not working for healing version checkbox
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
                         update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout_snapshot);
                     else
