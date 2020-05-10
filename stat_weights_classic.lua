@@ -7116,11 +7116,11 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
         if pts ~= 0 then
             new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * (1 + pts * 0.2);
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * 2;
             new_loadout.spell_crit_mod_by_school[magic_school.fire] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.fire] - 1) * (1 + pts * 0.2);
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.fire] - 1) * 2;
             new_loadout.spell_crit_mod_by_school[magic_school.nature] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * (1 + pts * 0.2);
+                1 + (new_loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * 2;
         end
 
         -- lightning mastery
