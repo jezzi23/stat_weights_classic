@@ -73,14 +73,14 @@ local buffs1 = {
     dmt_crit                    = { flag = bit.lshift(1,17), id = 22820, name = "DMT Spell Crit"},-- ok
     dmt_ap                      = { flag = bit.lshift(1,18), id = 22817, name = "DMT Attack Power"},
     dmt_hp                      = { flag = bit.lshift(1,19), id = 22818, name = "DMT HP"},
-    hazzrahs_charm_of_magic     = { flag = bit.lshift(1,20), id = 24544, name = "Hazza'rah'Charm of Magic"},-- ok
-    hazzrahs_charm_of_destr     = { flag = bit.lshift(1,21), id = 24544, name = "Hazza'rah'Charm of Destruction"},-- ok
+    hazzrahs_charm_of_magic     = { flag = bit.lshift(1,20), id = 24544, name = "Hazza'rah'Charm"},-- ok
+    hazzrahs_charm_of_destr     = { flag = bit.lshift(1,21), id = 24544, name = "Hazza'rah'Charm"},-- ok
     amplify_curse               = { flag = bit.lshift(1,22), id = 18288, name = "Amplify Curse"},-- ok
-    demonic_sacrifice           = { flag = bit.lshift(1,23), id = 18791, name = "Demonic Sacrifice (Succubus)"},-- ok
-    hazzrahs_charm_of_healing   = { flag = bit.lshift(1,24), id = 24546, name = "Hazza'rah'Charm of Healing"},-- ok
+    demonic_sacrifice           = { flag = bit.lshift(1,23), id = 18791, name = "Demonic Sacrifice (Succ)"},-- ok
+    hazzrahs_charm_of_healing   = { flag = bit.lshift(1,24), id = 24546, name = "Hazza'rah'Charmof Healing"},-- ok
     shadow_form                 = { flag = bit.lshift(1,25), id = 15473, name = "Shadow Form"},-- ok
-    wushoolays_charm_of_spirits = { flag = bit.lshift(1,26), id = 24499, name = "Wushoolay's Charm of Spirits"},-- ok
-    wushoolays_charm_of_nature  = { flag = bit.lshift(1,27), id = 24542, name = "Wushoolay's Charm of Nature"},-- ok
+    wushoolays_charm_of_spirits = { flag = bit.lshift(1,26), id = 24499, name = "Wushoolay's Charm"},-- ok
+    wushoolays_charm_of_nature  = { flag = bit.lshift(1,27), id = 24542, name = "Wushoolay's Charm"},-- ok
     berserking_rogue            = { flag = bit.lshift(1,28), id = 26297, name = "Berserking 10%"},
     berserking_warrior          = { flag = bit.lshift(1,29), id = 26296, name = "Berserking 10%"},
     berserking                  = { flag = bit.lshift(1,30), id = 20554, name = "Berserking 10%"}, -- ok casters
@@ -92,7 +92,7 @@ local buffs2 = {
     zandalarian_hero_charm      = { flag = bit.lshift(1,1),  id = 24658, name = "Zandalarian Hero Charm"}, --ok casters
     bok                         = { flag = bit.lshift(1,2),  id = 20217, name = "Blessing of Kings"}, --ok
     vengeance                   = { flag = bit.lshift(1,3),  id = 20059, name = "Vengeance"}, --ok
-    natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Blessing of Kings"}, --ok
+    natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Natural Alignment Crystal"}, --ok
     blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"} --ok
 };
 
@@ -4651,7 +4651,85 @@ local function create_spells()
                 flags               = spell_flags.snare,
                 school              = magic_school.frost,
             },
-            -- TODO: searing totem
+            -- searing totem
+            [3599] = {
+                base_min            = 9.0,
+                base_max            = 11.0,
+                over_time           = 0,
+                over_time_tick_freq = 2.5,
+                over_time_duration  = 30,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 10, 
+                cost                = 25,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [6363] = {
+                base_min            = 13.0,
+                base_max            = 17.0,
+                over_time           = 0,
+                over_time_tick_freq = 2.5,
+                over_time_duration  = 35,
+                cast_time           = 1.5,
+                rank                = 2,
+                lvl_req             = 20, 
+                cost                = 45,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [6364] = {
+                base_min            = 19.0,
+                base_max            = 25.0,
+                over_time           = 0,
+                over_time_tick_freq = 2.5,
+                over_time_duration  = 40,
+                cast_time           = 1.5,
+                rank                = 3,
+                lvl_req             = 30, 
+                cost                = 75,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [6365] = {
+                base_min            = 26.0,
+                base_max            = 34.0,
+                over_time           = 0,
+                over_time_tick_freq = 2.5,
+                over_time_duration  = 45,
+                cast_time           = 1.5,
+                rank                = 4,
+                lvl_req             = 40, 
+                cost                = 110,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [10437] = {
+                base_min            = 33.0,
+                base_max            = 45.0,
+                over_time           = 0,
+                over_time_tick_freq = 2.5,
+                over_time_duration  = 50,
+                cast_time           = 1.5,
+                rank                = 5,
+                lvl_req             = 50, 
+                cost                = 145,
+                flags               = 0,
+                school              = magic_school.fire
+            },
+            [10438] = {
+                base_min            = 40.0,
+                base_max            = 54.0,
+                over_time           = 0,
+                over_time_tick_freq = 2.5,
+                over_time_duration  = 55,
+                cast_time           = 1.5,
+                rank                = 6,
+                lvl_req             = 60, 
+                cost                = 170,
+                flags               = 0,
+                school              = magic_school.fire
+            },
             -- fire nova totem
             [1535] = {
                 base_min            = 53.0,
@@ -7708,7 +7786,7 @@ local function detect_buffs(loadout)
               break;
           end
           new_loadout.buffs[spell_id] = {name = name, count = count, src = src};
-          new_loadout.buffs[name] = {count = count, id = id, src = src};
+          new_loadout.buffs[name] = {count = count, id = spell_id, src = src};
     end
     new_loadout.target_buffs = {};
     for i = 1, 40  do
@@ -7716,8 +7794,8 @@ local function detect_buffs(loadout)
           if not name then
               break;
           end
-          new_loadout.buffs[spell_id] = {name = name, count = count, src = src};
-          new_loadout.buffs[name] = {count = count, id = id, src = src};
+          new_loadout.target_buffs[spell_id] = {name = name, count = count, src = src};
+          new_loadout.target_buffs[name] = {count = count, id = spell_id, src = src};
     end
     new_loadout.target_debuffs = {};
     for i = 1, 40  do
@@ -7725,8 +7803,8 @@ local function detect_buffs(loadout)
           if not name then
               break;
           end
-          new_loadout.buffs[spell_id] = {name = name, count = count, src = src};
-          new_loadout.buffs[name] = {count = count, id = id, src = src};
+          new_loadout.target_debuffs[spell_id] = {name = name, count = count, src = src};
+          new_loadout.target_debuffs[name] = {count = count, id = spell_id, src = src};
     end
 
     return new_loadout;
@@ -7855,7 +7933,7 @@ local function apply_caster_fire_buffs(loadout, raw_stats_diff)
         end
     end
 end
-local function apply_caster_shadow_buffs(loadout, raw_stats_diff)
+local function apply_caster_shadow_buffs(loadout, raw_stats_diff, spell_name)
     -- SELF BUFFS
     if bit.band(buffs1.elixir_of_shadow_power.flag, loadout.buffs1) ~= 0 and
         loadout.always_assume_buffs and not loadout.buffs[buffs1.elixir_of_shadow_power.id] then
@@ -7868,10 +7946,10 @@ local function apply_caster_shadow_buffs(loadout, raw_stats_diff)
     -- TARGET DEBUFFS
     if bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
         ((UnitIsEnemy("player", "target") and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
-        loadout.always_assume_buffs) then
+        loadout.always_assume_buffs) and spell_name ~= localized_spell_name("Shadow Bolt") then
 
         loadout.target_spell_dmg_taken[magic_school.shadow] = 
-            loadout.target_spell_dmg_taken[magic_school.shadow] + shadow_dmg;
+            loadout.target_spell_dmg_taken[magic_school.shadow] + 0.2;
     end
     if bit.band(target_debuffs1.shadow_weaving.flag, loadout.target_debuffs1) ~= 0 then
 
@@ -8090,7 +8168,7 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
     if bit.band(target_buffs1.amplify_magic.flag, loadout.target_buffs1) ~= 0 then
         local heal_effect = 0;
 
-        local amp = loadout.buffs[localized_spell_name("Amplify Magic")];
+        local amp = loadout.target_buffs[localized_spell_name("Amplify Magic")];
         if amp then
             if amp.id == 1008 then
                 heal_effect = 30;
@@ -8119,7 +8197,7 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
     if bit.band(target_buffs1.dampen_magic.flag, loadout.target_buffs1) ~= 0 then
         local heal_effect = 0;
 
-        local damp = loadout.buffs[localized_spell_name("Dampen Magic")];
+        local damp = loadout.target_buffs[localized_spell_name("Dampen Magic")];
         if damp then
             if damp.id == 604 then
                 heal_effect = 20;
@@ -8178,13 +8256,11 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
         end
     end
     if bit.band(target_debuffs1.nightfall.flag, loadout.target_debuffs1) ~= 0 and 
-        (loadout.always_assume_buffs or loadout.target_debuffs[target_debuffs1.nightfall.id]) then
+        (loadout.always_assume_buffs or 
+        (loadout.target_debuffs[target_debuffs1.nightfall.id] and UnitIsEnemy("player", "target"))) then
 
-        if loadout.always_assume_buffs or UnitIsEnemy("player", "target") then
-
-            for j = 2, 7 do 
-                loadout.target_spell_dmg_taken[j] = loadout.target_spell_dmg_taken[j] + 0.15;
-            end
+        for j = 2, 7 do 
+            loadout.target_spell_dmg_taken[j] = loadout.target_spell_dmg_taken[j] + 0.15;
         end
     end
 end
@@ -8262,16 +8338,20 @@ local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
         (loadout.always_assume_buffs or loadout.buffs[localized_spell_name("Vengeance")]) then
 
         local veng = loadout.buffs[localized_spell_name("Vengeance")];
-        local amount = 0;
-        if veng.id == 20049 then
-            amount = 0.03;
-        elseif veng.id == 20056 then
-            amount = 0.06;
-        elseif veng.id == 20057 then
-            amount = 0.09;
-        elseif veng.id == 20058 then
-            amount = 0.12;
-        elseif veng.id == 20059 then
+        if veng then
+            local amount = 0;
+            if veng.id == 20049 then
+                amount = 0.03;
+            elseif veng.id == 20056 then
+                amount = 0.06;
+            elseif veng.id == 20057 then
+                amount = 0.09;
+            elseif veng.id == 20058 then
+                amount = 0.12;
+            elseif veng.id == 20059 then
+                amount = 0.15;
+            end
+        else
             amount = 0.15;
         end
     
@@ -8286,7 +8366,7 @@ local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
         local hl_effect = 0;
         local fh_effect = 0;
 
-        local bol = loadout.buffs[localized_spell_name("Blessing of Light")];
+        local bol = loadout.target_buffs[localized_spell_name("Blessing of Light")];
         if bol then
             if bol.id == 19977 then
                 hl_effect = 210;
@@ -8303,7 +8383,7 @@ local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
             fh_effect = 115;
         end
 
-        if not UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if loadout.always_assume_buffs or not UnitIsEnemy("player", "target") then
             if spell_name == localized_spell_name("Holy Light") then
                 loadout.healing_power = loadout.healing_power + hl_effect;
             elseif spell_name == localized_spell_name("Flash of Light") then
@@ -8359,7 +8439,7 @@ local function apply_shaman_buffs(loadout, raw_stats_diff)
         --(loadout.always_assume_buffs or loadout.buffs[target_buffs1.healing_way.id]) 
 
         local effect = 0;
-        local healing_way = loadout.buffs[target_buffs1.healing_way.id];
+        local healing_way = loadout.target_buffs[target_buffs1.healing_way.id];
         if healing_way then
             effect = healing_way.count * 0.06;
         elseif loadout.always_assume_buffs then
@@ -8425,7 +8505,7 @@ local function apply_buffs(spell_name, loadout)
         apply_caster_buffs(loadout, stats_diff_loadout);    
 
         if class == "PRIEST" or class == "WARLOCK" then
-            apply_caster_shadow_buffs(loadout, stats_diff_loadout);    
+            apply_caster_shadow_buffs(loadout, stats_diff_loadout, spell_name);    
         end
         if class == "MAGE" or class == "WARLOCK" or class == "SHAMAN" then
             apply_caster_fire_buffs(loadout, stats_diff_loadout);    
@@ -8612,8 +8692,15 @@ end
 
 local function print_loadout(loadout)
 
+    if loadout.is_dynamic_loadout then
+        loadout = dynamic_loadout(loadout);
+    end
+
+    loadout = loadout_copy(loadout);
+    loadout = apply_buffs("", loadout);
+
     print("Stat Weights Classic - Version: "..version);
-    print(loadout.name);
+    print("Loadout: "..loadout.name);
     print(string.format("level:%d, target_level: %d", loadout.lvl, loadout.target_lvl));
     print("dynamic: ", loadout.is_dynamic_loadout);
     print("always_apply_buffs: ", loadout.always_assume_buffs);
@@ -8774,6 +8861,7 @@ local function spell_coef(spell_info, spell_name)
         direct_coef = 0.0;
         ot_coef = math.min(1.0, math.max(1.5/3.5, spell_info.cast_time/3.5));
     end
+
     -- distribute direct and ot coefs if both
     if spell_info.base_min > 0 and spell_info.over_time > 0 then
         -- pyroblast and fireball dots are special...
@@ -8912,6 +9000,10 @@ local function spell_info(base_min, base_max,
     end
 
     local expectation_direct = (min + max) / 2;
+    if spell_name == spell_name == localized_spell_name("Searing Totem") then
+        expectation_direct = expectation_direct * ot_dur/ot_freq;
+    end
+      
     local expectation = expectation_direct + expected_ot + hit * crit * (ignite_min + ignite_max)/2;
 
     if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time > 1.5 and 
@@ -8935,8 +9027,10 @@ local function spell_info(base_min, base_max,
         -- and just spam shadow bolt allt fight, other abilities like shadowburn/mind blast will skew this estimate
         local sb_dmg_bonus = loadout.improved_shadowbolt * 0.04;
         local improved_sb_uptime = 1 - math.pow(1-crit, 4);
+        local sb_dmg_taken_mod = sb_dmg_bonus * improved_sb_uptime;
+        local new_vuln_mod = (target_vuln_mod + sb_dmg_taken_mod)/target_vuln_mod;
 
-        expectation = expectation * (1 + sb_dmg_bonus * improved_sb_uptime);
+        expectation = expectation * new_vuln_mod;
     end
 
     local expectation_st = expectation;
@@ -8960,6 +9054,23 @@ local function spell_info(base_min, base_max,
     end
 
     local effect_per_sec = expectation/cast_time;
+
+    -- improved shadow bolt invuln mod has been ignored before for shadow bolt only
+    -- and inserted now if relevant to show accurate dmg numbers
+    -- expected dmg, dps, and stat weights still assume uptime based on crit instead of 100% uptime
+    if bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
+        (loadout.always_assume_buffs or 
+        (loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id] and UnitIsEnemy("player", "target"))) and 
+        spell_name == localized_spell_name("Shadow Bolt") then
+
+        local shadowbolt_vuln_mod = (target_vuln_mod + 0.2)/target_vuln_mod;
+
+        min_noncrit_if_hit = min_noncrit_if_hit * shadowbolt_vuln_mod;
+        max_noncrit_if_hit = max_noncrit_if_hit * shadowbolt_vuln_mod;
+
+        min_crit_if_hit = min_crit_if_hit * shadowbolt_vuln_mod;
+        max_crit_if_hit = max_crit_if_hit * shadowbolt_vuln_mod;
+    end
 
     return {
         min_noncrit = min_noncrit_if_hit,
@@ -9105,17 +9216,21 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     end
 
     local cost = spell_data.cost;
+    local cost_mod = 1 - loadout.cost_mod;
+
     if loadout.ability_cost_mod[spell_name] then
-        cost = cost * (1 - loadout.ability_cost_mod[spell_name] - loadout.cost_mod);
+        cost_mod = cost_mod - loadout.ability_cost_mod[spell_name]
     end
     if loadout.illumination ~= 0  and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
-        cost = cost * (1 - loadout.healing_crit * (loadout.illumination * 0.2));
+        cost_mod = cost_mod - loadout.healing_crit * (loadout.illumination * 0.2);
     end
 
     if loadout.master_of_elements ~= 0 and 
        (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) ~= 0 then
-        cost = cost * (1 - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1));
+        cost_mod = cost_mod - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1);
     end
+
+    cost = cost * cost_mod;
 
     -- the game seems to round cost up/down to the nearest
     cost = tonumber(string.format("%.0f", cost));
@@ -9260,22 +9375,42 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         begin_tooltip_section(tooltip);
 
         tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
-        if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-            tooltip:AddLine(string.format("Active loadout: %s", loadout.name), 1, 1,1);
+        local loadout_type = "";
+        if loadout.is_dynamic_loadout then
+            loadout_type = "dynamic";
         else
-            tooltip:AddLine(string.format("Active loadout %s - Target lvl %d", loadout.name, loadout.target_lvl), 1, 1, 1);
+            loadout_type = "static";
+        end
+        if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+            tooltip:AddLine(string.format("Active loadout (%s): %s", loadout_type, loadout.name), 1, 1,1);
+        else
+            tooltip:AddLine(string.format("Active loadout (%s): %s - Target lvl %d", loadout_type, loadout.name, loadout.target_lvl), 1, 1, 1);
         end
         if eval.spell_data.min_noncrit ~= 0 then
             if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
                 if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
                     -- dmg spells with real direct range
                     if eval.stats.hit ~= 1 then
-                        tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
-                                                      effect, 
-                                                      eval.stats.hit*100,
-                                                      math.floor(eval.spell_data.min_noncrit), 
-                                                      math.ceil(eval.spell_data.max_noncrit)),
-                                        232.0/255, 225.0/255, 32.0/255);
+                        if spell_name == localized_spell_name("Searing Totem") then
+                            local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
+                            tooltip:AddLine(
+                                string.format("Normal %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)", 
+                                              effect, 
+                                              eval.stats.hit*100,
+                                              (eval.spell_data.min_noncrit + eval.spell_data.max_noncrit)*num_ticks/2,
+                                              spell.over_time_duration,
+                                              math.floor(eval.spell_data.min_noncrit), 
+                                              math.ceil(eval.spell_data.max_noncrit),
+                                              num_ticks),
+                                232.0/255, 225.0/255, 32.0/255);
+                        else
+                            tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
+                                                           effect, 
+                                                           eval.stats.hit*100,
+                                                           math.floor(eval.spell_data.min_noncrit), 
+                                                           math.ceil(eval.spell_data.max_noncrit)),
+                                             232.0/255, 225.0/255, 32.0/255);
+                        end
                     -- heal spells with real direct range
                     else
                         tooltip:AddLine(string.format("Normal %s: %d-%d", 
@@ -9306,6 +9441,19 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                                       math.floor(eval.spell_data.ignite_min), 
                                                       math.ceil(eval.spell_data.ignite_max)),
                                        252.0/255, 69.0/255, 3.0/255);
+
+                    elseif spell_name == localized_spell_name("Searing Totem") then
+                        local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
+                        tooltip:AddLine(
+                            string.format("Critical %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)", 
+                                          effect, 
+                                          eval.stats.hit*100,
+                                          (eval.spell_data.min_crit + eval.spell_data.max_crit)*num_ticks/2,
+                                          spell.over_time_duration,
+                                          math.floor(eval.spell_data.min_crit), 
+                                          math.ceil(eval.spell_data.max_crit),
+                                          num_ticks),
+                            232.0/255, 225.0/255, 32.0/255);
                     else
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d", 
                                                       effect, 
@@ -9314,6 +9462,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                                       math.ceil(eval.spell_data.max_crit)),
                                        252.0/255, 69.0/255, 3.0/255);
                     end
+
                 end
             end
         end
@@ -10806,7 +10955,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.export_button =
         CreateFrame("Button", "sw_loadouts_export_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.export_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.export_button:SetText("Create loadout as a copy");
+    sw_frame.loadouts_frame.rhs_list.export_button:SetText("Create Loadout as a Copy");
     sw_frame.loadouts_frame.rhs_list.export_button:SetSize(170, 25);
     sw_frame.loadouts_frame.rhs_list.export_button:SetScript("OnClick", function(self)
 
@@ -11181,10 +11330,6 @@ local function create_sw_gui_loadout_frame()
     y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
 
     -- general target debuff
-    create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.shadow_weaving,
-                                     "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                     y_offset_rhs_target_buffs, check_button_buff_func);
-    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
 
     if faction == "Horde" then
         -- general horde buffs
@@ -11192,9 +11337,9 @@ local function create_sw_gui_loadout_frame()
     else
         -- general ally buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.bok, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_target_buffs, 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
     end
 
 
@@ -11357,9 +11502,9 @@ local function create_sw_gui_loadout_frame()
         --                                check_button_buff_func);
         --y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.vengeance, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_target_buffs, 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+        y_offset_rhs_buffs = y_offset_rhs_buffs- 20;
         -- target buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.blessing_of_light, "target_buffs1", 
                                         sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
@@ -11422,9 +11567,9 @@ function create_sw_base_gui()
 
     sw_frame:SetWidth(370);
     sw_frame:SetHeight(600);
-    sw_frame:SetPoint("RIGHT", SpellBookFrame, "RIGHT", 380, 10);
+    sw_frame:SetPoint("TOPLEFT", 400, -30);
 
-    local sw_toggle_button = CreateFrame("Button", "button", SpellBookFrame, "UIPanelButtonTemplate"); 
+    local sw_toggle_button = CreateFrame("Button", "sw_toggle_button_spellbook", SpellBookFrame, "UIPanelButtonTemplate"); 
 
     sw_toggle_button:SetPoint("TOPRIGHT", -40, -34);
     sw_toggle_button:SetWidth(160);
@@ -11971,9 +12116,7 @@ function update_spell_icons()
            end
         end
     end
-
 end
-
 
 local snapshot_time_since_last_update = 0;
 create_sw_base_gui();
