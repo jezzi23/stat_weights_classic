@@ -8852,6 +8852,9 @@ local function spell_coef(spell_info, spell_name)
     elseif spell_name == localized_spell_name("Healing Stream Totem") then
         direct_coef = 0.0;
         ot_coef = 0.65;
+    elseif spell_name == localized_spell_name("Searing Totem") then
+        direct_coef = 0.08;
+        ot_coef = 0.0;
     elseif spell_name == localized_spell_name("Insect Swarm") then
         -- insect swarm seems to have 15/15 scaling isntead of 12/15
         direct_coef = 0.0;
