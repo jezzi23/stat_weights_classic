@@ -83,9 +83,9 @@ local buffs1 = {
     wushoolays_charm_of_spirits = { flag = bit.lshift(1,26), id = 24499, name = "Wushoolay's Charm"},-- ok
     wushoolays_charm_of_nature  = { flag = bit.lshift(1,27), id = 24542, name = "Wushoolay's Charm"},-- ok
     -- TODO: spell ids for rogue/warr ambigious on wowhead, the following 2 are wrong
-    berserking_rogue            = { flag = bit.lshift(1,28), id = 26297, name = "Berserking"},
-    berserking_warrior          = { flag = bit.lshift(1,29), id = 26296, name = "Berserking"},
-    berserking                  = { flag = bit.lshift(1,30), id = 26635, name = "Berserking"}, -- ok casters
+    berserking_rogue            = { flag = bit.lshift(1,28), id = 26297, name = "Berserking (Troll)"},
+    berserking_warrior          = { flag = bit.lshift(1,29), id = 26296, name = "Berserking (Troll)"},
+    berserking                  = { flag = bit.lshift(1,30), id = 26635, name = "Berserking (Troll)"}, -- ok casters
     toep                        = { flag = bit.lshift(1,31), id = 23271, name = "TOEP trinket"} -- ok casters
     --grileks_charm_of_valor      = { flag = bit.lshift(1,32), id = 24498, name = "Gri'lek's Charm of Valor"} -- ok casters
 };
@@ -10854,7 +10854,7 @@ local function create_sw_gui_stat_comparison_frame()
 
         loadout.is_dynamic_loadout = false;
 
-        loadout.name = original_name.." - Static (modified)";
+        loadout.name = original_name.." (modified via stats)";
 
         create_new_loadout_as_copy(loadout);
 
@@ -11009,7 +11009,6 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.num_buffs_checked = 0;
     sw_frame.loadouts_frame.rhs_list.num_target_buffs_checked = 0;
 
-
     local y_offset_lhs = 0;
     
     sw_frame.loadouts_frame.rhs_list.delete_button =
@@ -11083,12 +11082,19 @@ local function create_sw_gui_loadout_frame()
             self:SetText(self.original_name);
 
         end
-    	self:ClearFocus();
+    	
         update_loadouts_lhs();
     end
 
-    sw_frame.loadouts_frame.rhs_list.name_editbox:SetScript("OnEnterPressed", editbox_save);
-    sw_frame.loadouts_frame.rhs_list.name_editbox:SetScript("OnEscapePressed", editbox_save);
+    sw_frame.loadouts_frame.rhs_list.name_editbox:SetScript("OnEnterPressed", function(self) 
+        editbox_save(self);
+        self:ClearFocus();
+    end);
+    sw_frame.loadouts_frame.rhs_list.name_editbox:SetScript("OnEscapePressed", function(self) 
+        editbox_save(self);
+        self:ClearFocus();
+    end);
+    sw_frame.loadouts_frame.rhs_list.name_editbox:SetScript("OnTextChanged", editbox_save);
 
     y_offset_lhs = y_offset_lhs - 25;
 
@@ -11689,12 +11695,51 @@ local function gather_spell_icons()
     if IsAddOnLoaded("Bartender4") then -- check for some common addons if they overrite spellbook frames
 
         for i = 1, 120 do
-
             action_bar_frames[i] = {
                 frame = getfenv()["BT4Button"..i]
             };
         end
         action_bar_addon_name = "Bartender4";
+
+    elseif IsAddOnLoaded("ElvUI") then -- check for some common addons if they overrite spellbook frames
+
+        local elvi_bar_order_to_match_action_ids = {1, 6, 5, 4, 2, 3, 7, 8, 9, 10};
+        for i = 1, 10 do
+            for j = 1, 12 do
+                action_bar_frames[index] = {
+                    frame = getfenv()["ElvUI_Bar"..elvi_bar_order_to_match_action_ids[i].."Button"..j]
+                };
+
+                index = index + 1;
+            end
+        end
+        action_bar_addon_name = "ElvUI";
+
+    elseif IsAddOnLoaded("Dominos") then -- check for some common addons if they overrite spellbook frames
+
+        local bars = {
+            "ActionButton", "DominosActionButton", "MultiBarRightButton",
+            "MultiBarLeftButton", "MultiBarBottomRightButton", "MultiBarBottomLeftButton"
+        };
+        index = 1;
+        for k, v in pairs(bars) do
+            for j = 1, 12 do
+                action_bar_frames[index] = {
+                    frame = getfenv()[v..j]
+                };
+
+                index = index + 1;
+            end
+        end
+        action_bar_addon_name = "Dominos";
+
+        local dominos_button_index = 13;
+        for i = index, 120 do
+            action_bar_frames[i] = {
+                frame = getfenv()["DominosActionButton"..dominos_button_index]
+            };
+            dominos_button_index = dominos_button_index + 1;
+        end
 
     else -- default action bars
         local bars = {
@@ -11915,16 +11960,18 @@ local function create_sw_base_gui()
 end
 
 local function command(msg, editbox)
-    if msg == "print" then
-        print_loadout(loadout_snapshot);
-    elseif msg == "loadout" or msg == "loadouts" then
-        sw_activate_tab(2);
-    elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
-        sw_activate_tab(1);
-    elseif msg == "compare" or msg == "sc" or msg == "stat compare"  or msg == "stat" then
-        sw_activate_tab(3);
-    else
-        sw_activate_tab(3);
+    if class_is_supported then
+        if msg == "print" then
+            print_loadout(loadout_snapshot);
+        elseif msg == "loadout" or msg == "loadouts" then
+            sw_activate_tab(2);
+        elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
+            sw_activate_tab(1);
+        elseif msg == "compare" or msg == "sc" or msg == "stat compare"  or msg == "stat" then
+            sw_activate_tab(3);
+        else
+            sw_activate_tab(3);
+        end
     end
 end
 
@@ -12031,7 +12078,6 @@ function update_icon_overlay_settings()
     end
 end
 
-__sw__icon_frames = {};
 
 local function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
 
@@ -12099,6 +12145,7 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
     end
 end
 
+__sw__icon_frames = {};
 
 local function update_spell_icons()
     -- update spell book icons
@@ -12137,7 +12184,7 @@ local function update_spell_icons()
     -- Useful link for actionslot reference https://wowwiki.fandom.com/wiki/ActionSlot
 
     -- update action bar icons
-    if not action_bar_addon_name then -- no addon
+    if not action_bar_addon_name or action_bar_addon_name == "Dominos"  then
 
         local page = GetActionBarPage();
         local bonus_bar_offset = GetBonusBarOffset();
@@ -12154,7 +12201,6 @@ local function update_spell_icons()
                     update_spell_icon_frame(v, spells[id], spell_name, loadout_snapshot);
                 end
             else
-
                 for i = 1, 3 do
                     if v.overlay_frames[i] then
                         v.overlay_frames[i]:Hide();
@@ -12209,7 +12255,7 @@ local function update_spell_icons()
                end
            end
         end
-    else -- bartender
+    elseif action_bar_addon_name == "Bartender4" or action_bar_addon_name == "ElvUI" then
         for k, v in pairs(__sw__icon_frames.bars) do
             local action_type, id, _ = GetActionInfo(k);
             if v.frame and v.frame:IsShown() and action_type == "spell" and spells[id] then
@@ -12220,7 +12266,12 @@ local function update_spell_icons()
                 else
                     update_spell_icon_frame(v, spells[id], spell_name, loadout_snapshot);
                 end
-
+            else
+                for i = 1, 3 do
+                    if v.overlay_frames[i] then
+                        v.overlay_frames[i]:Hide();
+                    end
+                end
             end
         end
 
