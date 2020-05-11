@@ -10193,7 +10193,6 @@ local function update_loadouts_lhs()
     update_loadouts_rhs();
 end
 
-
 local function create_new_loadout_as_copy(loadout)
 
     local cpy = loadout_copy(loadout);
@@ -10217,7 +10216,6 @@ local function create_new_loadout_as_copy(loadout)
 
 end
 
-
 local function sw_activate_tab(tab_index)
 
     sw_frame.active_tab = tab_index;
@@ -10228,14 +10226,27 @@ local function sw_activate_tab(tab_index)
     sw_frame.loadouts_frame:Hide();
     sw_frame.stat_comparison_frame:Hide();
 
+    sw_frame.tab1:UnlockHighlight();
+    sw_frame.tab1:SetButtonState("NORMAL");
+    sw_frame.tab2:UnlockHighlight();
+    sw_frame.tab2:SetButtonState("NORMAL");
+    sw_frame.tab3:UnlockHighlight();
+    sw_frame.tab3:SetButtonState("NORMAL");
+
     if tab_index == 1 then
         sw_frame.settings_frame:Show();
+        sw_frame.tab1:LockHighlight();
+        sw_frame.tab1:SetButtonState("PUSHED");
     elseif tab_index == 2 then
         sw_frame.loadouts_frame:Show();
+        sw_frame.tab2:LockHighlight();
+        sw_frame.tab2:SetButtonState("PUSHED");
     elseif tab_index == 3 then
 
-         update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
         sw_frame.stat_comparison_frame:Show();
+        sw_frame.tab3:LockHighlight();
+        sw_frame.tab3:SetButtonState("PUSHED");
     end
 end
 
@@ -11267,18 +11278,37 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetScript("OnClick", function(self)
 
         sw_frame.loadouts_frame.rhs_list.self_buffs_frame:Show();
+
+        sw_frame.loadouts_frame.rhs_list.buffs_button:LockHighlight();
+        sw_frame.loadouts_frame.rhs_list.buffs_button:SetButtonState("PUSHED");
+
         sw_frame.loadouts_frame.rhs_list.target_buffs_frame:Hide();
+
+        sw_frame.loadouts_frame.rhs_list.target_buffs_button:UnlockHighlight();
+        sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetButtonState("NORMAL");
+
     end);
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetPoint("TOP", 40, y_offset_rhs);
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetText("Self Buffs");
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetWidth(90);
+    sw_frame.loadouts_frame.rhs_list.buffs_button:LockHighlight();
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetButtonState("PUSHED");
+
 
     sw_frame.loadouts_frame.rhs_list.target_buffs_button =
         CreateFrame("Button", "sw_frame_target_buffs_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetScript("OnClick", function(self)
 
-        sw_frame.loadouts_frame.rhs_list.self_buffs_frame:Hide();
         sw_frame.loadouts_frame.rhs_list.target_buffs_frame:Show();
+
+        sw_frame.loadouts_frame.rhs_list.target_buffs_button:LockHighlight();
+        sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetButtonState("PUSHED");
+
+        sw_frame.loadouts_frame.rhs_list.self_buffs_frame:Hide();
+
+        sw_frame.loadouts_frame.rhs_list.buffs_button:UnlockHighlight();
+        sw_frame.loadouts_frame.rhs_list.buffs_button:SetButtonState("NORMAL");
+
     end);
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOP", 130, y_offset_rhs);
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetText("Target Buffs");
@@ -11369,8 +11399,8 @@ local function create_sw_gui_loadout_frame()
 
     end
 
-    local y_offset_rhs_buffs = y_offset_rhs;
-    local y_offset_rhs_target_buffs = y_offset_rhs;
+    local y_offset_rhs_buffs = y_offset_rhs - 3;
+    local y_offset_rhs_target_buffs = y_offset_rhs - 3;
 
     -- add select all optoin for both buffs and debuffs
 
@@ -11378,6 +11408,7 @@ local function create_sw_gui_loadout_frame()
         CreateFrame("CheckButton", "sw_loadout_select_all_buffs", sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetPoint("TOP", 10, y_offset_rhs_buffs);
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
+    getglobal(sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
 
     sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetScript("OnClick", function(self) 
         if self:GetChecked() then
@@ -11395,6 +11426,7 @@ local function create_sw_gui_loadout_frame()
         CreateFrame("CheckButton", "sw_loadout_select_all_target_buffs", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOP", 10, y_offset_rhs_buffs);
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
+    getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetScript("OnClick", function(self)
         if self:GetChecked() then
             active_loadout().target_buffs1 = bit.bnot(0);
@@ -11928,7 +11960,7 @@ local function create_sw_base_gui()
     );
 
     
-    sw_frame.tab1 = CreateFrame("Button", "settings_button", sw_frame, "UIPanelButtonTemplate"); 
+    sw_frame.tab1 = CreateFrame("Button", "__sw_settings_button", sw_frame, "UIPanelButtonTemplate"); 
 
     sw_frame.tab1:SetPoint("TOPLEFT", 10, -25);
     sw_frame.tab1:SetWidth(100);
@@ -11939,7 +11971,7 @@ local function create_sw_base_gui()
     end);
 
 
-    sw_frame.tab2 = CreateFrame("Button", "loadouts_button", sw_frame, "UIPanelButtonTemplate"); 
+    sw_frame.tab2 = CreateFrame("Button", "__sw_loadouts_button", sw_frame, "UIPanelButtonTemplate"); 
     sw_frame.tab2:SetPoint("TOPLEFT", 110, -25);
     sw_frame.tab2:SetWidth(110);
     sw_frame.tab2:SetHeight(25);
@@ -11949,7 +11981,7 @@ local function create_sw_base_gui()
         sw_activate_tab(2);
     end);
 
-    sw_frame.tab3 = CreateFrame("Button", "stat_comparison_button", sw_frame, "UIPanelButtonTemplate"); 
+    sw_frame.tab3 = CreateFrame("Button", "__sw_stat_comparison_button", sw_frame, "UIPanelButtonTemplate"); 
     sw_frame.tab3:SetPoint("TOPLEFT", 220, -25);
     sw_frame.tab3:SetWidth(125);
     sw_frame.tab3:SetHeight(25);
@@ -12077,7 +12109,6 @@ function update_icon_overlay_settings()
 
     end
 end
-
 
 local function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
 
