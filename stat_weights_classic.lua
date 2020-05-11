@@ -1,9 +1,10 @@
 
 local version =  "1.2.0";
--- TODO: add libstub here
---local icon_lib = LibStub("LibDBIcon-1.0");
 
 -- TODO: localize functions
+
+local LDB = LibStub("LibDataBroker-1.1", true)
+local LDBIcon = LDB and LibStub("LibDBIcon-1.0", true)
 
 local font = "GameFontHighlightSmall";
 local icon_overlay_font = "GameFontNormal";
@@ -81,9 +82,10 @@ local buffs1 = {
     shadow_form                 = { flag = bit.lshift(1,25), id = 15473, name = "Shadow Form"},-- ok
     wushoolays_charm_of_spirits = { flag = bit.lshift(1,26), id = 24499, name = "Wushoolay's Charm"},-- ok
     wushoolays_charm_of_nature  = { flag = bit.lshift(1,27), id = 24542, name = "Wushoolay's Charm"},-- ok
-    berserking_rogue            = { flag = bit.lshift(1,28), id = 26297, name = "Berserking 10%"},
-    berserking_warrior          = { flag = bit.lshift(1,29), id = 26296, name = "Berserking 10%"},
-    berserking                  = { flag = bit.lshift(1,30), id = 20554, name = "Berserking 10%"}, -- ok casters
+    -- TODO: spell ids for rogue/warr ambigious on wowhead, the following 2 are wrong
+    berserking_rogue            = { flag = bit.lshift(1,28), id = 26297, name = "Berserking"},
+    berserking_warrior          = { flag = bit.lshift(1,29), id = 26296, name = "Berserking"},
+    berserking                  = { flag = bit.lshift(1,30), id = 26635, name = "Berserking"}, -- ok casters
     toep                        = { flag = bit.lshift(1,31), id = 23271, name = "TOEP trinket"} -- ok casters
     --grileks_charm_of_valor      = { flag = bit.lshift(1,32), id = 24498, name = "Gri'lek's Charm of Valor"} -- ok casters
 };
@@ -93,7 +95,8 @@ local buffs2 = {
     bok                         = { flag = bit.lshift(1,2),  id = 20217, name = "Blessing of Kings"}, --ok
     vengeance                   = { flag = bit.lshift(1,3),  id = 20059, name = "Vengeance"}, --ok
     natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Natural Alignment Crystal"}, --ok
-    blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"} --ok
+    blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"}, --ok
+    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)"} --ok
 };
 
 local target_buffs1 = {
@@ -6280,6 +6283,8 @@ local function empty_loadout()
         always_assume_buffs = true,
         lvl = 0,
         target_lvl = 0,
+        use_dynamic_target_lvl = true,
+        has_target = false; 
 
         stats = {0, 0, 0, 0, 0},
 
@@ -6325,13 +6330,16 @@ local function empty_loadout()
         ability_crit_mod = {},
         ability_hit = {},
 
+        target_friendly = false,
+        target_type = "",
+
         buffs = {},
         target_buffs = {},
         target_debuffs = {},
         buffs1 = 0,
         buffs2 = 0,
         target_buffs1 = 0,
-        target_debuffs1 = 0 
+        target_debuffs1 = 0
     };
 end
 
@@ -6396,6 +6404,9 @@ local function loadout_copy(loadout)
     cpy.is_dynamic_loadout = loadout.is_dynamic_loadout;
     cpy.always_assume_buffs = loadout.always_assume_buffs;
 
+    cpy.use_dynamic_target_lvl = loadout.use_dynamic_target_lvl;
+    cpy.has_target = loadout.has_target;
+
     cpy.stats = {};
     for i = 1, 5 do
         cpy.stats[i] = loadout.stats[i];
@@ -6447,6 +6458,11 @@ local function loadout_copy(loadout)
     cpy.buffs2 = loadout.buffs2;
     cpy.target_buffs1 = loadout.target_buffs1;
     cpy.target_debuffs1 = loadout.target_debuffs1;
+
+    cpy.target_friendly = loadout.target_friendly;
+    cpy.target_type = loadout.target_type;
+
+    cpy.berserking_snapshot = loadout.berserking_snapshot;
 
     for i = 1, 7 do
         cpy.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i];
@@ -7876,9 +7892,6 @@ local function apply_general_buffs(loadout, raw_stats_diff)
     end
     -- TARGET BUFFS
     -- TARGET DEBUFFS
-    if loadout.race == "Troll" and UnitCreatureType("target") == "Beast" then
-        loadout.dmg_mod = loadout.dmg_mod + 0.05;
-    end
 end
 
 local function apply_horde_buffs(loadout, raw_stats_diff)
@@ -7927,7 +7940,7 @@ local function apply_caster_fire_buffs(loadout, raw_stats_diff)
             fire_dmg = 0.03 * 5;
         end
 
-        if UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             loadout.target_spell_dmg_taken[magic_school.fire] = 
                 loadout.target_spell_dmg_taken[magic_school.fire] + fire_dmg;
         end
@@ -7945,7 +7958,7 @@ local function apply_caster_shadow_buffs(loadout, raw_stats_diff, spell_name)
     -- TARGET BUFFS
     -- TARGET DEBUFFS
     if bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
-        ((UnitIsEnemy("player", "target") and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
+        ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
         loadout.always_assume_buffs) and spell_name ~= localized_spell_name("Shadow Bolt") then
 
         loadout.target_spell_dmg_taken[magic_school.shadow] = 
@@ -7962,7 +7975,7 @@ local function apply_caster_shadow_buffs(loadout, raw_stats_diff, spell_name)
             shadow_dmg = 0.03 * 5;
         end
 
-        if UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             loadout.target_spell_dmg_taken[magic_school.shadow] = 
                 loadout.target_spell_dmg_taken[magic_school.shadow] + shadow_dmg;
         end
@@ -7992,7 +8005,7 @@ local function apply_caster_frost_buffs(loadout, raw_stats_diff)
             frost_crit = 0.1;
         end
 
-        if UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             loadout.spell_crit_by_school[magic_school.frost] = loadout.spell_crit_by_school[magic_school.frost] + frost_crit;
         end
     end
@@ -8001,7 +8014,7 @@ end
 local function apply_caster_nature_buffs(loadout, raw_stats_diff)
 
     if bit.band(target_debuffs1.stormstrike.flag, loadout.target_debuffs1) ~= 0 and 
-        ((UnitIsEnemy("player", "target") and loadout.target_debuffs[target_debuffs1.stormstrike.id]) or 
+        ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.stormstrike.id]) or 
         loadout.always_assume_buffs) then
 
         loadout.target_spell_dmg_taken[magic_school.nature] = 
@@ -8038,39 +8051,7 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
         end
         loadout.healing_crit = loadout.healing_crit - 0.03;
     end
-    -- TODO: Fix this shit
-    --if loadout.race == "Troll" and bit.band(buffs1.berserking.flag, loadout.buffs1) ~= 0 then
-    --    if loadout.is_dynamic_loadout then
-    --
-    --        if not sw_berserking_snapshot then
-    --
-    --            local max_hp = UnitHealthMax("player");
-    --            local hp = UnitHealth("player");
-    --            local hp_perc = 0;
-    --            if max_hp ~= 0 then
-    --                hp_perc = hp/max_hp;
-    --            end
-    --
-    --            -- at 100% hp: 10 % haste
-    --            -- at less or equal than 40% hp: 30 % haste
-    --            -- interpolate between 10% and 30% haste at 40% - 100% hp
-    --            local haste_mod = 0.1 + 0.2 * (1 -((math.max(0.4, hp_perc) - 0.4)*(5/3)));
-    --
-    --            sw_berserking_snapshot = haste_mod;
-    --
-    --        end
-    --        loadout.haste_mod = loadout.haste_mod + sw_berserking_snapshot;
-    --
-    --    end
-    --        else
-    --            sw_berserking_snapshot = nil;
-    --        end
-    --    elseif loadout.always_assume_buffs then -- static loadout
-    --        loadout.haste_mod = loadout.haste_mod + 0.1;
-    --    end
-    --end
     -- arcane intellect
-
     local int_buff = loadout.buffs[localized_spell_name("Arcane Intellect")];
     local int_buff_aoe = loadout.buffs[localized_spell_name("Arcane Brilliance")];
     if bit.band(buffs1.int.flag, loadout.buffs1) ~= 0 then
@@ -8185,12 +8166,12 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
             heal_effect = 150;
         end
 
-        if UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             for j = 2, 7 do 
                 loadout.spell_dmg_by_school[j] = loadout.spell_dmg_by_school[j] + heal_effect/2;
             end
         end
-        if not UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if  (loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             loadout.healing_power = loadout.healing_power + heal_effect;
         end
     end
@@ -8217,12 +8198,12 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
             heal_effect = 180;
         end
 
-        if UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             for j = 2, 7 do 
                 loadout.spell_dmg_by_school[j] = loadout.spell_dmg_by_school[j] - heal_effect/2;
             end
         end
-        if not UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if  (loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             loadout.healing_power = loadout.healing_power - heal_effect;
         end
     end
@@ -8248,7 +8229,7 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
                 resi = 75;
         end
 
-        if UnitIsEnemy("player", "target") or loadout.always_assume_buffs then
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
             loadout.target_spell_dmg_taken[magic_school.frost] = 
                 loadout.target_spell_dmg_taken[magic_school.frost] + fire_frost_dmg_taken;
             loadout.target_spell_dmg_taken[magic_school.fire] = 
@@ -8257,7 +8238,7 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
     end
     if bit.band(target_debuffs1.nightfall.flag, loadout.target_debuffs1) ~= 0 and 
         (loadout.always_assume_buffs or 
-        (loadout.target_debuffs[target_debuffs1.nightfall.id] and UnitIsEnemy("player", "target"))) then
+        (loadout.target_debuffs[target_debuffs1.nightfall.id] and not loadout.target_friendly and loadout.has_target)) then
 
         for j = 2, 7 do 
             loadout.target_spell_dmg_taken[j] = loadout.target_spell_dmg_taken[j] + 0.15;
@@ -8383,7 +8364,7 @@ local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
             fh_effect = 115;
         end
 
-        if loadout.always_assume_buffs or not UnitIsEnemy("player", "target") then
+        if loadout.always_assume_buffs or (loadout.target_friendly and loadout.has_target)then
             if spell_name == localized_spell_name("Holy Light") then
                 loadout.healing_power = loadout.healing_power + hl_effect;
             elseif spell_name == localized_spell_name("Flash of Light") then
@@ -8446,7 +8427,7 @@ local function apply_shaman_buffs(loadout, raw_stats_diff)
             effect = 3 * 0.06;
         end
 
-        if loadout.always_assume_buffs or not UnitIsEnemy("player", "target") then
+        if loadout.always_assume_buffs or (loadout.target_friendly and loadout.has_target) then
             local hw = localized_spell_name("Healing Wave");
             if not loadout.ability_effect_mod[hw] then
                 loadout.ability_effect_mod[hw] = 0;
@@ -8479,6 +8460,51 @@ local function apply_druid_buffs(loadout, raw_stats_diff)
             loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + 0.05;
         end
     end
+end
+
+local function apply_troll_buffs(loadout, raw_stats_diff)
+
+    if bit.band(buffs1.berserking.flag, loadout.buffs1) ~= 0 then
+        if loadout.buffs[buffs1.berserking.id] then
+    
+            if not loadout.berserking_snapshot then
+    
+                local max_hp = UnitHealthMax("player");
+                local hp = UnitHealth("player");
+                local hp_perc = 0;
+                if max_hp ~= 0 then
+                    hp_perc = hp/max_hp;
+                end
+    
+                -- at 100% hp: 10 % haste
+                -- at less or equal than 40% hp: 30 % haste
+                -- interpolate between 10% and 30% haste at 40% - 100% hp
+                local haste_mod = 0.1 + 0.2 * (1 -((math.max(0.4, hp_perc) - 0.4)*(5/3)));
+
+                loadout.berserking_snapshot = haste_mod;
+                sw_berserking_snapshot = haste_mod;
+            end
+            loadout.haste_mod = loadout.haste_mod + loadout.berserking_snapshot;
+        
+        elseif loadout.always_assume_buffs then
+            -- apply 10%
+            if loadout.berserking_snapshot then
+                loadout.haste_mod = loadout.haste_mod + loadout.berserking_snapshot;
+            else
+                loadout.haste_mod = loadout.haste_mod + 0.1;
+            end
+        else
+            loadout.berserking_snapshot = nil;
+            sw_berserking_snapshot = nil;
+        end
+    end
+    
+    if bit.band(buffs2.troll_vs_beast.flag, loadout.buffs2) ~= 0 and 
+        ((not loadout.target_friendly and loadout.has_target and loadout.target_type == "Beast") or loadout.always_assume_buffs) then
+
+        loadout.dmg_mod = loadout.dmg_mod + 0.05;
+    end
+
 end
 
 local function apply_buffs(spell_name, loadout)
@@ -8524,6 +8550,9 @@ local function apply_buffs(spell_name, loadout)
     else
         apply_ally_buffs(loadout, stats_diff_loadout);
     end
+    if race == "Troll" then
+        apply_troll_buffs(loadout, stats_diff_loadout);
+    end
 
     loadout = loadout_add(loadout, stats_diff_loadout);
 
@@ -8540,6 +8569,8 @@ local function default_loadout()
    loadout.target_lvl = loadout.lvl + 3;
    loadout.is_dynamic_loadout = true;
    loadout.always_assume_buffs = false;
+   loadout.use_dynamic_target_lvl = true;
+   loadout.has_target = false;
 
    loadout.stats = {};
    for i = 1, 5 do
@@ -8631,7 +8662,29 @@ local function dynamic_loadout(base_loadout)
    loadout.healing_power = GetSpellBonusHealing();
    loadout.healing_crit = min_crit;
 
+   loadout.berserking_snapshot = sw_berserking_snapshot;
+
    loadout.spell_crit_mod_by_school = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
+
+   if UnitExists("target") then
+       loadout.has_target = true; 
+
+       loadout.target_friendly = UnitIsFriend("player", "target");
+       -- TODO: returns localized name.. so won't work for non-english clients....
+       loadout.target_type = UnitCreatureType("target");
+
+       if loadout.use_dynamic_target_lvl and not loadout.target_friendly then
+           local target_lvl = UnitLevel("target");
+           if target_lvl == -1 then
+               loadout.target_lvl = loadout.lvl + 3;
+           else
+               loadout.target_lvl = target_lvl;
+           end
+       end
+   else
+       loadout.has_target = false; 
+   end
+
 
    loadout = apply_talents(loadout);
 
@@ -8659,9 +8712,10 @@ local function empty_loadout_with_buffs(loadout_with_buffs)
     loadout.lvl = loadout_with_buffs.lvl;
     loadout.target_lvl = loadout_with_buffs.target_lvl;
 
-
     loadout.always_assume_buffs = loadout_with_buffs.always_assume_buffs;
     loadout.is_dynamic_loadout = loadout_with_buffs.is_dynamic_loadout;
+    loadout.use_dynamic_target_lvl = loadout_with_buffs.use_dynamic_target_lvl;
+    loadout.has_target = loadout_with_buffs.has_target;
 
     for k, v in pairs(loadout_with_buffs.buffs) do
         loadout.buffs[k] = v;
@@ -8674,8 +8728,15 @@ local function empty_loadout_with_buffs(loadout_with_buffs)
     end
 
     loadout.buffs1 = loadout_with_buffs.buffs1;
+    loadout.buffs2 = loadout_with_buffs.buffs2;
     loadout.target_buffs1 = loadout_with_buffs.target_buffs1;
     loadout.target_debuffs1 = loadout_with_buffs.target_debuffs1;
+
+    loadout.target_friendly = loadout_with_buffs.target_friendly;
+    loadout.target_type = loadout_with_buffs.target_type;
+
+    loadout.berserking_snapshot = loadout_with_buffs.berserking_snapshot;
+
 
     return loadout;
 end
@@ -9003,7 +9064,7 @@ local function spell_info(base_min, base_max,
     end
 
     local expectation_direct = (min + max) / 2;
-    if spell_name == spell_name == localized_spell_name("Searing Totem") then
+    if spell_name == localized_spell_name("Searing Totem") then
         expectation_direct = expectation_direct * ot_dur/ot_freq;
     end
       
@@ -9063,7 +9124,7 @@ local function spell_info(base_min, base_max,
     -- expected dmg, dps, and stat weights still assume uptime based on crit instead of 100% uptime
     if bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
         (loadout.always_assume_buffs or 
-        (loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id] and UnitIsEnemy("player", "target"))) and 
+        (loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id] and not loadout.target_friendly and loadout.has_target)) and 
         spell_name == localized_spell_name("Shadow Bolt") then
 
         local shadowbolt_vuln_mod = (target_vuln_mod + 0.2)/target_vuln_mod;
@@ -9448,15 +9509,15 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                     elseif spell_name == localized_spell_name("Searing Totem") then
                         local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
                         tooltip:AddLine(
-                            string.format("Critical %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)", 
+                            string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                           effect, 
-                                          eval.stats.hit*100,
+                                          eval.stats.crit*100, 
                                           (eval.spell_data.min_crit + eval.spell_data.max_crit)*num_ticks/2,
                                           spell.over_time_duration,
                                           math.floor(eval.spell_data.min_crit), 
                                           math.ceil(eval.spell_data.max_crit),
                                           num_ticks),
-                            232.0/255, 225.0/255, 32.0/255);
+                            252.0/255, 69.0/255, 3.0/255);
                     else
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d", 
                                                       effect, 
@@ -10016,6 +10077,11 @@ local function update_loadouts_rhs()
         loadout.target_lvl
     );
 
+    if loadout.use_dynamic_target_lvl then
+        sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(true);
+    else
+        sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(false);
+    end
     if loadout.is_dynamic_loadout then
 
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
@@ -10192,7 +10258,8 @@ local function default_sw_settings()
                 tooltip_stat_display.cost_per_sec,
                 tooltip_stat_display.stat_weights);
 
-    settings.icon_overlay_update_freq = 60;
+    settings.icon_overlay_update_freq = 10;
+    settings.libstub_minimap_icon = { hide = false };
 
     return settings;
 end
@@ -10528,7 +10595,6 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.tooltip_avg_cast = 
         create_sw_checkbox("sw_tooltip_avg_cast", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
                             "Average cast time", tooltip_checkbox_func);
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
     -- set tooltip options as according to saved persistent data
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.normal) ~= 0 then
@@ -10573,6 +10639,28 @@ local function create_sw_gui_settings_frame()
             sw_frame.settings_frame.tooltip_num_checked = sw_frame.settings_frame.tooltip_num_checked + 1;
         end
     end;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    
+    sw_frame.settings_frame.tooltip_settings_label_misc = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.settings_frame.tooltip_settings_label_misc:SetFontObject(font);
+    sw_frame.settings_frame.tooltip_settings_label_misc:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset);
+    sw_frame.settings_frame.tooltip_settings_label_misc:SetText("Miscellaneous Settings");
+    sw_frame.settings_frame.tooltip_settings_label_misc:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.libstub_icon_checkbox = 
+        create_sw_checkbox("sw_settings_show_minimap_button", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Minimap Icon", function(self) 
+
+        __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide = not self:GetChecked();
+        if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
+            LDBIcon:Hide("sw_frame");
+
+        else
+            LDBIcon:Show("sw_frame");
+        end
+    end);
+
 end
 
 local function create_sw_gui_stat_comparison_frame()
@@ -10879,6 +10967,8 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_info, buff_type
     buffs_table[sw_frame_loadout_buff_index].checkbutton:SetScript("OnClick", func);
 
     sw_frame_loadout_buff_index = sw_frame_loadout_buff_index + 1;
+
+    --return buffs_table[sw_frame_loadout_buff_index - 1].checkbutton;
 end
 
 local function create_sw_gui_loadout_frame()
@@ -10889,7 +10979,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadouts_frame);
     sw_frame.loadouts_frame.lhs_list:SetWidth(150);
-    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10);
+    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25);
     sw_frame.loadouts_frame.lhs_list:SetPoint("TOPLEFT", sw_frame, 0, -50);
 
     sw_frame.loadouts_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs", sw_frame.loadouts_frame);
@@ -11006,17 +11096,16 @@ local function create_sw_gui_loadout_frame()
         sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetFontObject(font);
     sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetText("Target level");
+    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetText("Default target level");
 
     sw_frame.loadouts_frame.rhs_list.level_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 85, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetText("");
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetSize(65, 15);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetSize(40, 15);
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetAutoFocus(false);
 
     local editbox_lvl = function(self)
 
-        
         local txt = self:GetText();
         
         local lvl = tonumber(txt);
@@ -11036,12 +11125,25 @@ local function create_sw_gui_loadout_frame()
 
     y_offset_lhs = y_offset_lhs - 25;
 
+    sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton = 
+        CreateFrame("CheckButton", "sw_loadout_dynamic_target_level", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
+    sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
+    getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:GetName()..'Text'):SetText("Use target's level");
+    getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:GetName()).tooltip = 
+        "Only works with dynamic loadouts. If level is unknown '?' 3 levels above yourself is assumed";
+
+    sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton :SetScript("OnClick", function(self)
+        active_loadout().use_dynamic_target_lvl = self:GetChecked();
+    end)
+
+    y_offset_lhs = y_offset_lhs - 20;
+
     sw_frame.loadouts_frame.rhs_list.dynamic_button = 
         CreateFrame("CheckButton", "sw_loadout_dynamic_check", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Dynamic loadout");
     getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
-        "Dynamic loadouts always use your current equipment, set bonuses and talents.";
+        "Dynamic loadouts always use your current equipment, set bonuses, talents, self buffs, target's buffs/debuffs if chosen"
 
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetScript("OnClick", function(self)
         
@@ -11543,12 +11645,20 @@ local function create_sw_gui_loadout_frame()
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
     end
    
-    -- shadow dmg classes
-
-    --if race == "Troll" then
-    --end
+    if race == "Troll" then
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.berserking, "self1", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        --local berserking_checkbutton = 
+            create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.troll_vs_beast, "self2", 
+                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                            check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        --getglobal(berserking_checkbutton:GetName()).tooltip = 
+        --    "If berserk is active, 10-30% haste is applied depending on your HP when used. Otherwise 10% is default";
+    end
 end
-
 
 function create_sw_base_gui()
 
@@ -11572,22 +11682,6 @@ function create_sw_base_gui()
     sw_frame:SetHeight(600);
     sw_frame:SetPoint("TOPLEFT", 400, -30);
 
-    local sw_toggle_button = CreateFrame("Button", "sw_toggle_button_spellbook", SpellBookFrame, "UIPanelButtonTemplate"); 
-
-    sw_toggle_button:SetPoint("TOPRIGHT", -40, -34);
-    sw_toggle_button:SetWidth(160);
-    sw_toggle_button:SetHeight(25);
-    sw_toggle_button:SetText("Stat Weights Classic -->");
-
-    sw_toggle_button:SetScript("OnClick", function()
-
-        if sw_frame:IsShown() then
-            sw_frame:Hide();
-        else
-            sw_frame:Show();
-        end
-    end);
-
     sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.title:SetFontObject(font)
     sw_frame.title:SetText("Stat Weights Classic");
@@ -11598,20 +11692,59 @@ function create_sw_base_gui()
         if event == "ADDON_LOADED" and msg == "stat_weights_classic" then
 
             if not class_is_supported then
+                print("Stat Weights Classic currently does not support your class :(");
                 return;
             end
-
             create_sw_gui_stat_comparison_frame();
 
             if not __sw__persistent_data_per_char then
                 __sw__persistent_data_per_char = {};
             end
-            --__sw__persistent_data_per_char.settings = nil;
+            if __sw__use_defaults__ then
+                __sw__persistent_data_per_char.settings = nil;
+                __sw__persistent_data_per_char.loadouts = nil;
+            end
+
             if not __sw__persistent_data_per_char.settings then
                 __sw__persistent_data_per_char.settings = default_sw_settings();
             end
 
             create_sw_gui_settings_frame();
+
+            if LDB then
+                local sw_launcher = LDB:NewDataObject("sw_frame", {
+                    type = "launcher",
+                    icon = "Interface\\Icons\\spell_fire_elementaldevastation",
+                    OnClick = function(self, button)
+                        if button == "LeftButton" or button == "RightButton" then 
+                            if sw_frame:IsShown() then 
+                                 sw_frame:Hide() 
+                            else 
+                                 sw_frame:Show() 
+                            end
+                        end
+                    end,
+                    OnTooltipShow = function(tooltip)
+                        tooltip:AddLine("Stat Weights Classic: Version "..version);
+                        tooltip:AddLine("Left/Right click: Toggle addon frame");
+                        tooltip:AddLine("This icon can be removed in the addon's settings tab");
+                    end,
+                });
+                if LDBIcon then
+                    print("found lbdicon");
+                    LDBIcon:Register("sw_frame", sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
+                end
+            end
+
+            if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
+                print("hiding icon");
+                LDBIcon:Hide("sw_frame");
+            else
+                print("showing icon and setting checkbox as true");
+                LDBIcon:Show("sw_frame");
+                sw_frame.settings_frame.libstub_icon_checkbox:SetChecked(true);
+            end
+
             create_sw_gui_loadout_frame();
 
             if __sw__persistent_data_per_char.stat_comparison_spells then
@@ -11621,7 +11754,6 @@ function create_sw_base_gui()
                 update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
             end
 
-            --__sw__persistent_data_per_char.loadouts = nil;
             if not __sw__persistent_data_per_char.loadouts then
                 -- load defaults
                 __sw__persistent_data_per_char.loadouts = {};
@@ -11636,6 +11768,7 @@ function create_sw_base_gui()
                 sw_frame.loadouts_frame.lhs_list.loadouts[k] = {};
                 sw_frame.loadouts_frame.lhs_list.loadouts[k].loadout = v;
             end
+
             sw_frame.loadouts_frame.lhs_list.active_loadout = __sw__persistent_data_per_char.loadouts.active_loadout;
             sw_frame.loadouts_frame.lhs_list.num_loadouts = __sw__persistent_data_per_char.loadouts.num_loadouts;
 
@@ -11646,6 +11779,7 @@ function create_sw_base_gui()
 
             sw_activate_tab(3);
             sw_frame:Hide();
+
 
         elseif event ==  "PLAYER_LOGOUT"  then
 
@@ -11720,7 +11854,7 @@ local function command(msg, editbox)
         sw_activate_tab(2);
     elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
         sw_activate_tab(1);
-    elseif msg == "compare" or msg == "sc" or msg == "stat compare" then
+    elseif msg == "compare" or msg == "sc" or msg == "stat compare"  or msg == "stat" then
         sw_activate_tab(3);
     else
         sw_activate_tab(3);
@@ -12122,7 +12256,10 @@ function update_spell_icons()
 end
 
 local snapshot_time_since_last_update = 0;
-create_sw_base_gui();
+
+if class_is_supported then
+    create_sw_base_gui();
+end
 
 if class_is_supported then
     UIParent:HookScript("OnUpdate", function(self, elapsed)
@@ -12131,7 +12268,6 @@ if class_is_supported then
         
         if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq and 
                 sw_num_icon_overlay_fields_active > 0 then
-
 
             local loadout = active_loadout();
             if loadout.is_dynamic_loadout then
@@ -12148,6 +12284,91 @@ if class_is_supported then
     end)
 end
 
+-- add addon to Addons list under Interface
+
+if InterfaceOptions_AddCategory then
+
+    local addon_interface_panel = CreateFrame("FRAME");
+    addon_interface_panel.name = "Stat Weights Classic";
+    InterfaceOptions_AddCategory(addon_interface_panel);
+
+
+    local y_offset = -20;
+    local x_offset = 20;
+
+    local str = "";
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("Stats Weights Classic - Version"..version);
+
+    y_offset = y_offset - 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("Project Page: https://www.curseforge.com/wow/addons/stat-weights-classic");
+
+    y_offset = y_offset - 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("Author: jezzi23");
+
+    y_offset = y_offset - 30;
+
+    addon_interface_panel.open_sw_frame_button = 
+        CreateFrame("Button", "sw_addon_interface_open_frame_button", addon_interface_panel, "UIPanelButtonTemplate"); 
+
+    addon_interface_panel.open_sw_frame_button:SetPoint("TOPLEFT", x_offset, y_offset);
+    addon_interface_panel.open_sw_frame_button:SetWidth(150);
+    addon_interface_panel.open_sw_frame_button:SetHeight(25);
+    addon_interface_panel.open_sw_frame_button:SetText("Open Addon Frame");
+    addon_interface_panel.open_sw_frame_button:SetScript("OnClick", function()
+        sw_activate_tab(1);
+    end);
+
+    y_offset = y_offset - 30;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("Or type any of the following:");
+
+    y_offset = y_offset - 15;
+    x_offset = x_offset + 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("/sw");
+
+    y_offset = y_offset - 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("/sw conf");
+
+    y_offset = y_offset - 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("/sw loadouts");
+
+    y_offset = y_offset - 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("/sw stat");
+    
+    
+end
+
+
 SLASH_STAT_WEIGHTS1 = "/sw"
 SLASH_STAT_WEIGHTS2 = "/stat-weights"
 SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
@@ -12155,4 +12376,5 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
+--__sw__use_defaults__ = 1;
 
