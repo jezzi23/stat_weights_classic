@@ -9703,23 +9703,6 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
     end
 end
 
-function spell_diff(spell_data, spell_name, loadout, diff)
-
-    local loadout_diffed = loadout_add(loadout, diff);
-
-    local expectation_loadout = evaluate_spell(spell_data, spell_name, loadout);
-    local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
-    
-    return {
-        diff_ratio = 100 * 
-            (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
-        expectation = expectation_loadout_diffed.spell_data.expectation - 
-            expectation_loadout.spell_data.expectation,
-        effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
-            expectation_loadout.spell_data.effect_per_sec
-    };
-end
-
 local function print_spell(spell, spell_name, loadout)
 
     if spell then
@@ -9856,41 +9839,25 @@ local function create_loadout_from_ui_diff(frame)
     return loadout;
 end
 
-local display_spell_diff = nil;
+local function spell_diff(spell_data, spell_name, loadout, diff)
 
-local function update_and_display_spell_diffs(frame)
+    local loadout_diffed = loadout_add(loadout, diff);
 
-    frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
-
-    local loadout = loadout_snapshot;
-
-    local loadout_diff = create_loadout_from_ui_diff(frame);
-
-    for k, v in pairs(frame.spells) do
-        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false);
-
-        -- for spells with both heal and dmg
-        if spells[k].healing_version then
-            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true);
-        end
-    end
-
-    -- footer
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-
-    if not frame.footer then
-        frame.footer = frame:CreateFontString(nil, "OVERLAY");
-    end
-    frame.footer:SetFontObject(font);
-    frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    frame.footer:SetText("Add abilities by holding SHIFT and HOVERING over them!");
+    local expectation_loadout = evaluate_spell(spell_data, spell_name, loadout);
+    local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
+    
+    return {
+        diff_ratio = 100 * 
+            (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
+        expectation = expectation_loadout_diffed.spell_data.expectation - 
+            expectation_loadout.spell_data.expectation,
+        effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
+            expectation_loadout.spell_data.effect_per_sec
+    };
 end
 
-local function update_and_display_loadouts()
-end
 
-display_spell_diff = function(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
+local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
 
     local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff);
 
@@ -10019,6 +9986,39 @@ display_spell_diff = function(spell_id, spell_data, spell_diff_line, loadout, lo
             v.cancel_button:SetText("X");
         end
     end
+end
+
+
+local function update_and_display_spell_diffs(frame)
+
+    frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
+
+    local loadout = loadout_snapshot;
+
+    local loadout_diff = create_loadout_from_ui_diff(frame);
+
+    for k, v in pairs(frame.spells) do
+        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false);
+
+        -- for spells with both heal and dmg
+        if spells[k].healing_version then
+            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true);
+        end
+    end
+
+    -- footer
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
+
+    if not frame.footer then
+        frame.footer = frame:CreateFontString(nil, "OVERLAY");
+    end
+    frame.footer:SetFontObject(font);
+    frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
+    frame.footer:SetText("Add abilities by holding SHIFT and HOVERING over them!");
+end
+
+local function update_and_display_loadouts()
 end
 
 local function active_loadout()
@@ -11660,7 +11660,74 @@ local function create_sw_gui_loadout_frame()
     end
 end
 
-function create_sw_base_gui()
+local function gather_spell_icons()
+
+    local action_bar_frames = {};
+    local spell_book_frames = {};
+
+    local index = 1;
+    -- gather spell book icons
+    if false then -- check for some common addons if they overrite spellbook frames
+
+    else -- default spellbook frames
+        for i = 1, 16 do
+
+            spell_book_frames[i] = { 
+                frame = getfenv()["SpellButton"..i]
+            };
+        end
+    end
+    for i = 1, 16 do
+
+        spell_book_frames[i].overlay_frames = {nil, nil, nil};
+    end
+
+    -- danni er faggi
+
+    -- gather action bar icons
+    index = 1;
+    if IsAddOnLoaded("Bartender4") then -- check for some common addons if they overrite spellbook frames
+
+        for i = 1, 120 do
+
+            action_bar_frames[i] = {
+                frame = getfenv()["BT4Button"..i]
+            };
+        end
+        action_bar_addon_name = "Bartender4";
+
+    else -- default action bars
+        local bars = {
+            "ActionButton", "BonusActionButton", "MultiBarRightButton",
+            "MultiBarLeftButton", "MultiBarBottomRightButton", "MultiBarBottomLeftButton"
+        };
+        index = 1;
+        for k, v in pairs(bars) do
+            for j = 1, 12 do
+                action_bar_frames[index] = {
+                    frame = getfenv()[v..j]
+                };
+
+                index = index + 1;
+            end
+        end
+    end
+
+    for i = 1, 120 do
+
+        if action_bar_frames[i] then
+            action_bar_frames[i].overlay_frames = {nil, nil, nil};
+        end
+    end
+
+    return {
+        bars = action_bar_frames,
+        book = spell_book_frames
+    };
+    
+end
+
+local function create_sw_base_gui()
 
     sw_frame = CreateFrame("Frame", "sw_frame", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
 
@@ -11808,7 +11875,7 @@ function create_sw_base_gui()
             if not class_is_supported then
                 return;
             end
-            icon_frames = gather_spell_icons();
+            __sw__icon_frames = gather_spell_icons();
             update_icon_overlay_settings();
         
         end
@@ -11949,12 +12016,12 @@ function update_icon_overlay_settings()
     -- hide existing overlay frames that should no longer exist
     for i = 1, 3 do
         if not sw_frame.settings_frame.icon_overlay[i] then
-            for k, v in pairs(icon_frames.book) do
+            for k, v in pairs(__sw__icon_frames.book) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
                 end
             end
-            for k, v in pairs(icon_frames.bars) do
+            for k, v in pairs(__sw__icon_frames.bars) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
                 end
@@ -11964,76 +12031,9 @@ function update_icon_overlay_settings()
     end
 end
 
-function gather_spell_icons()
+__sw__icon_frames = {};
 
-    local action_bar_frames = {};
-    local spell_book_frames = {};
-
-    local index = 1;
-    -- gather spell book icons
-    if false then -- check for some common addons if they overrite spellbook frames
-
-    else -- default spellbook frames
-        for i = 1, 16 do
-
-            spell_book_frames[i] = { 
-                frame = getfenv()["SpellButton"..i]
-            };
-        end
-    end
-    for i = 1, 16 do
-
-        spell_book_frames[i].overlay_frames = {nil, nil, nil};
-    end
-
-    -- danni er faggi
-
-    -- gather action bar icons
-    index = 1;
-    if IsAddOnLoaded("Bartender4") then -- check for some common addons if they overrite spellbook frames
-
-        for i = 1, 120 do
-
-            action_bar_frames[i] = {
-                frame = getfenv()["BT4Button"..i]
-            };
-        end
-        action_bar_addon_name = "Bartender4";
-
-    else -- default action bars
-        local bars = {
-            "ActionButton", "BonusActionButton", "MultiBarRightButton",
-            "MultiBarLeftButton", "MultiBarBottomRightButton", "MultiBarBottomLeftButton"
-        };
-        index = 1;
-        for k, v in pairs(bars) do
-            for j = 1, 12 do
-                action_bar_frames[index] = {
-                    frame = getfenv()[v..j]
-                };
-
-                index = index + 1;
-            end
-        end
-    end
-
-    for i = 1, 120 do
-
-        if action_bar_frames[i] then
-            action_bar_frames[i].overlay_frames = {nil, nil, nil};
-        end
-    end
-
-    return {
-        bars = action_bar_frames,
-        book = spell_book_frames
-    };
-    
-end
-
-icon_frames = {};
-
-function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
+local function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
 
     local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
 
@@ -12099,9 +12099,10 @@ function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
     end
 end
 
-function update_spell_icons()
+
+local function update_spell_icons()
     -- update spell book icons
-    for k, v in pairs(icon_frames.book) do
+    for k, v in pairs(__sw__icon_frames.book) do
         if v.frame then
             spell_name = v.frame.SpellName:GetText();
             spell_rank_name = v.frame.SpellSubName:GetText();
@@ -12141,7 +12142,7 @@ function update_spell_icons()
         local page = GetActionBarPage();
         local bonus_bar_offset = GetBonusBarOffset();
 
-        for k, v in pairs(icon_frames.bars) do
+        for k, v in pairs(__sw__icon_frames.bars) do
                 
             local action_type, id, _ = GetActionInfo(k);
             if v.frame and v.frame:IsShown() and action_type == "spell" and spells[id] then
@@ -12167,7 +12168,7 @@ function update_spell_icons()
              for i = 1, 12 do
                 local action_id = (page-1)*12 + i;
                 local action_type, id, _ = GetActionInfo(action_id);
-                local action_frame = icon_frames.bars[i];
+                local action_frame = __sw__icon_frames.bars[i];
                 if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
                     local spell_name = GetSpellInfo(id);
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
@@ -12194,7 +12195,7 @@ function update_spell_icons()
             for i = 1, 12 do
                local action_id = 72 + (bonus_bar_offset -1)* 12 + i;
                local action_type, id, _ = GetActionInfo(action_id);
-               local action_frame = icon_frames.bars[i];
+               local action_frame = __sw__icon_frames.bars[i];
                if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
                    local spell_name = GetSpellInfo(id);
                    update_spell_icon_frame(action_frame, spells[id], spell_name, loadout_snapshot);
@@ -12209,7 +12210,7 @@ function update_spell_icons()
            end
         end
     else -- bartender
-        for k, v in pairs(icon_frames.bars) do
+        for k, v in pairs(__sw__icon_frames.bars) do
             local action_type, id, _ = GetActionInfo(k);
             if v.frame and v.frame:IsShown() and action_type == "spell" and spells[id] then
                 local spell_name = GetSpellInfo(id);
@@ -12233,7 +12234,7 @@ function update_spell_icons()
             for i = 1, 12 do
                local action_id = 72 + (bonus_bar_offset -1)* 12 + i;
                local action_type, id, _ = GetActionInfo(action_id);
-               local action_frame = icon_frames.bars[i];
+               local action_frame = __sw__icon_frames.bars[i];
                if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
                    local spell_name = GetSpellInfo(id);
 
@@ -12254,6 +12255,7 @@ function update_spell_icons()
         end
     end
 end
+
 
 local snapshot_time_since_last_update = 0;
 
