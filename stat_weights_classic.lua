@@ -1,4 +1,26 @@
 
+--MIT License
+--
+--Copyright (c) Stat Weights Classic
+--
+--Permission is hereby granted, free of charge, to any person obtaining a copy
+--of this software and associated documentation files (the "Software"), to deal
+--in the Software without restriction, including without limitation the rights
+--to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+--copies of the Software, and to permit persons to whom the Software is
+--furnished to do so, subject to the following conditions:
+--
+--The above copyright notice and this permission notice shall be included in all
+--copies or substantial portions of the Software.
+--
+--THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+--IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+--FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+--AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+--LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+--OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+--SOFTWARE.
+
 local version =  "1.2.0";
 
 -- TODO: localize functions
@@ -7206,7 +7228,7 @@ local function apply_talents(loadout)
         if pts ~= 0 then
 
             -- TODO: add dps totems
-            local totems = {"Healing Stream Totem"};
+            local totems = {"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"};
 
             for k, v in pairs(totems) do
                 totems[k] = localized_spell_name(v);
@@ -9234,6 +9256,17 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         loadout.ability_effect_mod[spell_name] = 0;
     end
 
+    if spell_name == localized_spell_name("Shadow Bolt") and 
+        bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
+        ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
+        loadout.always_assume_buffs) then
+
+
+        -- undo for shadow bolt in order to get real average stat weights for crit, which increases buff uptime
+        loadout.target_spell_dmg_taken[magic_school.shadow] = 
+            loadout.target_spell_dmg_taken[magic_school.shadow] - 0.2;
+    end
+
     if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
         spell_mod = 1 + loadout.spell_heal_mod;
 
@@ -9251,15 +9284,6 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         spell_mod = spell_mod * (1 + loadout.ability_effect_mod[spell_name]);
     end
 
-    if spell_name ~= localized_spell_name("Shadow Bolt") and 
-        bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
-        ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
-        loadout.always_assume_buffs) then
-
-        -- undo for shadow bolt in order to get real average stat weights for crit, which increases buff uptime
-        loadout.target_spell_dmg_taken[magic_school.shadow] = 
-            loadout.target_spell_dmg_taken[magic_school.shadow] - 0.2;
-    end
 
     local extra_hit = 0;
     if loadout.ability_hit[spell_name] then
@@ -11646,9 +11670,9 @@ local function create_sw_gui_loadout_frame()
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
         -- target buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.healing_way, "target_buffs1", 
-                                        sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_buffs, 
+                                        sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
                                         check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
     -- paladin buff/debuffs
     elseif class == "PALADIN" then
         -- self buffs
@@ -11848,7 +11872,6 @@ local function create_sw_base_gui()
         if event == "ADDON_LOADED" and msg == "stat_weights_classic" then
 
             if not class_is_supported then
-                print("Stat Weights Classic currently does not support your class :(");
                 return;
             end
             create_sw_gui_stat_comparison_frame();
@@ -12345,6 +12368,8 @@ local snapshot_time_since_last_update = 0;
 
 if class_is_supported then
     create_sw_base_gui();
+else
+    print("Stat Weights Classic currently does not support your class :(");
 end
 
 if class_is_supported then
@@ -12454,4 +12479,3 @@ SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;
-
