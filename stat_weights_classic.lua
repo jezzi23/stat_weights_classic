@@ -23,13 +23,12 @@
 
 local version =  "1.2.0";
 
--- TODO: localize functions
-
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
 
 local font = "GameFontHighlightSmall";
-local icon_overlay_font = "GameFontNormal";
+local icon_overlay_font = "Interface\\AddOns\\stat_weights_classic\\fonts\\Oswald-Bold.ttf";
+
 local action_bar_addon_name = nil;
 local spell_book_addon_name = nil;
 
@@ -10330,12 +10329,13 @@ local function default_sw_settings()
                 tooltip_stat_display.stat_weights);
 
     settings.icon_overlay_update_freq = 10;
+    settings.icon_overlay_font_size = 8;
     settings.libstub_minimap_icon = { hide = false };
 
     return settings;
 end
 
-function save_sw_settings()
+local function save_sw_settings()
 
     local icon_overlay_settings = 0;
     local tooltip_settings = 0;
@@ -10405,6 +10405,7 @@ function save_sw_settings()
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
     __sw__persistent_data_per_char.settings.icon_overlay_update_freq = sw_snapshot_loadout_update_freq;
+    __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.settings_frame.icon_overlay_font_size;
 end
 
 local function create_sw_checkbox(name, parent, line_pos_index, y_offset, text, check_func)
@@ -10536,22 +10537,25 @@ local function create_sw_gui_settings_frame()
     	self:ClearFocus();
     end
 
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEnterPressed", hz_editbox);
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEscapePressed", hz_editbox);
 
-    --sw_frame.settings_frame.icon_overlay_font_size_slider =
-    --    CreateFrame("Slider", "icon_overlay_font_size", sw_frame.settings_frame, "OptionsSliderTemplate");
-    --sw_frame.settings_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 180, sw_frame.settings_frame.y_offset);
-    --sw_frame.settings_frame.icon_overlay_font_size_slider:SetMinMaxValues(6, 18)
-    --getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'Text'):SetText("Icon overlay font size");
-    --getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'Low'):SetText("");
-    --getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'High'):SetText("");
-    --sw_frame.settings_frame.icon_overlay_font_size = 14;
-    --sw_frame.settings_frame.icon_overlay_font_size_slider:SetValue(sw_frame.settings_frame.icon_overlay_font_size);
-    --sw_frame.settings_frame.icon_overlay_font_size_slider:SetValueStep(1)
-    --sw_frame.settings_frame.icon_overlay_font_size_slider:SetScript("OnValueChanged", function(self, val)
-    --    sw_frame.settings_frame.icon_overlay_font_size = val;
-    --end);
+    sw_frame.settings_frame.icon_overlay_font_size_slider =
+        CreateFrame("Slider", "icon_overlay_font_size", sw_frame.settings_frame, "OptionsSliderTemplate");
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset);
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetMinMaxValues(2, 24)
+    getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'Text'):SetText("Icon overlay font size");
+    getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'Low'):SetText("");
+    getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'High'):SetText("");
+    sw_frame.settings_frame.icon_overlay_font_size = __sw__persistent_data_per_char.settings.icon_overlay_font_size;
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetValue(sw_frame.settings_frame.icon_overlay_font_size);
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetValueStep(1)
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetScript("OnValueChanged", function(self, val)
+        sw_frame.settings_frame.icon_overlay_font_size = val;
+    end);
+
 
     local num_icon_overlay_checks = 0;
     -- set checkboxes for _icon options as  according to persistent data per char
@@ -11980,6 +11984,7 @@ local function create_sw_base_gui()
 
             -- save settings from ui
             save_sw_settings();
+
         elseif event ==  "PLAYER_LOGIN"  then
             if not class_is_supported then
                 return;
@@ -12161,14 +12166,15 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
         if not frame_info.overlay_frames[i] then
             frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
         end
-        frame_info.overlay_frames[i]:SetFontObject(icon_overlay_font, 14, "THICKOUTLINE");
+        frame_info.overlay_frames[i]:SetFont(
+            icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
 
         if i == 1 then
-            frame_info.overlay_frames[i]:SetPoint("TOP", 0, -2);
+            frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
         elseif i == 2 then
-            frame_info.overlay_frames[i]:SetPoint("CENTER", 0, 0);
+            frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
         elseif i == 3 then 
-            frame_info.overlay_frames[i]:SetPoint("BOTTOM", 0, 2);
+            frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
         end
         if sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.normal then
             frame_info.overlay_frames[i]:SetText(string.format("%d",
@@ -12180,6 +12186,8 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
             elseif spell_effect.min_crit ~= 0.0 then
                 frame_info.overlay_frames[i]:SetText(string.format("%d", 
                     (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_if_hit));
+            else
+                frame_info.overlay_frames[i]:SetText("");
             end
         elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.expected then
             frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.expectation));
