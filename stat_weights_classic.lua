@@ -3,8 +3,8 @@ local version =  "1.2.0";
 
 -- TODO: localize functions
 
-local LDB = LibStub("LibDataBroker-1.1", true)
-local LDBIcon = LDB and LibStub("LibDBIcon-1.0", true)
+local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
+local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
 
 local font = "GameFontHighlightSmall";
 local icon_overlay_font = "GameFontNormal";
@@ -6329,6 +6329,7 @@ local function empty_loadout()
         ability_cost_mod = {},
         ability_crit_mod = {},
         ability_hit = {},
+        ability_sp = {},
 
         target_friendly = false,
         target_type = "",
@@ -6449,6 +6450,7 @@ local function loadout_copy(loadout)
     cpy.ability_cost_mod = {};
     cpy.ability_crit_mod = {};
     cpy.ability_hit = {};
+    cpy.ability_sp = {};
 
     cpy.buffs = {};
     cpy.target_buffs = {};
@@ -6507,6 +6509,9 @@ local function loadout_copy(loadout)
     for k, v in pairs(loadout.ability_hit) do
         cpy.ability_hit[k] = v;
     end
+    for k, v in pairs(loadout.ability_sp) do
+        cpy.ability_sp[k] = v;
+    end
 
     for k, v in pairs(loadout.buffs) do
         cpy.buffs[k] = v;
@@ -6531,11 +6536,10 @@ local function loadout_add(primary, diff)
     local added = loadout_copy(primary);
 
     for i = 1, 5 do
-        added.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[stat.spirit]);
+        added.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[i]);
     end
 
     local sp_gained_from_spirit = diff.stats[stat.spirit] * (1 + primary.stat_mod[stat.spirit]) * primary.spiritual_guidance * 0.05;
-
     for i = 1, 7 do
         added.spell_dmg_by_school[i] = primary.spell_dmg_by_school[i] + diff.spell_dmg_by_school[i] + sp_gained_from_spirit;
     end
@@ -7946,7 +7950,7 @@ local function apply_caster_fire_buffs(loadout, raw_stats_diff)
         end
     end
 end
-local function apply_caster_shadow_buffs(loadout, raw_stats_diff, spell_name)
+local function apply_caster_shadow_buffs(loadout, raw_stats_diff)
     -- SELF BUFFS
     if bit.band(buffs1.elixir_of_shadow_power.flag, loadout.buffs1) ~= 0 and
         loadout.always_assume_buffs and not loadout.buffs[buffs1.elixir_of_shadow_power.id] then
@@ -7959,7 +7963,7 @@ local function apply_caster_shadow_buffs(loadout, raw_stats_diff, spell_name)
     -- TARGET DEBUFFS
     if bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
         ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
-        loadout.always_assume_buffs) and spell_name ~= localized_spell_name("Shadow Bolt") then
+        loadout.always_assume_buffs) then
 
         loadout.target_spell_dmg_taken[magic_school.shadow] = 
             loadout.target_spell_dmg_taken[magic_school.shadow] + 0.2;
@@ -8312,7 +8316,7 @@ local function apply_warlock_buffs(loadout, raw_stats_diff)
     end
 end
 
-local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
+local function apply_paladin_buffs(loadout, raw_stats_diff)
     -- BUFFS
 
     if bit.band(buffs2.vengeance.flag, loadout.buffs2) ~= 0 and
@@ -8341,8 +8345,7 @@ local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
     -- grileks charm of valor
 
     -- TARGET BUFFS
-    if (spell_name == localized_spell_name("Holy Light") or spell_name == localized_spell_name("Flash of Light")) and 
-        bit.band(target_buffs1.blessing_of_light.flag, loadout.target_buffs1) ~= 0 then
+    if bit.band(target_buffs1.blessing_of_light.flag, loadout.target_buffs1) ~= 0 then
 
         local hl_effect = 0;
         local fh_effect = 0;
@@ -8364,12 +8367,17 @@ local function apply_paladin_buffs(loadout, raw_stats_diff, spell_name)
             fh_effect = 115;
         end
 
-        if loadout.always_assume_buffs or (loadout.target_friendly and loadout.has_target)then
-            if spell_name == localized_spell_name("Holy Light") then
-                loadout.healing_power = loadout.healing_power + hl_effect;
-            elseif spell_name == localized_spell_name("Flash of Light") then
-                loadout.healing_power = loadout.healing_power + fh_effect;
+        if loadout.always_assume_buffs or (loadout.target_friendly and loadout.has_target) then
+            if not loadout.ability_sp[localized_spell_name("Holy Light")] then
+                loadout.ability_sp[localized_spell_name("Holy Light")] = 0;
             end
+            if not loadout.ability_sp[localized_spell_name("Flash of Light")] then
+                loadout.ability_sp[localized_spell_name("Flash of Light")] = 0;
+            end
+            loadout.ability_sp[localized_spell_name("Holy Light")] = 
+                loadout.ability_sp[localized_spell_name("Holy Light")] + hl_effect;
+            loadout.ability_sp[localized_spell_name("Flash of Light")] = 
+                loadout.ability_sp[localized_spell_name("Flash of Light")] + fh_effect;
         end
     end
 
@@ -8504,10 +8512,9 @@ local function apply_troll_buffs(loadout, raw_stats_diff)
 
         loadout.dmg_mod = loadout.dmg_mod + 0.05;
     end
-
 end
 
-local function apply_buffs(spell_name, loadout)
+local function apply_buffs(loadout)
 
     local stats_diff_loadout = empty_loadout();
 
@@ -8522,7 +8529,7 @@ local function apply_buffs(spell_name, loadout)
     elseif class == "DRUID" then
         apply_druid_buffs(loadout, stats_diff_loadout);
     elseif class == "PALADIN" then
-        apply_paladin_buffs(loadout, stats_diff_loadout, spell_name);
+        apply_paladin_buffs(loadout, stats_diff_loadout);
     end
 
     if class == "MAGE" or class == "PRIEST" or class == "WARLOCK" or
@@ -8531,7 +8538,7 @@ local function apply_buffs(spell_name, loadout)
         apply_caster_buffs(loadout, stats_diff_loadout);    
 
         if class == "PRIEST" or class == "WARLOCK" then
-            apply_caster_shadow_buffs(loadout, stats_diff_loadout, spell_name);    
+            apply_caster_shadow_buffs(loadout, stats_diff_loadout);    
         end
         if class == "MAGE" or class == "WARLOCK" or class == "SHAMAN" then
             apply_caster_fire_buffs(loadout, stats_diff_loadout);    
@@ -8737,11 +8744,8 @@ local function empty_loadout_with_buffs(loadout_with_buffs)
 
     loadout.berserking_snapshot = loadout_with_buffs.berserking_snapshot;
 
-
     return loadout;
 end
-
-loadout_snapshot = default_loadout();
 
 local function begin_tooltip_section(tooltip)
     tooltip:AddLine(" ");
@@ -8753,19 +8757,13 @@ end
 
 local function print_loadout(loadout)
 
-    if loadout.is_dynamic_loadout then
-        loadout = dynamic_loadout(loadout);
-    end
-
-    loadout = loadout_copy(loadout);
-    loadout = apply_buffs("", loadout);
-
     print("Stat Weights Classic - Version: "..version);
     print("Loadout: "..loadout.name);
     print(string.format("level:%d, target_level: %d", loadout.lvl, loadout.target_lvl));
     print("dynamic: ", loadout.is_dynamic_loadout);
     print("always_apply_buffs: ", loadout.always_assume_buffs);
-    print("buffs flags: ", loadout.buffs1);
+    print("buffs1 flags: ", loadout.buffs1);
+    print("buffs2 flags: ", loadout.buffs2);
     print("target buffs flags: ", loadout.target_buffs1);
     print("target debuffs flags: ", loadout.target_debuffs1);
 
@@ -8814,6 +8812,14 @@ local function print_loadout(loadout)
                         loadout.spell_dmg_mod_by_school[5],
                         loadout.spell_dmg_mod_by_school[6],
                         loadout.spell_dmg_mod_by_school[7]));
+
+    print(string.format("target spell dmg taken mod schools: holy %.3f, fire %.3f, nature %.3f, frost %.3f, shadow %.3f, arcane %.3f", 
+                        loadout.target_spell_dmg_taken[2],
+                        loadout.target_spell_dmg_taken[3],
+                        loadout.target_spell_dmg_taken[4],
+                        loadout.target_spell_dmg_taken[5],
+                        loadout.target_spell_dmg_taken[6],
+                        loadout.target_spell_dmg_taken[7]));
 
     print(string.format("spell haste mod: %.3f", loadout.haste_mod));
     print(string.format("spell cost mod: %.3f", loadout.cost_mod));
@@ -9170,10 +9176,6 @@ end
 
 local function loadout_stats_for_spell(spell_data, spell_name, loadout)
 
-    loadout = loadout_copy(loadout);
-
-    loadout = apply_buffs(spell_name, loadout);
-
     local crit = 0;
     local ot_crit = 0;
     local crit_delta_1 = 0;
@@ -9249,6 +9251,16 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         spell_mod = spell_mod * (1 + loadout.ability_effect_mod[spell_name]);
     end
 
+    if spell_name ~= localized_spell_name("Shadow Bolt") and 
+        bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
+        ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
+        loadout.always_assume_buffs) then
+
+        -- undo for shadow bolt in order to get real average stat weights for crit, which increases buff uptime
+        loadout.target_spell_dmg_taken[magic_school.shadow] = 
+            loadout.target_spell_dmg_taken[magic_school.shadow] - 0.2;
+    end
+
     local extra_hit = 0;
     if loadout.ability_hit[spell_name] then
         extra_hit = loadout.spell_dmg_hit_by_school[spell_data.school] + loadout.ability_hit[spell_name];
@@ -9277,6 +9289,10 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         spell_power = loadout.healing_power;
     else
         spell_power = loadout.spell_dmg_by_school[spell_data.school];
+    end
+
+    if loadout.ability_sp[spell_name] then
+        spell_power = spell_power + loadout.ability_sp[spell_name];
     end
 
     local cost = spell_data.cost;
@@ -9446,9 +9462,9 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             loadout_type = "static";
         end
         if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-            tooltip:AddLine(string.format("Active loadout (%s): %s", loadout_type, loadout.name), 1, 1,1);
+            tooltip:AddLine(string.format("Active Loadout (%s): %s", loadout_type, loadout.name), 1, 1,1);
         else
-            tooltip:AddLine(string.format("Active loadout (%s): %s - Target lvl %d", loadout_type, loadout.name, loadout.target_lvl), 1, 1, 1);
+            tooltip:AddLine(string.format("Active Loadout (%s): %s - Target lvl %d", loadout_type, loadout.name, loadout.target_lvl), 1, 1, 1);
         end
         if eval.spell_data.min_noncrit ~= 0 then
             if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
@@ -9799,8 +9815,8 @@ local function create_loadout_from_ui_diff(frame)
 
     local loadout = empty_loadout();
 
-    loadout.int = stats[stat_ids_in_ui.int].editbox_val;
-    loadout.spirit = stats[stat_ids_in_ui.spirit].editbox_val;
+    loadout.stats[stat.int] = stats[stat_ids_in_ui.int].editbox_val;
+    loadout.stats[stat.spirit] = stats[stat_ids_in_ui.spirit].editbox_val;
 
     local loadout_crit = stats[stat_ids_in_ui.spell_crit].editbox_val;
     for i = 1, 7 do
@@ -9856,6 +9872,33 @@ local function spell_diff(spell_data, spell_name, loadout, diff)
     };
 end
 
+local function active_loadout_base()
+    if sw_frame.loadouts_frame.lhs_list.loadouts and sw_frame.loadouts_frame.lhs_list.active_loadout then
+        return sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout;
+    else
+        return default_loadout();
+    end
+end
+
+local function active_loadout_copy()
+
+    local loadout = active_loadout_base();
+
+    if loadout.is_dynamic_loadout then
+        loadout_modified = dynamic_loadout(loadout);
+    else
+        loadout_modified = loadout_copy(loadout);
+    end
+
+    return loadout_modified;
+end
+
+local function active_loadout_buffed_copy()
+
+    return apply_buffs(active_loadout_copy());
+end
+
+local update_and_display_spell_diffs = nil;
 
 local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
 
@@ -9988,12 +10031,11 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
     end
 end
 
-
-local function update_and_display_spell_diffs(frame)
+function update_and_display_spell_diffs(frame)
 
     frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
 
-    local loadout = loadout_snapshot;
+    local loadout = active_loadout_buffed_copy();
 
     local loadout_diff = create_loadout_from_ui_diff(frame);
 
@@ -10018,14 +10060,6 @@ local function update_and_display_spell_diffs(frame)
     frame.footer:SetText("Add abilities by holding SHIFT and HOVERING over them!");
 end
 
-local function update_and_display_loadouts()
-end
-
-local function active_loadout()
-    return sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout;
-end
-
-
 local function loadout_name_already_exists(name)
 
     local already_exists = false;    
@@ -10036,23 +10070,11 @@ local function loadout_name_already_exists(name)
         end
     end
     return already_exists;
-
-end
-
-local function find_new_valid_loadout_name()
-
-    local i = 1;
-    local valid_name = active_loadout().name.." - Copy";
-    local test_name = valid_name;
-    while loadout_name_already_exists(test_name) do 
-        test_name = valid_name..i;
-    end
-    return valid_name;
 end
 
 local function update_loadouts_rhs()
 
-    local loadout = active_loadout();
+    local loadout = active_loadout_base();
 
     if sw_frame.loadouts_frame.lhs_list.num_loadouts == 1 then
 
@@ -10155,16 +10177,24 @@ local function update_loadouts_rhs()
     
 end
 
-local function update_loadouts_lhs()
+local loadout_checkbutton_id_counter = 1;
+-- TOOD localize:w
+
+function update_loadouts_lhs()
 
     local y_offset = -13;
 
     for k, v in pairs(sw_frame.loadouts_frame.lhs_list.loadouts) do
 
+        local checkbutton_name = "sw_frame_loadouts_lhs_list"..k;
+        v.check_button = getglobal(checkbutton_name);
+
         if not v.check_button then
 
+
             v.check_button = 
-                CreateFrame("CheckButton", v.loadout.name..k, sw_frame.loadouts_frame.lhs_list, "ChatConfigCheckButtonTemplate");
+                CreateFrame("CheckButton", checkbutton_name, sw_frame.loadouts_frame.lhs_list, "ChatConfigCheckButtonTemplate");
+
             v.check_button.target_index = k;
 
             v.check_button:SetScript("OnClick", function(self)
@@ -10182,7 +10212,14 @@ local function update_loadouts_lhs()
             end);
 
         end
+        if k == sw_frame.loadouts_frame.lhs_list.active_loadout then
+            v.check_button:SetChecked(true);
+        else
+            v.check_button:SetChecked(false);
+        end
+        v.check_button.target_index = k;
 
+        v.check_button:Show();
         v.check_button:SetPoint("TOPLEFT", 10, y_offset);
 
         getglobal(v.check_button:GetName() .. 'Text'):SetText(v.loadout.name);
@@ -10193,7 +10230,7 @@ local function update_loadouts_lhs()
     update_loadouts_rhs();
 end
 
-local function create_new_loadout_as_copy(loadout)
+local function create_new_loadout_as_copy(loadout, name)
 
     local cpy = loadout_copy(loadout);
 
@@ -10207,13 +10244,12 @@ local function create_new_loadout_as_copy(loadout)
     sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.num_loadouts].loadout = cpy;
 
     sw_frame.loadouts_frame.lhs_list.loadouts[
-        sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.name = find_new_valid_loadout_name(cpy.name)
+        sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.name = name.." (Copy)";
 
     update_loadouts_lhs();
 
     sw_frame.loadouts_frame.lhs_list.loadouts[
         sw_frame.loadouts_frame.lhs_list.active_loadout].check_button:SetChecked(true);
-
 end
 
 local function sw_activate_tab(tab_index)
@@ -10469,8 +10505,8 @@ local function create_sw_gui_settings_frame()
             sw_snapshot_loadout_update_freq = tonumber(hz);
             
         else
-            self:SetText("60"); 
-            sw_snapshot_loadout_update_freq = 60;
+            self:SetText("10"); 
+            sw_snapshot_loadout_update_freq = 10;
         end
 
     	self:ClearFocus();
@@ -10665,10 +10701,10 @@ local function create_sw_gui_settings_frame()
 
         __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide = not self:GetChecked();
         if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-            LDBIcon:Hide("sw_frame");
+            libstub_icon:Hide("sw_frame");
 
         else
-            LDBIcon:Show("sw_frame");
+            libstub_icon:Show("sw_frame");
         end
     end);
 
@@ -10686,7 +10722,7 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.instructions_label = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.instructions_label:SetFontObject(font);
     sw_frame.stat_comparison_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.instructions_label:SetText("See project page for example use case of this tool:");
+    sw_frame.stat_comparison_frame.instructions_label:SetText("See project page for an example use case of this tool:");
 
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
@@ -10840,35 +10876,21 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.stats[stat_ids_in_ui.sp].editbox:SetText("1");
 
-    --sw_frame.stat_comparison_frame:SetScript("OnLeave", function(self)
-    --    
-    --    if sw_frame.stat_comparison_frame:IsShown() and SpellBookFrame:IsShown() and not MouseIsOver(sw_frame.stat_comparison_frame, 0, 0, 0, 0) then
-
-    --        for key, val in pairs(sw_frame.stat_comparison_frame.stats) do
-    --            val.editbox:ClearFocus();
-    --        end
-    --    end
-    --end)
-
     -- header for spells
-
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.export_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.export_button:SetScript("OnClick", function()
 
-        local loadout = loadout_snapshot;
-        local original_name = loadout.name;
+        local loadout = active_loadout_copy();
 
         local loadout_diff = create_loadout_from_ui_diff(sw_frame.stat_comparison_frame);
 
-        loadout = loadout_add(loadout, loadout_diff);
+        local new_loadout = loadout_add(loadout, loadout_diff);
+        print_loadout(new_loadout);
 
-        loadout.is_dynamic_loadout = false;
+        new_loadout.is_dynamic_loadout = false;
 
-        loadout.name = original_name.." (modified via stats)";
-
-        create_new_loadout_as_copy(loadout);
-
+        create_new_loadout_as_copy(new_loadout, active_loadout_base().name.." (modified)");
 
         sw_activate_tab(2);
     end);
@@ -11001,7 +11023,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.loadouts_select_label = sw_frame.loadouts_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.loadouts_select_label:SetFontObject(font);
     sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame, 15, -32);
-    sw_frame.loadouts_frame.loadouts_select_label:SetText("Select Active Loadut");
+    sw_frame.loadouts_frame.loadouts_select_label:SetText("Select Active Loadout");
     sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     sw_frame.loadouts_frame.rhs_list.self_buffs_frame = 
@@ -11035,20 +11057,19 @@ local function create_sw_gui_loadout_frame()
 
         sw_frame.loadouts_frame.lhs_list.loadouts[
             sw_frame.loadouts_frame.lhs_list.active_loadout].check_button:SetChecked(false);
-        sw_frame.loadouts_frame.lhs_list.loadouts[
-            sw_frame.loadouts_frame.lhs_list.active_loadout].check_button:Hide();
         
-        for i = sw_frame.loadouts_frame.lhs_list.active_loadout, sw_frame.loadouts_frame.lhs_list.num_loadouts - 1 do
-
-            sw_frame.loadouts_frame.lhs_list.loadouts[i] = sw_frame.loadouts_frame.lhs_list.loadouts[i+1];
-            sw_frame.loadouts_frame.lhs_list.loadouts[i].check_button.target_index = i;
+        for i = sw_frame.loadouts_frame.lhs_list.num_loadouts - 1, sw_frame.loadouts_frame.lhs_list.active_loadout, -1  do
+            sw_frame.loadouts_frame.lhs_list.loadouts[i].loadout = sw_frame.loadouts_frame.lhs_list.loadouts[i+1].loadout;
         end
+
+        sw_frame.loadouts_frame.lhs_list.loadouts[
+            sw_frame.loadouts_frame.lhs_list.num_loadouts].check_button:Hide();
 
         sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.num_loadouts] = nil;
 
         sw_frame.loadouts_frame.lhs_list.num_loadouts = sw_frame.loadouts_frame.lhs_list.num_loadouts - 1;
-        sw_frame.loadouts_frame.lhs_list.active_loadout = 1;
-        sw_frame.loadouts_frame.lhs_list.loadouts[1].check_button:SetChecked(true);
+
+        sw_frame.loadouts_frame.lhs_list.active_loadout = sw_frame.loadouts_frame.lhs_list.num_loadouts;
 
         update_loadouts_lhs();
     end);
@@ -11062,7 +11083,8 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.export_button:SetSize(170, 25);
     sw_frame.loadouts_frame.rhs_list.export_button:SetScript("OnClick", function(self)
 
-        create_new_loadout_as_copy(active_loadout());
+        local loadout = active_loadout_base();
+        create_new_loadout_as_copy(loadout, loadout.name);
     end);
 
     y_offset_lhs = y_offset_lhs - 20;
@@ -11082,18 +11104,8 @@ local function create_sw_gui_loadout_frame()
     local editbox_save = function(self)
 
         local txt = self:GetText();
-        local can_save = true;
-        if not find_new_valid_loadout_name(txt) then
-            can_save = false;
-        end
+        sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.name = txt;
 
-        if can_save then
-            sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.name = txt;
-        else
-            self:SetText(self.original_name);
-
-        end
-    	
         update_loadouts_lhs();
     end
 
@@ -11128,10 +11140,10 @@ local function create_sw_gui_loadout_frame()
         local lvl = tonumber(txt);
         if lvl and lvl == math.floor(lvl) and lvl >= 1 and lvl <= 63 then
 
-            active_loadout().target_lvl = lvl;
+            active_loadout_base().target_lvl = lvl;
             
         else
-            self:SetText(""..active_loadout().target_lvl); 
+            self:SetText(""..active_loadout_base().target_lvl); 
         end
 
     	self:ClearFocus();
@@ -11150,7 +11162,7 @@ local function create_sw_gui_loadout_frame()
         "Only works with dynamic loadouts. If level is unknown '?' 3 levels above yourself is assumed";
 
     sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton :SetScript("OnClick", function(self)
-        active_loadout().use_dynamic_target_lvl = self:GetChecked();
+        active_loadout_base().use_dynamic_target_lvl = self:GetChecked();
     end)
 
     y_offset_lhs = y_offset_lhs - 20;
@@ -11160,7 +11172,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Dynamic loadout");
     getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
-        "Dynamic loadouts always use your current equipment, set bonuses, talents, self buffs, target's buffs/debuffs if chosen"
+        "Dynamic loadouts use your current equipment, set bonuses, talents. In addition, self buffs and target's buffs/debuffs may be applied if so chosen";
 
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetScript("OnClick", function(self)
         
@@ -11170,7 +11182,7 @@ local function create_sw_gui_loadout_frame()
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = true;
 
             sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = empty_loadout_with_buffs(active_loadout());
+                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = empty_loadout_with_buffs(active_loadout_base());
 
             
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(false);
@@ -11180,7 +11192,7 @@ local function create_sw_gui_loadout_frame()
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
 
             sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
-                static_loadout(active_loadout());
+                static_loadout(active_loadout_base());
             
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         end
@@ -11192,7 +11204,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.static_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.static_button:GetName()..'Text'):SetText("Static loadout");
     getglobal(sw_frame.loadouts_frame.rhs_list.static_button:GetName()).tooltip =
-        "Static loadouts never change and can be used to create custom setups";
+        "Static loadouts never change and can be used to create custom setups. When checked, a static loadout is a snapshot of a dynamic loadout or can be created with modified stats through the stat comparison tool"
     sw_frame.loadouts_frame.rhs_list.static_button:SetScript("OnClick", function(self)
 
         if self:GetChecked() then
@@ -11200,7 +11212,7 @@ local function create_sw_gui_loadout_frame()
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
 
             sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
-                static_loadout(active_loadout());
+                static_loadout(active_loadout_base());
             
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
         else
@@ -11208,7 +11220,7 @@ local function create_sw_gui_loadout_frame()
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = true;
 
             sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = empty_loadout_with_buffs(active_loadout());
+                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = empty_loadout_with_buffs(active_loadout_base());
             
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
         end
@@ -11221,7 +11233,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.apply_buffs_button = 
         CreateFrame("CheckButton", "sw_loadout_apply_buffs_button", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
-    getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName() .. 'Text'):SetText("Always apply buffs");
+    getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs ALWAYS");
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName()).tooltip = 
         "The selected buffs always be applied, but only if not already active";
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetScript("OnClick", function(self)
@@ -11241,7 +11253,7 @@ local function create_sw_gui_loadout_frame()
     y_offset_lhs = y_offset_lhs - 20;
 
     sw_frame.loadouts_frame.rhs_list.apply_buffs_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
-    getglobal(sw_frame.loadouts_frame.rhs_list.apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs if active");
+    getglobal(sw_frame.loadouts_frame.rhs_list.apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs IF ACTIVE");
     getglobal(sw_frame.loadouts_frame.rhs_list.apply_buffs_button:GetName()).tooltip =
         "The selected buffs will be applied only if already active";
     sw_frame.loadouts_frame.rhs_list.apply_buffs_button:SetScript("OnClick", function(self)
@@ -11267,7 +11279,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.loadout_dump:SetSize(170, 20);
     sw_frame.loadouts_frame.rhs_list.loadout_dump:SetScript("OnClick", function(self)
 
-        print_loadout(active_loadout());
+        print_loadout(active_loadout_buffed_copy());
     end);
 
     local y_offset_rhs = -30;
@@ -11412,11 +11424,11 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetScript("OnClick", function(self) 
         if self:GetChecked() then
-            active_loadout().buffs1 = bit.bnot(0);
-            active_loadout().buffs2 = bit.bnot(0);
+            active_loadout_base().buffs1 = bit.bnot(0);
+            active_loadout_base().buffs2 = bit.bnot(0);
         else
-            active_loadout().buffs1 = 0;
-            active_loadout().buffs2 = 0;
+            active_loadout_base().buffs1 = 0;
+            active_loadout_base().buffs2 = 0;
         end
 
         update_loadouts_rhs();
@@ -11429,11 +11441,11 @@ local function create_sw_gui_loadout_frame()
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetScript("OnClick", function(self)
         if self:GetChecked() then
-            active_loadout().target_buffs1 = bit.bnot(0);
-            active_loadout().target_debuffs1 = bit.bnot(0);
+            active_loadout_base().target_buffs1 = bit.bnot(0);
+            active_loadout_base().target_debuffs1 = bit.bnot(0);
         else
-            active_loadout().target_buffs1 = 0;
-            active_loadout().target_debuffs1 = 0;
+            active_loadout_base().target_buffs1 = 0;
+            active_loadout_base().target_debuffs1 = 0;
         end
         update_loadouts_rhs();
     end);
@@ -11855,8 +11867,8 @@ local function create_sw_base_gui()
 
             create_sw_gui_settings_frame();
 
-            if LDB then
-                local sw_launcher = LDB:NewDataObject("sw_frame", {
+            if libstub_data_broker then
+                local sw_launcher = libstub_data_broker:NewDataObject("sw_frame", {
                     type = "launcher",
                     icon = "Interface\\Icons\\spell_fire_elementaldevastation",
                     OnClick = function(self, button)
@@ -11874,18 +11886,15 @@ local function create_sw_base_gui()
                         tooltip:AddLine("This icon can be removed in the addon's settings tab");
                     end,
                 });
-                if LDBIcon then
-                    print("found lbdicon");
-                    LDBIcon:Register("sw_frame", sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
+                if libstub_icon then
+                    libstub_icon:Register("sw_frame", sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
                 end
             end
 
             if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-                print("hiding icon");
-                LDBIcon:Hide("sw_frame");
+                libstub_icon:Hide("sw_frame");
             else
-                print("showing icon and setting checkbox as true");
-                LDBIcon:Show("sw_frame");
+                libstub_icon:Show("sw_frame");
                 sw_frame.settings_frame.libstub_icon_checkbox:SetChecked(true);
             end
 
@@ -11963,7 +11972,7 @@ local function create_sw_base_gui()
     sw_frame.tab1 = CreateFrame("Button", "__sw_settings_button", sw_frame, "UIPanelButtonTemplate"); 
 
     sw_frame.tab1:SetPoint("TOPLEFT", 10, -25);
-    sw_frame.tab1:SetWidth(100);
+    sw_frame.tab1:SetWidth(116);
     sw_frame.tab1:SetHeight(25);
     sw_frame.tab1:SetText("Settings");
     sw_frame.tab1:SetScript("OnClick", function()
@@ -11972,8 +11981,8 @@ local function create_sw_base_gui()
 
 
     sw_frame.tab2 = CreateFrame("Button", "__sw_loadouts_button", sw_frame, "UIPanelButtonTemplate"); 
-    sw_frame.tab2:SetPoint("TOPLEFT", 110, -25);
-    sw_frame.tab2:SetWidth(110);
+    sw_frame.tab2:SetPoint("TOPLEFT", 124, -25);
+    sw_frame.tab2:SetWidth(116);
     sw_frame.tab2:SetHeight(25);
     sw_frame.tab2:SetText("Loadouts");
 
@@ -11982,8 +11991,8 @@ local function create_sw_base_gui()
     end);
 
     sw_frame.tab3 = CreateFrame("Button", "__sw_stat_comparison_button", sw_frame, "UIPanelButtonTemplate"); 
-    sw_frame.tab3:SetPoint("TOPLEFT", 220, -25);
-    sw_frame.tab3:SetWidth(125);
+    sw_frame.tab3:SetPoint("TOPLEFT", 238, -25);
+    sw_frame.tab3:SetWidth(120);
     sw_frame.tab3:SetHeight(25);
     sw_frame.tab3:SetText("Stat Comparison");
     sw_frame.tab3:SetScript("OnClick", function()
@@ -11994,7 +12003,7 @@ end
 local function command(msg, editbox)
     if class_is_supported then
         if msg == "print" then
-            print_loadout(loadout_snapshot);
+            print_loadout(active_loadout_buffed_copy());
         elseif msg == "loadout" or msg == "loadouts" then
             sw_activate_tab(2);
         elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
@@ -12013,15 +12022,7 @@ GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
 
     local spell = get_spell(spell_id);
 
-    local loadout = active_loadout();
-
-    if loadout.is_dynamic_loadout then
-        loadout_snapshot = dynamic_loadout(loadout);
-    else
-        loadout_snapshot = loadout;
-    end
-
-    tooltip_spell_info(GameTooltip, spell, spell_name, loadout_snapshot);
+    tooltip_spell_info(GameTooltip, spell, spell_name, active_loadout_buffed_copy());
 
     if spell and IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
             not sw_frame.stat_comparison_frame.spells[spell_id]then
@@ -12178,7 +12179,8 @@ end
 
 __sw__icon_frames = {};
 
-local function update_spell_icons()
+local function update_spell_icons(loadout)
+
     -- update spell book icons
     for k, v in pairs(__sw__icon_frames.book) do
         if v.frame then
@@ -12191,9 +12193,9 @@ local function update_spell_icons()
                     local spell_name = GetSpellInfo(id);
                     -- TODO: icon overlay not working for healing version checkbox
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout_snapshot);
+                        update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
                     else
-                        update_spell_icon_frame(v, spells[id], spell_name, loadout_snapshot);
+                        update_spell_icon_frame(v, spells[id], spell_name, loadout);
                     end
                 else
                     for i = 1, 3 do
@@ -12227,9 +12229,9 @@ local function update_spell_icons()
                 local spell_name = GetSpellInfo(id);
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                    update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout_snapshot);
+                    update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
                 else
-                    update_spell_icon_frame(v, spells[id], spell_name, loadout_snapshot);
+                    update_spell_icon_frame(v, spells[id], spell_name, loadout);
                 end
             else
                 for i = 1, 3 do
@@ -12249,9 +12251,9 @@ local function update_spell_icons()
                 if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
                     local spell_name = GetSpellInfo(id);
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout_snapshot);
+                        update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout);
                     else
-                        update_spell_icon_frame(action_frame, spells[id], spell_name, loadout_snapshot);
+                        update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
                     end
                 else
 
@@ -12275,7 +12277,7 @@ local function update_spell_icons()
                local action_frame = __sw__icon_frames.bars[i];
                if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
                    local spell_name = GetSpellInfo(id);
-                   update_spell_icon_frame(action_frame, spells[id], spell_name, loadout_snapshot);
+                   update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
                else
 
                    for i = 1, 3 do
@@ -12293,9 +12295,9 @@ local function update_spell_icons()
                 local spell_name = GetSpellInfo(id);
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                    update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout_snapshot);
+                    update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
                 else
-                    update_spell_icon_frame(v, spells[id], spell_name, loadout_snapshot);
+                    update_spell_icon_frame(v, spells[id], spell_name, loadout);
                 end
             else
                 for i = 1, 3 do
@@ -12321,9 +12323,9 @@ local function update_spell_icons()
                    local spell_name = GetSpellInfo(id);
 
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout_snapshot);
+                        update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout);
                     else
-                        update_spell_icon_frame(action_frame, spells[id], spell_name, loadout_snapshot);
+                        update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
                     end
                else
 
@@ -12348,22 +12350,15 @@ end
 if class_is_supported then
     UIParent:HookScript("OnUpdate", function(self, elapsed)
     
-        snapshot_time_since_last_update = snapshot_time_since_last_update + elapsed; 	
+        snapshot_time_since_last_update = snapshot_time_since_last_update + elapsed;
         
         if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq and 
                 sw_num_icon_overlay_fields_active > 0 then
 
-            local loadout = active_loadout();
-            if loadout.is_dynamic_loadout then
-                loadout_snapshot = dynamic_loadout(loadout);
-            else
-                loadout_snapshot = loadout;
-            end
-        
+            update_spell_icons(active_loadout_buffed_copy());
+
             snapshot_time_since_last_update = 0;
-        
         end
-        update_spell_icons();
 
     end)
 end
@@ -12449,9 +12444,7 @@ if InterfaceOptions_AddCategory then
     str:SetPoint("TOPLEFT", x_offset, y_offset);
     str:SetText("/sw stat");
     
-    
 end
-
 
 SLASH_STAT_WEIGHTS1 = "/sw"
 SLASH_STAT_WEIGHTS2 = "/stat-weights"
