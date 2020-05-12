@@ -11942,7 +11942,7 @@ local function create_sw_base_gui()
             create_sw_gui_settings_frame();
 
             if libstub_data_broker then
-                local sw_launcher = libstub_data_broker:NewDataObject("sw_frame", {
+                local sw_launcher = libstub_data_broker:NewDataObject("Stat Weights Classic", {
                     type = "launcher",
                     icon = "Interface\\Icons\\spell_fire_elementaldevastation",
                     OnClick = function(self, button)
@@ -11961,14 +11961,14 @@ local function create_sw_base_gui()
                     end,
                 });
                 if libstub_icon then
-                    libstub_icon:Register("sw_frame", sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
+                    libstub_icon:Register("Stat Weights Classic", sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
                 end
             end
 
             if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-                libstub_icon:Hide("sw_frame");
+                libstub_icon:Hide("Stat Weights Classic");
             else
-                libstub_icon:Show("sw_frame");
+                libstub_icon:Show("Stat Weights Classic");
                 sw_frame.settings_frame.libstub_icon_checkbox:SetChecked(true);
             end
 
