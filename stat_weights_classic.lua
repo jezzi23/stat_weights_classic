@@ -134,7 +134,8 @@ local target_debuffs1 = {
     improved_scorch             = { flag = bit.lshift(1,4), id = 22959, name = "Improved Scorch"}, -- ok casters
     improved_shadow_bolt        = { flag = bit.lshift(1,5), id = 17800, name = "Improved Shadow Bolt"}, -- ok casters
     shadow_weaving              = { flag = bit.lshift(1,6), id = 15258, name = "Shadow Weaving"}, -- ok casters
-    stormstrike                 = { flag = bit.lshift(1,7), id = 17364, name = "Stormstrike"} -- ok casters
+    stormstrike                 = { flag = bit.lshift(1,7), id = 17364, name = "Stormstrike"}, -- ok casters
+    curse_of_shadow             = { flag = bit.lshift(1,8), id = 17937, name = "Curse of Shadow"}, -- ok casters
 };
 
 local stat_ids_in_ui = {
@@ -278,9 +279,9 @@ local spell_name_to_id = {
     ["Immolate"]                = 348,
     ["Conflagrate"]             = 17962,
     ["Shadowburn"]              = 17877,
-    ["Curse of the Elements"]   = 1490
+    ["Curse of the Elements"]   = 1490,
+    ["Curse of Shadow"]         = 17937
 };
-
 
 local function create_spells()
     
@@ -7226,7 +7227,6 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 5);
         if pts ~= 0 then
 
-            -- TODO: add dps totems
             local totems = {"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"};
 
             for k, v in pairs(totems) do
@@ -8021,7 +8021,6 @@ local function apply_caster_frost_buffs(loadout, raw_stats_diff)
     if bit.band(target_debuffs1.wc.flag, loadout.target_debuffs1) ~= 0 then
         local frost_crit = 0;
 
-        -- TODO: is this id correct?
         local winters_chill = loadout.target_debuffs[target_debuffs1.wc.id];
         if winters_chill then
             frost_crit = winters_chill.count * 0.02;
@@ -8056,7 +8055,6 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
         for j = 2, 7 do 
             loadout.spell_dmg_mod_by_school[j] = loadout.spell_dmg_mod_by_school[j] + 0.2;
         end
-        -- TODO: is this being applied to base??
         loadout.spell_heal_mod = loadout.spell_heal_mod + 0.2;
     end
     
@@ -8267,6 +8265,31 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
 
         for j = 2, 7 do 
             loadout.target_spell_dmg_taken[j] = loadout.target_spell_dmg_taken[j] + 0.15;
+        end
+    end
+    if bit.band(target_debuffs1.curse_of_shadow.flag, loadout.target_debuffs1) ~= 0 then
+        local arcane_shadow_dmg_taken = 0;
+        local resi = 0;
+
+        local cos = loadout.target_debuffs[localized_spell_name("Curse of Shadow")];
+        if cos then
+            if cos.id == 17862 then
+                arcane_shadow_dmg_taken = 0.08;
+                resi = 60;
+            elseif cote.id == 17937 then
+                arcane_shadow_dmg_taken = 0.1;
+                resi = 75;
+            end
+        elseif loadout.always_assume_buffs then
+                arcane_shadow_dmg_taken = 0.1;
+                resi = 75;
+        end
+
+        if (not loadout.target_friendly and loadout.has_target) or loadout.always_assume_buffs then
+            loadout.target_spell_dmg_taken[magic_school.arcane] = 
+                loadout.target_spell_dmg_taken[magic_school.arcane] + arcane_shadow_dmg_taken;
+            loadout.target_spell_dmg_taken[magic_school.shadow] = 
+                loadout.target_spell_dmg_taken[magic_school.shadow] + arcane_shadow_dmg_taken;
         end
     end
 end
@@ -11568,10 +11591,6 @@ local function create_sw_gui_loadout_frame()
 
         -- target buffs
         -- target debuffs
-        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements, 
-                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.nightfall, 
                                          "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
                                          y_offset_rhs_target_buffs, check_button_buff_func);
@@ -11645,6 +11664,14 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
 
     -- warlock buff/debuffs
     elseif class == "WARLOCK" then
@@ -11660,6 +11687,14 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
     -- shaman buff/debuffs
     elseif class == "SHAMAN" then
         -- self buffs1
@@ -11676,6 +11711,10 @@ local function create_sw_gui_loadout_frame()
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.healing_way, "target_buffs1", 
                                         sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
                                         check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
         y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
     -- paladin buff/debuffs
     elseif class == "PALADIN" then
@@ -11703,6 +11742,10 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
     elseif class == "PRIEST" then
     -- priest buff/debuffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.greater_arcane_elixir, "self1", 
@@ -11721,6 +11764,10 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
+                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         y_offset_rhs_target_buffs, check_button_buff_func);
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
     end
    
     if race == "Troll" then
@@ -12119,10 +12166,16 @@ function update_icon_overlay_settings()
         index = index + 1;
     end
 
+    if not sw_frame.settings_frame.icon_overlay[3] then
+        sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[2];
+        sw_frame.settings_frame.icon_overlay[2] = nil;
+    end
+
     sw_num_icon_overlay_fields_active = index - 1;
 
     -- hide existing overlay frames that should no longer exist
     for i = 1, 3 do
+
         if not sw_frame.settings_frame.icon_overlay[i] then
             for k, v in pairs(__sw__icon_frames.book) do
                 if v.overlay_frames[i] then
@@ -12160,51 +12213,50 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
 
     for i = 1, 3 do
         
-        if not sw_frame.settings_frame.icon_overlay[i] then
-            break;
-        end
-        if not frame_info.overlay_frames[i] then
-            frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
-        end
-        frame_info.overlay_frames[i]:SetFont(
-            icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
-
-        if i == 1 then
-            frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
-        elseif i == 2 then
-            frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
-        elseif i == 3 then 
-            frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
-        end
-        if sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.normal then
-            frame_info.overlay_frames[i]:SetText(string.format("%d",
-                (spell_effect.min_noncrit + spell_effect.max_noncrit)/2 + spell_effect.ot_if_hit));
-        elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit  then
-            if spell_effect.ot_crit_if_hit > 0  then
-                frame_info.overlay_frames[i]:SetText(string.format("%d",
-                    (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_crit_if_hit));
-            elseif spell_effect.min_crit ~= 0.0 then
-                frame_info.overlay_frames[i]:SetText(string.format("%d", 
-                    (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_if_hit));
-            else
-                frame_info.overlay_frames[i]:SetText("");
+        if sw_frame.settings_frame.icon_overlay[i] then
+            if not frame_info.overlay_frames[i] then
+                frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
             end
-        elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.expected then
-            frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.expectation));
-        elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_sec then
-            frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.effect_per_sec));
-        elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_cost then
-            frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.effect_per_cost));
-        elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cost then
-            frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.cost));
-        elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
-            frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.cast_time));
-        end
-        frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
-                                                  sw_frame.settings_frame.icon_overlay[i].color[2], 
-                                                  sw_frame.settings_frame.icon_overlay[i].color[3]);
+            frame_info.overlay_frames[i]:SetFont(
+                icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
 
-        frame_info.overlay_frames[i]:Show();
+            if i == 1 then
+                frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
+            elseif i == 2 then
+                frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
+            elseif i == 3 then 
+                frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
+            end
+            if sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.normal then
+                frame_info.overlay_frames[i]:SetText(string.format("%d",
+                    (spell_effect.min_noncrit + spell_effect.max_noncrit)/2 + spell_effect.ot_if_hit));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit  then
+                if spell_effect.ot_crit_if_hit > 0  then
+                    frame_info.overlay_frames[i]:SetText(string.format("%d",
+                        (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_crit_if_hit));
+                elseif spell_effect.min_crit ~= 0.0 then
+                    frame_info.overlay_frames[i]:SetText(string.format("%d", 
+                        (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_if_hit));
+                else
+                    frame_info.overlay_frames[i]:SetText("");
+                end
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.expected then
+                frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.expectation));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_sec then
+                frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.effect_per_sec));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_cost then
+                frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.effect_per_cost));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cost then
+                frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.cost));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
+                frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.cast_time));
+            end
+            frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
+                                                      sw_frame.settings_frame.icon_overlay[i].color[2], 
+                                                      sw_frame.settings_frame.icon_overlay[i].color[3]);
+
+            frame_info.overlay_frames[i]:Show();
+        end
     end
 end
 
