@@ -21,10 +21,12 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
+local sw_addon_name = "Stat Weights Classic";
 local version =  "1.2.0";
 
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
+
 
 local font = "GameFontHighlightSmall";
 local icon_overlay_font = "Interface\\AddOns\\stat_weights_classic\\fonts\\Oswald-Bold.ttf";
@@ -10752,10 +10754,10 @@ local function create_sw_gui_settings_frame()
 
         __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide = not self:GetChecked();
         if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-            libstub_icon:Hide("sw_frame");
+            libstub_icon:Hide(sw_addon_name);
 
         else
-            libstub_icon:Show("sw_frame");
+            libstub_icon:Show(sw_addon_name);
         end
     end);
 
@@ -11942,7 +11944,7 @@ local function create_sw_base_gui()
             create_sw_gui_settings_frame();
 
             if libstub_data_broker then
-                local sw_launcher = libstub_data_broker:NewDataObject("Stat Weights Classic", {
+                local sw_launcher = libstub_data_broker:NewDataObject(sw_addon_name, {
                     type = "launcher",
                     icon = "Interface\\Icons\\spell_fire_elementaldevastation",
                     OnClick = function(self, button)
@@ -11955,20 +11957,20 @@ local function create_sw_base_gui()
                         end
                     end,
                     OnTooltipShow = function(tooltip)
-                        tooltip:AddLine("Stat Weights Classic: Version "..version);
+                        tooltip:AddLine(sw_addon_name..": Version "..version);
                         tooltip:AddLine("Left/Right click: Toggle addon frame");
                         tooltip:AddLine("This icon can be removed in the addon's settings tab");
                     end,
                 });
                 if libstub_icon then
-                    libstub_icon:Register("Stat Weights Classic", sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
+                    libstub_icon:Register(sw_addon_name, sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
                 end
             end
 
             if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-                libstub_icon:Hide("Stat Weights Classic");
+                libstub_icon:Hide(sw_addon_name);
             else
-                libstub_icon:Show("Stat Weights Classic");
+                libstub_icon:Show(sw_addon_name);
                 sw_frame.settings_frame.libstub_icon_checkbox:SetChecked(true);
             end
 
