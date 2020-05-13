@@ -6783,7 +6783,6 @@ local function apply_talents(loadout)
                 new_loadout.ability_crit_mod[sf] = 0;
                 new_loadout.ability_crit_mod[wrath] = 0;
             end
-            -- TODO: uhh why do it like this?
             new_loadout.ability_crit_mod[mf] = 
                 (new_loadout.spell_crit_mod_by_school[magic_school.arcane] - 1) * (pts * 0.2);
             new_loadout.ability_crit_mod[sf] = 
@@ -9548,14 +9547,22 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                         232.0/255, 225.0/255, 32.0/255);
                     end
                 else
+                    if eval.stats.hit ~= 1 then
+                        tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
+                                                      effect,
+                                                      eval.stats.hit*100,
+                                                      math.floor(eval.spell_data.min_noncrit)),
+                                                      --string.format("%.0f", eval.spell_data.min_noncrit)),
+                                        232.0/255, 225.0/255, 32.0/255);
+                    else
+                        tooltip:AddLine(string.format("Normal %s: %d", 
+                                                      effect,
+                                                      eval.stats.hit*100,
+                                                      math.floor(eval.spell_data.min_noncrit)),
+                                                      --string.format("%.0f", eval.spell_data.min_noncrit)),
+                                        232.0/255, 225.0/255, 32.0/255);
+                    end
 
-                    -- TODO: priest absorb is showing this...
-                    tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
-                                                  effect,
-                                                  eval.stats.hit*100,
-                                                  math.floor(eval.spell_data.min_noncrit)),
-                                                  --string.format("%.0f", eval.spell_data.min_noncrit)),
-                                    232.0/255, 225.0/255, 32.0/255);
                 end
             end
             if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
