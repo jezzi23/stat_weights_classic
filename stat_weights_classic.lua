@@ -22,7 +22,7 @@
 --SOFTWARE.
 
 local sw_addon_name = "Stat Weights Classic";
-local version =  "1.2.0";
+local version =  "1.2.1";
 
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
