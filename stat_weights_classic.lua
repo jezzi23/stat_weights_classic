@@ -10946,7 +10946,6 @@ local function create_sw_gui_stat_comparison_frame()
         local loadout_diff = create_loadout_from_ui_diff(sw_frame.stat_comparison_frame);
 
         local new_loadout = loadout_add(loadout, loadout_diff);
-        print_loadout(new_loadout);
 
         new_loadout.is_dynamic_loadout = false;
 
