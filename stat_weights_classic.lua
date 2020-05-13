@@ -119,7 +119,8 @@ local buffs2 = {
     vengeance                   = { flag = bit.lshift(1,3),  id = 20059, name = "Vengeance"}, --ok
     natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Natural Alignment Crystal"}, --ok
     blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"}, --ok
-    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)"} --ok
+    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)"}, --ok
+    flask_of_supreme_power      = { flag = bit.lshift(1,7),  id = 17628, name = "Flask of Supreme Power"} --ok
 };
 
 local target_buffs1 = {
@@ -7328,9 +7329,9 @@ local function apply_talents(loadout)
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
         if pts ~= 0 then
 
-            new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
-            new_loadout.spell_crit_by_school[magic_school.holy] = 
-                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
+            --new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
+            --new_loadout.spell_crit_by_school[magic_school.holy] = 
+            --    new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
 
     elseif class == "WARLOCK" then
@@ -8114,13 +8115,13 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
     if bit.band(buffs1.greater_arcane_elixir.flag, loadout.buffs1) ~= 0 and
         loadout.always_assume_buffs and not loadout.buffs[buffs1.greater_arcane_elixir.id] then
         for i = 2, 7 do
-            loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + 30;
+            loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + 35;
         end
     elseif bit.band(buffs1.greater_arcane_elixir.flag, loadout.buffs1) == 0 and 
         loadout.buffs[buffs1.greater_arcane_elixir.id] then
 
         for i = 2, 7 do
-            loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] - 30;
+            loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] - 35;
         end
     end
     if bit.band(buffs1.runn_tum_tuber_surprise.flag, loadout.buffs1) ~= 0 and
@@ -8167,6 +8168,19 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
             loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] - 17*stacks;
         end
          loadout.healing_power = loadout.healing_power - 34*stacks;
+    end
+
+    if bit.band(buffs2.flask_of_supreme_power.flag, loadout.buffs2) ~= 0 and
+        loadout.always_assume_buffs and not loadout.buffs[buffs2.flask_of_supreme_power.id] then
+        for i = 2, 7 do
+            loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + 150;
+        end
+    elseif bit.band(buffs2.flask_of_supreme_power.flag, loadout.buffs2) == 0 and 
+        loadout.buffs[buffs2.flask_of_supreme_power.id] then
+
+        for i = 2, 7 do
+            loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] - 150;
+        end
     end
 
     -- TARGET BUFFS
@@ -8277,7 +8291,7 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
             if cos.id == 17862 then
                 arcane_shadow_dmg_taken = 0.08;
                 resi = 60;
-            elseif cote.id == 17937 then
+            elseif cos.id == 17937 then
                 arcane_shadow_dmg_taken = 0.1;
                 resi = 75;
             end
@@ -11591,8 +11605,16 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-        -- target self buffs 2
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.greater_arcane_elixir, "self1", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        -- self buffs 2
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.zandalarian_hero_charm, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.flask_of_supreme_power, "self2", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
@@ -11656,10 +11678,6 @@ local function create_sw_gui_loadout_frame()
     end
     -- mage buff/debuffs
     if class == "MAGE" then
-        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.greater_arcane_elixir, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.arcane_power, "self1", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
@@ -11746,20 +11764,12 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.greater_arcane_elixir, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
                                          "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
                                          y_offset_rhs_target_buffs, check_button_buff_func);
         y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
     elseif class == "PRIEST" then
     -- priest buff/debuffs
-        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.greater_arcane_elixir, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.shadow_form, "self1", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
