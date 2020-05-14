@@ -12186,7 +12186,12 @@ function update_icon_overlay_settings()
         index = index + 1;
     end
 
-    if not sw_frame.settings_frame.icon_overlay[3] then
+    -- if 1, do bottom
+    if not sw_frame.settings_frame.icon_overlay[2] then
+        sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[1];
+        sw_frame.settings_frame.icon_overlay[1] = nil;
+    -- if 2, do top and bottom
+    elseif not sw_frame.settings_frame.icon_overlay[3] then
         sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[2];
         sw_frame.settings_frame.icon_overlay[2] = nil;
     end
