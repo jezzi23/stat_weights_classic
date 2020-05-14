@@ -12333,7 +12333,10 @@ local function update_spell_icons(loadout)
         for k, v in pairs(__sw__icon_frames.bars) do
                 
             local action_type, id, _ = GetActionInfo(k);
-            if v.frame and v.frame:IsShown() and action_type == "spell" and spells[id] then
+            if action_type == "macro" then
+                 id, _ = GetMacroSpell(id);
+            end
+            if v.frame and v.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
                 local spell_name = GetSpellInfo(id);
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
@@ -12355,8 +12358,11 @@ local function update_spell_icons(loadout)
              for i = 1, 12 do
                 local action_id = (page-1)*12 + i;
                 local action_type, id, _ = GetActionInfo(action_id);
+                if action_type == "macro" then
+                     id, _ = GetMacroSpell(id);
+                end
                 local action_frame = __sw__icon_frames.bars[i];
-                if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
+                if action_frame.frame and action_frame.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
                     local spell_name = GetSpellInfo(id);
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
                         update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout);
@@ -12382,8 +12388,12 @@ local function update_spell_icons(loadout)
             for i = 1, 12 do
                local action_id = 72 + (bonus_bar_offset -1)* 12 + i;
                local action_type, id, _ = GetActionInfo(action_id);
+               if action_type == "macro" then
+                    id, _ = GetMacroSpell(id);
+               end
+
                local action_frame = __sw__icon_frames.bars[i];
-               if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
+               if action_frame.frame and action_frame.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
                    local spell_name = GetSpellInfo(id);
                    update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
                else
@@ -12399,7 +12409,10 @@ local function update_spell_icons(loadout)
     elseif action_bar_addon_name == "Bartender4" or action_bar_addon_name == "ElvUI" then
         for k, v in pairs(__sw__icon_frames.bars) do
             local action_type, id, _ = GetActionInfo(k);
-            if v.frame and v.frame:IsShown() and action_type == "spell" and spells[id] then
+            if action_type == "macro" then
+                 id, _ = GetMacroSpell(id);
+            end
+            if v.frame and v.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
                 local spell_name = GetSpellInfo(id);
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
@@ -12426,8 +12439,11 @@ local function update_spell_icons(loadout)
             for i = 1, 12 do
                local action_id = 72 + (bonus_bar_offset -1)* 12 + i;
                local action_type, id, _ = GetActionInfo(action_id);
+               if action_type == "macro" then
+                    id, _ = GetMacroSpell(id);
+               end
                local action_frame = __sw__icon_frames.bars[i];
-               if action_frame.frame and action_frame.frame:IsShown() and action_type == "spell" and spells[id] then
+               if action_frame.frame and action_frame.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
                    local spell_name = GetSpellInfo(id);
 
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
