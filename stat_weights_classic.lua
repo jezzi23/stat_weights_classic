@@ -12109,23 +12109,25 @@ local function command(msg, editbox)
     end
 end
 
-GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
-
-    local spell_name, spell_id = tooltip:GetSpell();
-
-    local spell = get_spell(spell_id);
-
-    tooltip_spell_info(GameTooltip, spell, spell_name, active_loadout_buffed_copy());
-
-    if spell and IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
-            not sw_frame.stat_comparison_frame.spells[spell_id]then
-        sw_frame.stat_comparison_frame.spells[spell_id] = {
-            name = spell_name
-        };
-
-        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
-    end
-end)
+if class_is_supported then
+    GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, ...)
+    
+        local spell_name, spell_id = tooltip:GetSpell();
+    
+        local spell = get_spell(spell_id);
+    
+        tooltip_spell_info(GameTooltip, spell, spell_name, active_loadout_buffed_copy());
+    
+        if spell and IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
+                not sw_frame.stat_comparison_frame.spells[spell_id]then
+            sw_frame.stat_comparison_frame.spells[spell_id] = {
+                name = spell_name
+            };
+    
+            update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+        end
+    end)
+end
 
 
 function update_icon_overlay_settings()
