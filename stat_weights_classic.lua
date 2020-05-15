@@ -24,6 +24,8 @@
 local sw_addon_name = "Stat Weights Classic";
 local version =  "1.2.2";
 
+local sw_addon_loaded = false;
+
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
 
@@ -165,6 +167,9 @@ local icon_stat_display = {
     effect_per_cost = bit.lshift(1,5),
     avg_cost = bit.lshift(1,6),
     avg_cast = bit.lshift(1,7),
+    hit = bit.lshift(1,8),
+    crit_chance = bit.lshift(1,9),
+
     show_heal_variant = bit.lshift(1,20)
 };
 
@@ -9482,7 +9487,8 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
     if spell then
 
-        if sw_frame.settings_frame.tooltip_num_checked == 0  then
+        if sw_frame.settings_frame.tooltip_num_checked == 0 or 
+            (sw_frame.settings_frame.show_tooltip_only_when_shift and not IsShiftKeyDown()) then
             return;
         end
 
@@ -9761,7 +9767,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
       if __sw__debug__ then
           tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
           tooltip:AddLine(
-            string.format("Stats: sp %d, crit %.4f, crit_mod %.4f, hit %.4f, vuln_mod %.4f, gmod %.4f, mod %.4f, bmod %.4f, cost %f, cast %f",
+            string.format("Stats: sp %d, crit %.2f, crit_mod %.2f, hit %.2f, vuln_mod %.2f, gmod %.2f, mod %.2f, bmod %.2f, cost %f, cast %f",
                           eval.stats.spell_power,
                           eval.stats.crit,
                           eval.stats.spell_crit_mod,
@@ -9770,8 +9776,6 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                           eval.stats.global_mod,
                           eval.stats.spell_mod,
                           eval.stats.spell_mod_base,
-                          eval.stats.cost,
-                          eval.stats.crit,
                           eval.stats.cost,
                           eval.stats.cast_speed
             
@@ -10246,8 +10250,8 @@ local function update_loadouts_rhs()
 end
 
 local loadout_checkbutton_id_counter = 1;
--- TOOD localize:w
 
+-- TOOD localize
 function update_loadouts_lhs()
 
     local y_offset = -13;
@@ -10375,6 +10379,7 @@ local function default_sw_settings()
 
     settings.icon_overlay_update_freq = 10;
     settings.icon_overlay_font_size = 8;
+    settings.show_tooltip_only_when_shift = false;
     settings.libstub_minimap_icon = { hide = false };
 
     return settings;
@@ -10405,6 +10410,12 @@ local function save_sw_settings()
     end
     if sw_frame.settings_frame.icon_avg_cast:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.avg_cast);
+    end
+    if sw_frame.settings_frame.icon_hit:GetChecked() then
+        icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.hit);
+    end
+    if sw_frame.settings_frame.icon_crit:GetChecked() then
+        icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.crit_chance);
     end
     if sw_frame.settings_frame.icon_heal_variant:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.show_heal_variant);
@@ -10449,6 +10460,7 @@ local function save_sw_settings()
 
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
+    __sw__persistent_data_per_char.settings.show_tooltip_only_when_shift = sw_frame.settings_frame.show_tooltip_only_when_shift;
     __sw__persistent_data_per_char.settings.icon_overlay_update_freq = sw_snapshot_loadout_update_freq;
     __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.settings_frame.icon_overlay_font_size;
 end
@@ -10508,28 +10520,36 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_normal_effect = 
         create_sw_checkbox("sw_icon_normal_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Normal effect", icon_checkbox_func);
+                           "Normal effect", icon_checkbox_func);
     sw_frame.settings_frame.icon_crit_effect = 
         create_sw_checkbox("sw_icon_crit_effect", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Critical effect", icon_checkbox_func); 
+                           "Critical effect", icon_checkbox_func); 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_expected_effect = 
         create_sw_checkbox("sw_icon_expected_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Expected effect", icon_checkbox_func);  
+                           "Expected effect", icon_checkbox_func);  
     sw_frame.settings_frame.icon_effect_per_sec = 
         create_sw_checkbox("sw_icon_effect_per_sec", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Effect per sec", icon_checkbox_func);  
+                           "Effect per sec", icon_checkbox_func);  
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_effect_per_cost = 
         create_sw_checkbox("sw_icon_effect_per_costs", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Effect per cost", icon_checkbox_func);  
+                           "Effect per cost", icon_checkbox_func);  
     sw_frame.settings_frame.icon_avg_cost = 
         create_sw_checkbox("sw_icon_avg_cost", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Average cost", icon_checkbox_func);  
+                           "Average cost", icon_checkbox_func);  
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_avg_cast = 
         create_sw_checkbox("sw_icon_avg_cast", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Average cast time", icon_checkbox_func);  
+                           "Average cast time", icon_checkbox_func);
+    sw_frame.settings_frame.icon_hit = 
+        create_sw_checkbox("sw_icon_hit", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Hit Chance", icon_checkbox_func);  
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.icon_crit = 
+        create_sw_checkbox("sw_icon_crit_chance", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Critical Chance", icon_checkbox_func);  
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
 
@@ -10644,6 +10664,18 @@ local function create_sw_gui_settings_frame()
         if num_icon_overlay_checks < 3 then
             num_icon_overlay_checks = num_icon_overlay_checks + 1;
             sw_frame.settings_frame.icon_avg_cast:SetChecked(true);
+        end
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.hit) ~= 0 then
+        if num_icon_overlay_checks < 3 then
+            num_icon_overlay_checks = num_icon_overlay_checks + 1;
+            sw_frame.settings_frame.icon_hit:SetChecked(true);
+        end
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.crit_chance) ~= 0 then
+        if num_icon_overlay_checks < 3 then
+            num_icon_overlay_checks = num_icon_overlay_checks + 1;
+            sw_frame.settings_frame.icon_crit:SetChecked(true);
         end
     end
     sw_frame.settings_frame.icons_num_checked = num_icon_overlay_checks;
@@ -10781,6 +10813,16 @@ local function create_sw_gui_settings_frame()
         end
     end);
 
+    sw_frame.settings_frame.show_tooltip_only_when_shift_button = 
+        create_sw_checkbox("sw_settings_show_tooltip_only_when_shift_button", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "SHIFT to show tooltip", function(self)
+        sw_frame.settings_frame.show_tooltip_only_when_shift = self:GetChecked();
+    end);
+    sw_frame.settings_frame.show_tooltip_only_when_shift = 
+        __sw__persistent_data_per_char.settings.show_tooltip_only_when_shift;
+    sw_frame.settings_frame.show_tooltip_only_when_shift_button:SetChecked(
+        sw_frame.settings_frame.show_tooltip_only_when_shift
+    );
 end
 
 local function create_sw_gui_stat_comparison_frame()
@@ -11802,6 +11844,16 @@ local function create_sw_gui_loadout_frame()
     end
 end
 
+local function action_id_of_button(button)
+
+    if action_bar_addon_name == "Default" then
+        return button.action;
+    else
+        -- Dominos seems to set GetAttribute function for the 1-6 default blizz bars
+        return button:GetAttribute("action");
+    end
+end
+
 local function gather_spell_icons()
 
     local action_bar_frame_names = {};
@@ -11833,6 +11885,7 @@ local function gather_spell_icons()
         for i = 1, 120 do
             action_bar_frame_names[i] = "BT4Button"..i;
         end
+        action_bar_addon_name = "Bartender4";
 
     elseif IsAddOnLoaded("ElvUI") then -- check for some common addons if they overrite spellbook frames
 
@@ -11845,6 +11898,7 @@ local function gather_spell_icons()
                 index = index + 1;
             end
         end
+        action_bar_addon_name = "ElvUI";
 
     elseif IsAddOnLoaded("Dominos") then -- check for some common addons if they overrite spellbook frames
 
@@ -11855,7 +11909,7 @@ local function gather_spell_icons()
         index = 1;
         for k, v in pairs(bars) do
             for j = 1, 12 do
-                action_bar_frame_names[index] = getfenv()[v..j];
+                action_bar_frame_names[index] = v..j;
 
                 index = index + 1;
             end
@@ -11867,8 +11921,10 @@ local function gather_spell_icons()
 
             dominos_button_index = dominos_button_index + 1;
         end
+        action_bar_addon_name = "Dominos";
 
     else -- default action bars
+        
         local bars = {
             "ActionButton", "BonusActionButton", "MultiBarRightButton",
             "MultiBarLeftButton", "MultiBarBottomRightButton", "MultiBarBottomLeftButton"
@@ -11876,22 +11932,22 @@ local function gather_spell_icons()
         index = 1;
         for k, v in pairs(bars) do
             for j = 1, 12 do
-                action_bar_frame_names[index] = getfenv()[v..j];
+                action_bar_frame_names[index] = v..j;
 
                 index = index + 1;
             end
         end
+        action_bar_addon_name = "Default";
     end
 
     local action_bar_frames_of_interest = {};
 
-    local index = 1;
     for k, v in pairs(action_bar_frame_names) do
 
         local frame = getfenv()[v];
         if frame then
 
-            local action_id = frame:GetAttribute("action");
+            local action_id = action_id_of_button(frame);
                 
             local spell_id = 0;
             local action_type, id, _ = GetActionInfo(action_id);
@@ -11907,16 +11963,15 @@ local function gather_spell_icons()
             end
 
             if spell_id ~= 0 then
-                local index = frame:GetAttribute("action");
 
-                action_bar_frames_of_interest[index] = {};
-
-                action_bar_frames_of_interest[index].spell_id = spell_id;
-                action_bar_frames_of_interest[index].frame = frame; 
-                action_bar_frames_of_interest[index].overlay_frames = {nil, nil, nil}
+                action_bar_frames_of_interest[action_id] = {};
+                action_bar_frames_of_interest[action_id].spell_id = spell_id;
+                action_bar_frames_of_interest[action_id].frame = frame; 
+                action_bar_frames_of_interest[action_id].overlay_frames = {nil, nil, nil}
             end
         end
     end
+    
 
     return {
         bar_names = action_bar_frame_names,
@@ -11932,7 +11987,7 @@ local function on_special_action_bar_changed()
         local frame = getfenv()[__sw__icon_frames.bar_names[i]];
         if frame then
     
-            local action_id = frame:GetAttribute("action");
+            local action_id = action_id_of_button(frame);
                 
             local spell_id = 0;
             local action_type, id, _ = GetActionInfo(action_id);
@@ -12130,7 +12185,13 @@ local function create_sw_base_gui()
             __sw__icon_frames = gather_spell_icons();
             update_icon_overlay_settings();
 
+            sw_addon_loaded = true;
+
         elseif event ==  "ACTIONBAR_SLOT_CHANGED"  then
+
+            if not sw_addon_loaded then
+                return;
+            end
 
             local action_id = msg;
 
@@ -12171,6 +12232,9 @@ local function create_sw_base_gui()
 
         elseif event ==  "UPDATE_STEALTH" or event == "UPDATE_SHAPESHIFT_FORM" then
 
+            if not sw_addon_loaded then
+                return;
+            end
             on_special_action_bar_changed();
         end
     end
@@ -12300,6 +12364,20 @@ function update_icon_overlay_settings()
         };
         index = index + 1;
     end
+    if sw_frame.settings_frame.icon_hit:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[index] = {
+            label_type = icon_stat_display.hit,
+            color = {232.0/255, 225.0/255, 32.0/255}
+        };
+        index = index + 1;
+    end
+    if sw_frame.settings_frame.icon_crit:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[index] = {
+            label_type = icon_stat_display.crit_chance,
+            color = {252.0/255, 69.0/255, 3.0/255}
+        };
+        index = index + 1;
+    end
 
     -- if 1, do bottom
     if not sw_frame.settings_frame.icon_overlay[2] then
@@ -12390,6 +12468,10 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
                 frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.cost));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.cast_time));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit then
+                frame_info.overlay_frames[i]:SetText(string.format("%d%%", 100*stats.hit));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance then
+                frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
             end
             frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
                                                       sw_frame.settings_frame.icon_overlay[i].color[2], 
@@ -12442,7 +12524,7 @@ local function update_spell_icons(loadout)
     -- update action bar icons
     for k, v in pairs(__sw__icon_frames.bars) do
 
-        if v.frame:IsShown() then
+        if v.frame and v.frame:IsShown() then
 
             local id = v.spell_id;
             local spell_name = GetSpellInfo(id);
