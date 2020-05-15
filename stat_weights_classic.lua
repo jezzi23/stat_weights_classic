@@ -9408,8 +9408,8 @@ local function evaluate_spell(spell_data, spell_name, loadout)
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
-       min(1, stats.crit),
-       min(1, stats.ot_crit),
+       max(0, min(1, stats.crit)),
+       max(0, min(1, stats.ot_crit)),
        stats.spell_crit_mod,
        stats.hit,
        stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
@@ -9423,8 +9423,8 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power + 1,
-        min(1, stats.crit),
-        min(1, stats.ot_crit),
+        max(0, min(1, stats.crit)),
+        max(0, min(1, stats.ot_crit)),
         stats.spell_crit_mod,
         stats.hit,
         stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
@@ -9437,8 +9437,8 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power,
-        min(1, stats.crit_delta_1),
-        min(1, stats.ot_crit_delta_1),
+        max(0, min(1, stats.crit_delta_1)),
+        max(0, min(1, stats.ot_crit_delta_1)),
         stats.spell_crit_mod,
         stats.hit,
         stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
@@ -9451,8 +9451,8 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power,
-        min(1, stats.crit),
-        min(1, stats.ot_crit),
+        max(0, min(1, stats.crit)),
+        max(0, min(1, stats.ot_crit)),
         stats.spell_crit_mod,
         stats.hit_delta_1,
         stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
@@ -9460,7 +9460,6 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         stats.cost, spell_data.school,
         spell_name, loadout
     );
-
 
     local spell_effect_1sp_delta = dmg_1_extra_sp.expectation - spell_effect.expectation;
     local spell_effect_1crit_delta = spell_effect_extra_1crit.expectation - spell_effect.expectation;
@@ -11805,7 +11804,7 @@ end
 
 local function gather_spell_icons()
 
-    local action_bar_frames = {};
+    local action_bar_frame_names = {};
     local spell_book_frames = {};
 
     local index = 1;
@@ -11816,7 +11815,7 @@ local function gather_spell_icons()
         for i = 1, 16 do
 
             spell_book_frames[i] = { 
-                frame = getfenv()["SpellButton"..i]
+                frame = getfenv()["SpellButton"..i];
             };
         end
     end
@@ -11832,25 +11831,20 @@ local function gather_spell_icons()
     if IsAddOnLoaded("Bartender4") then -- check for some common addons if they overrite spellbook frames
 
         for i = 1, 120 do
-            action_bar_frames[i] = {
-                frame = getfenv()["BT4Button"..i]
-            };
+            action_bar_frame_names[i] = "BT4Button"..i;
         end
-        action_bar_addon_name = "Bartender4";
 
     elseif IsAddOnLoaded("ElvUI") then -- check for some common addons if they overrite spellbook frames
 
         local elvi_bar_order_to_match_action_ids = {1, 6, 5, 4, 2, 3, 7, 8, 9, 10};
         for i = 1, 10 do
             for j = 1, 12 do
-                action_bar_frames[index] = {
-                    frame = getfenv()["ElvUI_Bar"..elvi_bar_order_to_match_action_ids[i].."Button"..j]
-                };
+                action_bar_frame_names[index] = 
+                    "ElvUI_Bar"..elvi_bar_order_to_match_action_ids[i].."Button"..j;
 
                 index = index + 1;
             end
         end
-        action_bar_addon_name = "ElvUI";
 
     elseif IsAddOnLoaded("Dominos") then -- check for some common addons if they overrite spellbook frames
 
@@ -11861,20 +11855,16 @@ local function gather_spell_icons()
         index = 1;
         for k, v in pairs(bars) do
             for j = 1, 12 do
-                action_bar_frames[index] = {
-                    frame = getfenv()[v..j]
-                };
+                action_bar_frame_names[index] = getfenv()[v..j];
 
                 index = index + 1;
             end
         end
-        action_bar_addon_name = "Dominos";
 
         local dominos_button_index = 13;
         for i = index, 120 do
-            action_bar_frames[i] = {
-                frame = getfenv()["DominosActionButton"..dominos_button_index]
-            };
+            action_bar_frame_names[i] = "DominosActionButton"..dominos_button_index;
+
             dominos_button_index = dominos_button_index + 1;
         end
 
@@ -11886,27 +11876,105 @@ local function gather_spell_icons()
         index = 1;
         for k, v in pairs(bars) do
             for j = 1, 12 do
-                action_bar_frames[index] = {
-                    frame = getfenv()[v..j]
-                };
+                action_bar_frame_names[index] = getfenv()[v..j];
 
                 index = index + 1;
             end
         end
     end
 
-    for i = 1, 120 do
+    local action_bar_frames_of_interest = {};
 
-        if action_bar_frames[i] then
-            action_bar_frames[i].overlay_frames = {nil, nil, nil};
+    local index = 1;
+    for k, v in pairs(action_bar_frame_names) do
+
+        local frame = getfenv()[v];
+        if frame then
+
+            local action_id = frame:GetAttribute("action");
+                
+            local spell_id = 0;
+            local action_type, id, _ = GetActionInfo(action_id);
+            if action_type == "macro" then
+                 spell_id, _ = GetMacroSpell(id);
+            elseif action_type == "spell" then
+                 spell_id = id;
+            else
+                spell_id = 0;
+            end
+            if not spells[spell_id] then
+                spell_id = 0;
+            end
+
+            if spell_id ~= 0 then
+                local index = frame:GetAttribute("action");
+
+                action_bar_frames_of_interest[index] = {};
+
+                action_bar_frames_of_interest[index].spell_id = spell_id;
+                action_bar_frames_of_interest[index].frame = frame; 
+                action_bar_frames_of_interest[index].overlay_frames = {nil, nil, nil}
+            end
         end
     end
 
     return {
-        bars = action_bar_frames,
+        bar_names = action_bar_frame_names,
+        bars = action_bar_frames_of_interest,
         book = spell_book_frames
     };
+end
+
+local function on_special_action_bar_changed()
+
+    for i = 1, 12 do
     
+        local frame = getfenv()[__sw__icon_frames.bar_names[i]];
+        if frame then
+    
+            local action_id = frame:GetAttribute("action");
+                
+            local spell_id = 0;
+            local action_type, id, _ = GetActionInfo(action_id);
+            if action_type == "macro" then
+                 spell_id, _ = GetMacroSpell(id);
+            elseif action_type == "spell" then
+                 spell_id = id;
+            else
+                spell_id = 0;
+            end
+            if not spells[spell_id] then
+                spell_id = 0;
+            end
+    
+            if spell_id ~= 0 then
+    
+                if __sw__icon_frames.bars[i] then
+                    for j = 1, 3 do
+                        if __sw__icon_frames.bars[i].overlay_frames[j] then
+                            __sw__icon_frames.bars[i].overlay_frames[j]:SetText("");
+                            __sw__icon_frames.bars[i].overlay_frames[j]:Hide();
+                        end
+                    end
+                end
+    
+                __sw__icon_frames.bars[i] = {};
+                __sw__icon_frames.bars[i].spell_id = spell_id;
+                __sw__icon_frames.bars[i].frame = frame; 
+                __sw__icon_frames.bars[i].overlay_frames = {nil, nil, nil}
+            else
+                if __sw__icon_frames.bars[i] then
+                    for j = 1, 3 do
+                        if __sw__icon_frames.bars[i].overlay_frames[j] then
+                            __sw__icon_frames.bars[i].overlay_frames[j]:SetText("");
+                            __sw__icon_frames.bars[i].overlay_frames[j]:Hide();
+                        end
+                    end
+                end
+                __sw__icon_frames.bars[i] = nil; 
+            end
+        end
+    end
 end
 
 local function create_sw_base_gui()
@@ -11926,6 +11994,11 @@ local function create_sw_base_gui()
     sw_frame:RegisterEvent("ADDON_LOADED");
     sw_frame:RegisterEvent("PLAYER_LOGIN");
     sw_frame:RegisterEvent("PLAYER_LOGOUT");
+    sw_frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED");
+    --sw_frame:RegisterEvent("UPDATE_BONUS_ACTIONBAR");
+    --sw_frame:RegisterEvent("ACTIONBAR_UPDATE_STATE");
+    sw_frame:RegisterEvent("UPDATE_STEALTH");
+    sw_frame:RegisterEvent("UPDATE_SHAPESHIFT_FORM");
 
     sw_frame:SetWidth(370);
     sw_frame:SetHeight(600);
@@ -12056,7 +12129,49 @@ local function create_sw_base_gui()
             end
             __sw__icon_frames = gather_spell_icons();
             update_icon_overlay_settings();
-        
+
+        elseif event ==  "ACTIONBAR_SLOT_CHANGED"  then
+
+            local action_id = msg;
+
+            local spell_id = 0;
+            local action_type, id, _ = GetActionInfo(action_id);
+            if action_type == "macro" then
+                spell_id, _ = GetMacroSpell(id);
+            elseif action_type == "spell" then
+                 spell_id = id;
+            else
+                spell_id = 0;
+            end
+            if not spells[spell_id] then
+                spell_id = 0;
+            end
+
+            if spell_id ~= 0 then
+                __sw__icon_frames.bars[action_id] = {};
+                __sw__icon_frames.bars[action_id].spell_id = spell_id;
+                __sw__icon_frames.bars[action_id].frame = getfenv()[__sw__icon_frames.bar_names[action_id]]; 
+                __sw__icon_frames.bars[action_id].overlay_frames = {nil, nil, nil}
+            else
+                if __sw__icon_frames.bars[action_id] then
+                    for i = 1, 3 do
+                        if __sw__icon_frames.bars[action_id].overlay_frames[i] then
+                            __sw__icon_frames.bars[action_id].overlay_frames[i]:SetText("");
+                            __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
+                        end
+                        __sw__icon_frames.bars[action_id].overlay_frames[i] = nil;
+                    end
+                end
+                __sw__icon_frames.bars[action_id] = nil; 
+            end
+
+            if IsStealthed() or GetShapeshiftForm() ~= 0 then
+                on_special_action_bar_changed();
+            end
+
+        elseif event ==  "UPDATE_STEALTH" or event == "UPDATE_SHAPESHIFT_FORM" then
+
+            on_special_action_bar_changed();
         end
     end
     );
@@ -12226,8 +12341,8 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
-       min(1, stats.crit),
-       min(1, stats.ot_crit),
+       max(0, min(1, stats.crit)),
+       max(0, min(1, stats.ot_crit)),
        stats.spell_crit_mod,
        stats.hit,
        stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
@@ -12290,180 +12405,63 @@ __sw__icon_frames = {};
 local function update_spell_icons(loadout)
 
     -- update spell book icons
-    for k, v in pairs(__sw__icon_frames.book) do
-        if v.frame then
-            spell_name = v.frame.SpellName:GetText();
-            spell_rank_name = v.frame.SpellSubName:GetText();
+    if SpellBookFrame:IsShown() then
+        for k, v in pairs(__sw__icon_frames.book) do
+            if v.frame then
+                spell_name = v.frame.SpellName:GetText();
+                spell_rank_name = v.frame.SpellSubName:GetText();
 
-            local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
-            if v.frame and v.frame:IsShown() then
-                if spells[id] then
-                    local spell_name = GetSpellInfo(id);
-                    -- TODO: icon overlay not working for healing version checkbox
-                    if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
+                local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
+                if v.frame and v.frame:IsShown() then
+                    if spells[id] then
+                        local spell_name = GetSpellInfo(id);
+                        -- TODO: icon overlay not working for healing version checkbox
+                        if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                            update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
+                        else
+                            update_spell_icon_frame(v, spells[id], spell_name, loadout);
+                        end
                     else
-                        update_spell_icon_frame(v, spells[id], spell_name, loadout);
+                        for i = 1, 3 do
+                            if v.overlay_frames[i] then
+                                v.overlay_frames[i]:Hide();
+                            end
+                        end
                     end
-                else
+                elseif v.frame and not v.frame:IsShown() then
                     for i = 1, 3 do
                         if v.overlay_frames[i] then
                             v.overlay_frames[i]:Hide();
                         end
                     end
                 end
-            elseif v.frame and not v.frame:IsShown() then
-                for i = 1, 3 do
-                    if v.overlay_frames[i] then
-                        v.overlay_frames[i]:Hide();
-                    end
-                end
             end
         end
     end
 
-    -- Useful link for actionslot reference https://wowwiki.fandom.com/wiki/ActionSlot
-
     -- update action bar icons
-    if not action_bar_addon_name or action_bar_addon_name == "Dominos"  then
+    for k, v in pairs(__sw__icon_frames.bars) do
 
-        local page = GetActionBarPage();
-        local bonus_bar_offset = GetBonusBarOffset();
+        if v.frame:IsShown() then
 
-        for k, v in pairs(__sw__icon_frames.bars) do
-                
-            local action_type, id, _ = GetActionInfo(k);
-            if action_type == "macro" then
-                 id, _ = GetMacroSpell(id);
-            end
-            if v.frame and v.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
-                local spell_name = GetSpellInfo(id);
+            local id = v.spell_id;
+            local spell_name = GetSpellInfo(id);
 
-                if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                    update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
-                else
-                    update_spell_icon_frame(v, spells[id], spell_name, loadout);
-                end
+            if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
             else
-                for i = 1, 3 do
-                    if v.overlay_frames[i] then
-                        v.overlay_frames[i]:Hide();
-                    end
-                end
-            end
-         end
-
-         if page ~= 1 then
-
-             for i = 1, 12 do
-                local action_id = (page-1)*12 + i;
-                local action_type, id, _ = GetActionInfo(action_id);
-                if action_type == "macro" then
-                     id, _ = GetMacroSpell(id);
-                end
-                local action_frame = __sw__icon_frames.bars[i];
-                if action_frame.frame and action_frame.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
-                    local spell_name = GetSpellInfo(id);
-                    if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout);
-                    else
-                        update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
-                    end
-                else
-
-                    for i = 1, 3 do
-                        if action_frame.overlay_frames[i] then
-                            action_frame.overlay_frames[i]:Hide();
-                        end
-                    end
-                end
-            end
-         end
-        if bonus_bar_offset ~= 0 then
-
-            --if class == "DRUID" and IsStealthed() then
-            --    bonus_bar_offset = bonus_bar_offset + 1; 
-            --end
-
-            for i = 1, 12 do
-               local action_id = 72 + (bonus_bar_offset -1)* 12 + i;
-               local action_type, id, _ = GetActionInfo(action_id);
-               if action_type == "macro" then
-                    id, _ = GetMacroSpell(id);
-               end
-
-               local action_frame = __sw__icon_frames.bars[i];
-               if action_frame.frame and action_frame.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
-                   local spell_name = GetSpellInfo(id);
-                   update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
-               else
-
-                   for i = 1, 3 do
-                       if action_frame.overlay_frames[i] then
-                           action_frame.overlay_frames[i]:Hide();
-                       end
-                   end
-               end
-           end
-        end
-    elseif action_bar_addon_name == "Bartender4" or action_bar_addon_name == "ElvUI" then
-        for k, v in pairs(__sw__icon_frames.bars) do
-            local action_type, id, _ = GetActionInfo(k);
-            if action_type == "macro" then
-                 id, _ = GetMacroSpell(id);
-            end
-            if v.frame and v.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
-                local spell_name = GetSpellInfo(id);
-
-                if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                    update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
-                else
-                    update_spell_icon_frame(v, spells[id], spell_name, loadout);
-                end
-            else
-                for i = 1, 3 do
-                    if v.overlay_frames[i] then
-                        v.overlay_frames[i]:Hide();
-                    end
-                end
-            end
-        end
-
-        local bonus_bar_offset = GetBonusBarOffset();
-        if bonus_bar_offset ~= 0 then
-
-            if class == "DRUID" and IsStealthed() then
-                bonus_bar_offset = bonus_bar_offset + 1; 
+                update_spell_icon_frame(v, spells[id], spell_name, loadout);
             end
 
-            for i = 1, 12 do
-               local action_id = 72 + (bonus_bar_offset -1)* 12 + i;
-               local action_type, id, _ = GetActionInfo(action_id);
-               if action_type == "macro" then
-                    id, _ = GetMacroSpell(id);
-               end
-               local action_frame = __sw__icon_frames.bars[i];
-               if action_frame.frame and action_frame.frame:IsShown() and (action_type == "spell" or action_type == "macro") and spells[id] then
-                   local spell_name = GetSpellInfo(id);
-
-                    if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(action_frame, spells[id].healing_version, spell_name, loadout);
-                    else
-                        update_spell_icon_frame(action_frame, spells[id], spell_name, loadout);
-                    end
-               else
-
-                   for i = 1, 3 do
-                       if action_frame.overlay_frames[i] then
-                           action_frame.overlay_frames[i]:Hide();
-                       end
-                   end
-               end
-           end
+        else
+            for i = 1, 3 do
+                if v.overlay_frames[i] then
+                    v.overlay_frames[i]:Hide();
+                end
+            end
         end
     end
 end
-
 
 local snapshot_time_since_last_update = 0;
 
