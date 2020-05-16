@@ -6317,6 +6317,8 @@ local function empty_loadout()
         has_target = false; 
 
         stats = {0, 0, 0, 0, 0},
+        mp5 = 0,
+        regen_while_casting = 0,
 
         spell_dmg_by_school = {0, 0, 0, 0, 0, 0, 0},
         healing_power = 0,
@@ -6374,13 +6376,28 @@ local function empty_loadout()
     };
 end
 
+-- add things to loadout that a loadout is assumed to have but don't due to an older version of a loadout
+local function satisfy_loadout(loadout)
+
+    if not loadout.mp5 then
+        loadout.mp5 = 0;
+    end
+    if not loadout.regen_while_casting then
+        loadout.regen_while_casting = 0;
+    end
+end
+
+
 local function negate_loadout(loadout)
+
+    satisfy_loadout(loadout);
 
     local negated = loadout;
 
     for i = 1, 5 do
         negated.stats[i] = -loadout.negated.stats[i];
     end
+    negated.mp5 = -loadout.negated.mp5;
 
     for i = 1, 7 do
         negated.spell_dmg_by_school[i] = -loadout.spell_dmg_by_school[i];
@@ -6426,7 +6443,9 @@ end
 -- deep copy to avoid reference entanglement
 local function loadout_copy(loadout)
 
-    local cpy = {};
+    satisfy_loadout(loadout);
+
+    local cpy = empty_loadout();
 
     cpy.name = loadout.name;
     cpy.lvl = loadout.lvl;
@@ -6442,6 +6461,9 @@ local function loadout_copy(loadout)
     for i = 1, 5 do
         cpy.stats[i] = loadout.stats[i];
     end
+
+    cpy.mp5 = loadout.mp5;
+    cpy.regen_while_casting = loadout.regen_while_casting;
 
     cpy.healing_power = loadout.healing_power;
 
@@ -6556,18 +6578,17 @@ local function loadout_copy(loadout)
     return cpy;
 end
 
--- add things to loadout that a loadout is assumed to have but don't due to an older version of a loadout
-local function satifsy_loadout()
-    
-end
-
 local function loadout_add(primary, diff)
+
+    satisfy_loadout(primary);
 
     local added = loadout_copy(primary);
 
     for i = 1, 5 do
         added.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[i]);
     end
+
+    added.mp5 = primary.mp5 + diff.mp5;
 
     local sp_gained_from_spirit = diff.stats[stat.spirit] * (1 + primary.stat_mod[stat.spirit]) * primary.spiritual_guidance * 0.05;
     for i = 1, 7 do
@@ -6935,6 +6956,11 @@ local function apply_talents(loadout)
             for k, v in pairs(instants) do
                 new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.02;
             end
+        end
+        -- meditation
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
+        if pts ~= 0 then
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
         end
         -- force of will
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
@@ -7626,6 +7652,13 @@ local function apply_set_bonuses(loadout)
             -- incr counter
             new_loadout.num_set_pieces[set_bonuses[id]] = new_loadout.num_set_pieces[set_bonuses[id]] + 1;
         end
+        local item_link = GetInventoryItemLink("player", item);
+        if item_link then
+            local item_stats = GetItemStats(item_link);
+            if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
+                new_loadout.mp5 = new_loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
+            end
+        end
     end
 
     if class == "PRIEST" then
@@ -7654,6 +7687,9 @@ local function apply_set_bonuses(loadout)
                 end
             end
         end
+        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + 0.15;
+        end
 
     elseif class == "DRUID" then
 
@@ -7674,20 +7710,25 @@ local function apply_set_bonuses(loadout)
             end
         end
 
-        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
-
-            local regrowth = localized_spell_name("Regrowth");
-            if not new_loadout.ability_cast_mod[regrowth] then
-                new_loadout.ability_cast_mod[regrowth] = 0;
-            end
-               
-            if new_loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
         
-                local rejuv = localized_spell_name("Rejuvenation");
-                if not new_loadout.ability_extra_ticks[rejuv] then
-                    new_loadout.ability_extra_ticks[rejuv] = 0;
+        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + 0.15;
+            if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
+
+                local regrowth = localized_spell_name("Regrowth");
+                if not new_loadout.ability_cast_mod[regrowth] then
+                    new_loadout.ability_cast_mod[regrowth] = 0;
                 end
-                new_loadout.ability_extra_ticks[rejuv] = new_loadout.ability_extra_ticks[rejuv] + 1;
+                   
+                if new_loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
+            
+                    local rejuv = localized_spell_name("Rejuvenation");
+                    if not new_loadout.ability_extra_ticks[rejuv] then
+                        new_loadout.ability_extra_ticks[rejuv] = 0;
+                    end
+                    new_loadout.ability_extra_ticks[rejuv] = new_loadout.ability_extra_ticks[rejuv] + 1;
+                end
             end
         end
 
@@ -9404,9 +9445,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     };
 end
 
-local function evaluate_spell(spell_data, spell_name, loadout)
-
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
+local function evaluate_spell(stats, spell_data, spell_name, loadout)
 
     local spell_effect = spell_info(
        spell_data.base_min, spell_data.base_max, 
@@ -9479,7 +9518,89 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         sp_per_hit = sp_per_hit,
 
         spell_data = spell_effect,
-        stats = stats
+        spell_data_1_sp = dmg_1_extra_sp,
+        spell_data_1_crit = spell_effect_extra_1crit,
+        spell_data_1_hit = spell_effect_extra_1hit
+    };
+end
+
+local function race_to_the_bottom_sim(spell_effect, mp5, spirit, int, mana, loadout)
+
+    local num_casts = 0;
+    local effect = 0;
+
+    local mp2 = (13 + spirit/4) * loadout.regen_while_casting + (mp5/5)*2;
+    if mp2/2 >= spell_effect.cost/spell_effect.cast_time then
+        return {
+            num_casts = 1/0,
+            num_casts = 1/0
+        };
+    end
+
+    while mana >= spell_effect.cost do
+
+        local num_casts_round = mana/spell_effect.cost;
+        num_casts = num_casts + num_casts_round;
+        effect = effect + spell_effect.expectation * num_casts_round;
+
+        local mana_from_mp2 = (mp2/2)*(num_casts_round * spell_effect.cast_time);
+
+        mana = mana - num_casts_round * spell_effect.cost + mana_from_mp2;
+    end
+
+    effect = effect + spell_effect.expectation * mana/spell_effect.cost;
+    num_casts = num_casts + mana/spell_effect.cost;
+    
+    return {
+        num_casts = num_casts,
+        effect = effect,
+        time_until_oom = num_casts * spell_effect.cast_time
+    };
+end
+
+local function race_to_the_bottom_stat_weights(
+        stats, spell_effect_normal, spell_effect_1_sp, spell_effect_1_crit, spell_effect_1_hit, loadout)
+
+    local mana = UnitPower("player", 0);
+
+    local until_oom_normal = 
+        race_to_the_bottom_sim(spell_effect_normal, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], mana, loadout);
+    local until_oom_1_sp = 
+        race_to_the_bottom_sim(spell_effect_1_sp, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], mana, loadout);
+    local until_oom_1_crit = 
+        race_to_the_bottom_sim(spell_effect_1_crit, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], mana, loadout);
+    local until_oom_1_hit = 
+        race_to_the_bottom_sim(spell_effect_1_hit, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], mana, loadout);
+    local until_oom_1_mp5 = 
+        race_to_the_bottom_sim(spell_effect_normal, loadout.mp5 + 1, loadout.stats[stat.spirit], loadout.stats[stat.int], mana, loadout);
+    local until_oom_1_spirit = 
+        race_to_the_bottom_sim(spell_effect_normal, loadout.mp5, loadout.stats[stat.spirit] + 1, loadout.stats[stat.int], mana, loadout);
+    local until_oom_1_int = 
+        race_to_the_bottom_sim(spell_effect_normal, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int] + 1, mana + 10, loadout);
+    
+    local diff_1_sp = until_oom_1_sp.effect - until_oom_normal.effect;
+    local diff_1_crit = until_oom_1_crit.effect - until_oom_normal.effect;
+    local diff_1_hit = until_oom_1_hit.effect - until_oom_normal.effect;
+    local diff_1_mp5 = until_oom_1_mp5.effect - until_oom_normal.effect;
+    local diff_1_spirit = until_oom_1_spirit.effect - until_oom_normal.effect;
+    local diff_1_int = until_oom_1_int.effect - until_oom_normal.effect;
+
+    local sp_per_crit = diff_1_crit/diff_1_sp;
+    local sp_per_hit = diff_1_hit/diff_1_sp;
+    local sp_per_mp5 = diff_1_mp5/diff_1_sp;
+    local sp_per_spirit = diff_1_spirit/diff_1_sp;
+    local sp_per_int = diff_1_int/diff_1_sp;
+
+    return {
+        effect_per_1_sp = diff_1_sp,
+
+        sp_per_crit = sp_per_crit,
+        sp_per_hit = sp_per_hit,
+        sp_per_mp5 = sp_per_mp5,
+        sp_per_spirit = sp_per_spirit,
+        sp_per_int = sp_per_int,
+
+        normal = until_oom_normal
     };
 end
 
@@ -9492,7 +9613,8 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             return;
         end
 
-        local eval = evaluate_spell(spell, spell_name, loadout);
+        local stats = loadout_stats_for_spell(spell, spell_name, loadout); 
+        local eval = evaluate_spell(stats, spell, spell_name, loadout);
         
         local direct_coef, ot_coef = spell_coef(spell, spell_name);
 
@@ -9536,13 +9658,13 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
                 if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
                     -- dmg spells with real direct range
-                    if eval.stats.hit ~= 1 then
+                    if stats.hit ~= 1 then
                         if spell_name == localized_spell_name("Searing Totem") then
                             local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
                             tooltip:AddLine(
                                 string.format("Normal %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                               effect, 
-                                              eval.stats.hit*100,
+                                              stats.hit*100,
                                               (eval.spell_data.min_noncrit + eval.spell_data.max_noncrit)*num_ticks/2,
                                               spell.over_time_duration,
                                               math.floor(eval.spell_data.min_noncrit), 
@@ -9552,7 +9674,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                         else
                             tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
                                                            effect, 
-                                                           eval.stats.hit*100,
+                                                           stats.hit*100,
                                                            math.floor(eval.spell_data.min_noncrit), 
                                                            math.ceil(eval.spell_data.max_noncrit)),
                                              232.0/255, 225.0/255, 32.0/255);
@@ -9566,17 +9688,17 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                         232.0/255, 225.0/255, 32.0/255);
                     end
                 else
-                    if eval.stats.hit ~= 1 then
+                    if stats.hit ~= 1 then
                         tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
                                                       effect,
-                                                      eval.stats.hit*100,
+                                                      stats.hit*100,
                                                       math.floor(eval.spell_data.min_noncrit)),
                                                       --string.format("%.0f", eval.spell_data.min_noncrit)),
                                         232.0/255, 225.0/255, 32.0/255);
                     else
                         tooltip:AddLine(string.format("Normal %s: %d", 
                                                       effect,
-                                                      eval.stats.hit*100,
+                                                      stats.hit*100,
                                                       math.floor(eval.spell_data.min_noncrit)),
                                                       --string.format("%.0f", eval.spell_data.min_noncrit)),
                                         232.0/255, 225.0/255, 32.0/255);
@@ -9585,11 +9707,11 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 end
             end
             if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
-                if eval.stats.crit ~= 0 then
+                if stats.crit ~= 0 then
                     if loadout.ignite ~= 0 and eval.spell_data.ignite_min > 0 then
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d (ignites for %d-%d)", 
                                                       effect, 
-                                                      eval.stats.crit*100, 
+                                                      stats.crit*100, 
                                                       math.floor(eval.spell_data.min_crit), 
                                                       math.ceil(eval.spell_data.max_crit),
                                                       math.floor(eval.spell_data.ignite_min), 
@@ -9601,7 +9723,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                         tooltip:AddLine(
                             string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                           effect, 
-                                          eval.stats.crit*100, 
+                                          stats.crit*100, 
                                           (eval.spell_data.min_crit + eval.spell_data.max_crit)*num_ticks/2,
                                           spell.over_time_duration,
                                           math.floor(eval.spell_data.min_crit), 
@@ -9611,7 +9733,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                     else
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d", 
                                                       effect, 
-                                                      eval.stats.crit*100, 
+                                                      stats.crit*100, 
                                                       math.floor(eval.spell_data.min_crit), 
                                                       math.ceil(eval.spell_data.max_crit)),
                                        252.0/255, 69.0/255, 3.0/255);
@@ -9627,11 +9749,11 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             -- round over time num for niceyness
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
 
-            if eval.stats.hit ~= 1 then
+            if stats.hit ~= 1 then
                 if spell_name == localized_spell_name("Curse of Agony") then
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%.0f-%.0f-%.0f per tick for %d ticks)",
                                                   effect,
-                                                  eval.stats.hit * 100,
+                                                  stats.hit * 100,
                                                   eval.spell_data.ot_if_hit, 
                                                   eval.spell_data.ot_duration, 
                                                   eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * 0.6,
@@ -9642,7 +9764,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 else
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
                                                   effect,
-                                                  eval.stats.hit * 100,
+                                                  stats.hit * 100,
                                                   eval.spell_data.ot_if_hit, 
                                                   eval.spell_data.ot_duration, 
                                                   math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
@@ -9668,7 +9790,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 -- over time can crit (e.g. arcane missiles)
                 tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
-                                              eval.stats.crit*100, 
+                                              stats.crit*100, 
                                               eval.spell_data.ot_crit_if_hit, 
                                               eval.spell_data.ot_duration, 
                                               math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
@@ -9701,7 +9823,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
         if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
             effect_extra_str = string.format(" (incl: %.1f%% improved shadow bolt uptime)", 
-                                             100*(1 - math.pow(1-eval.stats.crit, 4)));
+                                             100*(1 - math.pow(1-stats.crit, 4)));
         end
         if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell_data.cast_time > 1.5 then
             effect_extra_str = " (incl: nature's grace)";
@@ -9768,19 +9890,34 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
           tooltip:AddLine(
             string.format("Stats: sp %d, crit %.2f, crit_mod %.2f, hit %.2f, vuln_mod %.2f, gmod %.2f, mod %.2f, bmod %.2f, cost %f, cast %f",
-                          eval.stats.spell_power,
-                          eval.stats.crit,
-                          eval.stats.spell_crit_mod,
-                          eval.stats.hit,
-                          eval.stats.target_vuln_mod,
-                          eval.stats.global_mod,
-                          eval.stats.spell_mod,
-                          eval.stats.spell_mod_base,
-                          eval.stats.cost,
-                          eval.stats.cast_speed
+                          stats.spell_power,
+                          stats.crit,
+                          stats.spell_crit_mod,
+                          stats.hit,
+                          stats.target_vuln_mod,
+                          stats.global_mod,
+                          stats.spell_mod,
+                          stats.spell_mod_base,
+                          stats.cost,
+                          stats.cast_speed
             
           ));
       end
+
+      -- experimental race to the bottom test
+      local race_to_bottom = race_to_the_bottom_stat_weights(
+        stats, eval.spell_data, eval.spell_data_1_sp, eval.spell_data_1_crit, eval.spell_data_1_hit, loadout
+      );
+
+      tooltip:AddLine("Time until oom "..string.format("%.3f sec",race_to_bottom.normal.time_until_oom), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Effect until oom: "..string.format("%.3f",race_to_bottom.normal.effect), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Casts until oom: "..string.format("%.3f",race_to_bottom.normal.num_casts), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Effect per 1 sp: "..string.format("%.3f",race_to_bottom.effect_per_1_sp), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Spell power per 1% crit: "..string.format("%.3f",race_to_bottom.sp_per_crit), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Spell power per 1% hit: "..string.format("%.3f",race_to_bottom.sp_per_hit), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Spell power per MP5: "..string.format("%.3f",race_to_bottom.sp_per_mp5), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Spell power per spirit: "..string.format("%.3f",race_to_bottom.sp_per_spirit), 0.0, 1.0, 0.0);
+      tooltip:AddLine("Spell power per intellect: "..string.format("%.3f",race_to_bottom.sp_per_int), 0.0, 1.0, 0.0);
 
       end_tooltip_section(tooltip);
 
@@ -9795,7 +9932,8 @@ local function print_spell(spell, spell_name, loadout)
 
     if spell then
 
-        local eval = evaluate_spell(spell, spell_name, loadout);
+        local stats = loadout_stats_for_spell(spell, spell_name, loadout); 
+        local eval = evaluate_spell(stats, spell, spell_name, loadout);
         
         local direct_coef, ot_oef = spell_coef(spell, spell_name);
 
@@ -9931,8 +10069,11 @@ local function spell_diff(spell_data, spell_name, loadout, diff)
 
     local loadout_diffed = loadout_add(loadout, diff);
 
-    local expectation_loadout = evaluate_spell(spell_data, spell_name, loadout);
-    local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
+    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
+    local stats_diffed = loadout_stats_for_spell(spell_data, spell_name, loadout_diffed); 
+
+    local expectation_loadout = evaluate_spell(stats, spell_data, spell_name, loadout);
+    local expectation_loadout_diffed = evaluate_spell(stats_diffed, spell_data, spell_name, loadout_diffed);
     
     return {
         diff_ratio = 100 * 
@@ -12659,4 +12800,4 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
---__sw__use_defaults__ = 1;
+----__sw__use_defaults__ = 1;
