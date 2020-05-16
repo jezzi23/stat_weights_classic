@@ -9279,8 +9279,11 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     -- apply global haste
     cast_speed = cast_speed * (1 - loadout.haste_mod);
 
-    if spell_name == localized_spell_name("Flash Heal") or spell_name == localized_spell_name("Regrowth") then
-        -- from set bonuses, flash heal and regrowth seem to be the only exceptions to ignore 1.5 gcd on all spells
+    if spell_name == localized_spell_name("Flash Heal") or spell_name == localized_spell_name("Regrowth") or 
+        spell_name == localized_spell_name("Immolate") then
+        -- from set bonuses, flash heal and regrowth, immolate seem to be the only exceptions to ignore 1.5 gcd on all spells
+
+        -- TODO: make sure that this branch isn't taken for these spells without the set bonuses, e.g. with 30% berserk
         cast_speed = math.max(cast_speed, 1.3);
     else
         cast_speed = math.max(cast_speed, 1.5);
