@@ -196,6 +196,11 @@ local tooltip_stat_display = {
     cast_and_tap = bit.lshift(1,14)
 };
 
+local sim_type = {
+    spam_cast = 1,
+    race_to_the_bottom = 2
+};
+
 local set_tiers = {
     pve_0 = 1,
     pve_0_5 = 2,
@@ -10014,7 +10019,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
       end
 
-      tooltip:AddLine("Spam Cast Scenario", 1, 1, 1);
+      tooltip:AddLine("Infinite Spam Cast Scenario", 1, 1, 1);
       if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
         tooltip:AddLine(string.format("%s: %.1f", 
                                       effect_per_sec,
@@ -11372,8 +11377,52 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.stats[stat_ids_in_ui.sp].editbox:SetText("1");
 
-    -- header for spells
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
+
+    -- sim type button
+    sw_frame.stat_comparison_frame.sim_type_button = 
+        CreateFrame("Button", "sw_sim_type_button", sw_frame.stat_comparison_frame, "UIDropDownMenuTemplate"); 
+    sw_frame.stat_comparison_frame.sim_type_button:SetPoint("TOPLEFT", -5, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.sim_type_button.init_func = function()
+        UIDropDownMenu_Initialize(sw_frame.stat_comparison_frame.sim_type_button, function()
+            
+            if sw_frame.stat_comparison_frame.sim_type == sim_type.spam_cast then 
+                UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
+            else
+                UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
+            end
+            UIDropDownMenu_SetWidth(sw_frame.stat_comparison_frame.sim_type_button, 130);
+
+            UIDropDownMenu_AddButton(
+                {
+                    text = "Infinite Spam Cast",
+                    func = function()
+
+                        sw_frame.stat_comparison_frame.sim_type = sim_type.spam_cast;
+                        UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Show();
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Hide();
+                    end
+                }
+            );
+            UIDropDownMenu_AddButton(
+                {
+                    text = "Race to the Bottom",
+                    func = function()
+
+                        sw_frame.stat_comparison_frame.sim_type = sim_type.race_to_the_bottom;
+                        UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Hide();
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Show();
+                    end
+                }
+            );
+        end);
+    end;
+
+    sw_frame.stat_comparison_frame.sim_type_button:SetText("Simulation type");
+
+    -- header for spells
     sw_frame.stat_comparison_frame.export_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.export_button:SetScript("OnClick", function()
 
@@ -11390,6 +11439,7 @@ local function create_sw_gui_stat_comparison_frame()
         sw_activate_tab(2);
     end);
 
+
     sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -25, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.export_button:SetHeight(20);
     sw_frame.stat_comparison_frame.export_button:SetWidth(110);
@@ -11400,28 +11450,34 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.line_y_offset_before_dynamic_spells = sw_frame.stat_comparison_frame.line_y_offset;
 
+    sw_frame.stat_comparison_frame.spell_diff_header_spell = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_comparison_frame.spell_diff_header_spell:SetFontObject(font);
+    sw_frame.stat_comparison_frame.spell_diff_header_spell:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_spell:SetText("Spell");
+
     sw_frame.stat_comparison_frame.spell_diff_header_left = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetText("Spell");
-
-    sw_frame.stat_comparison_frame.spell_diff_header_center = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -180, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetText("Change");
+    sw_frame.stat_comparison_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_left:SetText("Change");
 
     sw_frame.stat_comparison_frame.spell_diff_header_center = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetFontObject(font);
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -105, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetText("DMG/HEAL");
 
-    sw_frame.stat_comparison_frame.spell_diff_header_left = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -45, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetText("DPS/HPS");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetFontObject(font);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetPoint("TOPRIGHT", -45, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetText("DPS/HPS");
+
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetFontObject(font);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetPoint("TOPRIGHT", -40, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetText("DURATION");
 
     -- always have at least one
     sw_frame.stat_comparison_frame.spells = {};
+    sw_frame.stat_comparison_frame.sim_type = sim_type.spam_cast;
 
     if UnitLevel("player") == 60 then
 
@@ -12546,6 +12602,11 @@ local function create_sw_base_gui()
 
             create_sw_gui_loadout_frame();
 
+            if __sw__persistent_data_per_char.sim_type then
+                sw_frame.stat_comparison_frame.sim_type = __sw__persistent_data_per_char.sim_type;
+            end
+            sw_frame.stat_comparison_frame.sim_type_button.init_func();
+
             if __sw__persistent_data_per_char.stat_comparison_spells then
 
                 sw_frame.stat_comparison_frame.spells = __sw__persistent_data_per_char.stat_comparison_spells;
@@ -12591,6 +12652,7 @@ local function create_sw_base_gui()
                 __sw__persistent_data_per_char.stat_comparison_spells[k] = {};
                 __sw__persistent_data_per_char.stat_comparison_spells[k].name = v.name;
             end
+            __sw__persistent_data_per_char.sim_type = self.stat_comparison_frame.sim_type;
 
             __sw__persistent_data_per_char.loadouts = {};
             __sw__persistent_data_per_char.loadouts.loadouts_list = {};
@@ -13118,4 +13180,4 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
---__sw__use_defaults__ = 1;
+__sw__use_defaults__ = 1;
