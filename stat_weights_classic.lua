@@ -10060,10 +10060,10 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
       if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
         tooltip:AddLine(effect_per_sp..": "..string.format("%.3f",eval.effect_per_sp), 0.0, 1.0, 0.0);
-        tooltip:AddLine(sp_name.." per 1% crit: "..string.format("%.3f",eval.sp_per_crit), 0.0, 1.0, 0.0);
+        tooltip:AddLine(sp_name.." per 1% Crit: "..string.format("%.3f",eval.sp_per_crit), 0.0, 1.0, 0.0);
 
         if (bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0) then
-            tooltip:AddLine(sp_name.." per 1%  hit: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+            tooltip:AddLine(sp_name.." per 1%  Hit: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
         end
       end
 
@@ -10082,6 +10082,10 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         tooltip:AddLine(sp_name.." per MP5: "..string.format("%.3f",race_to_bottom.sp_per_mp5), 0.0, 1.0, 0.0);
         tooltip:AddLine(sp_name.." per Spirit: "..string.format("%.3f",race_to_bottom.sp_per_spirit), 0.0, 1.0, 0.0);
         tooltip:AddLine(sp_name.." per Intellect: "..string.format("%.3f",race_to_bottom.sp_per_int), 0.0, 1.0, 0.0);
+        tooltip:AddLine(sp_name.." per 1% Crit: "..string.format("%.3f",race_to_bottom.sp_per_crit), 0.0, 1.0, 0.0);
+        if (bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0) then
+            tooltip:AddLine(sp_name.." per 1%  Hit: "..string.format("%.3f",race_to_bottom.sp_per_hit), 0.0, 1.0, 0.0);
+        end
       end
 
       if sw_frame.settings_frame.tooltip_coef:GetChecked() then
@@ -10267,7 +10271,6 @@ end
 local function spell_diff(spell_data, spell_name, loadout, diff, sim_type)
 
     local loadout_diffed = loadout_add(loadout, diff);
-    print("before and after: ", loadout.mana, loadout_diffed.mana);
 
     local expectation_loadout = spell_info_from_loadout_stats(spell_data, spell_name, loadout);
     local expectation_loadout_diffed = spell_info_from_loadout_stats(spell_data, spell_name, loadout_diffed);
@@ -10308,6 +10311,7 @@ end
 local function active_loadout_copy()
 
     local loadout = active_loadout_base();
+    satisfy_loadout(loadout);
 
     if loadout.is_dynamic_loadout then
         loadout_modified = dynamic_loadout(loadout);
@@ -11435,7 +11439,7 @@ local function create_sw_gui_stat_comparison_frame()
             
             if sw_frame.stat_comparison_frame.sim_type == simulation_type.spam_cast then 
                 UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
-            elseif sw_frame.stat_comparison_frame.sim_type == simulation_type.spam_cast then 
+            elseif sw_frame.stat_comparison_frame.sim_type == simulation_type.race_to_the_bottom then 
                 UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
             end
             UIDropDownMenu_SetWidth(sw_frame.stat_comparison_frame.sim_type_button, 130);
