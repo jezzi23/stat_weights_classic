@@ -149,17 +149,13 @@ local target_debuffs1 = {
 local stat_ids_in_ui = {
     int = 1,
     spirit = 2,
-    spell_crit = 3,
-    spell_hit = 4,
+    mana = 3,
+    mp5 = 4,
     sp = 5,
     spell_damage = 6,
     healing_power = 7,
-    holy_power = 8,
-    fire_power = 9,
-    nature_power = 10,
-    frost_power = 11,
-    shadow_power = 12,
-    arcane_power = 13
+    spell_crit = 8,
+    spell_hit = 9
 };
 
 local icon_stat_display = {
@@ -196,7 +192,7 @@ local tooltip_stat_display = {
     cast_and_tap = bit.lshift(1,14)
 };
 
-local sim_type = {
+local simulation_type = {
     spam_cast = 1,
     race_to_the_bottom = 2
 };
@@ -6621,7 +6617,7 @@ local function loadout_add(primary, diff)
     added.mp5 = primary.mp5 + diff.mp5;
     added.mana = primary.mana + 
                  (diff.mana * (1 + primary.mana_mod)) + 
-                 (diff.stats[stat.int]*(1 + primary.stat_mod[stat.int]*primary.mana_mod));
+                 (15*diff.stats[stat.int]*(1 + primary.stat_mod[stat.int]*primary.mana_mod));
 
     local sp_gained_from_spirit = diff.stats[stat.spirit] * (1 + primary.stat_mod[stat.spirit]) * primary.spiritual_guidance * 0.05;
     for i = 1, 7 do
@@ -9546,6 +9542,26 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     };
 end
 
+local function spell_info_from_loadout_stats(spell_data, spell_name, loadout)
+
+    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
+
+    return spell_info(
+       spell_data.base_min, spell_data.base_max, 
+       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       stats.cast_speed,
+       stats.spell_power,
+       max(0, min(1, stats.crit)),
+       max(0, min(1, stats.ot_crit)),
+       stats.spell_crit_mod,
+       stats.hit,
+       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
+       stats.direct_coef, stats.over_time_coef,
+       stats.cost, spell_data.school,
+       spell_name, loadout
+    );
+end
+
 local function evaluate_spell(stats, spell_data, spell_name, loadout)
 
     local spell_effect = spell_info(
@@ -9664,6 +9680,14 @@ local function race_to_the_bottom_sim(spell_effect, mp5, spirit, mana, loadout)
         time_until_oom = time_until_oom,
         mp2 = mp2
     };
+end
+
+local function race_to_the_bottom_sim_default(spell_effect, loadout)
+
+    return race_to_the_bottom_sim(
+        spell_effect, loadout.mp5, loadout.stats[stat.spirit], 
+        loadout.mana + loadout.extra_mana, loadout
+    );
 end
 
 local function race_to_the_bottom_stat_weights(
@@ -10200,6 +10224,8 @@ local function create_loadout_from_ui_diff(frame)
 
     loadout.stats[stat.int] = stats[stat_ids_in_ui.int].editbox_val;
     loadout.stats[stat.spirit] = stats[stat_ids_in_ui.spirit].editbox_val;
+    loadout.mana = stats[stat_ids_in_ui.mana].editbox_val;
+    loadout.mp5 = stats[stat_ids_in_ui.mp5].editbox_val;
 
     local loadout_crit = stats[stat_ids_in_ui.spell_crit].editbox_val;
     for i = 1, 7 do
@@ -10226,36 +10252,49 @@ local function create_loadout_from_ui_diff(frame)
 
     loadout.healing_power = loadout.healing_power + stats[stat_ids_in_ui.healing_power].editbox_val;
 
-    for i = 2, 7 do
+    --for i = 2, 7 do
 
-        local loadout_school_sp = stats[stat_ids_in_ui.holy_power - 2 + i].editbox_val;
+    --    local loadout_school_sp = stats[stat_ids_in_ui.holy_power - 2 + i].editbox_val;
 
-        loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + loadout_school_sp;
-    end
+    --    loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + loadout_school_sp;
+    --end
 
     frame.is_valid = true;
 
     return loadout;
 end
 
-local function spell_diff(spell_data, spell_name, loadout, diff)
+local function spell_diff(spell_data, spell_name, loadout, diff, sim_type)
 
     local loadout_diffed = loadout_add(loadout, diff);
+    print("before and after: ", loadout.mana, loadout_diffed.mana);
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
-    local stats_diffed = loadout_stats_for_spell(spell_data, spell_name, loadout_diffed); 
+    local expectation_loadout = spell_info_from_loadout_stats(spell_data, spell_name, loadout);
+    local expectation_loadout_diffed = spell_info_from_loadout_stats(spell_data, spell_name, loadout_diffed);
 
-    local expectation_loadout = evaluate_spell(stats, spell_data, spell_name, loadout);
-    local expectation_loadout_diffed = evaluate_spell(stats_diffed, spell_data, spell_name, loadout_diffed);
-    
-    return {
-        diff_ratio = 100 * 
-            (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
-        expectation = expectation_loadout_diffed.spell_data.expectation - 
-            expectation_loadout.spell_data.expectation,
-        effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
-            expectation_loadout.spell_data.effect_per_sec
-    };
+    if sim_type == simulation_type.spam_cast then
+        return {
+            diff_ratio = 100 * 
+                (expectation_loadout_diffed.expectation/expectation_loadout.expectation - 1),
+            expectation = expectation_loadout_diffed.expectation - 
+                expectation_loadout.expectation,
+            effect_per_sec = expectation_loadout_diffed.effect_per_sec - 
+                expectation_loadout.effect_per_sec
+        };
+    elseif sim_type == simulation_type.race_to_the_bottom then
+        
+        local race_for_loadout = race_to_the_bottom_sim_default(expectation_loadout, loadout);
+        local race_for_loadout_diffed = race_to_the_bottom_sim_default(expectation_loadout_diffed, loadout_diffed);
+        -- Misleading! effect_per_sec used here to use previous code but doesnt mean efect_per_sec here
+        return {
+            diff_ratio = 100 * 
+                (race_for_loadout_diffed.effect/race_for_loadout.effect - 1),
+            expectation = race_for_loadout_diffed.effect - 
+                race_for_loadout.effect,
+            effect_per_sec = race_for_loadout_diffed.time_until_oom - 
+                race_for_loadout.time_until_oom
+        };
+    end
 end
 
 local function active_loadout_base()
@@ -10286,9 +10325,9 @@ end
 
 local update_and_display_spell_diffs = nil;
 
-local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
+local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell, sim_type)
 
-    local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff);
+    local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff, sim_type);
 
     local v = nil;
     if is_duality_spell then
@@ -10361,9 +10400,6 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
             v.expectation:SetText(string.format("%.2f", diff.expectation));
             v.expectation:SetTextColor(195/255, 44/255, 11/255);
     
-            v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
-            v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
-    
         elseif diff.expectation > 0 then
     
             v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
@@ -10372,9 +10408,6 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
             v.expectation:SetText(string.format("+%.2f", diff.expectation));
             v.expectation:SetTextColor(33/255, 185/255, 21/255);
     
-            v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
-            v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
-    
         else
     
             v.change:SetText("0 %");
@@ -10382,10 +10415,17 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
     
             v.expectation:SetText("0");
             v.expectation:SetTextColor(1, 1, 1);
-    
+        end
+
+        if diff.effect_per_sec < 0 then
+            v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
+            v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
+        elseif diff.effect_per_sec > 0 then
+            v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
+            v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
+        else
             v.effect_per_sec:SetText("0");
             v.effect_per_sec:SetTextColor(1, 1, 1);
-    
         end
             
 
@@ -10426,11 +10466,11 @@ function update_and_display_spell_diffs(frame)
     local loadout_diff = create_loadout_from_ui_diff(frame);
 
     for k, v in pairs(frame.spells) do
-        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false);
+        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false, sw_frame.stat_comparison_frame.sim_type);
 
         -- for spells with both heal and dmg
         if spells[k].healing_version then
-            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true);
+            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true, sw_frame.stat_comparison_frame.sim_type);
         end
     end
 
@@ -11259,7 +11299,7 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetText("Difference");
 
-    local num_stats = 13;
+    local num_stats = 9;
 
     sw_frame.stat_comparison_frame.clear_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.clear_button:SetScript("OnClick", function()
@@ -11288,10 +11328,10 @@ local function create_sw_gui_stat_comparison_frame()
             label_str = "Spirit"
         },
         [3] = {
-            label_str = "Spell crit %"
+            label_str = "Mana"
         },
         [4] = {
-            label_str = "Spell hit %"
+            label_str = "MP5"
         },
         [5] = {
             label_str = "Spell power"
@@ -11303,23 +11343,30 @@ local function create_sw_gui_stat_comparison_frame()
             label_str = "Healing power"
         },
         [8] = {
-            label_str = "Holy spell power"
+            label_str = "Spell Crit"
         },
         [9] = {
-            label_str = "Fire spell power"
-        },
-        [10] = {
-            label_str = "Nature spell power"
-        },
-        [11] = {
-            label_str = "Frost spell power"
-        },
-        [12] = {
-            label_str = "Shadow spell power"
-        },
-        [13] = {
-            label_str = "Arcane spell power"
+            label_str = "Spell Hit"
         }
+        --,
+        --[8] = {
+        --    label_str = "Holy spell power"
+        --},
+        --[9] = {
+        --    label_str = "Fire spell power"
+        --},
+        --[10] = {
+        --    label_str = "Nature spell power"
+        --},
+        --[11] = {
+        --    label_str = "Frost spell power"
+        --},
+        --[12] = {
+        --    label_str = "Shadow spell power"
+        --},
+        --[13] = {
+        --    label_str = "Arcane spell power"
+        --}
     };
 
     for i = 1 , num_stats do
@@ -11386,9 +11433,9 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.sim_type_button.init_func = function()
         UIDropDownMenu_Initialize(sw_frame.stat_comparison_frame.sim_type_button, function()
             
-            if sw_frame.stat_comparison_frame.sim_type == sim_type.spam_cast then 
+            if sw_frame.stat_comparison_frame.sim_type == simulation_type.spam_cast then 
                 UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
-            else
+            elseif sw_frame.stat_comparison_frame.sim_type == simulation_type.spam_cast then 
                 UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
             end
             UIDropDownMenu_SetWidth(sw_frame.stat_comparison_frame.sim_type_button, 130);
@@ -11398,10 +11445,11 @@ local function create_sw_gui_stat_comparison_frame()
                     text = "Infinite Spam Cast",
                     func = function()
 
-                        sw_frame.stat_comparison_frame.sim_type = sim_type.spam_cast;
+                        sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
                         UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
                         sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Show();
                         sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Hide();
+                        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
                     end
                 }
             );
@@ -11410,10 +11458,11 @@ local function create_sw_gui_stat_comparison_frame()
                     text = "Race to the Bottom",
                     func = function()
 
-                        sw_frame.stat_comparison_frame.sim_type = sim_type.race_to_the_bottom;
+                        sw_frame.stat_comparison_frame.sim_type = simulation_type.race_to_the_bottom;
                         UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
                         sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Hide();
                         sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Show();
+                        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
                     end
                 }
             );
@@ -11472,12 +11521,12 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetPoint("TOPRIGHT", -40, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetText("DURATION");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetPoint("TOPRIGHT", -20, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetText("DURATION (s)");
 
     -- always have at least one
     sw_frame.stat_comparison_frame.spells = {};
-    sw_frame.stat_comparison_frame.sim_type = sim_type.spam_cast;
+    sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
 
     if UnitLevel("player") == 60 then
 
@@ -12602,12 +12651,21 @@ local function create_sw_base_gui()
 
             create_sw_gui_loadout_frame();
 
-            if __sw__persistent_data_per_char.sim_type then
+            if not __sw__persistent_data_per_char.sim_type or __sw__use_defaults__ then
+                sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
+            else
                 sw_frame.stat_comparison_frame.sim_type = __sw__persistent_data_per_char.sim_type;
+            end
+            if sw_frame.stat_comparison_frame.sim_type  == simulation_type.spam_cast then
+                sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Show();
+                sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Hide();
+            elseif sw_frame.stat_comparison_frame.sim_type  == simulation_type.race_to_the_bottom then
+                sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Hide();
+                sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Show();
             end
             sw_frame.stat_comparison_frame.sim_type_button.init_func();
 
-            if __sw__persistent_data_per_char.stat_comparison_spells then
+            if __sw__persistent_data_per_char.stat_comparison_spells and not __sw__use_defaults__ then
 
                 sw_frame.stat_comparison_frame.spells = __sw__persistent_data_per_char.stat_comparison_spells;
 
@@ -13180,4 +13238,4 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
-__sw__use_defaults__ = 1;
+--__sw__use_defaults__ = 1;
