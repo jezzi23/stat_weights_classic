@@ -122,7 +122,10 @@ local buffs2 = {
     natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Natural Alignment Crystal"}, --ok
     blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"}, --ok
     troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)"}, --ok
-    flask_of_supreme_power      = { flag = bit.lshift(1,7),  id = 17628, name = "Flask of Supreme Power"} --ok
+    flask_of_supreme_power      = { flag = bit.lshift(1,7),  id = 17628, name = "Flask of Supreme Power"}, --ok
+    nightfin                    = { flag = bit.lshift(1,8),  id = 18233, name = "Nightfin Soup"}, --ok
+    mage_armor                  = { flag = bit.lshift(1,9),  id = 22783, name = "Mage Armor"}, --ok
+    flask_of_distilled_wisdom   = { flag = bit.lshift(1,10), id = 17627, name = "Flask of Distilled Wisdom"} --ok
 };
 
 local target_buffs1 = {
@@ -146,17 +149,13 @@ local target_debuffs1 = {
 local stat_ids_in_ui = {
     int = 1,
     spirit = 2,
-    spell_crit = 3,
-    spell_hit = 4,
+    mana = 3,
+    mp5 = 4,
     sp = 5,
     spell_damage = 6,
     healing_power = 7,
-    holy_power = 8,
-    fire_power = 9,
-    nature_power = 10,
-    frost_power = 11,
-    shadow_power = 12,
-    arcane_power = 13
+    spell_crit = 8,
+    spell_hit = 9
 };
 
 local icon_stat_display = {
@@ -169,6 +168,9 @@ local icon_stat_display = {
     avg_cast = bit.lshift(1,7),
     hit = bit.lshift(1,8),
     crit_chance = bit.lshift(1,9),
+    casts_until_oom = bit.lshift(1,10),
+    effect_until_oom = bit.lshift(1,11),
+    time_until_oom = bit.lshift(1,12),
 
     show_heal_variant = bit.lshift(1,20)
 };
@@ -185,7 +187,14 @@ local tooltip_stat_display = {
     stat_weights = bit.lshift(1,9),
     coef = bit.lshift(1,10),
     avg_cost = bit.lshift(1,11),
-    avg_cast = bit.lshift(1,12)
+    avg_cast = bit.lshift(1,12),
+    race_to_the_bottom = bit.lshift(1,13),
+    cast_and_tap = bit.lshift(1,14)
+};
+
+local simulation_type = {
+    spam_cast = 1,
+    race_to_the_bottom = 2
 };
 
 local set_tiers = {
@@ -217,6 +226,7 @@ local spell_name_to_id = {
     ["Dampen Magic"]            = 604,
     ["Arcane Intellect"]        = 1459,
     ["Arcane Brilliance"]       = 23028,
+    ["Mage Armor"]              = 22783,
     -- Druid
     ["Healing Touch"]           = 5185,
     ["Rejuvenation"]            = 774,
@@ -6317,6 +6327,11 @@ local function empty_loadout()
         has_target = false; 
 
         stats = {0, 0, 0, 0, 0},
+        mana = 0,
+        extra_mana = 0,
+        mp5 = 0,
+        regen_while_casting = 0,
+        mana_mod = 0,
 
         spell_dmg_by_school = {0, 0, 0, 0, 0, 0, 0},
         healing_power = 0,
@@ -6374,13 +6389,38 @@ local function empty_loadout()
     };
 end
 
+-- add things to loadout that a loadout is assumed to have but don't due to an older version of a loadout
+local function satisfy_loadout(loadout)
+
+    if not loadout.mp5 then
+        loadout.mp5 = 0;
+    end
+    if not loadout.regen_while_casting then
+        loadout.regen_while_casting = 0;
+    end
+    if not loadout.mana then
+        loadout.mana = 0;
+    end
+    if not loadout.extra_mana then
+        loadout.extra_mana = 0;
+    end
+    if not loadout.mana_mod then
+        loadout.mana_mod = 0;
+    end
+end
+
+
 local function negate_loadout(loadout)
+
+    satisfy_loadout(loadout);
 
     local negated = loadout;
 
     for i = 1, 5 do
         negated.stats[i] = -loadout.negated.stats[i];
     end
+    negated.mp5 = -loadout.negated.mp5;
+    negated.mana = -loadout.negated.mana;
 
     for i = 1, 7 do
         negated.spell_dmg_by_school[i] = -loadout.spell_dmg_by_school[i];
@@ -6426,7 +6466,9 @@ end
 -- deep copy to avoid reference entanglement
 local function loadout_copy(loadout)
 
-    local cpy = {};
+    satisfy_loadout(loadout);
+
+    local cpy = empty_loadout();
 
     cpy.name = loadout.name;
     cpy.lvl = loadout.lvl;
@@ -6442,6 +6484,12 @@ local function loadout_copy(loadout)
     for i = 1, 5 do
         cpy.stats[i] = loadout.stats[i];
     end
+
+    cpy.mp5 = loadout.mp5;
+    cpy.regen_while_casting = loadout.regen_while_casting;
+    cpy.mana = loadout.mana;
+    cpy.extra_mana = loadout.extra_mana;
+    cpy.mana_mod = loadout.mana_mod;
 
     cpy.healing_power = loadout.healing_power;
 
@@ -6556,18 +6604,20 @@ local function loadout_copy(loadout)
     return cpy;
 end
 
--- add things to loadout that a loadout is assumed to have but don't due to an older version of a loadout
-local function satifsy_loadout()
-    
-end
-
 local function loadout_add(primary, diff)
+
+    satisfy_loadout(primary);
 
     local added = loadout_copy(primary);
 
     for i = 1, 5 do
         added.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[i]);
     end
+
+    added.mp5 = primary.mp5 + diff.mp5;
+    added.mana = primary.mana + 
+                 (diff.mana * (1 + primary.mana_mod)) + 
+                 (15*diff.stats[stat.int]*(1 + primary.stat_mod[stat.int]*primary.mana_mod));
 
     local sp_gained_from_spirit = diff.stats[stat.spirit] * (1 + primary.stat_mod[stat.spirit]) * primary.spiritual_guidance * 0.05;
     for i = 1, 7 do
@@ -6633,6 +6683,16 @@ local function apply_talents(loadout)
                 new_loadout.ability_crit[ae] = 0;
             end
             new_loadout.ability_crit[ae] = new_loadout.ability_crit[ae] + pts * 0.02;
+        end
+        --  arcane mediation
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 12);
+        if pts ~= 0 then
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
+        end
+        --  arcane mind
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        if pts ~= 0 then
+            new_loadout.mana_mod = new_loadout.mana_mod + pts * 0.02;
         end
         -- arcane instability
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 15);
@@ -6863,6 +6923,11 @@ local function apply_talents(loadout)
             end
             new_loadout.ability_cast_mod[ht] = new_loadout.ability_cast_mod[ht] + pts * 0.1;
         end
+        -- reflection
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 6);
+        if pts ~= 0 then
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
+        end
 
         -- tranquil spirit
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 9);
@@ -6936,6 +7001,11 @@ local function apply_talents(loadout)
                 new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.02;
             end
         end
+        -- meditation
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
+        if pts ~= 0 then
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
+        end
         -- force of will
         local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
         if pts ~= 0 then
@@ -6949,6 +7019,11 @@ local function apply_talents(loadout)
                 new_loadout.spell_dmg_mod_by_school[i] = 
                     new_loadout.spell_dmg_mod_by_school[i] + 0.01 * pts;
             end
+        end
+        -- mental strength
+        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 12);
+        if pts ~= 0 then
+            new_loadout.mana_mod = new_loadout.mana_mod + pts * 0.02;
         end
 
         -- improved renew
@@ -7626,6 +7701,13 @@ local function apply_set_bonuses(loadout)
             -- incr counter
             new_loadout.num_set_pieces[set_bonuses[id]] = new_loadout.num_set_pieces[set_bonuses[id]] + 1;
         end
+        local item_link = GetInventoryItemLink("player", item);
+        if item_link then
+            local item_stats = GetItemStats(item_link);
+            if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
+                new_loadout.mp5 = new_loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
+            end
+        end
     end
 
     if class == "PRIEST" then
@@ -7654,6 +7736,9 @@ local function apply_set_bonuses(loadout)
                 end
             end
         end
+        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + 0.15;
+        end
 
     elseif class == "DRUID" then
 
@@ -7673,32 +7758,40 @@ local function apply_set_bonuses(loadout)
                     new_loadout.ability_crit[localized_spell_name("Wrath")] + 0.02;
             end
         end
-
-        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
-
-            local regrowth = localized_spell_name("Regrowth");
-            if not new_loadout.ability_cast_mod[regrowth] then
-                new_loadout.ability_cast_mod[regrowth] = 0;
-            end
-               
-            if new_loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
         
-                local rejuv = localized_spell_name("Rejuvenation");
-                if not new_loadout.ability_extra_ticks[rejuv] then
-                    new_loadout.ability_extra_ticks[rejuv] = 0;
+        if new_loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+
+            new_loadout.regen_while_casting = new_loadout.regen_while_casting + 0.15;
+            if new_loadout.num_set_pieces[set_tiers.pve_2] >= 5 then
+
+                local regrowth = localized_spell_name("Regrowth");
+                if not new_loadout.ability_cast_mod[regrowth] then
+                    new_loadout.ability_cast_mod[regrowth] = 0;
                 end
-                new_loadout.ability_extra_ticks[rejuv] = new_loadout.ability_extra_ticks[rejuv] + 1;
+                   
+                if new_loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
+            
+                    local rejuv = localized_spell_name("Rejuvenation");
+                    if not new_loadout.ability_extra_ticks[rejuv] then
+                        new_loadout.ability_extra_ticks[rejuv] = 0;
+                    end
+                    new_loadout.ability_extra_ticks[rejuv] = new_loadout.ability_extra_ticks[rejuv] + 1;
+                end
             end
         end
 
-        if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
+        if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 2 then
 
-            local sf = localized_spell_name("Starfire");
-            if not new_loadout.ability_crit[sf] then
-                new_loadout.ability_crit[sf] = 0;
+            new_loadout.mp5 = new_loadout.mp5 + 4;
+            if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
+
+                local sf = localized_spell_name("Starfire");
+                if not new_loadout.ability_crit[sf] then
+                    new_loadout.ability_crit[sf] = 0;
+                end
+
+                new_loadout.ability_crit[sf] = new_loadout.ability_crit[sf] + 0.03;
             end
-
-            new_loadout.ability_crit[sf] = new_loadout.ability_crit[sf] + 0.03;
         end
 
     elseif class == "SHAMAN" then
@@ -7877,19 +7970,27 @@ local function apply_general_buffs(loadout, raw_stats_diff)
         loadout.healing_crit = loadout.healing_crit - 0.1;
 
     end
+    if bit.band(buffs1.wcb.flag, loadout.buffs1) ~= 0 and 
+        (loadout.buffs[buffs1.wcb.id] or loadout.always_assume_buffs) then
+
+        loadout.mp5 = loadout.mp5 + 10;
+    end
     -- zg buff
     if bit.band(buffs1.spirit_of_zandalar.flag, loadout.buffs1) ~= 0 then 
 
-        if not loadout.buffs[buffs1.spirit_of_zandalar.id]  and loadout.always_assume_buffs then
-            -- buff wasnt actually on so increase stats
+        if loadout.buffs[buffs1.spirit_of_zandalar.id] then
+            for i = 1, 5 do
+                loadout.stat_mod[i] = loadout.stat_mod[i] + 0.15;
+            end
+        elseif not loadout.buffs[buffs1.spirit_of_zandalar.id] and loadout.always_assume_buffs then
             for i = 1, 5 do
                 raw_stats_diff.stats[i] = raw_stats_diff.stats[i] + loadout.stats[i] * 0.15;
             end
+            for i = 1, 5 do
+                loadout.stat_mod[i] = loadout.stat_mod[i] + 0.15;
+            end
+        end
 
-        end
-        for i = 1, 5 do
-            loadout.stat_mod[i] = loadout.stat_mod[i] + 0.15;
-        end
     elseif bit.band(buffs1.spirit_of_zandalar.flag, loadout.buffs1) == 0 and 
             loadout.buffs[buffs1.spirit_of_zandalar.id] then
 
@@ -7933,15 +8034,18 @@ local function apply_ally_buffs(loadout, raw_stats_diff)
 
     if bit.band(buffs2.bok.flag, loadout.buffs2) ~= 0 then 
 
-        if not loadout.buffs[buffs2.bok.id]  and loadout.always_assume_buffs then
+        if loadout.buffs[buffs2.bok.id] then
+            for i = 1, 5 do
+                loadout.stat_mod[i] = loadout.stat_mod[i] + 0.1;
+            end
+        elseif not loadout.buffs[buffs2.bok.id] and loadout.always_assume_buffs then
             -- buff wasnt actually on so increase stats
             for i = 1, 5 do
                 raw_stats_diff.stats[i] = raw_stats_diff.stats[i] + loadout.stats[i] * 0.1;
             end
-
-        end
-        for i = 1, 5 do
-            loadout.stat_mod[i] = loadout.stat_mod[i] + 0.1;
+            for i = 1, 5 do
+                loadout.stat_mod[i] = loadout.stat_mod[i] + 0.1;
+            end
         end
     elseif bit.band(buffs2.bok.flag, loadout.buffs2) == 0 and loadout.buffs[buffs2.bok.id] then
         for i = 1, 5 do
@@ -8188,6 +8292,21 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
         end
     end
 
+    if bit.band(buffs2.nightfin.flag, loadout.buffs2) ~= 0 and 
+        (loadout.buffs[buffs2.nightfin.id] or loadout.always_assume_buffs) then
+
+        loadout.mp5 = loadout.mp5 + 8;
+    end
+    if bit.band(buffs2.flask_of_distilled_wisdom.flag, loadout.buffs2) ~= 0 and
+        (loadout.always_assume_buffs and not loadout.buffs[buffs2.flask_of_distilled_wisdom.id]) then
+
+        loadout.mana = loadout.mana + 2000;
+
+    elseif bit.band(buffs2.flask_of_distilled_wisdom.flag, loadout.buffs2) == 0 and 
+        loadout.buffs[buffs2.flask_of_distilled_wisdom.id] then
+        loadout.mana = max(0, loadout.mana - 2000);
+    end
+
     -- TARGET BUFFS
     if bit.band(target_buffs1.amplify_magic.flag, loadout.target_buffs1) ~= 0 then
         local heal_effect = 0;
@@ -8334,6 +8453,12 @@ local function apply_mage_buffs(loadout, raw_stats_diff)
         loadout.spell_crit_mod_by_school[magic_school.arcane] =
             loadout.spell_crit_mod_by_school[magic_school.arcane] + 0.5;
     end
+    if bit.band(buffs2.mage_armor.flag, loadout.buffs2) ~= 0 and 
+        (loadout.buffs[localized_spell_name("Mage Armor")] or loadout.always_assume_buffs) then
+
+        loadout.regen_while_casting = loadout.regen_while_casting + 0.3; 
+    end
+
 
 end
 
@@ -8649,6 +8774,8 @@ local function default_loadout()
 
        loadout.stats[i] =  stat;
    end
+   loadout.mana = 0;
+   loadout.extra_mana = 0;
 
    for i = 1, 7 do
        loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
@@ -8704,6 +8831,10 @@ local function dynamic_loadout(base_loadout)
        local _, stat, _, _ = UnitStat("player", i);
 
        loadout.stats[i] =  stat;
+   end
+
+   if base_loadout.is_dynamic_loadout then
+       loadout.mana = UnitPower("player", 0);
    end
 
    for i = 1, 7 do
@@ -8783,6 +8914,9 @@ local function empty_loadout_with_buffs(loadout_with_buffs)
     loadout.lvl = loadout_with_buffs.lvl;
     loadout.target_lvl = loadout_with_buffs.target_lvl;
 
+    -- setting mana as max mana, is this fine?
+    loadout.mana = UnitPowerMax("player", 0);
+
     loadout.always_assume_buffs = loadout_with_buffs.always_assume_buffs;
     loadout.is_dynamic_loadout = loadout_with_buffs.is_dynamic_loadout;
     loadout.use_dynamic_target_lvl = loadout_with_buffs.use_dynamic_target_lvl;
@@ -8837,6 +8971,10 @@ local function print_loadout(loadout)
           loadout.stats[3],
           loadout.stats[4],
           loadout.stats[5]));
+    print("mana", loadout.mana);
+    print("extra mana gained from consumes (pots, flask, runes)", loadout.extra_mana);
+    print("mana regen while casting ratio:", loadout.regen_while_casting);
+    print("mp5 from gear/buffs", loadout.mp5);
     print("heal: "..loadout.healing_power..", heal_crit: ".. string.format("%.3f", loadout.healing_crit));
     print(string.format("spell power schools: holy %d, fire %d, nature %d, frost %d, shadow %d, arcane %d",
           loadout.spell_dmg_by_school[2],
@@ -8845,7 +8983,6 @@ local function print_loadout(loadout)
           loadout.spell_dmg_by_school[5],
           loadout.spell_dmg_by_school[6],
           loadout.spell_dmg_by_school[7]));
-    print("spell heal: ", loadout.healing_power);
     print("spell heal mod base: ", loadout.spell_heal_mod_base);
     print("spell heal mod: ", loadout.spell_heal_mod);
     print(string.format("spell crit schools: holy %.3f, fire %.3f, nature %.3f, frost %.3f,shadow  %.3f, arcane %.3f", 
@@ -8894,6 +9031,7 @@ local function print_loadout(loadout)
                         loadout.stat_mod[3],
                         loadout.stat_mod[4],
                         loadout.stat_mod[5]));
+    print(string.format("max mana mod : %.3f", loadout.mana_mod));
 
 
     print("num set pieces: {", 
@@ -9407,9 +9545,27 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     };
 end
 
-local function evaluate_spell(spell_data, spell_name, loadout)
+local function spell_info_from_loadout_stats(spell_data, spell_name, loadout)
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
+    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
+
+    return spell_info(
+       spell_data.base_min, spell_data.base_max, 
+       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       stats.cast_speed,
+       stats.spell_power,
+       max(0, min(1, stats.crit)),
+       max(0, min(1, stats.ot_crit)),
+       stats.spell_crit_mod,
+       stats.hit,
+       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
+       stats.direct_coef, stats.over_time_coef,
+       stats.cost, spell_data.school,
+       spell_name, loadout
+    );
+end
+
+local function evaluate_spell(stats, spell_data, spell_name, loadout)
 
     local spell_effect = spell_info(
        spell_data.base_min, spell_data.base_max, 
@@ -9482,7 +9638,160 @@ local function evaluate_spell(spell_data, spell_name, loadout)
         sp_per_hit = sp_per_hit,
 
         spell_data = spell_effect,
-        stats = stats
+        spell_data_1_sp = dmg_1_extra_sp,
+        spell_data_1_crit = spell_effect_extra_1crit,
+        spell_data_1_hit = spell_effect_extra_1hit
+    };
+end
+
+local function race_to_the_bottom_sim(spell_effect, mp5, spirit, mana, loadout)
+
+    local num_casts = 0;
+    local effect = 0;
+
+    local mp2 = 0; 
+    if class == "PRIEST" or class == "MAGE" then
+        mp2 = (13 + spirit/4) * loadout.regen_while_casting + (mp5/5)*2;
+    elseif class == "DRUID" or class == "SHAMAN" or class == "PALADIN" then
+        mp2 = (15 + spirit/5) * loadout.regen_while_casting + (mp5/5)*2;
+    elseif class == "WARLOCK" then
+        mp2 = (8 + spirit/4) * loadout.regen_while_casting + (mp5/5)*2;
+    end
+
+    local mp1 = mp2/2;
+
+    local resource_loss_per_sec = spell_effect.cost/spell_effect.cast_time - mp1;
+
+    if resource_loss_per_sec <= 0 then
+        -- divide by 0 party!
+        return {
+            num_casts = 1/0,
+            effect = 1/0,
+            time_until_oom = 1/0,
+            mp2 = mp2
+
+        };
+    end
+
+    local time_until_oom = mana/resource_loss_per_sec; 
+    local num_casts = time_until_oom/spell_effect.cast_time;
+    local effect_until_oom = num_casts * spell_effect.expectation;
+    
+    return {
+        num_casts = num_casts,
+        effect = effect_until_oom,
+        time_until_oom = time_until_oom,
+        mp2 = mp2
+    };
+end
+
+local function race_to_the_bottom_sim_default(spell_effect, loadout)
+
+    return race_to_the_bottom_sim(
+        spell_effect, loadout.mp5, loadout.stats[stat.spirit], 
+        loadout.mana + loadout.extra_mana, loadout
+    );
+end
+
+local function race_to_the_bottom_stat_weights(
+        stats, spell_data, spell_name, spell_effect_normal, spell_effect_1_sp, spell_effect_1_crit, spell_effect_1_hit, loadout)
+
+    local until_oom_normal = 
+        race_to_the_bottom_sim(spell_effect_normal, loadout.mp5, loadout.stats[stat.spirit], loadout.mana + loadout.extra_mana, loadout);
+    local until_oom_1_sp = 
+        race_to_the_bottom_sim(spell_effect_1_sp, loadout.mp5, loadout.stats[stat.spirit], loadout.mana + loadout.extra_mana, loadout);
+    local until_oom_1_crit = 
+        race_to_the_bottom_sim(spell_effect_1_crit, loadout.mp5, loadout.stats[stat.spirit], loadout.mana + loadout.extra_mana, loadout);
+    local until_oom_1_hit = 
+        race_to_the_bottom_sim(spell_effect_1_hit, loadout.mp5, loadout.stats[stat.spirit], loadout.mana + loadout.extra_mana, loadout);
+    local until_oom_1_mp5 = 
+        race_to_the_bottom_sim(spell_effect_normal, loadout.mp5 + 1, loadout.stats[stat.spirit], loadout.mana + loadout.extra_mana, loadout);
+
+    local loadout_1_spirit = empty_loadout();
+    loadout_1_spirit.stats[stat.spirit] = 1;
+    local loadout_added_1_spirit = loadout_add(loadout, loadout_1_spirit);
+    local stats_1_spirit_added = loadout_stats_for_spell(spell_data, spell_name, loadout_added_1_spirit);
+    local added_1_spirit_effect = spell_info(
+       spell_data.base_min, spell_data.base_max, 
+       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       stats_1_spirit_added.cast_speed,
+       stats_1_spirit_added.spell_power,
+       max(0, min(1, stats_1_spirit_added.crit)),
+       max(0, min(1, stats_1_spirit_added.ot_crit)),
+       stats_1_spirit_added.spell_crit_mod,
+       stats_1_spirit_added.hit,
+       stats_1_spirit_added.target_vuln_mod, 
+       stats_1_spirit_added.global_mod, 
+       stats_1_spirit_added.spell_mod, 
+       stats_1_spirit_added.spell_mod_base,
+       stats_1_spirit_added.direct_coef, 
+       stats_1_spirit_added.over_time_coef,
+       stats_1_spirit_added.cost, spell_data.school,
+       spell_name, loadout_added_1_spirit
+    );
+
+    local until_oom_1_spirit = race_to_the_bottom_sim(
+        added_1_spirit_effect, 
+        loadout_added_1_spirit.mp5, 
+        loadout_added_1_spirit.stats[stat.spirit], 
+        loadout_added_1_spirit.mana + loadout.extra_mana, 
+        loadout_added_1_spirit);
+
+    local loadout_1_int = empty_loadout();
+    loadout_1_int.stats[stat.int] = 1;
+
+    local loadout_added_1_int = loadout_add(loadout, loadout_1_int);
+    local stats_1_int_added = loadout_stats_for_spell(spell_data, spell_name, loadout_added_1_int);
+    local added_1_int_effect = spell_info(
+       spell_data.base_min, spell_data.base_max, 
+       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       stats_1_int_added.cast_speed,
+       stats_1_int_added.spell_power,
+       max(0, min(1, stats_1_int_added.crit)),
+       max(0, min(1, stats_1_int_added.ot_crit)),
+       stats_1_int_added.spell_crit_mod,
+       stats_1_int_added.hit,
+       stats_1_int_added.target_vuln_mod, 
+       stats_1_int_added.global_mod, 
+       stats_1_int_added.spell_mod, 
+       stats_1_int_added.spell_mod_base,
+       stats_1_int_added.direct_coef, 
+       stats_1_int_added.over_time_coef,
+       stats_1_int_added.cost, spell_data.school,
+       spell_name, loadout_added_1_int
+    );
+
+    local until_oom_1_int = race_to_the_bottom_sim(
+        added_1_int_effect, 
+        loadout_added_1_int.mp5, 
+        loadout_added_1_int.stats[stat.spirit], 
+        loadout_added_1_int.mana + loadout.extra_mana,
+        loadout_added_1_int);
+
+    
+    local diff_1_sp = until_oom_1_sp.effect - until_oom_normal.effect;
+    local diff_1_crit = until_oom_1_crit.effect - until_oom_normal.effect;
+    local diff_1_hit = until_oom_1_hit.effect - until_oom_normal.effect;
+    local diff_1_mp5 = until_oom_1_mp5.effect - until_oom_normal.effect;
+    local diff_1_spirit = until_oom_1_spirit.effect - until_oom_normal.effect;
+    local diff_1_int = until_oom_1_int.effect - until_oom_normal.effect;
+
+    local sp_per_crit = diff_1_crit/diff_1_sp;
+    local sp_per_hit = diff_1_hit/diff_1_sp;
+    local sp_per_mp5 = diff_1_mp5/diff_1_sp;
+    local sp_per_spirit = diff_1_spirit/diff_1_sp;
+    local sp_per_int = diff_1_int/diff_1_sp;
+
+    return {
+        effect_per_1_sp = diff_1_sp,
+
+        sp_per_crit = sp_per_crit,
+        sp_per_hit = sp_per_hit,
+        sp_per_mp5 = sp_per_mp5,
+        sp_per_spirit = sp_per_spirit,
+        sp_per_int = sp_per_int,
+
+        normal = until_oom_normal,
     };
 end
 
@@ -9495,7 +9804,12 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             return;
         end
 
-        local eval = evaluate_spell(spell, spell_name, loadout);
+        local stats = loadout_stats_for_spell(spell, spell_name, loadout); 
+        local eval = evaluate_spell(stats, spell, spell_name, loadout);
+
+        local race_to_bottom = race_to_the_bottom_stat_weights(
+          stats, spell, spell_name, eval.spell_data, eval.spell_data_1_sp, eval.spell_data_1_crit, eval.spell_data_1_hit, loadout
+        );
         
         local direct_coef, ot_coef = spell_coef(spell, spell_name);
 
@@ -9539,13 +9853,13 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
                 if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
                     -- dmg spells with real direct range
-                    if eval.stats.hit ~= 1 then
+                    if stats.hit ~= 1 then
                         if spell_name == localized_spell_name("Searing Totem") then
                             local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
                             tooltip:AddLine(
                                 string.format("Normal %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                               effect, 
-                                              eval.stats.hit*100,
+                                              stats.hit*100,
                                               (eval.spell_data.min_noncrit + eval.spell_data.max_noncrit)*num_ticks/2,
                                               spell.over_time_duration,
                                               math.floor(eval.spell_data.min_noncrit), 
@@ -9555,7 +9869,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                         else
                             tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
                                                            effect, 
-                                                           eval.stats.hit*100,
+                                                           stats.hit*100,
                                                            math.floor(eval.spell_data.min_noncrit), 
                                                            math.ceil(eval.spell_data.max_noncrit)),
                                              232.0/255, 225.0/255, 32.0/255);
@@ -9569,17 +9883,17 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                                         232.0/255, 225.0/255, 32.0/255);
                     end
                 else
-                    if eval.stats.hit ~= 1 then
+                    if stats.hit ~= 1 then
                         tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
                                                       effect,
-                                                      eval.stats.hit*100,
+                                                      stats.hit*100,
                                                       math.floor(eval.spell_data.min_noncrit)),
                                                       --string.format("%.0f", eval.spell_data.min_noncrit)),
                                         232.0/255, 225.0/255, 32.0/255);
                     else
                         tooltip:AddLine(string.format("Normal %s: %d", 
                                                       effect,
-                                                      eval.stats.hit*100,
+                                                      stats.hit*100,
                                                       math.floor(eval.spell_data.min_noncrit)),
                                                       --string.format("%.0f", eval.spell_data.min_noncrit)),
                                         232.0/255, 225.0/255, 32.0/255);
@@ -9588,11 +9902,11 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 end
             end
             if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
-                if eval.stats.crit ~= 0 then
+                if stats.crit ~= 0 then
                     if loadout.ignite ~= 0 and eval.spell_data.ignite_min > 0 then
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d (ignites for %d-%d)", 
                                                       effect, 
-                                                      eval.stats.crit*100, 
+                                                      stats.crit*100, 
                                                       math.floor(eval.spell_data.min_crit), 
                                                       math.ceil(eval.spell_data.max_crit),
                                                       math.floor(eval.spell_data.ignite_min), 
@@ -9604,7 +9918,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                         tooltip:AddLine(
                             string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                           effect, 
-                                          eval.stats.crit*100, 
+                                          stats.crit*100, 
                                           (eval.spell_data.min_crit + eval.spell_data.max_crit)*num_ticks/2,
                                           spell.over_time_duration,
                                           math.floor(eval.spell_data.min_crit), 
@@ -9614,7 +9928,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                     else
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d", 
                                                       effect, 
-                                                      eval.stats.crit*100, 
+                                                      stats.crit*100, 
                                                       math.floor(eval.spell_data.min_crit), 
                                                       math.ceil(eval.spell_data.max_crit)),
                                        252.0/255, 69.0/255, 3.0/255);
@@ -9630,11 +9944,11 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             -- round over time num for niceyness
             local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
 
-            if eval.stats.hit ~= 1 then
+            if stats.hit ~= 1 then
                 if spell_name == localized_spell_name("Curse of Agony") then
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%.0f-%.0f-%.0f per tick for %d ticks)",
                                                   effect,
-                                                  eval.stats.hit * 100,
+                                                  stats.hit * 100,
                                                   eval.spell_data.ot_if_hit, 
                                                   eval.spell_data.ot_duration, 
                                                   eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * 0.6,
@@ -9645,7 +9959,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 else
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)",
                                                   effect,
-                                                  eval.stats.hit * 100,
+                                                  stats.hit * 100,
                                                   eval.spell_data.ot_if_hit, 
                                                   eval.spell_data.ot_duration, 
                                                   math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
@@ -9671,7 +9985,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                 -- over time can crit (e.g. arcane missiles)
                 tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
-                                              eval.stats.crit*100, 
+                                              stats.crit*100, 
                                               eval.spell_data.ot_crit_if_hit, 
                                               eval.spell_data.ot_duration, 
                                               math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
@@ -9704,7 +10018,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
         if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
             effect_extra_str = string.format(" (incl: %.1f%% improved shadow bolt uptime)", 
-                                             100*(1 - math.pow(1-eval.stats.crit, 4)));
+                                             100*(1 - math.pow(1-stats.crit, 4)));
         end
         if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell_data.cast_time > 1.5 then
             effect_extra_str = " (incl: nature's grace)";
@@ -9732,7 +10046,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
       end
 
-
+      tooltip:AddLine("Infinite Spam Cast Scenario", 1, 1, 1);
       if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
         tooltip:AddLine(string.format("%s: %.1f", 
                                       effect_per_sec,
@@ -9743,14 +10057,37 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         tooltip:AddLine(effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
       end
       if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
-        tooltip:AddLine(cost_per_sec..": "..string.format("%.1f",eval.spell_data.cost_per_sec), 0.0, 1.0, 1.0);
+        tooltip:AddLine(cost_per_sec.." burn: "..string.format("%.1f",eval.spell_data.cost_per_sec), 0.0, 1.0, 1.0);
+        tooltip:AddLine(cost_per_sec.." gain: "..string.format("%.1f",race_to_bottom.normal.mp2/2), 0.0, 1.0, 1.0);
       end
+
       if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
         tooltip:AddLine(effect_per_sp..": "..string.format("%.3f",eval.effect_per_sp), 0.0, 1.0, 0.0);
-        tooltip:AddLine(sp_name.." per 1% crit: "..string.format("%.3f",eval.sp_per_crit), 0.0, 1.0, 0.0);
+        tooltip:AddLine(sp_name.." per 1% Crit: "..string.format("%.3f",eval.sp_per_crit), 0.0, 1.0, 0.0);
 
         if (bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0) then
-            tooltip:AddLine(sp_name.." per 1%  hit: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+            tooltip:AddLine(sp_name.." per 1%  Hit: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+        end
+      end
+
+      if sw_frame.settings_frame.tooltip_race_to_the_bottom:GetChecked() then
+        tooltip:AddLine("Race to the Bottom Scenario", 1, 1, 1);
+
+
+        tooltip:AddLine("Time until OOM "..string.format("%.1f sec",race_to_bottom.normal.time_until_oom));
+        tooltip:AddLine(effect.." until OOM: "..string.format("%.1f",race_to_bottom.normal.effect));
+        tooltip:AddLine("Casts until OOM: "..string.format("%.1f",race_to_bottom.normal.num_casts));
+        --tooltip:AddLine("Effect per 1 sp: "..string.format("%.3f",race_to_bottom.effect_per_1_sp), 0.0, 1.0, 0.0);
+        --tooltip:AddLine("Spell power per 1% crit: "..string.format("%.2f",race_to_bottom.sp_per_crit), 0.0, 1.0, 0.0);
+        --if race_to_bottom.sp_per_hit ~= 0 then
+        --    tooltip:AddLine("Spell power per 1% hit: "..string.format("%.2f",race_to_bottom.sp_per_hit), 0.0, 1.0, 0.0);
+        --end
+        tooltip:AddLine(sp_name.." per MP5: "..string.format("%.3f",race_to_bottom.sp_per_mp5), 0.0, 1.0, 0.0);
+        tooltip:AddLine(sp_name.." per Spirit: "..string.format("%.3f",race_to_bottom.sp_per_spirit), 0.0, 1.0, 0.0);
+        tooltip:AddLine(sp_name.." per Intellect: "..string.format("%.3f",race_to_bottom.sp_per_int), 0.0, 1.0, 0.0);
+        tooltip:AddLine(sp_name.." per 1% Crit: "..string.format("%.3f",race_to_bottom.sp_per_crit), 0.0, 1.0, 0.0);
+        if (bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0) then
+            tooltip:AddLine(sp_name.." per 1%  Hit: "..string.format("%.3f",race_to_bottom.sp_per_hit), 0.0, 1.0, 0.0);
         end
       end
 
@@ -9771,19 +10108,20 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
           tooltip:AddLine(
             string.format("Stats: sp %d, crit %.2f, crit_mod %.2f, hit %.2f, vuln_mod %.2f, gmod %.2f, mod %.2f, bmod %.2f, cost %f, cast %f",
-                          eval.stats.spell_power,
-                          eval.stats.crit,
-                          eval.stats.spell_crit_mod,
-                          eval.stats.hit,
-                          eval.stats.target_vuln_mod,
-                          eval.stats.global_mod,
-                          eval.stats.spell_mod,
-                          eval.stats.spell_mod_base,
-                          eval.stats.cost,
-                          eval.stats.cast_speed
+                          stats.spell_power,
+                          stats.crit,
+                          stats.spell_crit_mod,
+                          stats.hit,
+                          stats.target_vuln_mod,
+                          stats.global_mod,
+                          stats.spell_mod,
+                          stats.spell_mod_base,
+                          stats.cost,
+                          stats.cast_speed
             
           ));
       end
+
 
       end_tooltip_section(tooltip);
 
@@ -9798,7 +10136,8 @@ local function print_spell(spell, spell_name, loadout)
 
     if spell then
 
-        local eval = evaluate_spell(spell, spell_name, loadout);
+        local stats = loadout_stats_for_spell(spell, spell_name, loadout); 
+        local eval = evaluate_spell(stats, spell, spell_name, loadout);
         
         local direct_coef, ot_oef = spell_coef(spell, spell_name);
 
@@ -9892,6 +10231,8 @@ local function create_loadout_from_ui_diff(frame)
 
     loadout.stats[stat.int] = stats[stat_ids_in_ui.int].editbox_val;
     loadout.stats[stat.spirit] = stats[stat_ids_in_ui.spirit].editbox_val;
+    loadout.mana = stats[stat_ids_in_ui.mana].editbox_val;
+    loadout.mp5 = stats[stat_ids_in_ui.mp5].editbox_val;
 
     local loadout_crit = stats[stat_ids_in_ui.spell_crit].editbox_val;
     for i = 1, 7 do
@@ -9918,33 +10259,48 @@ local function create_loadout_from_ui_diff(frame)
 
     loadout.healing_power = loadout.healing_power + stats[stat_ids_in_ui.healing_power].editbox_val;
 
-    for i = 2, 7 do
+    --for i = 2, 7 do
 
-        local loadout_school_sp = stats[stat_ids_in_ui.holy_power - 2 + i].editbox_val;
+    --    local loadout_school_sp = stats[stat_ids_in_ui.holy_power - 2 + i].editbox_val;
 
-        loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + loadout_school_sp;
-    end
+    --    loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + loadout_school_sp;
+    --end
 
     frame.is_valid = true;
 
     return loadout;
 end
 
-local function spell_diff(spell_data, spell_name, loadout, diff)
+local function spell_diff(spell_data, spell_name, loadout, diff, sim_type)
 
     local loadout_diffed = loadout_add(loadout, diff);
 
-    local expectation_loadout = evaluate_spell(spell_data, spell_name, loadout);
-    local expectation_loadout_diffed = evaluate_spell(spell_data, spell_name, loadout_diffed);
-    
-    return {
-        diff_ratio = 100 * 
-            (expectation_loadout_diffed.spell_data.expectation/expectation_loadout.spell_data.expectation - 1),
-        expectation = expectation_loadout_diffed.spell_data.expectation - 
-            expectation_loadout.spell_data.expectation,
-        effect_per_sec = expectation_loadout_diffed.spell_data.effect_per_sec - 
-            expectation_loadout.spell_data.effect_per_sec
-    };
+    local expectation_loadout = spell_info_from_loadout_stats(spell_data, spell_name, loadout);
+    local expectation_loadout_diffed = spell_info_from_loadout_stats(spell_data, spell_name, loadout_diffed);
+
+    if sim_type == simulation_type.spam_cast then
+        return {
+            diff_ratio = 100 * 
+                (expectation_loadout_diffed.expectation/expectation_loadout.expectation - 1),
+            expectation = expectation_loadout_diffed.expectation - 
+                expectation_loadout.expectation,
+            effect_per_sec = expectation_loadout_diffed.effect_per_sec - 
+                expectation_loadout.effect_per_sec
+        };
+    elseif sim_type == simulation_type.race_to_the_bottom then
+        
+        local race_for_loadout = race_to_the_bottom_sim_default(expectation_loadout, loadout);
+        local race_for_loadout_diffed = race_to_the_bottom_sim_default(expectation_loadout_diffed, loadout_diffed);
+        -- Misleading! effect_per_sec used here to use previous code but doesnt mean efect_per_sec here
+        return {
+            diff_ratio = 100 * 
+                (race_for_loadout_diffed.effect/race_for_loadout.effect - 1),
+            expectation = race_for_loadout_diffed.effect - 
+                race_for_loadout.effect,
+            effect_per_sec = race_for_loadout_diffed.time_until_oom - 
+                race_for_loadout.time_until_oom
+        };
+    end
 end
 
 local function active_loadout_base()
@@ -9958,6 +10314,7 @@ end
 local function active_loadout_copy()
 
     local loadout = active_loadout_base();
+    satisfy_loadout(loadout);
 
     if loadout.is_dynamic_loadout then
         loadout_modified = dynamic_loadout(loadout);
@@ -9975,9 +10332,9 @@ end
 
 local update_and_display_spell_diffs = nil;
 
-local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell)
+local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell, sim_type)
 
-    local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff);
+    local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff, sim_type);
 
     local v = nil;
     if is_duality_spell then
@@ -10050,9 +10407,6 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
             v.expectation:SetText(string.format("%.2f", diff.expectation));
             v.expectation:SetTextColor(195/255, 44/255, 11/255);
     
-            v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
-            v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
-    
         elseif diff.expectation > 0 then
     
             v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
@@ -10061,9 +10415,6 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
             v.expectation:SetText(string.format("+%.2f", diff.expectation));
             v.expectation:SetTextColor(33/255, 185/255, 21/255);
     
-            v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
-            v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
-    
         else
     
             v.change:SetText("0 %");
@@ -10071,10 +10422,17 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
     
             v.expectation:SetText("0");
             v.expectation:SetTextColor(1, 1, 1);
-    
+        end
+
+        if diff.effect_per_sec < 0 then
+            v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
+            v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
+        elseif diff.effect_per_sec > 0 then
+            v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
+            v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
+        else
             v.effect_per_sec:SetText("0");
             v.effect_per_sec:SetTextColor(1, 1, 1);
-    
         end
             
 
@@ -10115,11 +10473,11 @@ function update_and_display_spell_diffs(frame)
     local loadout_diff = create_loadout_from_ui_diff(frame);
 
     for k, v in pairs(frame.spells) do
-        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false);
+        display_spell_diff(k, spells[k], v, loadout, loadout_diff, frame, false, sw_frame.stat_comparison_frame.sim_type);
 
         -- for spells with both heal and dmg
         if spells[k].healing_version then
-            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true);
+            display_spell_diff(k, spells[k].healing_version, v, loadout, loadout_diff, frame, true, sw_frame.stat_comparison_frame.sim_type);
         end
     end
 
@@ -10174,6 +10532,10 @@ local function update_loadouts_rhs()
         loadout.target_lvl
     );
 
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetText(
+        loadout.extra_mana
+    );
+
     if loadout.use_dynamic_target_lvl then
         sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(true);
     else
@@ -10183,6 +10545,7 @@ local function update_loadouts_rhs()
 
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
         sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(false);
+
     else
         sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
@@ -10378,7 +10741,8 @@ local function default_sw_settings()
                 tooltip_stat_display.effect_per_sec,
                 tooltip_stat_display.effect_per_cost,
                 tooltip_stat_display.cost_per_sec,
-                tooltip_stat_display.stat_weights);
+                tooltip_stat_display.stat_weights,
+                tooltip_stat_display.race_to_the_bottom);
 
     settings.icon_overlay_update_freq = 10;
     settings.icon_overlay_font_size = 8;
@@ -10420,6 +10784,15 @@ local function save_sw_settings()
     if sw_frame.settings_frame.icon_crit:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.crit_chance);
     end
+    if sw_frame.settings_frame.icon_casts_until_oom:GetChecked() then
+        icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.casts_until_oom);
+    end
+    if sw_frame.settings_frame.icon_effect_until_oom:GetChecked() then
+        icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.effect_until_oom);
+    end
+    if sw_frame.settings_frame.icon_time_until_oom:GetChecked() then
+        icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.time_until_oom);
+    end
     if sw_frame.settings_frame.icon_heal_variant:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.show_heal_variant);
     end
@@ -10460,6 +10833,14 @@ local function save_sw_settings()
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cast);
     end
+    if sw_frame.settings_frame.tooltip_race_to_the_bottom:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.race_to_the_bottom);
+    end
+    --if class == "WARLOCK" then
+    --    if sw_frame.settings_frame.tooltip_cast_and_tap:GetChecked() then
+    --        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cast_and_tap);
+    --    end
+    --end
 
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
@@ -10552,6 +10933,17 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_crit = 
         create_sw_checkbox("sw_icon_crit_chance", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                            "Critical Chance", icon_checkbox_func);  
+    sw_frame.settings_frame.icon_casts_until_oom = 
+        create_sw_checkbox("sw_icon_casts_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Casts until OOM", icon_checkbox_func);  
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
+    sw_frame.settings_frame.icon_effect_until_oom = 
+        create_sw_checkbox("sw_icon_effect_until_oom", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Effect until OOM", icon_checkbox_func);  
+    sw_frame.settings_frame.icon_time_until_oom = 
+        create_sw_checkbox("sw_icon_time_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Time until OOM", icon_checkbox_func);  
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
@@ -10681,6 +11073,24 @@ local function create_sw_gui_settings_frame()
             sw_frame.settings_frame.icon_crit:SetChecked(true);
         end
     end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.casts_until_oom) ~= 0 then
+        if num_icon_overlay_checks < 3 then
+            num_icon_overlay_checks = num_icon_overlay_checks + 1;
+            sw_frame.settings_frame.icon_casts_until_oom:SetChecked(true);
+        end
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.effect_until_oom) ~= 0 then
+        if num_icon_overlay_checks < 3 then
+            num_icon_overlay_checks = num_icon_overlay_checks + 1;
+            sw_frame.settings_frame.icon_effect_until_oom:SetChecked(true);
+        end
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.time_until_oom) ~= 0 then
+        if num_icon_overlay_checks < 3 then
+            num_icon_overlay_checks = num_icon_overlay_checks + 1;
+            sw_frame.settings_frame.icon_time_until_oom:SetChecked(true);
+        end
+    end
     sw_frame.settings_frame.icons_num_checked = num_icon_overlay_checks;
     if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.show_heal_variant) ~= 0 then
         sw_frame.settings_frame.icon_heal_variant:SetChecked(true);
@@ -10751,6 +11161,18 @@ local function create_sw_gui_settings_frame()
         create_sw_checkbox("sw_tooltip_avg_cast", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
                             "Average cast time", tooltip_checkbox_func);
 
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.tooltip_race_to_the_bottom = 
+        create_sw_checkbox("sw_tooltip_race_to_the_bottom", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                            "Race to the Bottom", tooltip_checkbox_func);
+    getglobal(sw_frame.settings_frame.tooltip_race_to_the_bottom:GetName()).tooltip = 
+        "Assumes you cast a particular ability until you are OOM with no cooldowns.";
+    --if class == "WARLOCK" then    
+    --    sw_frame.settings_frame.tooltip_cast_and_tap = 
+    --        create_sw_checkbox("sw_tooltip_cast_and_tap", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+    --                            "Cast and Lifetap", tooltip_checkbox_func);
+    --end
+
     -- set tooltip options as according to saved persistent data
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.normal) ~= 0 then
         sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
@@ -10788,6 +11210,14 @@ local function create_sw_gui_settings_frame()
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cast) ~= 0 then
         sw_frame.settings_frame.tooltip_avg_cast:SetChecked(true);
     end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.race_to_the_bottom) ~= 0 then
+        sw_frame.settings_frame.tooltip_race_to_the_bottom:SetChecked(true);
+    end
+    --if class == "WARLOCK" then
+        --if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_and_tap) ~= 0 then
+        --    sw_frame.settings_frame.tooltip_cast_and_tap:SetChecked(true);
+        --end
+    --end
 
     for i = 1, 32 do
         if bit.band(bit.lshift(1, i), __sw__persistent_data_per_char.settings.ability_tooltip) ~= 0 then
@@ -10876,7 +11306,7 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetText("Difference");
 
-    local num_stats = 13;
+    local num_stats = 9;
 
     sw_frame.stat_comparison_frame.clear_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.clear_button:SetScript("OnClick", function()
@@ -10905,10 +11335,10 @@ local function create_sw_gui_stat_comparison_frame()
             label_str = "Spirit"
         },
         [3] = {
-            label_str = "Spell crit %"
+            label_str = "Mana"
         },
         [4] = {
-            label_str = "Spell hit %"
+            label_str = "MP5"
         },
         [5] = {
             label_str = "Spell power"
@@ -10920,23 +11350,30 @@ local function create_sw_gui_stat_comparison_frame()
             label_str = "Healing power"
         },
         [8] = {
-            label_str = "Holy spell power"
+            label_str = "Spell Crit"
         },
         [9] = {
-            label_str = "Fire spell power"
-        },
-        [10] = {
-            label_str = "Nature spell power"
-        },
-        [11] = {
-            label_str = "Frost spell power"
-        },
-        [12] = {
-            label_str = "Shadow spell power"
-        },
-        [13] = {
-            label_str = "Arcane spell power"
+            label_str = "Spell Hit"
         }
+        --,
+        --[8] = {
+        --    label_str = "Holy spell power"
+        --},
+        --[9] = {
+        --    label_str = "Fire spell power"
+        --},
+        --[10] = {
+        --    label_str = "Nature spell power"
+        --},
+        --[11] = {
+        --    label_str = "Frost spell power"
+        --},
+        --[12] = {
+        --    label_str = "Shadow spell power"
+        --},
+        --[13] = {
+        --    label_str = "Arcane spell power"
+        --}
     };
 
     for i = 1 , num_stats do
@@ -10994,8 +11431,54 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.stats[stat_ids_in_ui.sp].editbox:SetText("1");
 
-    -- header for spells
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
+
+    -- sim type button
+    sw_frame.stat_comparison_frame.sim_type_button = 
+        CreateFrame("Button", "sw_sim_type_button", sw_frame.stat_comparison_frame, "UIDropDownMenuTemplate"); 
+    sw_frame.stat_comparison_frame.sim_type_button:SetPoint("TOPLEFT", -5, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.sim_type_button.init_func = function()
+        UIDropDownMenu_Initialize(sw_frame.stat_comparison_frame.sim_type_button, function()
+            
+            if sw_frame.stat_comparison_frame.sim_type == simulation_type.spam_cast then 
+                UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
+            elseif sw_frame.stat_comparison_frame.sim_type == simulation_type.race_to_the_bottom then 
+                UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
+            end
+            UIDropDownMenu_SetWidth(sw_frame.stat_comparison_frame.sim_type_button, 130);
+
+            UIDropDownMenu_AddButton(
+                {
+                    text = "Infinite Spam Cast",
+                    func = function()
+
+                        sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
+                        UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Infinite Spam Cast");
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Show();
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Hide();
+                        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+                    end
+                }
+            );
+            UIDropDownMenu_AddButton(
+                {
+                    text = "Race to the Bottom",
+                    func = function()
+
+                        sw_frame.stat_comparison_frame.sim_type = simulation_type.race_to_the_bottom;
+                        UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Race to the Bottom");
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Hide();
+                        sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Show();
+                        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+                    end
+                }
+            );
+        end);
+    end;
+
+    sw_frame.stat_comparison_frame.sim_type_button:SetText("Simulation type");
+
+    -- header for spells
     sw_frame.stat_comparison_frame.export_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.export_button:SetScript("OnClick", function()
 
@@ -11012,6 +11495,7 @@ local function create_sw_gui_stat_comparison_frame()
         sw_activate_tab(2);
     end);
 
+
     sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -25, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.export_button:SetHeight(20);
     sw_frame.stat_comparison_frame.export_button:SetWidth(110);
@@ -11022,28 +11506,34 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.line_y_offset_before_dynamic_spells = sw_frame.stat_comparison_frame.line_y_offset;
 
+    sw_frame.stat_comparison_frame.spell_diff_header_spell = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_comparison_frame.spell_diff_header_spell:SetFontObject(font);
+    sw_frame.stat_comparison_frame.spell_diff_header_spell:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_spell:SetText("Spell");
+
     sw_frame.stat_comparison_frame.spell_diff_header_left = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetText("Spell");
-
-    sw_frame.stat_comparison_frame.spell_diff_header_center = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -180, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetText("Change");
+    sw_frame.stat_comparison_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_left:SetText("Change");
 
     sw_frame.stat_comparison_frame.spell_diff_header_center = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetFontObject(font);
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -105, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetText("DMG/HEAL");
 
-    sw_frame.stat_comparison_frame.spell_diff_header_left = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -45, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_left:SetText("DPS/HPS");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetFontObject(font);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetPoint("TOPRIGHT", -45, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetText("DPS/HPS");
+
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetFontObject(font);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetPoint("TOPRIGHT", -20, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:SetText("DURATION (s)");
 
     -- always have at least one
     sw_frame.stat_comparison_frame.spells = {};
+    sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
 
     if UnitLevel("player") == 60 then
 
@@ -11129,7 +11619,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadouts_frame);
     sw_frame.loadouts_frame.lhs_list:SetWidth(150);
-    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25);
+    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25-10);
     sw_frame.loadouts_frame.lhs_list:SetPoint("TOPLEFT", sw_frame, 0, -50);
 
     sw_frame.loadouts_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs", sw_frame.loadouts_frame);
@@ -11236,7 +11726,40 @@ local function create_sw_gui_loadout_frame()
     end);
     sw_frame.loadouts_frame.rhs_list.name_editbox:SetScript("OnTextChanged", editbox_save);
 
-    y_offset_lhs = y_offset_lhs - 25;
+    y_offset_lhs = y_offset_lhs - 20;
+
+
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana = 
+        sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana:SetFontObject(font);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana:SetText("Extra mana (pots)");
+
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 120, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetSize(50, 15);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetAutoFocus(false);
+
+    local mana_editbox = function(self)
+
+        local txt = self:GetText();
+        
+        local mana = tonumber(txt);
+        if mana then
+            active_loadout_base().extra_mana = mana;
+            
+        else
+            self:SetText("0");
+            active_loadout_base().extra_mana = 0;
+        end
+
+    	self:ClearFocus();
+    end
+
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetScript("OnEnterPressed", mana_editbox);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetScript("OnEscapePressed", mana_editbox);
+
+    y_offset_lhs = y_offset_lhs - 20;
 
     sw_frame.loadouts_frame.rhs_list.loadout_level_label = 
         sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
@@ -11310,7 +11833,7 @@ local function create_sw_gui_loadout_frame()
 
             sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
                 static_loadout(active_loadout_base());
-            
+
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         end
     end);
@@ -11330,7 +11853,7 @@ local function create_sw_gui_loadout_frame()
 
             sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
                 static_loadout(active_loadout_base());
-            
+
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
         else
             sw_frame.loadouts_frame.lhs_list.loadouts[
@@ -11338,7 +11861,7 @@ local function create_sw_gui_loadout_frame()
 
             sw_frame.loadouts_frame.lhs_list.loadouts[
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = empty_loadout_with_buffs(active_loadout_base());
-            
+
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
         end
     end);
@@ -11575,10 +12098,10 @@ local function create_sw_gui_loadout_frame()
                                     sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                     check_button_buff_func);
     y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-    --create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.wcb, "self1", 
-    --                                sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-    --                                check_button_buff_func);
-    --y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+    create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.wcb, "self1", 
+                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                    check_button_buff_func);
+    y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.songflower, "self1", 
                                     sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                     check_button_buff_func);
@@ -11662,6 +12185,14 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.flask_of_distilled_wisdom, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.nightfin, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
 
         -- target buffs
         -- target debuffs
@@ -11731,6 +12262,10 @@ local function create_sw_gui_loadout_frame()
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.hazzrahs_charm_of_magic, "self1", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.mage_armor, "self2", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
@@ -12123,7 +12658,21 @@ local function create_sw_base_gui()
 
             create_sw_gui_loadout_frame();
 
-            if __sw__persistent_data_per_char.stat_comparison_spells then
+            if not __sw__persistent_data_per_char.sim_type or __sw__use_defaults__ then
+                sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
+            else
+                sw_frame.stat_comparison_frame.sim_type = __sw__persistent_data_per_char.sim_type;
+            end
+            if sw_frame.stat_comparison_frame.sim_type  == simulation_type.spam_cast then
+                sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Show();
+                sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Hide();
+            elseif sw_frame.stat_comparison_frame.sim_type  == simulation_type.race_to_the_bottom then
+                sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Hide();
+                sw_frame.stat_comparison_frame.spell_diff_header_right_race_to_the_bottom:Show();
+            end
+            sw_frame.stat_comparison_frame.sim_type_button.init_func();
+
+            if __sw__persistent_data_per_char.stat_comparison_spells and not __sw__use_defaults__ then
 
                 sw_frame.stat_comparison_frame.spells = __sw__persistent_data_per_char.stat_comparison_spells;
 
@@ -12156,7 +12705,6 @@ local function create_sw_base_gui()
             sw_activate_tab(3);
             sw_frame:Hide();
 
-
         elseif event ==  "PLAYER_LOGOUT"  then
 
             if not class_is_supported then
@@ -12169,6 +12717,7 @@ local function create_sw_base_gui()
                 __sw__persistent_data_per_char.stat_comparison_spells[k] = {};
                 __sw__persistent_data_per_char.stat_comparison_spells[k].name = v.name;
             end
+            __sw__persistent_data_per_char.sim_type = self.stat_comparison_frame.sim_type;
 
             __sw__persistent_data_per_char.loadouts = {};
             __sw__persistent_data_per_char.loadouts.loadouts_list = {};
@@ -12297,8 +12846,10 @@ if class_is_supported then
         local spell_name, spell_id = tooltip:GetSpell();
     
         local spell = get_spell(spell_id);
+
+        local loadout = active_loadout_buffed_copy();
     
-        tooltip_spell_info(GameTooltip, spell, spell_name, active_loadout_buffed_copy());
+        tooltip_spell_info(GameTooltip, spell, spell_name, loadout);
     
         if spell and IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
                 not sw_frame.stat_comparison_frame.spells[spell_id]then
@@ -12381,6 +12932,27 @@ function update_icon_overlay_settings()
         };
         index = index + 1;
     end
+    if sw_frame.settings_frame.icon_effect_until_oom:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[index] = {
+            label_type = icon_stat_display.effect_until_oom,
+            color = {255.0/256, 128/256, 0}
+        };
+        index = index + 1;
+    end
+    if sw_frame.settings_frame.icon_casts_until_oom:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[index] = {
+            label_type = icon_stat_display.casts_until_oom,
+            color = {0.0, 1.0, 0.0}
+        };
+        index = index + 1;
+    end
+    if sw_frame.settings_frame.icon_time_until_oom:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[index] = {
+            label_type = icon_stat_display.time_until_oom,
+            color = {0.0, 1.0, 0.0}
+        };
+        index = index + 1;
+    end
 
     -- if 1, do bottom
     if not sw_frame.settings_frame.icon_overlay[2] then
@@ -12432,6 +13004,10 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
        spell_name, loadout
     );
 
+    local race_to_the_bottom = race_to_the_bottom_sim(
+        spell_effect, loadout.mp5, loadout.stats[stat.spirit], loadout.mana + loadout.extra_mana, loadout
+    );
+
     for i = 1, 3 do
         
         if sw_frame.settings_frame.icon_overlay[i] then
@@ -12475,6 +13051,13 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
                 frame_info.overlay_frames[i]:SetText(string.format("%d%%", 100*stats.hit));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance then
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
+                ---
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.casts_until_oom then
+                frame_info.overlay_frames[i]:SetText(string.format("%.1f", race_to_the_bottom.num_casts));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_until_oom then
+                frame_info.overlay_frames[i]:SetText(string.format("%.0f", race_to_the_bottom.effect));
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.time_until_oom then
+                frame_info.overlay_frames[i]:SetText(string.format("%.1fs", race_to_the_bottom.time_until_oom));
             end
             frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
                                                       sw_frame.settings_frame.icon_overlay[i].color[2], 
