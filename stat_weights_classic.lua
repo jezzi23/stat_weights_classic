@@ -22,7 +22,7 @@
 --SOFTWARE.
 
 local sw_addon_name = "Stat Weights Classic";
-local version =  "1.2.2";
+local version =  "1.2.4";
 
 local sw_addon_loaded = false;
 
@@ -125,7 +125,8 @@ local buffs2 = {
     flask_of_supreme_power      = { flag = bit.lshift(1,7),  id = 17628, name = "Flask of Supreme Power"}, --ok
     nightfin                    = { flag = bit.lshift(1,8),  id = 18233, name = "Nightfin Soup"}, --ok
     mage_armor                  = { flag = bit.lshift(1,9),  id = 22783, name = "Mage Armor"}, --ok
-    flask_of_distilled_wisdom   = { flag = bit.lshift(1,10), id = 17627, name = "Flask of Distilled Wisdom"} --ok
+    flask_of_distilled_wisdom   = { flag = bit.lshift(1,10), id = 17627, name = "Flask of Distilled Wisdom"}, --ok
+    bow                         = { flag = bit.lshift(1,11), id = 25290, name = "Blessing of Wisdom"} --ok
 };
 
 local target_buffs1 = {
@@ -282,6 +283,7 @@ local spell_name_to_id = {
     ["Holy Wrath"]              = 2812,
     ["Blessing of Light"]       = 19977,
     ["Vengeance"]               = 20049,
+    ["Blessing of Wisdom"]      = 19742,
     -- Warlock
     ["Curse of Agony"]          = 980,
     ["Siphon Life"]             = 18265,
@@ -6412,8 +6414,6 @@ end
 
 local function negate_loadout(loadout)
 
-    satisfy_loadout(loadout);
-
     local negated = loadout;
 
     for i = 1, 5 do
@@ -6465,8 +6465,6 @@ end
 
 -- deep copy to avoid reference entanglement
 local function loadout_copy(loadout)
-
-    satisfy_loadout(loadout);
 
     local cpy = empty_loadout();
 
@@ -6605,8 +6603,6 @@ local function loadout_copy(loadout)
 end
 
 local function loadout_add(primary, diff)
-
-    satisfy_loadout(primary);
 
     local added = loadout_copy(primary);
 
@@ -8052,6 +8048,31 @@ local function apply_ally_buffs(loadout, raw_stats_diff)
             raw_stats_diff.stats[i] = raw_stats_diff.stats[i] - loadout.stats[i] * 0.1;
         end
     end
+    if bit.band(buffs2.bow.flag, loadout.buffs2) ~= 0  and 
+        (loadout.always_assume_buffs or loadout.buffs[localized_spell_name("Blessing of Wisdom")]) then 
+        -- ehh just assume casters of bow have improved bow...
+        local mp5 = 0;
+        local talent_mod = 1.2;
+        local bow = loadout.buffs[localized_spell_name("Blessing of Wisdom")];
+        if bow then
+            if bow.id == 19742 then
+                mp5 = 10 * talent_mod;
+            elseif bow.id == 19850 then
+                mp5 = 15 * talent_mod;
+            elseif bow.id == 19852 then
+                mp5 = 20 * talent_mod;
+            elseif bow.id == 19853 then
+                mp5 = 25 * talent_mod;
+            elseif bow.id == 19854 then
+                mp5 = 30 * talent_mod;
+            else 
+                mp5 = 33 * talent_mod;
+            end
+        else
+            mp5 = 33*talent_mod;
+        end
+        loadout.mp5 = loadout.mp5 + mp5;
+    end
    
 end
 local function apply_caster_fire_buffs(loadout, raw_stats_diff)
@@ -8901,6 +8922,8 @@ local function static_loadout(base_loadout)
     
     -- snapshot loadout
     local loadout = dynamic_loadout(base_loadout);
+    loadout.extra_mana = base_loadout.extra_mana;
+    loadout.mana = UnitPowerMax("player", 0);
 
     return loadout;
 end
@@ -8915,7 +8938,6 @@ local function empty_loadout_with_buffs(loadout_with_buffs)
     loadout.target_lvl = loadout_with_buffs.target_lvl;
 
     -- setting mana as max mana, is this fine?
-    loadout.mana = UnitPowerMax("player", 0);
 
     loadout.always_assume_buffs = loadout_with_buffs.always_assume_buffs;
     loadout.is_dynamic_loadout = loadout_with_buffs.is_dynamic_loadout;
@@ -9396,10 +9418,12 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     if bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
         crit = 0.0;
         crit_delta_1 = 0.0;
-    end
-    if bit.band(spell_data.flags, spell_flags.over_time_crit) ~= 0 then
+    elseif bit.band(spell_data.flags, spell_flags.over_time_crit) ~= 0 then
         ot_crit = crit;
         ot_crit_delta_1 = crit_delta_1;
+    elseif spell_data.base_min == 0 then
+        crit = 0;
+        crit_delta_1 = 0;
     end
 
     local spell_crit_mod = loadout.spell_crit_mod_by_school[spell_data.school];
@@ -10314,7 +10338,6 @@ end
 local function active_loadout_copy()
 
     local loadout = active_loadout_base();
-    satisfy_loadout(loadout);
 
     if loadout.is_dynamic_loadout then
         loadout_modified = dynamic_loadout(loadout);
@@ -12135,6 +12158,10 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.bow, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
+                                        check_button_buff_func);
+        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
     end
 
 
@@ -12692,6 +12719,8 @@ local function create_sw_base_gui()
             for k, v in pairs(__sw__persistent_data_per_char.loadouts.loadouts_list) do
                 sw_frame.loadouts_frame.lhs_list.loadouts[k] = {};
                 sw_frame.loadouts_frame.lhs_list.loadouts[k].loadout = v;
+                satisfy_loadout(sw_frame.loadouts_frame.lhs_list.loadouts[k].loadout);
+                
             end
 
             sw_frame.loadouts_frame.lhs_list.active_loadout = __sw__persistent_data_per_char.loadouts.active_loadout;
@@ -13049,7 +13078,9 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.cast_time));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit then
                 frame_info.overlay_frames[i]:SetText(string.format("%d%%", 100*stats.hit));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance then
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance and
+                stats.crit ~= 0 then
+
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
                 ---
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.casts_until_oom then
