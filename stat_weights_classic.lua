@@ -10935,6 +10935,9 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_expected_effect = 
         create_sw_checkbox("sw_icon_expected_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                            "Expected effect", icon_checkbox_func);  
+    getglobal(sw_frame.settings_frame.icon_expected_effect:GetName()).tooltip = 
+        "Expected effect is the DMG or Heal dealt on average for a single cast considering miss chance, crit chance, spell power etc. This equates to your DPS or HPS number multiplied with the ability's cast time"
+
     sw_frame.settings_frame.icon_effect_per_sec = 
         create_sw_checkbox("sw_icon_effect_per_sec", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
                            "Effect per sec", icon_checkbox_func);  
@@ -11631,7 +11634,7 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_info, buff_type
 
     sw_frame_loadout_buff_index = sw_frame_loadout_buff_index + 1;
 
-    --return buffs_table[sw_frame_loadout_buff_index - 1].checkbutton;
+    return buffs_table[sw_frame_loadout_buff_index - 1].checkbutton;
 end
 
 local function create_sw_gui_loadout_frame()
@@ -12399,13 +12402,13 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-        --local berserking_checkbutton = 
+        local berserking_checkbutton = 
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.troll_vs_beast, "self2", 
                                             sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                             check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-        --getglobal(berserking_checkbutton:GetName()).tooltip = 
-        --    "If berserk is active, 10-30% haste is applied depending on your HP when used. Otherwise 10% is default";
+        getglobal(berserking_checkbutton:GetName()).tooltip = 
+            "If berserk is active, 10-30% haste is applied depending on your HP when used. Otherwise 10% is default";
     end
 end
 
@@ -13076,10 +13079,12 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
                 frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.cost));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.cast_time));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit then
+            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit and 
+                    stats.hit < 1 then
+
                 frame_info.overlay_frames[i]:SetText(string.format("%d%%", 100*stats.hit));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance and
-                stats.crit ~= 0 then
+                    stats.crit ~= 0 then
 
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
                 ---
