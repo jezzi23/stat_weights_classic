@@ -3368,9 +3368,9 @@ local function create_spells()
             [594] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
-                over_time           = 30.0,
+                over_time           = 66.0,
                 over_time_tick_freq = 3,
-                over_time_duration  = 66.0,
+                over_time_duration  = 18.0,
                 cast_time           = 1.5,
                 rank                = 2,
                 lvl_req             = 10,
@@ -3511,7 +3511,7 @@ local function create_spells()
             },
             [8105] = {
                 base_min            = 225.0,
-                base_max            = 239.0, 
+                base_max            = 239.0,
                 over_time           = 0.0,
                 over_time_tick_freq = 0,
                 over_time_duration  = 0.0,
