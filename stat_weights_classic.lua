@@ -4964,7 +4964,7 @@ local function create_spells()
                 school              = magic_school.holy
             },
             [1026] = {
-                base_min            = 332.0,
+                base_min            = 322.0,
                 base_max            = 368.0, 
                 over_time           = 0,
                 over_time_tick_freq = 0,
@@ -6377,6 +6377,7 @@ local function empty_loadout()
         ability_crit_mod = {},
         ability_hit = {},
         ability_sp = {},
+        ability_flat_add = {},
 
         target_friendly = false,
         target_type = "",
@@ -6408,6 +6409,9 @@ local function satisfy_loadout(loadout)
     end
     if not loadout.mana_mod then
         loadout.mana_mod = 0;
+    end
+    if not loadout.ability_flat_add then
+        loadout.ability_flat_add = {};
     end
 end
 
@@ -6527,6 +6531,7 @@ local function loadout_copy(loadout)
     cpy.ability_crit_mod = {};
     cpy.ability_hit = {};
     cpy.ability_sp = {};
+    cpy.ability_flat_add = {};
 
     cpy.buffs = {};
     cpy.target_buffs = {};
@@ -6587,6 +6592,9 @@ local function loadout_copy(loadout)
     end
     for k, v in pairs(loadout.ability_sp) do
         cpy.ability_sp[k] = v;
+    end
+    for k, v in pairs(loadout.ability_flat_add) do
+        cpy.ability_flat_add[k] = v;
     end
 
     for k, v in pairs(loadout.buffs) do
@@ -8555,39 +8563,41 @@ local function apply_paladin_buffs(loadout, raw_stats_diff)
     -- grileks charm of valor
 
     -- TARGET BUFFS
-    if bit.band(target_buffs1.blessing_of_light.flag, loadout.target_buffs1) ~= 0 then
+    if class == "PALADIN" then
+        if bit.band(target_buffs1.blessing_of_light.flag, loadout.target_buffs1) ~= 0 then
 
-        local hl_effect = 0;
-        local fh_effect = 0;
+            local hl_effect = 0;
+            local fh_effect = 0;
 
-        local bol = loadout.target_buffs[localized_spell_name("Blessing of Light")];
-        if bol then
-            if bol.id == 19977 then
-                hl_effect = 210;
-                fh_effect = 60;
-            elseif bol.id == 19978 then
-                hl_effect = 300;
-                fh_effect = 85;
-            elseif bol.id == 19979 then
+            local bol = loadout.target_buffs[localized_spell_name("Blessing of Light")];
+            if bol then
+                if bol.id == 19977 then
+                    hl_effect = 210;
+                    fh_effect = 60;
+                elseif bol.id == 19978 then
+                    hl_effect = 300;
+                    fh_effect = 85;
+                elseif bol.id == 19979 then
+                    hl_effect = 400;
+                    fh_effect = 115;
+                end
+            elseif loadout.always_assume_buffs then
                 hl_effect = 400;
                 fh_effect = 115;
             end
-        elseif loadout.always_assume_buffs then
-            hl_effect = 400;
-            fh_effect = 115;
-        end
 
-        if loadout.always_assume_buffs or (loadout.target_friendly and loadout.has_target) then
-            if not loadout.ability_sp[localized_spell_name("Holy Light")] then
-                loadout.ability_sp[localized_spell_name("Holy Light")] = 0;
+            if loadout.always_assume_buffs or (loadout.target_friendly and loadout.has_target) then
+                if not loadout.ability_flat_add[localized_spell_name("Holy Light")] then
+                    loadout.ability_flat_add[localized_spell_name("Holy Light")] = 0;
+                end
+                if not loadout.ability_flat_add[localized_spell_name("Flash of Light")] then
+                    loadout.ability_flat_add[localized_spell_name("Flash of Light")] = 0;
+                end
+                loadout.ability_flat_add[localized_spell_name("Holy Light")] = 
+                    loadout.ability_flat_add[localized_spell_name("Holy Light")] + hl_effect;
+                loadout.ability_flat_add[localized_spell_name("Flash of Light")] = 
+                    loadout.ability_flat_add[localized_spell_name("Flash of Light")] + fh_effect;
             end
-            if not loadout.ability_sp[localized_spell_name("Flash of Light")] then
-                loadout.ability_sp[localized_spell_name("Flash of Light")] = 0;
-            end
-            loadout.ability_sp[localized_spell_name("Holy Light")] = 
-                loadout.ability_sp[localized_spell_name("Holy Light")] + hl_effect;
-            loadout.ability_sp[localized_spell_name("Flash of Light")] = 
-                loadout.ability_sp[localized_spell_name("Flash of Light")] + fh_effect;
         end
     end
 
@@ -9092,6 +9102,12 @@ local function print_loadout(loadout)
     for k, v in pairs(loadout.ability_hit) do
         print("hit: ", k, string.format("%.3f", v));
     end
+    for k, v in pairs(loadout.ability_sp) do
+        print("ability extra sp: ", k, string.format("%.3f", v));
+    end
+    for k, v in pairs(loadout.ability_flat_add) do
+        print("ability flat extra effect: ", k, string.format("%.3f", v));
+    end
 end
 
 local function level_scaling(lvl)
@@ -9210,7 +9226,7 @@ end
 
 local function spell_info(base_min, base_max,
                           base_ot, ot_freq, ot_dur, ot_extra_ticks,
-                          cast_time, sp, 
+                          cast_time, sp, flat_direct_addition,
                           crit, ot_crit, crit_mod, hit,
                           target_vuln_mod, global_mod, mod, base_mod,
                           direct_coef, ot_coef,
@@ -9224,8 +9240,10 @@ local function spell_info(base_min, base_max,
         base_mod = base_mod + loadout.improved_immolate * 0.05;
     end
 
-    local min_noncrit_if_hit = (base_min * base_mod + sp * direct_coef) * mod * target_vuln_mod * global_mod;
-    local max_noncrit_if_hit = (base_max * base_mod + sp * direct_coef) * mod * target_vuln_mod * global_mod;
+    local min_noncrit_if_hit = 
+        (base_min * base_mod + sp * direct_coef + flat_direct_addition) * mod * target_vuln_mod * global_mod;
+    local max_noncrit_if_hit = 
+        (base_max * base_mod + sp * direct_coef + flat_direct_addition) * mod * target_vuln_mod * global_mod;
 
     local base_mod = base_mod_before_improved_immolate;
 
@@ -9455,12 +9473,29 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     local global_mod = 1; 
     local spell_mod = 1;
     local spell_mod_base = 1;
+    local flat_addition = 0;
 
     if not loadout.ability_base_mod[spell_name] then
         loadout.ability_base_mod[spell_name] = 0;
     end
     if not loadout.ability_effect_mod[spell_name] then
         loadout.ability_effect_mod[spell_name] = 0;
+    end
+
+    -- regarding blessing of light effect
+    if loadout.ability_flat_add[spell_name] and class == "PALADIN" then
+
+        local scaling_coef_by_lvl = 1;
+        if spell_data.lvl_req == 1 then -- rank 1 holy light
+            scaling_coef_by_lvl = 0.2;
+        elseif spell_data.lvl_req == 6 then -- rank 2 holy light
+            scaling_coef_by_lvl = 0.4;
+        elseif spell_data.lvl_req == 14 then -- rank 3 holy light
+            scaling_coef_by_lvl = 0.7;
+        end
+        
+        flat_addition = 
+            flat_addition + loadout.ability_flat_add[spell_name] * scaling_coef_by_lvl;
     end
 
     if spell_name == localized_spell_name("Shadow Bolt") and 
@@ -9552,6 +9587,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         extra_ticks = extra_ticks,
         cast_speed = cast_speed,
         spell_power = spell_power,
+        flat_direct_addition = flat_addition,
         crit = crit,
         crit_delta_1 = crit_delta_1,
         ot_crit = ot_crit,
@@ -9578,6 +9614,7 @@ local function spell_info_from_loadout_stats(spell_data, spell_name, loadout)
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
+       stats.flat_direct_addition,
        max(0, min(1, stats.crit)),
        max(0, min(1, stats.ot_crit)),
        stats.spell_crit_mod,
@@ -9596,6 +9633,7 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
+       stats.flat_direct_addition,
        max(0, min(1, stats.crit)),
        max(0, min(1, stats.ot_crit)),
        stats.spell_crit_mod,
@@ -9611,6 +9649,7 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power + 1,
+        stats.flat_direct_addition,
         max(0, min(1, stats.crit)),
         max(0, min(1, stats.ot_crit)),
         stats.spell_crit_mod,
@@ -9625,6 +9664,7 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power,
+        stats.flat_direct_addition,
         max(0, min(1, stats.crit_delta_1)),
         max(0, min(1, stats.ot_crit_delta_1)),
         stats.spell_crit_mod,
@@ -9639,6 +9679,7 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
         spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power,
+        stats.flat_direct_addition,
         max(0, min(1, stats.crit)),
         max(0, min(1, stats.ot_crit)),
         stats.spell_crit_mod,
@@ -9740,6 +9781,7 @@ local function race_to_the_bottom_stat_weights(
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats_1_spirit_added.cast_speed,
        stats_1_spirit_added.spell_power,
+       stats_1_spirit_added.flat_direct_addition,
        max(0, min(1, stats_1_spirit_added.crit)),
        max(0, min(1, stats_1_spirit_added.ot_crit)),
        stats_1_spirit_added.spell_crit_mod,
@@ -9771,6 +9813,7 @@ local function race_to_the_bottom_stat_weights(
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats_1_int_added.cast_speed,
        stats_1_int_added.spell_power,
+       stats_1_int_added.flat_direct_addition,
        max(0, min(1, stats_1_int_added.crit)),
        max(0, min(1, stats_1_int_added.ot_crit)),
        stats_1_int_added.spell_crit_mod,
@@ -10131,7 +10174,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
       if __sw__debug__ then
           tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
           tooltip:AddLine(
-            string.format("Stats: sp %d, crit %.2f, crit_mod %.2f, hit %.2f, vuln_mod %.2f, gmod %.2f, mod %.2f, bmod %.2f, cost %f, cast %f",
+            string.format("Stats: sp %d, crit %.2f, crit_mod %.2f, hit %.2f, vuln_mod %.2f, gmod %.2f, mod %.2f, bmod %.2f, flat add %.2f, cost %f, cast %f",
                           stats.spell_power,
                           stats.crit,
                           stats.spell_crit_mod,
@@ -10140,6 +10183,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                           stats.global_mod,
                           stats.spell_mod,
                           stats.spell_mod_base,
+                          stats.flat_direct_addition,
                           stats.cost,
                           stats.cast_speed
             
@@ -13026,6 +13070,7 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
+       stats.flat_direct_addition,
        max(0, min(1, stats.crit)),
        max(0, min(1, stats.ot_crit)),
        stats.spell_crit_mod,
@@ -13280,5 +13325,5 @@ SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
---__sw__debug__ = 1;
+__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;
