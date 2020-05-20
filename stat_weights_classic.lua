@@ -7580,6 +7580,9 @@ local function create_set_bonuses()
         for i = 16811, 16819 do
             set_tier_ids[i] = set_tiers.pve_1;
         end
+        for i = 16919, 16926 do
+            set_tier_ids[i] = set_tiers.pve_2;
+        end
 
     elseif class == "DRUID" then
         -- stormrage
