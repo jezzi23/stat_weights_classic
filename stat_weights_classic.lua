@@ -7708,8 +7708,10 @@ local function apply_set_bonuses(loadout)
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
             local item_stats = GetItemStats(item_link);
-            if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
-                new_loadout.mp5 = new_loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
+            if item_stats then
+                if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
+                    new_loadout.mp5 = new_loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
+                end
             end
         end
     end
