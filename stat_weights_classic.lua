@@ -7236,7 +7236,11 @@ local function apply_talents(loadout)
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + pts * 0.01;
+                if pts == 5 then
+                    new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + 0.06;
+                else
+                    new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + pts * 0.01;
+                end
             end
         end
 
