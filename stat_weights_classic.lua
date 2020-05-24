@@ -6317,11 +6317,75 @@ local function localized_spell_name(english_name)
     return name;
 end
 
+function wowhead_talent_link(code)
+    local lowercase_class = string.lower(class);
+    return "https://classic.wowhead.com/talent-calc/"..lowercase_class.."/"..code;
+end
+
+function wowhead_talent_code()
+
+    local sub_codes = {"", "", ""};
+    for i = 1, 3 do
+
+        local found_max = false;
+        for j = 1, 20 do
+
+            local _, _, _, _, pts, _, _, _ = GetTalentInfo(i, 20-j + 1);
+            if pts and pts ~= 0 then
+                found_max = true;
+            end
+            if found_max then
+                sub_codes[i] = tostring(pts)..sub_codes[i];
+            end
+        end
+    end
+    if sub_codes[2] == "" and sub_codes[3] == "" then
+        return sub_codes[1];
+    elseif sub_codes[2] == "" then
+        return sub_codes[1].."--"..sub_codes[3];
+    elseif sub_codes[3] == "" then
+        return sub_codes[1].."-"..sub_codes[2];
+    else
+        return sub_codes[1].."-"..sub_codes[2].."-"..sub_codes[3];
+    end
+end
+
+function talent_table(wowhead_code)
+
+    local talents = {{}, {}, {}};
+
+    local i = 1;
+    local tree_index = 1;
+    local talent_index = 1;
+
+    while wowhead_code:sub(i, i) ~= "" do
+        if wowhead_code:sub(i, i) == "-" then
+            tree_index = tree_index + 1;
+            talent_index = 1;
+        elseif tonumber(wowhead_code:sub(i, i)) then
+            talents[tree_index][talent_index] = tonumber(wowhead_code:sub(i, i));
+
+            talent_index = talent_index + 1;
+        end
+        i = i + 1;
+    end
+
+    talents.pts = function(this, tree_index, talent_index)
+        if this[tree_index][talent_index] then
+            return this[tree_index][talent_index];
+        else
+            return 0;
+        end
+    end;
+    return talents;
+end
+
 local function empty_loadout()
 
     return {
         name = "Empty";
         is_dynamic_loadout = true,
+        talents_code = nil,
         always_assume_buffs = true,
         lvl = 0,
         target_lvl = 0,
@@ -6413,6 +6477,10 @@ local function satisfy_loadout(loadout)
     if not loadout.ability_flat_add then
         loadout.ability_flat_add = {};
     end
+    if not loadout.talents_code then
+        loadout.talents_code = wowhead_talent_code();
+    end
+    print(loadout.talents_code);
 end
 
 
@@ -6477,6 +6545,7 @@ local function loadout_copy(loadout)
     cpy.target_lvl = loadout.target_lvl;
 
     cpy.is_dynamic_loadout = loadout.is_dynamic_loadout;
+    cpy.talents_code = loadout.talents_code;
     cpy.always_assume_buffs = loadout.always_assume_buffs;
 
     cpy.use_dynamic_target_lvl = loadout.use_dynamic_target_lvl;
@@ -6670,17 +6739,19 @@ end
 local function apply_talents(loadout)
 
     local new_loadout = loadout;
+
+    local talents = talent_table(loadout.talents_code);
     
     if class == "MAGE" then
 
         -- arcane focus
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        local pts = talents:pts(1, 2);
         if pts ~= 0 then
             new_loadout.spell_dmg_hit_by_school[magic_school.arcane] = 
                 new_loadout.spell_dmg_hit_by_school[magic_school.arcane] + pts * 0.02;
         end
         --  improved arcane explosion
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
+        local pts = talents:pts(1, 8);
         if pts ~= 0 then
             local ae = localized_spell_name("Arcane Explosion");
             if not new_loadout.ability_crit[ae] then
@@ -6689,17 +6760,17 @@ local function apply_talents(loadout)
             new_loadout.ability_crit[ae] = new_loadout.ability_crit[ae] + pts * 0.02;
         end
         --  arcane mediation
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 12);
+        local pts = talents:pts(1, 12);
         if pts ~= 0 then
             new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
         end
         --  arcane mind
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        local pts = talents:pts(1, 14);
         if pts ~= 0 then
             new_loadout.mana_mod = new_loadout.mana_mod + pts * 0.02;
         end
         -- arcane instability
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 15);
+        local pts = talents:pts(1, 15);
         if pts ~= 0 then
             for i = 1, 7 do
                 new_loadout.spell_dmg_mod_by_school[i] = new_loadout.spell_dmg_mod_by_school[i] + pts * 0.01;
@@ -6707,7 +6778,7 @@ local function apply_talents(loadout)
             end
         end
         -- improved fireball
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 1);
+        local pts = talents:pts(2, 1);
         if pts ~= 0 then
             local fb = localized_spell_name("Fireball");
             if not new_loadout.ability_cast_mod[fb] then
@@ -6716,12 +6787,12 @@ local function apply_talents(loadout)
             new_loadout.ability_cast_mod[fb] = new_loadout.ability_cast_mod[fb] + pts * 0.1;
         end
         -- ignite
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 3);
+        local pts = talents:pts(2, 3);
         if pts ~= 0 then
            new_loadout.ignite = pts; 
         end
         -- incinerate
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 6);
+        local pts = talents:pts(2, 6);
         if pts ~= 0 then
             local scorch = localized_spell_name("Scorch");
             local fb = localized_spell_name("Fire Blast");
@@ -6735,7 +6806,7 @@ local function apply_talents(loadout)
             new_loadout.ability_crit[fb] = new_loadout.ability_crit[fb] + pts * 0.02;
         end
         -- improved flamestrike
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 7);
+        local pts = talents:pts(2, 7);
         if pts ~= 0 then
             local fs = localized_spell_name("Flamestrike");
             if not new_loadout.ability_crit[fs] then
@@ -6744,24 +6815,24 @@ local function apply_talents(loadout)
             new_loadout.ability_crit[fs] = new_loadout.ability_crit[fs] + pts * 0.05;
         end
         -- master of elements
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 9);
+        local pts = talents:pts(2, 9);
         if pts ~= 0 then
             new_loadout.master_of_elements = pts;
         end
         -- critical mass
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 13);
+        local pts = talents:pts(2, 13);
         if pts ~= 0 then
             new_loadout.spell_crit_by_school[magic_school.fire] =
                 new_loadout.spell_crit_by_school[magic_school.fire] + pts * 0.02;
         end
         -- fire power
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 15);
+        local pts = talents:pts(2, 15);
         if pts ~= 0 then
             new_loadout.spell_dmg_mod_by_school[magic_school.fire] =
                 new_loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
         end
         -- improved frostbolt
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
+        local pts = talents:pts(3, 2);
         if pts ~= 0 then
             local fb = localized_spell_name("Frostbolt");
             if not new_loadout.ability_cast_mod[fb] then
@@ -6770,7 +6841,7 @@ local function apply_talents(loadout)
             new_loadout.ability_cast_mod[fb] = new_loadout.ability_cast_mod[fb] + pts * 0.1;
         end
         -- elemental precision
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 3);
+        local pts = talents:pts(3, 3);
         if pts ~= 0 then
             new_loadout.spell_dmg_hit_by_school[magic_school.fire] = 
                 new_loadout.spell_dmg_hit_by_school[magic_school.fire] + pts * 0.02;
@@ -6778,18 +6849,18 @@ local function apply_talents(loadout)
                 new_loadout.spell_dmg_hit_by_school[magic_school.frost] + pts * 0.02;
         end
         -- ice shards
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 4);
+        local pts = talents:pts(3, 4);
         if pts ~= 0 then
             new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
                 1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * (1 + pts * 0.2);
         end
         -- piercing ice
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 8);
+        local pts = talents:pts(3, 8);
         if pts ~= 0 then
             new_loadout.spell_dmg_mod_by_school[5] = new_loadout.spell_dmg_mod_by_school[5] + pts * 0.02;
         end
         -- frost channeling
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 12);
+        local pts = talents:pts(3, 12);
         if pts ~= 0 then
 
             local cold_spells = {"Frostbolt", "Blizzard", "Cone of Cold", "Frost Nova"};
@@ -6807,7 +6878,7 @@ local function apply_talents(loadout)
             end
         end
         -- improved cone of cold
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
+        local pts = talents:pts(3, 15);
         if pts ~= 0 then
             local coc = localized_spell_name("Cone of Cold");
             if not new_loadout.ability_base_mod[coc] then
@@ -6818,7 +6889,7 @@ local function apply_talents(loadout)
     elseif class == "DRUID" then
 
         -- improved wrath
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
+        local pts = talents:pts(1, 1);
         if pts ~= 0 then
             local wrath = localized_spell_name("Wrath");
             if not new_loadout.ability_cast_mod[wrath] then
@@ -6828,7 +6899,7 @@ local function apply_talents(loadout)
         end
 
         -- improved moonfire
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
+        local pts = talents:pts(1, 5);
         if pts ~= 0 then
             local mf = localized_spell_name("Moonfire");
             if not new_loadout.ability_base_mod[mf] then
@@ -6842,7 +6913,7 @@ local function apply_talents(loadout)
         end
 
         -- vengeance
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 11);
+        local pts = talents:pts(1, 11);
         if pts ~= 0 then
 
             local mf = localized_spell_name("Moonfire");
@@ -6862,7 +6933,7 @@ local function apply_talents(loadout)
         end
 
         -- improved starfire
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 12);
+        local pts = talents:pts(1, 12);
         if pts ~= 0 then
             local sf = localized_spell_name("Starfire");
             if not new_loadout.ability_cast_mod[sf] then
@@ -6872,13 +6943,13 @@ local function apply_talents(loadout)
         end
 
         -- nature's grace
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
+        local pts = talents:pts(1, 13);
         if pts ~= 0 then
             new_loadout.natures_grace = pts;
         end
 
         -- moonglow
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        local pts = talents:pts(1, 14);
         if pts ~= 0 then
             local abilities = {"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation"};
 
@@ -6896,7 +6967,7 @@ local function apply_talents(loadout)
         end
 
         -- moonfury
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 15);
+        local pts = talents:pts(1, 15);
         if pts ~= 0 then
             local abilities = {"Starfire", "Moonfire", "Wrath"};
             for k, v in pairs(abilities) do
@@ -6913,13 +6984,13 @@ local function apply_talents(loadout)
         end
 
         -- heart of the wild
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 15);
+        local pts = talents:pts(2, 15);
         if pts ~= 0 then
             new_loadout.stat_mod[stat.int] = new_loadout.stat_mod[stat.int] + pts * 0.04;
         end
 
         -- improved healing touch
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 3);
+        local pts = talents:pts(3, 3);
         if pts ~= 0 then
             local ht = localized_spell_name("Healing Touch");
             if not new_loadout.ability_cast_mod[ht] then
@@ -6928,13 +6999,13 @@ local function apply_talents(loadout)
             new_loadout.ability_cast_mod[ht] = new_loadout.ability_cast_mod[ht] + pts * 0.1;
         end
         -- reflection
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 6);
+        local pts = talents:pts(3, 6);
         if pts ~= 0 then
             new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
         end
 
         -- tranquil spirit
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 9);
+        local pts = talents:pts(3, 9);
         if pts ~= 0 then
             local abilities = {"Healing Touch", "Tranquility"};
             for k, v in pairs(abilities) do
@@ -6951,7 +7022,7 @@ local function apply_talents(loadout)
         end
 
         -- improved rejuvenation
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 10);
+        local pts = talents:pts(3, 10);
         if pts ~= 0 then
             local rejuv = localized_spell_name("Rejuvenation");
             if not new_loadout.ability_base_mod[rejuv] then
@@ -6961,13 +7032,13 @@ local function apply_talents(loadout)
         end
 
         -- gift of nature
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 12);
+        local pts = talents:pts(3, 12);
         if pts ~= 0 then
             new_loadout.spell_heal_mod_base = new_loadout.spell_heal_mod_base + pts * 0.02;
         end
 
         -- improved regrowth
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
+        local pts = talents:pts(3, 14);
         if pts ~= 0 then
             local regrowth = localized_spell_name("Regrowth");
             if not new_loadout.ability_crit[regrowth] then
@@ -6978,7 +7049,7 @@ local function apply_talents(loadout)
     elseif class == "PRIEST" then
 
         -- improved power word: shield
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
+        local pts = talents:pts(1, 5);
         if pts ~= 0 then
             local shield = localized_spell_name("Power Word: Shield");
             if not new_loadout.ability_effect_mod[shield] then
@@ -6989,7 +7060,7 @@ local function apply_talents(loadout)
         end
 
         -- mental agility 
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 10);
+        local pts = talents:pts(1, 10);
         if pts ~= 0 then
 
             local instants = {"Power Word: Shield", "Renew", "Holy Nova"};
@@ -7006,12 +7077,12 @@ local function apply_talents(loadout)
             end
         end
         -- meditation
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
+        local pts = talents:pts(1, 8);
         if pts ~= 0 then
             new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
         end
         -- force of will
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        local pts = talents:pts(1, 14);
         if pts ~= 0 then
 
             new_loadout.spell_crit_by_school[magic_school.holy] = 
@@ -7025,13 +7096,13 @@ local function apply_talents(loadout)
             end
         end
         -- mental strength
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 12);
+        local pts = talents:pts(1, 12);
         if pts ~= 0 then
             new_loadout.mana_mod = new_loadout.mana_mod + pts * 0.02;
         end
 
         -- improved renew
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 2);
+        local pts = talents:pts(2, 2);
         if pts ~= 0 then
             local renew = localized_spell_name("Renew");
             if not new_loadout.ability_base_mod[renew] then
@@ -7040,7 +7111,7 @@ local function apply_talents(loadout)
             new_loadout.ability_base_mod[renew] = new_loadout.ability_base_mod[renew] + pts * 0.05;
         end
         -- holy specialization
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 3);
+        local pts = talents:pts(2, 3);
         if pts ~= 0 then
 
             new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
@@ -7048,7 +7119,7 @@ local function apply_talents(loadout)
                 new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
         -- divine fury
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 5);
+        local pts = talents:pts(2, 5);
         if pts ~= 0 then
 
             local abilities = {"Smite", "Holy Fire", "Heal", "Greater Heal"};
@@ -7065,7 +7136,7 @@ local function apply_talents(loadout)
             end
         end
         -- improved healing
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 10);
+        local pts = talents:pts(2, 10);
         if pts ~= 0 then
 
             local abilities = {"Lesser Heal", "Heal", "Greater Heal"};
@@ -7082,7 +7153,7 @@ local function apply_talents(loadout)
             end
         end
         -- searing light
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 11);
+        local pts = talents:pts(2, 11);
         if pts ~= 0 then
 
             local abilities = {"Smite", "Holy Fire"};
@@ -7100,7 +7171,7 @@ local function apply_talents(loadout)
             end
         end
         -- improved prayer of healing
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 12);
+        local pts = talents:pts(2, 12);
         if pts ~= 0 then
             local poh = localized_spell_name("Prayer of Healing");
             if not new_loadout.ability_cost_mod[poh] then
@@ -7110,18 +7181,18 @@ local function apply_talents(loadout)
                 new_loadout.ability_cost_mod[poh] + pts * 0.1;
         end
         -- spiritual guidance 
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 14);
+        local pts = talents:pts(2, 14);
         if pts ~= 0 then
            new_loadout.spiritual_guidance = pts; 
         end
         -- spiritual healing
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 15);
+        local pts = talents:pts(2, 15);
         if pts ~= 0 then
             new_loadout.spell_heal_mod_base = new_loadout.spell_heal_mod_base + pts * 0.02;
         end
 
         -- improved shadow word: pain
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 4);
+        local pts = talents:pts(3, 4);
         if pts ~= 0 then
             local swp = localized_spell_name("Shadow Word: Pain");                
 
@@ -7131,13 +7202,13 @@ local function apply_talents(loadout)
             new_loadout.ability_extra_ticks[swp] = new_loadout.ability_extra_ticks[swp] + pts;
         end
         -- shadow focus
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 5);
+        local pts = talents:pts(3, 5);
         if pts ~= 0 then
             new_loadout.spell_dmg_hit_by_school[magic_school.shadow] = 
                 new_loadout.spell_dmg_hit_by_school[magic_school.shadow] + pts * 0.02;
         end
         -- darkness
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
+        local pts = talents:pts(3, 15);
         if pts ~= 0 then
             
             local swp = localized_spell_name("Shadow Word: Pain");
@@ -7169,7 +7240,7 @@ local function apply_talents(loadout)
     elseif class == "SHAMAN" then
 
         -- convection
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
+        local pts = talents:pts(1, 1);
         if pts ~= 0 then
             local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
@@ -7187,7 +7258,7 @@ local function apply_talents(loadout)
         end
 
         -- concussion
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        local pts = talents:pts(1, 2);
         if pts ~= 0 then
             local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
@@ -7205,7 +7276,7 @@ local function apply_talents(loadout)
         end
 
         -- call of flame
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
+        local pts = talents:pts(1, 5);
         if pts ~= 0 then
             local abilities = {"Magma Totem", "Searing Totem", "Fire Nova Totem"};
             for k, v in pairs(abilities) do
@@ -7223,7 +7294,7 @@ local function apply_talents(loadout)
         end
 
         -- call of thunder
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 8);
+        local pts = talents:pts(1, 8);
         if pts ~= 0 then
             local abilities = {"Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
@@ -7245,7 +7316,7 @@ local function apply_talents(loadout)
         end
 
         -- elemental fury
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
+        local pts = talents:pts(1, 13);
         if pts ~= 0 then
             new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
                 1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * 2;
@@ -7256,7 +7327,7 @@ local function apply_talents(loadout)
         end
 
         -- lightning mastery
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 14);
+        local pts = talents:pts(1, 14);
         if pts ~= 0 then
 
             local abilities = {"Lightning Bolt", "Chain Lightning"};
@@ -7275,7 +7346,7 @@ local function apply_talents(loadout)
         end
 
         -- improved lightning shield
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(2, 6);
+        local pts = talents:pts(2, 6);
         if pts ~= 0 then
             local ls = localized_spell_name("Lightning Shield");
             if not new_loadout.ability_base_mod[ls] then
@@ -7285,7 +7356,7 @@ local function apply_talents(loadout)
         end
 
         -- improved healing wave
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
+        local pts = talents:pts(3, 1);
         if pts ~= 0 then
             local hw = localized_spell_name("Healing Wave");
             if not new_loadout.ability_cast_mod[hw] then
@@ -7295,7 +7366,7 @@ local function apply_talents(loadout)
         end
 
         -- tidal focus
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
+        local pts = talents:pts(3, 2);
         if pts ~= 0 then
 
             local abilities = {"Lesser Healing", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
@@ -7314,7 +7385,7 @@ local function apply_talents(loadout)
         end
 
         -- totemic focus
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 5);
+        local pts = talents:pts(3, 5);
         if pts ~= 0 then
 
             local totems = {"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"};
@@ -7333,7 +7404,7 @@ local function apply_talents(loadout)
             end
         end
 
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 10);
+        local pts = talents:pts(3, 10);
         if pts ~= 0 then
 
             local totems = {"Healing Stream Totem"};
@@ -7352,7 +7423,7 @@ local function apply_talents(loadout)
         end
 
         -- tidal mastery
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 11);
+        local pts = talents:pts(3, 11);
         if pts ~= 0 then
 
             new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01;
@@ -7374,7 +7445,7 @@ local function apply_talents(loadout)
         end
 
         -- purification
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
+        local pts = talents:pts(3, 14);
         if pts ~= 0 then
 
             new_loadout.spell_heal_mod_base = new_loadout.spell_heal_mod_base + pts * 0.02;
@@ -7384,13 +7455,13 @@ local function apply_talents(loadout)
     elseif class == "PALADIN" then
 
         -- divine intellect
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        local pts = talents:pts(1, 2);
         if pts ~= 0 then
             new_loadout.stat_mod[stat.int] = new_loadout.stat_mod[stat.int] + pts * 0.02;
         end
 
         -- healing light
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 5);
+        local pts = talents:pts(1, 5);
         if pts ~= 0 then
 
             local abilities = {"Holy Light", "Flash of Light"};
@@ -7408,13 +7479,13 @@ local function apply_talents(loadout)
             end
         end
         -- illumination
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 9);
+        local pts = talents:pts(1, 9);
         if pts ~= 0 then
             new_loadout.illumination = pts;
         end
 
         -- holy power
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 13);
+        local pts = talents:pts(1, 13);
         if pts ~= 0 then
 
             --new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
@@ -7434,7 +7505,7 @@ local function apply_talents(loadout)
 
 
         -- suppression
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 1);
+        local pts = talents:pts(1, 1);
         if pts ~= 0 then
 
             for k, v in pairs(affl) do
@@ -7448,7 +7519,7 @@ local function apply_talents(loadout)
             end
         end
         -- improved corruption
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 2);
+        local pts = talents:pts(1, 2);
         if pts ~= 0 then
             local corruption = localized_spell_name("Corruption");
 
@@ -7461,7 +7532,7 @@ local function apply_talents(loadout)
         end
 
         -- improved curse of agony
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 7);
+        local pts = talents:pts(1, 7);
         if pts ~= 0 then
             local coa = localized_spell_name("Curse of Agony");
 
@@ -7473,7 +7544,7 @@ local function apply_talents(loadout)
                 new_loadout.ability_base_mod[coa] + pts * 0.02;
         end
         -- shadow mastery
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(1, 16);
+        local pts = talents:pts(1, 16);
         if pts ~= 0 then
 
             new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
@@ -7481,13 +7552,13 @@ local function apply_talents(loadout)
         end
 
         -- improved shadow bolt
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 1);
+        local pts = talents:pts(3, 1);
         if pts ~= 0 then
            new_loadout.improved_shadowbolt = pts; 
         end
 
         -- cataclysm
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 2);
+        local pts = talents:pts(3, 2);
         if pts ~= 0 then
 
             for k, v in pairs(destr) do
@@ -7501,7 +7572,7 @@ local function apply_talents(loadout)
             end
         end
         -- bane
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 3);
+        local pts = talents:pts(3, 3);
         if pts ~= 0 then
             local imm = localized_spell_name("Immolate");
             local sb = localized_spell_name("Shadow Bolt");
@@ -7522,7 +7593,7 @@ local function apply_talents(loadout)
             new_loadout.ability_cast_mod[sf] = new_loadout.ability_cast_mod[sf] + pts * 0.4;
         end
         -- devastation
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 7);
+        local pts = talents:pts(3, 7);
         if pts ~= 0 then
 
             for k, v in pairs(destr) do
@@ -7536,7 +7607,7 @@ local function apply_talents(loadout)
             end
         end
         -- improved searing pain
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 11);
+        local pts = talents:pts(3, 11);
         if pts ~= 0 then
             local sp = localized_spell_name("Searing Pain");
             if not new_loadout.ability_crit[sp] then
@@ -7546,11 +7617,11 @@ local function apply_talents(loadout)
         end
 
         -- improved immolate
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 13);
+        local pts = talents:pts(3, 13);
         new_loadout.improved_immolate = pts;
 
         -- ruin 
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 14);
+        local pts = talents:pts(3, 14);
         if pts ~= 0 then
 
             for k, v in pairs(destr) do
@@ -7564,7 +7635,7 @@ local function apply_talents(loadout)
             end
         end
         --emberstorm
-        local _, _, _, _, pts, _, _, _ = GetTalentInfo(3, 15);
+        local pts = talents:pts(3, 15);
         if pts ~= 0 then
             new_loadout.spell_dmg_mod_by_school[magic_school.fire] =
                 new_loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
@@ -8804,6 +8875,7 @@ local function default_loadout()
    loadout.lvl = UnitLevel("player");
    loadout.target_lvl = loadout.lvl + 3;
    loadout.is_dynamic_loadout = true;
+   loadout.talents_code = wowhead_talent_code();
    loadout.always_assume_buffs = false;
    loadout.use_dynamic_target_lvl = true;
    loadout.has_target = false;
@@ -8861,6 +8933,8 @@ local function default_loadout()
 end
 
 local function dynamic_loadout(base_loadout)
+
+   base_loadout.talents_code = wowhead_talent_code();
 
    local loadout = loadout_copy(base_loadout);
 
@@ -9001,6 +9075,7 @@ local function print_loadout(loadout)
     print(string.format("level:%d, target_level: %d", loadout.lvl, loadout.target_lvl));
     print("dynamic: ", loadout.is_dynamic_loadout);
     print("always_apply_buffs: ", loadout.always_assume_buffs);
+    print("talents: ", wowhead_talent_link(loadout.talents_code));
     print("buffs1 flags: ", loadout.buffs1);
     print("buffs2 flags: ", loadout.buffs2);
     print("target buffs flags: ", loadout.target_buffs1);
