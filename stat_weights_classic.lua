@@ -12451,17 +12451,17 @@ local function create_sw_gui_loadout_frame()
     end
    
     if race == "Troll" then
+        local berserking_checkbutton = 
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.berserking, "self1", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                         check_button_buff_func);
+        getglobal(berserking_checkbutton:GetName()).tooltip = 
+            "If berserk is active, 10-30% haste is applied depending on your HP when used. Otherwise 10% is default";
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-        local berserking_checkbutton = 
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.troll_vs_beast, "self2", 
                                             sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
                                             check_button_buff_func);
         y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-        getglobal(berserking_checkbutton:GetName()).tooltip = 
-            "If berserk is active, 10-30% haste is applied depending on your HP when used. Otherwise 10% is default";
     end
 end
 
