@@ -11899,7 +11899,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadouts_frame);
     sw_frame.loadouts_frame.lhs_list:SetWidth(150);
-    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25-10-20);
+    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25-10-20-20);
     sw_frame.loadouts_frame.lhs_list:SetPoint("TOPLEFT", sw_frame, 0, -50);
 
     sw_frame.loadouts_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs", sw_frame.loadouts_frame);
@@ -11981,13 +11981,15 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label = sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetFontObject(font);
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Talents");
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Talents (Wowhead Link)");
+
+    y_offset_lhs = y_offset_lhs - 20;
 
     sw_frame.loadouts_frame.rhs_list.talent_editbox = 
         CreateFrame("EditBox", "sw_loadout_talent_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
-    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 65, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs - 2);
     --sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText("");
-    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetSize(110, 15);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetSize(150, 15);
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetAutoFocus(false);
     local talent_editbox = function(self)
 
