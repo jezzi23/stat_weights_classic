@@ -22,13 +22,12 @@
 --SOFTWARE.
 
 local sw_addon_name = "Stat Weights Classic";
-local version =  "1.2.4";
+local version =  "1.2.5";
 
 local sw_addon_loaded = false;
 
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
-
 
 local font = "GameFontHighlightSmall";
 local icon_overlay_font = "Interface\\AddOns\\stat_weights_classic\\fonts\\Oswald-Bold.ttf";
@@ -6317,12 +6316,26 @@ local function localized_spell_name(english_name)
     return name;
 end
 
-function wowhead_talent_link(code)
+local function wowhead_talent_link(code)
     local lowercase_class = string.lower(class);
     return "https://classic.wowhead.com/talent-calc/"..lowercase_class.."/"..code;
 end
 
-function wowhead_talent_code()
+local function wowhead_talent_code_from_url(link)
+
+    local last_slash_index = 1;
+    local i = 1;
+
+    while link:sub(i, i) ~= "" do
+        if link:sub(i, i) == "/" then
+            last_slash_index = i;
+        end
+        i = i + 1;
+    end
+    return link:sub(last_slash_index + 1, i);
+end
+
+local function wowhead_talent_code()
 
     local sub_codes = {"", "", ""};
     for i = 1, 3 do
@@ -6350,7 +6363,7 @@ function wowhead_talent_code()
     end
 end
 
-function talent_table(wowhead_code)
+local function talent_table(wowhead_code)
 
     local talents = {{}, {}, {}};
 
@@ -6385,7 +6398,7 @@ local function empty_loadout()
     return {
         name = "Empty";
         is_dynamic_loadout = true,
-        talents_code = nil,
+        talents_code = "",
         always_assume_buffs = true,
         lvl = 0,
         target_lvl = 0,
@@ -6480,7 +6493,6 @@ local function satisfy_loadout(loadout)
     if not loadout.talents_code then
         loadout.talents_code = wowhead_talent_code();
     end
-    print(loadout.talents_code);
 end
 
 
@@ -6734,6 +6746,49 @@ local function loadout_add(primary, diff)
     added.cost_mod = primary.cost_mod + diff.cost_mod;
 
     return added;
+end
+
+local active_loadout_base = nil;
+
+
+local function remove_dynamic_stats_from_talents(loadout)
+
+    local talents = talent_table(loadout.talents_code);
+
+    if class == "PALADIN" then
+
+        local pts = talents:pts(1, 13);
+        if pts ~= 0 then
+            loadout.healing_crit = loadout.healing_crit - pts * 0.01;
+            for i = 2, 7 do
+                loadout.spell_crit_by_school[i] = 
+                    loadout.spell_crit_by_school[i] - pts * 0.01;
+            end
+        end
+    end
+
+    return loadout;
+end
+
+local function static_rescale_from_talents_diff(new_loadout, old_loadout)
+
+    local old_int = old_loadout.stats[stat.int];
+    local old_max_mana = old_loadout.mana;
+
+    local int_mod = (1 + new_loadout.stat_mod[stat.int])/(1 + old_loadout.stat_mod[stat.int]);
+    local mana_mod = (1 + new_loadout.mana_mod)/(1 + old_loadout.mana_mod);
+    local new_int = int_mod * old_int
+    local mana_gained_from_int =  (new_int - old_int)*15
+    local crit_from_int_diff = (new_int - old_int)/6000;
+    local new_max_mana = mana_mod * (old_max_mana + mana_gained_from_int);
+
+    local loadout = active_loadout_base();
+    loadout.mana = new_max_mana;
+    loadout.stats[stat.int] = new_int;
+    for i = 2, 7 do
+        loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + crit_from_int_diff;
+    end
+    print(new_max_mana, mana_gained_from_int,crit_from_int_diff);
 end
 
 local function apply_talents(loadout)
@@ -7488,9 +7543,9 @@ local function apply_talents(loadout)
         local pts = talents:pts(1, 13);
         if pts ~= 0 then
 
-            --new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all priest heals are holy...
-            --new_loadout.spell_crit_by_school[magic_school.holy] = 
-            --    new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
+            new_loadout.healing_crit = new_loadout.healing_crit + pts * 0.01; -- all pally heals are holy...
+            new_loadout.spell_crit_by_school[magic_school.holy] = 
+                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
 
     elseif class == "WARLOCK" then
@@ -8934,8 +8989,6 @@ end
 
 local function dynamic_loadout(base_loadout)
 
-   base_loadout.talents_code = wowhead_talent_code();
-
    local loadout = loadout_copy(base_loadout);
 
    loadout.lvl = UnitLevel("player");
@@ -8947,9 +9000,8 @@ local function dynamic_loadout(base_loadout)
        loadout.stats[i] =  stat;
    end
 
-   if base_loadout.is_dynamic_loadout then
-       loadout.mana = UnitPower("player", 0);
-   end
+   loadout.mana = UnitPower("player", 0);
+   loadout.talents_code = wowhead_talent_code();
 
    for i = 1, 7 do
        loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
@@ -9001,8 +9053,10 @@ local function dynamic_loadout(base_loadout)
        loadout.has_target = false; 
    end
 
+   -- talents may not be applied here as they are parameterized
+   --loadout = apply_talents(loadout);
 
-   loadout = apply_talents(loadout);
+   loadout = remove_dynamic_stats_from_talents(loadout);
 
    loadout = apply_set_bonuses(loadout);
 
@@ -9011,14 +9065,82 @@ local function dynamic_loadout(base_loadout)
    return loadout;
 end
 
-local function static_loadout(base_loadout)
+local function static_loadout_from_dynamic(base_loadout)
     
-    -- snapshot loadout
-    local loadout = dynamic_loadout(base_loadout);
-    loadout.extra_mana = base_loadout.extra_mana;
-    loadout.mana = UnitPowerMax("player", 0);
+   local loadout = loadout_copy(base_loadout);
 
-    return loadout;
+   loadout.lvl = UnitLevel("player");
+
+   loadout.stats = {};
+   for i = 1, 5 do
+       local _, stat, _, _ = UnitStat("player", i);
+
+       loadout.stats[i] =  stat;
+   end
+
+   loadout.mana = UnitPowerMax("player", 0);
+   loadout.talents_code = wowhead_talent_code();
+   loadout.extra_mana = base_loadout.extra_mana;
+
+   for i = 1, 7 do
+       loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
+   end
+   for i = 1, 7 do
+       loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
+   end
+
+   local min_crit = 1;
+   for i = 2, 7 do
+       if min_crit > loadout.spell_crit_by_school[i] then
+           min_crit = loadout.spell_crit_by_school[i];
+       end
+   end
+
+   -- right after load GetSpellHitModifier seems to sometimes returns a nil.... so check first I guess
+   local spell_hit = 0;
+   local real_hit = GetSpellHitModifier();
+   if real_hit then
+       spell_hit = real_hit/100;
+   end
+   for i = 1, 7 do
+       loadout.spell_dmg_hit_by_school[i] = spell_hit;
+   end
+
+   loadout.healing_power = GetSpellBonusHealing();
+   loadout.healing_crit = min_crit;
+
+   loadout.berserking_snapshot = sw_berserking_snapshot;
+
+   loadout.spell_crit_mod_by_school = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
+
+   if UnitExists("target") then
+       loadout.has_target = true; 
+
+       loadout.target_friendly = UnitIsFriend("player", "target");
+       -- TODO: returns localized name.. so won't work for non-english clients....
+       loadout.target_type = UnitCreatureType("target");
+
+       if loadout.use_dynamic_target_lvl and not loadout.target_friendly then
+           local target_lvl = UnitLevel("target");
+           if target_lvl == -1 then
+               loadout.target_lvl = loadout.lvl + 3;
+           else
+               loadout.target_lvl = target_lvl;
+           end
+       end
+   else
+       loadout.has_target = false; 
+   end
+
+   -- talents may not be applied here as they are parameterized
+   --loadout = apply_talents(loadout);
+   loadout = remove_dynamic_stats_from_talents(loadout);
+
+   loadout = apply_set_bonuses(loadout);
+
+   loadout = detect_buffs(loadout);
+
+   return loadout;
 end
 
 local function empty_loadout_with_buffs(loadout_with_buffs)
@@ -9088,7 +9210,7 @@ local function print_loadout(loadout)
           loadout.stats[4],
           loadout.stats[5]));
     print("mana", loadout.mana);
-    print("extra mana gained from consumes (pots, flask, runes)", loadout.extra_mana);
+    print("extra mana gained from consumes (pots, runes)", loadout.extra_mana);
     print("mana regen while casting ratio:", loadout.regen_while_casting);
     print("mp5 from gear/buffs", loadout.mp5);
     print("heal: "..loadout.healing_power..", heal_crit: ".. string.format("%.3f", loadout.healing_crit));
@@ -10455,7 +10577,7 @@ local function spell_diff(spell_data, spell_name, loadout, diff, sim_type)
     end
 end
 
-local function active_loadout_base()
+function active_loadout_base()
     if sw_frame.loadouts_frame.lhs_list.loadouts and sw_frame.loadouts_frame.lhs_list.active_loadout then
         return sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout;
     else
@@ -10476,9 +10598,9 @@ local function active_loadout_copy()
     return loadout_modified;
 end
 
-local function active_loadout_buffed_copy()
+local function active_loadout_buffed_talented_copy()
 
-    return apply_buffs(active_loadout_copy());
+    return apply_buffs(apply_talents(active_loadout_copy()));
 end
 
 local update_and_display_spell_diffs = nil;
@@ -10619,7 +10741,7 @@ function update_and_display_spell_diffs(frame)
 
     frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
 
-    local loadout = active_loadout_buffed_copy();
+    local loadout = active_loadout_buffed_talented_copy();
 
     local loadout_diff = create_loadout_from_ui_diff(frame);
 
@@ -10671,12 +10793,12 @@ local function update_loadouts_rhs()
         loadout.name
     );
 
-    sw_frame.stat_comparison_frame.loadout_name_label:SetText(
-        loadout.name
-    );
-    
     sw_frame.loadouts_frame.rhs_list.name_editbox:SetText(
         loadout.name
+    );
+
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
+        wowhead_talent_link(loadout.talents_code)
     );
 
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetText(
@@ -10763,7 +10885,6 @@ local function update_loadouts_rhs()
     else
         sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetChecked(true);
     end
-    
 end
 
 local loadout_checkbutton_id_counter = 1;
@@ -11773,7 +11894,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadouts_frame);
     sw_frame.loadouts_frame.lhs_list:SetWidth(150);
-    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25-10);
+    sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25-10-20);
     sw_frame.loadouts_frame.lhs_list:SetPoint("TOPLEFT", sw_frame, 0, -50);
 
     sw_frame.loadouts_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs", sw_frame.loadouts_frame);
@@ -11847,6 +11968,69 @@ local function create_sw_gui_loadout_frame()
         local loadout = active_loadout_base();
         create_new_loadout_as_copy(loadout, loadout.name);
     end);
+
+    y_offset_lhs = y_offset_lhs - 20;
+
+
+--
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label = sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetFontObject(font);
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Talents");
+
+    sw_frame.loadouts_frame.rhs_list.talent_editbox = 
+        CreateFrame("EditBox", "sw_loadout_talent_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 65, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText("");
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetSize(110, 15);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetAutoFocus(false);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox.sw_ignore_events = false;
+    local talent_editbox = function(self, what)
+        print("what, ", what);
+        if self.sw_ignore_events then
+            print("called but ignored")
+            return;
+        end
+
+        local txt = self:GetText();
+        print("txt, " , txt);
+        print("old: ", sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code );
+
+        local loadout_before = active_loadout_buffed_talented_copy();
+
+
+        sw_frame.loadouts_frame.lhs_list.loadouts[
+            sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
+
+        sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
+            static_loadout_from_dynamic(active_loadout_base());
+
+        sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code =
+            wowhead_talent_code_from_url(txt);
+
+        print("new: ", sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code );
+
+        print(debugstack(1,2,1));
+
+        local loadout_after = active_loadout_buffed_talented_copy();
+
+        sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
+
+        static_rescale_from_talents_diff(loadout_after, loadout_before);
+
+        update_loadouts_lhs();
+    end
+
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnEnterPressed", function(self) 
+        talent_editbox(self);
+        self:ClearFocus();
+    end);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnEscapePressed", function(self) 
+        talent_editbox(self);
+        self:ClearFocus();
+    end);
+
+    --sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnTextChanged", talent_editbox);
 
     y_offset_lhs = y_offset_lhs - 20;
 
@@ -11986,7 +12170,7 @@ local function create_sw_gui_loadout_frame()
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
 
             sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
-                static_loadout(active_loadout_base());
+                static_loadout_from_dynamic(active_loadout_base());
 
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         end
@@ -12006,7 +12190,7 @@ local function create_sw_gui_loadout_frame()
                 sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
 
             sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
-                static_loadout(active_loadout_base());
+                static_loadout_from_dynamic(active_loadout_base());
 
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
         else
@@ -12073,7 +12257,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.loadout_dump:SetSize(170, 20);
     sw_frame.loadouts_frame.rhs_list.loadout_dump:SetScript("OnClick", function(self)
 
-        print_loadout(active_loadout_buffed_copy());
+        print_loadout(active_loadout_buffed_talented_copy());
     end);
 
     local y_offset_rhs = -30;
@@ -12987,7 +13171,7 @@ end
 local function command(msg, editbox)
     if class_is_supported then
         if msg == "print" then
-            print_loadout(active_loadout_buffed_copy());
+            print_loadout(active_loadout_buffed_talented_copy());
         elseif msg == "loadout" or msg == "loadouts" then
             sw_activate_tab(2);
         elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
@@ -13007,7 +13191,7 @@ if class_is_supported then
     
         local spell = get_spell(spell_id);
 
-        local loadout = active_loadout_buffed_copy();
+        local loadout = active_loadout_buffed_talented_copy();
     
         tooltip_spell_info(GameTooltip, spell, spell_name, loadout);
     
@@ -13312,7 +13496,7 @@ if class_is_supported then
         if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq and 
                 sw_num_icon_overlay_fields_active > 0 then
 
-            update_spell_icons(active_loadout_buffed_copy());
+            update_spell_icons(active_loadout_buffed_talented_copy());
 
             snapshot_time_since_last_update = 0;
         end
