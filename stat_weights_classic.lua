@@ -6788,7 +6788,6 @@ local function static_rescale_from_talents_diff(new_loadout, old_loadout)
     for i = 2, 7 do
         loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + crit_from_int_diff;
     end
-    print(new_max_mana, mana_gained_from_int,crit_from_int_diff);
 end
 
 local function apply_talents(loadout)
@@ -8989,6 +8988,8 @@ end
 
 local function dynamic_loadout(base_loadout)
 
+   base_loadout.talents_code  = wowhead_talent_code();
+
    local loadout = loadout_copy(base_loadout);
 
    loadout.lvl = UnitLevel("player");
@@ -9001,7 +9002,6 @@ local function dynamic_loadout(base_loadout)
    end
 
    loadout.mana = UnitPower("player", 0);
-   loadout.talents_code = wowhead_talent_code();
 
    for i = 1, 7 do
        loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
@@ -10797,10 +10797,6 @@ local function update_loadouts_rhs()
         loadout.name
     );
 
-    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
-        wowhead_talent_link(loadout.talents_code)
-    );
-
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetText(
         loadout.target_lvl
     );
@@ -10816,10 +10812,19 @@ local function update_loadouts_rhs()
     end
     if loadout.is_dynamic_loadout then
 
+        sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
+            wowhead_talent_link(wowhead_talent_code())
+        );
+
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
         sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(false);
 
     else
+
+        sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
+            wowhead_talent_link(loadout.talents_code)
+        );
+
         sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
     end
@@ -11981,20 +11986,17 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.talent_editbox = 
         CreateFrame("EditBox", "sw_loadout_talent_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 65, y_offset_lhs - 2);
-    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText("");
+    --sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText("");
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetSize(110, 15);
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetAutoFocus(false);
-    sw_frame.loadouts_frame.rhs_list.talent_editbox.sw_ignore_events = false;
-    local talent_editbox = function(self, what)
-        print("what, ", what);
-        if self.sw_ignore_events then
-            print("called but ignored")
-            return;
-        end
+    local talent_editbox = function(self)
 
         local txt = self:GetText();
-        print("txt, " , txt);
-        print("old: ", sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code );
+        local loadout = sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout;
+
+        if txt == wowhead_talent_link(loadout.talents_code) then
+            return;
+        end
 
         local loadout_before = active_loadout_buffed_talented_copy();
 
@@ -12007,10 +12009,6 @@ local function create_sw_gui_loadout_frame()
 
         sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code =
             wowhead_talent_code_from_url(txt);
-
-        print("new: ", sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code );
-
-        print(debugstack(1,2,1));
 
         local loadout_after = active_loadout_buffed_talented_copy();
 
@@ -12030,7 +12028,7 @@ local function create_sw_gui_loadout_frame()
         self:ClearFocus();
     end);
 
-    --sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnTextChanged", talent_editbox);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnTextChanged", talent_editbox);
 
     y_offset_lhs = y_offset_lhs - 20;
 
@@ -12174,6 +12172,7 @@ local function create_sw_gui_loadout_frame()
 
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         end
+        update_loadouts_rhs();
     end);
 
     y_offset_lhs = y_offset_lhs - 20;
@@ -12202,6 +12201,7 @@ local function create_sw_gui_loadout_frame()
 
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
         end
+        update_loadouts_rhs();
     end);
 
     y_offset_lhs = y_offset_lhs - 20;
