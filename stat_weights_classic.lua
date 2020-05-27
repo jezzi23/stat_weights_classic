@@ -8621,8 +8621,6 @@ local function apply_mage_buffs(loadout, raw_stats_diff)
 
         loadout.regen_while_casting = loadout.regen_while_casting + 0.3; 
     end
-
-
 end
 
 local function apply_warlock_buffs(loadout, raw_stats_diff)
@@ -9117,7 +9115,7 @@ local function static_loadout_from_dynamic(base_loadout)
        loadout.has_target = true; 
 
        loadout.target_friendly = UnitIsFriend("player", "target");
-       -- TODO: returns localized name.. so won't work for non-english clients....
+       -- TODO: returns non-localized name.. so won't work for non-english clients....
        loadout.target_type = UnitCreatureType("target");
 
        if loadout.use_dynamic_target_lvl and not loadout.target_friendly then
@@ -10598,6 +10596,11 @@ local function active_loadout_copy()
     return loadout_modified;
 end
 
+local function active_loadout_talented_copy()
+
+    return apply_talents(active_loadout_copy());
+end
+
 local function active_loadout_buffed_talented_copy()
 
     return apply_buffs(apply_talents(active_loadout_copy()));
@@ -11994,25 +11997,24 @@ local function create_sw_gui_loadout_frame()
     local talent_editbox = function(self)
 
         local txt = self:GetText();
-        local loadout = sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout;
+        local loadout = active_loadout_base();
 
         if txt == wowhead_talent_link(loadout.talents_code) then
             return;
         end
 
-        local loadout_before = active_loadout_buffed_talented_copy();
+        if loadout.is_dynamic_loadout then
+            sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
+                static_loadout_from_dynamic(loadout);
+            sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout 
+                = false;
+        end
 
+        local loadout_before = active_loadout_talented_copy();
 
-        sw_frame.loadouts_frame.lhs_list.loadouts[
-            sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
+        sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code = wowhead_talent_code_from_url(txt);
 
-        sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout = 
-            static_loadout_from_dynamic(active_loadout_base());
-
-        sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.talents_code =
-            wowhead_talent_code_from_url(txt);
-
-        local loadout_after = active_loadout_buffed_talented_copy();
+        local loadout_after = active_loadout_talented_copy();
 
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
 
@@ -12030,7 +12032,11 @@ local function create_sw_gui_loadout_frame()
         self:ClearFocus();
     end);
 
-    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnTextChanged", talent_editbox);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnTextChanged", function(self) 
+        talent_editbox(self);
+        self:ClearFocus();
+    end);
+
 
     y_offset_lhs = y_offset_lhs - 20;
 
@@ -12183,7 +12189,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.static_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.static_button:GetName()..'Text'):SetText("Static loadout");
     getglobal(sw_frame.loadouts_frame.rhs_list.static_button:GetName()).tooltip =
-        "Static loadouts never change and can be used to create custom setups. When checked, a static loadout is a snapshot of a dynamic loadout or can be created with modified stats through the stat comparison tool"
+        "Static loadouts never change and can be used to create custom setups. When checked, a static loadout is a snapshot of a dynamic loadout or can be created with modified stats through the stat comparison tool. Max mana is always assumed before race to bottom type of fight starts."
     sw_frame.loadouts_frame.rhs_list.static_button:SetScript("OnClick", function(self)
 
         if self:GetChecked() then
