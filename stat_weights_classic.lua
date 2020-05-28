@@ -1,4 +1,4 @@
-
+ --ok
 --MIT License
 --
 --Copyright (c) Stat Weights Classic
@@ -77,7 +77,7 @@ local spell_flags = {
 
 local buffs1 = {
     ony                         = { flag = bit.lshift(1,1),  id = 22888, name = "Ony/Nef"}, -- ok casters
-    wcb                         = { flag = bit.lshift(1,2),  id = 16609, name = "WCB"}, 
+    wcb                         = { flag = bit.lshift(1,2),  id = 16609, name = "WCB"},  -- ok casters
     songflower                  = { flag = bit.lshift(1,3),  id = 15366, name = "Songflower"}, -- ok casters
     spirit_of_zandalar          = { flag = bit.lshift(1,4),  id = 24425, name = "Spirit of Zandalar"}, -- ok
     greater_arcane_elixir       = { flag = bit.lshift(1,5),  id = 17539, name = "Greater Arcane Elixir"}, --ok
@@ -125,7 +125,12 @@ local buffs2 = {
     nightfin                    = { flag = bit.lshift(1,8),  id = 18233, name = "Nightfin Soup"}, --ok
     mage_armor                  = { flag = bit.lshift(1,9),  id = 22783, name = "Mage Armor"}, --ok
     flask_of_distilled_wisdom   = { flag = bit.lshift(1,10), id = 17627, name = "Flask of Distilled Wisdom"}, --ok
-    bow                         = { flag = bit.lshift(1,11), id = 25290, name = "Blessing of Wisdom"} --ok
+    bow                         = { flag = bit.lshift(1,11), id = 25290, name = "Blessing of Wisdom"}, --ok
+    boomkin                     = { flag = bit.lshift(1,12), id = 24907, name = "Moonkin Aura"}, -- ok
+    manaspring_totem            = { flag = bit.lshift(1,13), id = 10497, name = "Mana Spring Totem"}, --ok
+    mageblood                   = { flag = bit.lshift(1,14), id = 24363, name = "Mageblood Potion"}, --ok
+    spirit_of_zanza             = { flag = bit.lshift(1,15), id = 24382, name = "Spirit of Zanza"}, --ok
+    kreegs_stout_beatdown       = { flag = bit.lshift(1,16), id = 22790, name = "Kreeg's Stout Beatdown"} --ok
 };
 
 local target_buffs1 = {
@@ -272,6 +277,7 @@ local spell_name_to_id = {
     ["Frost Shock"]             = 8056,
     ["Fire Nova Totem"]         = 1535,
     ["Searing Totem"]           = 3599,
+    ["Mana Spring Totem"]       = 5675,
     -- Paladin
     ["Flash of Light"]          = 19750,
     ["Holy Light"]              = 635,
@@ -6427,6 +6433,7 @@ local function empty_loadout()
         spell_heal_mod = 0,
 
         dmg_mod = 0,
+        target_res_by_school = {0, 0, 0, 0, 0, 0, 0},
         target_mod_res_by_school = {0, 0, 0, 0, 0, 0, 0},
 
         haste_mod = 0,
@@ -6493,8 +6500,13 @@ local function satisfy_loadout(loadout)
     if not loadout.talents_code then
         loadout.talents_code = wowhead_talent_code();
     end
+    if not loadout.target_mod_res_by_school then
+        loadout.target_mod_res_by_school = {0, 0, 0, 0, 0, 0, 0};
+    end
+    if not loadout.target_res_by_school then
+        loadout.target_res_by_school = {0, 0, 0, 0, 0, 0, 0};
+    end
 end
-
 
 local function negate_loadout(loadout)
 
@@ -6534,6 +6546,9 @@ local function negate_loadout(loadout)
 
     for i = 1, 7 do
         negated.target_mod_res_by_school[i] = -loadout.target_mod_res_by_school[i];
+    end
+    for i = 1, 7 do
+        negated.target_res_by_school[i] = -loadout.target_res_by_school[i];
     end
 
     negated.spell_heal_mod_base = -negated.spell_heal_mod_base;
@@ -6584,6 +6599,7 @@ local function loadout_copy(loadout)
     cpy.spell_crit_mod_by_school = {};
     cpy.target_spell_dmg_taken = {};
     cpy.target_mod_res_by_school = {};
+    cpy.target_res_by_school = {};
 
     cpy.spell_heal_mod_base = loadout.spell_heal_mod_base;
     cpy.spell_heal_mod = loadout.spell_heal_mod;
@@ -6636,6 +6652,7 @@ local function loadout_copy(loadout)
         cpy.spell_crit_mod_by_school[i] = loadout.spell_crit_mod_by_school[i];
         cpy.target_spell_dmg_taken[i] = loadout.target_spell_dmg_taken[i];
         cpy.target_mod_res_by_school[i] = loadout.target_mod_res_by_school[i];
+        cpy.target_res_by_school[i] = loadout.target_res_by_school[i];
     end
 
     cpy.num_set_pieces = {};
@@ -6735,6 +6752,9 @@ local function loadout_add(primary, diff)
     end
     for i = 1, 7 do
         added.target_mod_res_by_school[i] = primary.target_mod_res_by_school[i] + diff.target_mod_res_by_school[i];
+    end
+    for i = 1, 7 do
+        added.target_res_by_school[i] = primary.target_res_by_school[i] + diff.target_res_by_school[i];
     end
 
     added.spell_heal_mod_base = primary.spell_heal_mod_base + diff.spell_heal_mod_base;
@@ -8108,11 +8128,6 @@ local function apply_general_buffs(loadout, raw_stats_diff)
         loadout.healing_crit = loadout.healing_crit - 0.1;
 
     end
-    if bit.band(buffs1.wcb.flag, loadout.buffs1) ~= 0 and 
-        (loadout.buffs[buffs1.wcb.id] or loadout.always_assume_buffs) then
-
-        loadout.mp5 = loadout.mp5 + 10;
-    end
     -- zg buff
     if bit.band(buffs1.spirit_of_zandalar.flag, loadout.buffs1) ~= 0 then 
 
@@ -8166,6 +8181,32 @@ local function apply_general_buffs(loadout, raw_stats_diff)
 end
 
 local function apply_horde_buffs(loadout, raw_stats_diff)
+
+    if bit.band(buffs1.wcb.flag, loadout.buffs1) ~= 0 and 
+        (loadout.buffs[buffs1.wcb.id] or loadout.always_assume_buffs) then
+
+        loadout.mp5 = loadout.mp5 + 10;
+    end
+    if bit.band(buffs2.manaspring_totem.flag, loadout.buffs2) ~= 0  and 
+        (loadout.always_assume_buffs or loadout.buffs[localized_spell_name("Mana Spring Totem")]) then 
+        -- ehh just assume casters of bow have improved bow...
+        local mp2 = 0;
+        local mst = loadout.buffs[localized_spell_name("Mana Spring Totem")];
+        if mst then
+            if mst.id == 5675 then
+                mp2 = 4;
+            elseif mst.id == 10495 then
+                mp2 = 6;
+            elseif mst.id == 10496 then
+                mp2 = 8;
+            else
+                mp2 = 10;
+            end
+        else
+            mp2 = 10;
+        end
+        loadout.mp5 = loadout.mp5 + 5*mp2/2;
+    end
 end
 
 local function apply_ally_buffs(loadout, raw_stats_diff)
@@ -8468,6 +8509,52 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
     elseif bit.band(buffs2.flask_of_distilled_wisdom.flag, loadout.buffs2) == 0 and 
         loadout.buffs[buffs2.flask_of_distilled_wisdom.id] then
         loadout.mana = max(0, loadout.mana - 2000);
+    end
+
+    if bit.band(buffs2.boomkin.flag, loadout.buffs2) ~= 0 and not loadout.buffs[buffs2.boomkin.id] and 
+        loadout.always_assume_buffs then
+
+        for i = 2, 7 do
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + 0.1;
+        end
+        loadout.healing_crit = loadout.healing_crit + 0.1;
+
+    elseif bit.band(buffs2.boomkin.flag, loadout.buffs2) == 0 and loadout.buffs[buffs2.boomkin.id] then
+
+        for i = 2, 7 do
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] - 0.1;
+        end
+        loadout.healing_crit = loadout.healing_crit - 0.1;
+    end
+
+    if bit.band(buffs2.mageblood.flag, loadout.buffs2) ~= 0 and 
+        (loadout.buffs[buffs2.mageblood.id] or loadout.always_assume_buffs) then
+
+        loadout.mp5 = loadout.mp5 + 12;
+    end
+
+    if bit.band(buffs2.spirit_of_zanza.flag, loadout.buffs2) ~= 0 and not loadout.buffs[buffs2.spirit_of_zanza.id] and
+        loadout.always_assume_buffs then
+
+        raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] + 50;
+        raw_stats_diff.stats[stat.stamina] = raw_stats_diff.stats[stat.stamina] + 50;
+
+    elseif bit.band(buffs2.spirit_of_zanza.flag, loadout.buffs2) == 0 and loadout.buffs[buffs2.spirit_of_zanza.id] then
+
+        raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] - 50;
+        raw_stats_diff.stats[stat.stamina] = raw_stats_diff.stats[stat.stamina] - 50;
+    end
+
+    if bit.band(buffs2.kreegs_stout_beatdown.flag, loadout.buffs2) ~= 0 and not loadout.buffs[buffs2.kreegs_stout_beatdown.id] and
+        loadout.always_assume_buffs then
+
+        raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] + 25;
+        raw_stats_diff.stats[stat.int] = raw_stats_diff.stats[stat.int] - 5;
+
+    elseif bit.band(buffs2.kreegs_stout_beatdown.flag, loadout.buffs2) == 0 and loadout.buffs[buffs2.kreegs_stout_beatdown.id] then
+
+        raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] - 25;
+        raw_stats_diff.stats[stat.int] = raw_stats_diff.stats[stat.int] + 5; 
     end
 
     -- TARGET BUFFS
@@ -9257,6 +9344,20 @@ local function print_loadout(loadout)
                         loadout.target_spell_dmg_taken[5],
                         loadout.target_spell_dmg_taken[6],
                         loadout.target_spell_dmg_taken[7]));
+    print(string.format("target resistance schools: holy %.1f, fire %.1f, nature %.1f, frost %.1f, shadow %.1f, arcane %.1f", 
+                        loadout.target_res_by_school[2],
+                        loadout.target_res_by_school[3],
+                        loadout.target_res_by_school[4],
+                        loadout.target_res_by_school[5],
+                        loadout.target_res_by_school[6],
+                        loadout.target_res_by_school[7]));
+    print(string.format("target resistance schools mod: holy %.1f, fire %.1f, nature %.1f, frost %.1f, shadow %.1f, arcane %.1f", 
+                        loadout.target_mod_res_by_school[2],
+                        loadout.target_mod_res_by_school[3],
+                        loadout.target_mod_res_by_school[4],
+                        loadout.target_mod_res_by_school[5],
+                        loadout.target_mod_res_by_school[6],
+                        loadout.target_mod_res_by_school[7]));
 
     print(string.format("spell haste mod: %.3f", loadout.haste_mod));
     print(string.format("spell cost mod: %.3f", loadout.cost_mod));
@@ -10843,7 +10944,8 @@ local function update_loadouts_rhs()
 
     local num_checked_buffs = 0;
     local num_checked_target_buffs = 0;
-    for k, v in pairs(sw_frame.loadouts_frame.rhs_list.buffs) do
+    for k = 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs do
+        local v = sw_frame.loadouts_frame.rhs_list.buffs[k];
 
         if v.checkbutton.buff_type == "self1" then
             if bit.band(v.checkbutton.buff_info.flag, loadout.buffs1) ~= 0 then
@@ -10860,21 +10962,79 @@ local function update_loadouts_rhs()
                 v.checkbutton:SetChecked(false);
             end
         end
+        v.checkbutton:Hide();
     end
-    for k, v in pairs(sw_frame.loadouts_frame.rhs_list.target_buffs) do
+    for k = 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs do
+
+        local v = sw_frame.loadouts_frame.rhs_list.target_buffs[k];
         if bit.band(v.checkbutton.buff_info.flag, loadout.target_buffs1) ~= 0 then
             v.checkbutton:SetChecked(true);
             num_checked_target_buffs = num_checked_target_buffs + 1;
         else
             v.checkbutton:SetChecked(false);
         end
+        v.checkbutton:Hide();
     end
-    for k, v in pairs(sw_frame.loadouts_frame.rhs_list.target_debuffs) do
+    for k = 1, sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs do
+
+        local v = sw_frame.loadouts_frame.rhs_list.target_debuffs[k];
         if bit.band(v.checkbutton.buff_info.flag, loadout.target_debuffs1) ~= 0 then
             v.checkbutton:SetChecked(true);
             num_checked_target_buffs = num_checked_target_buffs + 1;
         else
             v.checkbutton:SetChecked(false);
+        end
+        v.checkbutton:Hide();
+    end
+    -- all checkbuttons have been hidden, now unhide and set positions depending on slider
+    local y_offset = 0;
+    local buffs_show_max = 0;
+    local num_buffs = 0;
+    local num_skips = 0;
+    local self_buffs_tab = sw_frame.loadouts_frame.rhs_list.self_buffs_frame:IsShown();
+
+    if self_buffs_tab then
+        y_offset = sw_frame.loadouts_frame.rhs_list.self_buffs_y_offset_start;
+        buffs_show_max = sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit;
+        num_buffs = sw_frame.loadouts_frame.rhs_list.buffs.num_buffs;
+        num_skips = math.floor(sw_frame.loadouts_frame.self_buffs_slider:GetValue()) + 1;
+    else
+        y_offset = sw_frame.loadouts_frame.rhs_list.target_buffs_y_offset_start;
+        buffs_show_max = sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit;
+        num_buffs = sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs +
+            sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs;
+        num_skips = math.floor(sw_frame.loadouts_frame.target_buffs_slider:GetValue()) + 1;
+    end
+
+    if self_buffs_tab then
+        for i = num_skips, math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs) do
+            --print("self: ", i);
+            sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:SetPoint("TOP", 10, y_offset);
+            sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:Show();
+            y_offset = y_offset - 20;
+        end
+    else
+        print(buffs_show_max);
+        
+        for i = num_skips, math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs) do
+            print("target buffs" , i);
+            sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:SetPoint("TOP", 10, y_offset);
+            sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:Show();
+            y_offset = y_offset - 20;
+        end
+
+        local remainder = buffs_show_max - num_skips
+            math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs);
+        num_skips = sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs - num_skips;
+        print("start_skip " , num_skips, "rem " , remainder);
+        if num_skips > 0 then
+            for i = num_skips, math.min(num_skips + remainder - 1, sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs) do
+                print("target debuffs: ", i);
+                sw_frame.loadouts_frame.rhs_list.target_debuffs[i].checkbutton:SetPoint("TOP", 10, y_offset);
+                sw_frame.loadouts_frame.rhs_list.target_debuffs[i].checkbutton:Show();
+
+                y_offset = y_offset - 20;
+            end
         end
     end
 
@@ -10893,6 +11053,7 @@ local function update_loadouts_rhs()
     else
         sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetChecked(true);
     end
+
 end
 
 local loadout_checkbutton_id_counter = 1;
@@ -11543,11 +11704,11 @@ end
 
 local function create_sw_gui_stat_comparison_frame()
 
-    sw_frame.stat_comparison_frame:SetWidth(370);
+    sw_frame.stat_comparison_frame:SetWidth(400);
     sw_frame.stat_comparison_frame:SetHeight(600);
     sw_frame.stat_comparison_frame:SetPoint("TOP", sw_frame, 0, -20);
 
-    sw_frame.stat_comparison_frame.line_y_offset = -15;
+    sw_frame.stat_comparison_frame.line_y_offset = -20;
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.instructions_label = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
@@ -11672,7 +11833,6 @@ local function create_sw_gui_stat_comparison_frame()
         v.label:SetText(v.label_str);
         v.label:SetTextColor(222/255, 192/255, 40/255);
 
-
         v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..i, sw_frame.stat_comparison_frame, "InputBoxTemplate");
         v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.stat_comparison_frame.line_y_offset);
         v.editbox:SetText("");
@@ -11779,10 +11939,10 @@ local function create_sw_gui_stat_comparison_frame()
     end);
 
 
-    sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -25, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.export_button:SetHeight(20);
-    sw_frame.stat_comparison_frame.export_button:SetWidth(110);
-    sw_frame.stat_comparison_frame.export_button:SetText("New Loadout");
+    sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -10, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.export_button:SetHeight(25);
+    sw_frame.stat_comparison_frame.export_button:SetWidth(180);
+    sw_frame.stat_comparison_frame.export_button:SetText("New loadout with difference");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
@@ -11876,22 +12036,21 @@ local function create_sw_gui_stat_comparison_frame()
 
 end
 
-local sw_frame_loadout_buff_index = 1;
+local function create_loadout_buff_checkbutton(buffs_table, buff_info, buff_type, parent_frame, func)
 
-local function create_loadout_buff_checkbutton(buffs_table, buff_info, buff_type, parent_frame, y_offset, func)
+    local index = buffs_table.num_buffs + 1;
 
-    buffs_table[sw_frame_loadout_buff_index] = {};
-    buffs_table[sw_frame_loadout_buff_index].checkbutton = CreateFrame("CheckButton", "loadout_apply_buffs_"..buff_info.id, parent_frame, "ChatConfigCheckButtonTemplate");
-    buffs_table[sw_frame_loadout_buff_index].checkbutton:SetPoint("TOP", 10, y_offset);
-    buffs_table[sw_frame_loadout_buff_index].checkbutton.buff_info = buff_info;
-    buffs_table[sw_frame_loadout_buff_index].checkbutton.buff_type = buff_type;
-    getglobal(buffs_table[sw_frame_loadout_buff_index].checkbutton:GetName() .. 'Text'):SetText(buff_info.name);
+    buffs_table[index] = {};
+    buffs_table[index].checkbutton = CreateFrame("CheckButton", "loadout_apply_buffs_"..buff_info.id, parent_frame, "ChatConfigCheckButtonTemplate");
+    buffs_table[index].checkbutton.buff_info = buff_info;
+    buffs_table[index].checkbutton.buff_type = buff_type;
+    getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_info.name);
 
-    buffs_table[sw_frame_loadout_buff_index].checkbutton:SetScript("OnClick", func);
+    buffs_table[index].checkbutton:SetScript("OnClick", func);
 
-    sw_frame_loadout_buff_index = sw_frame_loadout_buff_index + 1;
+    buffs_table.num_buffs = index;
 
-    return buffs_table[sw_frame_loadout_buff_index - 1].checkbutton;
+    return buffs_table[index].checkbutton;
 end
 
 local function create_sw_gui_loadout_frame()
@@ -11912,7 +12071,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.loadouts_select_label = sw_frame.loadouts_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.loadouts_select_label:SetFontObject(font);
-    sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame, 15, -32);
+    sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame, 0, -32);
     sw_frame.loadouts_frame.loadouts_select_label:SetText("Select Active Loadout");
     sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
@@ -11979,18 +12138,16 @@ local function create_sw_gui_loadout_frame()
 
     y_offset_lhs = y_offset_lhs - 20;
 
-
---
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label = sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetFontObject(font);
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Talents (Wowhead Link)");
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Custom talents (Wowhead Link)");
 
     y_offset_lhs = y_offset_lhs - 20;
 
     sw_frame.loadouts_frame.rhs_list.talent_editbox = 
         CreateFrame("EditBox", "sw_loadout_talent_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
-    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 20, y_offset_lhs - 2);
     --sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText("");
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetSize(150, 15);
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetAutoFocus(false);
@@ -12285,13 +12442,14 @@ local function create_sw_gui_loadout_frame()
         sw_frame.loadouts_frame.rhs_list.target_buffs_button:UnlockHighlight();
         sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetButtonState("NORMAL");
 
+        update_loadouts_rhs();
+
     end);
-    sw_frame.loadouts_frame.rhs_list.buffs_button:SetPoint("TOP", 40, y_offset_rhs);
-    sw_frame.loadouts_frame.rhs_list.buffs_button:SetText("Self Buffs");
-    sw_frame.loadouts_frame.rhs_list.buffs_button:SetWidth(90);
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetPoint("TOP", 46, y_offset_rhs);
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetText("SELF");
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetWidth(93);
     sw_frame.loadouts_frame.rhs_list.buffs_button:LockHighlight();
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetButtonState("PUSHED");
-
 
     sw_frame.loadouts_frame.rhs_list.target_buffs_button =
         CreateFrame("Button", "sw_frame_target_buffs_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
@@ -12307,16 +12465,23 @@ local function create_sw_gui_loadout_frame()
         sw_frame.loadouts_frame.rhs_list.buffs_button:UnlockHighlight();
         sw_frame.loadouts_frame.rhs_list.buffs_button:SetButtonState("NORMAL");
 
+        update_loadouts_rhs();
+
     end);
-    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOP", 130, y_offset_rhs);
-    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetText("Target Buffs");
-    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetWidth(90);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOP", 140, y_offset_rhs);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetText("TARGET");
+    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetWidth(93);
 
     y_offset_rhs = y_offset_rhs - 20;
 
     sw_frame.loadouts_frame.rhs_list.buffs = {};
+    sw_frame.loadouts_frame.rhs_list.buffs.num_buffs = 0;
+
     sw_frame.loadouts_frame.rhs_list.target_buffs = {};
+    sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs = 0;
+
     sw_frame.loadouts_frame.rhs_list.target_debuffs = {};
+    sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs = 0;
 
     local check_button_buff_func = function(self)
 
@@ -12420,9 +12585,103 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
     end);
 
+
+    sw_frame.loadouts_frame.rhs_list.target_resi_editbox = {};
+
+    local num_target_resi_labels = 6;
+    local target_resi_labels = {
+        [2] = {
+            label = "Holy",
+            color = {255/255, 255/255, 153/255}
+        },
+        [3] = {
+            label = "Fire",
+            color = {255/255, 0, 0}
+        },
+        [4] = {
+            label = "Nature",
+            color = {0, 153/255, 51/255}
+        },
+        [5] = {
+            label = "Frost",
+            color = {51/255, 102/255, 255/255}
+        },
+        [6] = {
+            label = "Shadow",
+            color = {102/255, 0, 102/255}
+        },
+        [7] = {
+            label = "Arcane",
+            color = {102/255, 0, 204/255}
+        }
+    };
+
+    local target_resi_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
+
+    target_resi_label:SetFontObject(font);
+    target_resi_label:SetPoint("TOP", 80, y_offset_rhs_target_buffs);
+    target_resi_label:SetText("Presumed enemy resistances");
+
+    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
+
+    for i = 2, 7 do
+
+        local resi_school_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
+
+        resi_school_label:SetFontObject(font);
+        resi_school_label:SetPoint("TOP", 30, y_offset_rhs_target_buffs);
+        resi_school_label:SetText(target_resi_labels[i].label);
+        resi_school_label:SetTextColor(
+            target_resi_labels[i].color[1], target_resi_labels[i].color[2], target_resi_labels[i].color[3]
+        );
+
+
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i] = 
+            CreateFrame("EditBox", "sw_"..target_resi_labels[i].label.."editbox", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "InputBoxTemplate");
+
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i].school_type = i;
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetPoint("TOP", 150, y_offset_rhs_target_buffs);
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetText("");
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetAutoFocus(false);
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetSize(60, 10);
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTextChanged", function(self)
+
+            if self:GetText() ~= "" and not string.match(self:GetText(), "[^0123456789]") then
+                sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = tonumber(self:GetText());
+            else 
+                self:ClearFocus();
+                self:SetText(tostring(sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type]));
+            end
+        end);
+
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEnterPressed", function(self)
+        	self:ClearFocus()
+        end);
+        
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEscapePressed", function(self)
+        	self:ClearFocus()
+        end);
+
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTabPressed", function(self)
+
+            local next_index = 0;
+            if IsShiftKeyDown() then
+                next_index = 1 + ((i-2) %num_target_resi_labels);
+            else
+                next_index = 1 + (i %num_target_resi_labels);
+
+            end
+        	self:ClearFocus()
+            sw_frame.loadouts_frame.rhs_list.target_resi_editbox[next_index + 1]:SetFocus();
+        end);
+
+
+        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
+    end
+
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton = 
         CreateFrame("CheckButton", "sw_loadout_select_all_target_buffs", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "ChatConfigCheckButtonTemplate");
-    sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOP", 10, y_offset_rhs_buffs);
+    sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOP", 10, y_offset_rhs_target_buffs);
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetScript("OnClick", function(self)
@@ -12436,58 +12695,43 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
     end);
 
+
     y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
     y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
 
+    sw_frame.loadouts_frame.rhs_list.self_buffs_y_offset_start = y_offset_rhs_buffs;
+    sw_frame.loadouts_frame.rhs_list.target_buffs_y_offset_start = y_offset_rhs_target_buffs;
+
     -- general buff
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.ony, "self1", 
-                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-    create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.wcb, "self1", 
-                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.songflower, "self1", 
-                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.spirit_of_zandalar, "self1", 
-                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.dmf_dmg, "self1", 
-                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                    sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     -- general target buff
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.amplify_magic, "target_buffs1", 
-                                    sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                    sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func);
     create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.dampen_magic, "target_buffs1", 
-                                    sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
-                                    check_button_buff_func);
-    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                    sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func);
 
     -- general target debuff
 
     if faction == "Horde" then
         -- general horde buffs
-        
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.wcb, "self1", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.manaspring_totem, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     else
         -- general ally buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.bok, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.bow, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     end
-
-
 
     -- caster buff/debuffs
     if class == "MAGE" or class == "PRIEST" or class == "WARLOCK" or
@@ -12495,241 +12739,212 @@ local function create_sw_gui_loadout_frame()
 
         -- self buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.runn_tum_tuber_surprise, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.power_infusion, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.int, "self1",
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.motw, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.spirit, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.dmt_crit, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.toep, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.greater_arcane_elixir, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         -- self buffs 2
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.zandalarian_hero_charm, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.flask_of_supreme_power, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.flask_of_distilled_wisdom, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.nightfin, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.boomkin, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.mageblood, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.spirit_of_zanza, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.kreegs_stout_beatdown, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
 
         -- target buffs
         -- target debuffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.nightfall, 
-                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                         check_button_buff_func);
 
         -- shadow dmg classes
         if class == "PRIEST" or class == "WARLOCK" then
 
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.elixir_of_shadow_power, "self1", 
-                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                            check_button_buff_func);
-            y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.improved_shadow_bolt,
-                                             "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                             y_offset_rhs_target_buffs, check_button_buff_func);
-            y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                            "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                            check_button_buff_func);
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.shadow_weaving,
-                                             "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                             y_offset_rhs_target_buffs, check_button_buff_func);
-            y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                            "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                            check_button_buff_func);
         end
 
         -- fire dmg classes
         if class == "MAGE" or class == "WARLOCK" or class == "SHAMAN" then
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.elixir_of_greater_firepower, "self1", 
-                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                            check_button_buff_func);
-            y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.improved_scorch,
-                                             "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                             y_offset_rhs_target_buffs, check_button_buff_func);
-            y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                            "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                            check_button_buff_func);
 
         end
         -- frost dmg classes
         if class == "MAGE" or class == "SHAMAN" then
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.elixir_of_frost_power, "self1", 
-                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                            check_button_buff_func);
-            y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.wc, 
                                              "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                             y_offset_rhs_target_buffs, check_button_buff_func);
-            y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                             check_button_buff_func);
         end
         -- nature dmg classes
         if class == "DRUID" or class == "SHAMAN" then
             create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.stormstrike,
                                              "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                             y_offset_rhs_target_buffs, check_button_buff_func);
-            y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                             check_button_buff_func);
         end
-
        
     end
     -- mage buff/debuffs
     if class == "MAGE" then
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.arcane_power, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.mind_quickening_gem, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.hazzrahs_charm_of_magic, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.mage_armor, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
                                          "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                         check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
                                          "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                         check_button_buff_func);
 
     -- warlock buff/debuffs
     elseif class == "WARLOCK" then
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.hazzrahs_charm_of_destr, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.amplify_curse, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.demonic_sacrifice, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
-                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                        check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
-                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                        check_button_buff_func);
     -- shaman buff/debuffs
     elseif class == "SHAMAN" then
         -- self buffs1
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.wushoolays_charm_of_spirits, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         -- self buffs2
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.natural_alignment_crystal, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         -- target buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.healing_way, "target_buffs1", 
-                                        sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
-                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                        check_button_buff_func);
     -- paladin buff/debuffs
     elseif class == "PALADIN" then
         -- self buffs
         --create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.grileks_charm_of_valor, "self1", 
-        --                                sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs,
-        --                                check_button_buff_func);
-        --y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        --                                sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.vengeance, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs- 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         -- target buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.blessing_of_light, "target_buffs1", 
-                                        sw_frame.loadouts_frame.rhs_list.target_buffs_frame, y_offset_rhs_target_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func);
     -- druid buff/debuffs
     elseif class == "DRUID" then
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.wushoolays_charm_of_nature, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
-                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                        "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
+                                        check_button_buff_func);
     elseif class == "PRIEST" then
     -- priest buff/debuffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.shadow_form, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.hazzrahs_charm_of_healing, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.blessed_prayer_beads, "self2", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
                                          "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
-                                         y_offset_rhs_target_buffs, check_button_buff_func);
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
+                                         check_button_buff_func);
     end
    
     if race == "Troll" then
         local berserking_checkbutton = 
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.berserking, "self1", 
-                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                        check_button_buff_func);
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         getglobal(berserking_checkbutton:GetName()).tooltip = 
             "If berserk is active, 10-30% haste is applied depending on your HP when used. Otherwise 10% is default";
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-            create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.troll_vs_beast, "self2", 
-                                            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, y_offset_rhs_buffs, 
-                                            check_button_buff_func);
-        y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.troll_vs_beast, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
     end
+
+    sw_frame.loadouts_frame.self_buffs_slider =
+        CreateFrame("Slider", "sw_self_buffs_slider", sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "OptionsSliderTemplate");
+    sw_frame.loadouts_frame.self_buffs_slider:SetOrientation('VERTICAL');
+    sw_frame.loadouts_frame.self_buffs_slider:SetPoint("TOPRIGHT", 115, -70);
+    sw_frame.loadouts_frame.self_buffs_slider:SetSize(15, 505);
+    sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit =
+        math.floor(sw_frame.loadouts_frame.self_buffs_slider:GetHeight()/20);
+    print( sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit);
+    sw_frame.loadouts_frame.self_buffs_slider:SetMinMaxValues(
+        0, 
+        max(0, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs - sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit)
+    );
+    getglobal(sw_frame.loadouts_frame.self_buffs_slider:GetName()..'Text'):SetText("");
+    getglobal(sw_frame.loadouts_frame.self_buffs_slider:GetName()..'Low'):SetText("");
+    getglobal(sw_frame.loadouts_frame.self_buffs_slider:GetName()..'High'):SetText("");
+    sw_frame.loadouts_frame.self_buffs_slider:SetValue(0);
+    sw_frame.loadouts_frame.self_buffs_slider:SetValueStep(1);
+    sw_frame.loadouts_frame.self_buffs_slider:SetScript("OnValueChanged", function(self, val)
+
+        update_loadouts_rhs();
+    end);
+
+    sw_frame.loadouts_frame.target_buffs_slider =
+        CreateFrame("Slider", "sw_target_buffs_slider", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "OptionsSliderTemplate");
+    sw_frame.loadouts_frame.target_buffs_slider:SetOrientation('VERTICAL');
+    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", 115, -175);
+    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 395);
+    sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit = 
+        math.floor(sw_frame.loadouts_frame.target_buffs_slider:GetHeight()/20);
+    print(sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit);
+    sw_frame.loadouts_frame.target_buffs_slider:SetMinMaxValues(
+        0, 
+        max(0, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs + sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs - sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit)
+    );
+    getglobal(sw_frame.loadouts_frame.target_buffs_slider:GetName()..'Text'):SetText("");
+    getglobal(sw_frame.loadouts_frame.target_buffs_slider:GetName()..'Low'):SetText("");
+    getglobal(sw_frame.loadouts_frame.target_buffs_slider:GetName()..'High'):SetText("");
+    sw_frame.loadouts_frame.target_buffs_slider:SetValue(0);
+    sw_frame.loadouts_frame.target_buffs_slider:SetValueStep(1);
+    sw_frame.loadouts_frame.target_buffs_slider:SetScript("OnValueChanged", function(self, val)
+        update_loadouts_rhs();
+    end);
+
+
 end
 
 local function action_id_of_button(button)
@@ -12943,7 +13158,7 @@ local function create_sw_base_gui()
     sw_frame:RegisterEvent("UPDATE_STEALTH");
     sw_frame:RegisterEvent("UPDATE_SHAPESHIFT_FORM");
 
-    sw_frame:SetWidth(370);
+    sw_frame:SetWidth(400);
     sw_frame:SetHeight(600);
     sw_frame:SetPoint("TOPLEFT", 400, -30);
 
@@ -12992,6 +13207,8 @@ local function create_sw_base_gui()
                         tooltip:AddLine(sw_addon_name..": Version "..version);
                         tooltip:AddLine("Left/Right click: Toggle addon frame");
                         tooltip:AddLine("This icon can be removed in the addon's settings tab");
+                        tooltip:AddLine("If this addon confuses you, instructions and pointers at");
+                        tooltip:AddLine("https://www.curseforge.com/wow/addons/stat-weights-classic");
                     end,
                 });
                 if libstub_icon then
@@ -13168,7 +13385,7 @@ local function create_sw_base_gui()
 
     sw_frame.tab3 = CreateFrame("Button", "__sw_stat_comparison_button", sw_frame, "UIPanelButtonTemplate"); 
     sw_frame.tab3:SetPoint("TOPLEFT", 238, -25);
-    sw_frame.tab3:SetWidth(120);
+    sw_frame.tab3:SetWidth(150);
     sw_frame.tab3:SetHeight(25);
     sw_frame.tab3:SetText("Stat Comparison");
     sw_frame.tab3:SetScript("OnClick", function()
@@ -13602,4 +13819,4 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
---__sw__use_defaults__ = 1;
+__sw__use_defaults__ = 1;
