@@ -101,7 +101,7 @@ local buffs1 = {
     hazzrahs_charm_of_destr     = { flag = bit.lshift(1,21), id = 24544, name = "Hazza'rah'Charm"},-- ok
     amplify_curse               = { flag = bit.lshift(1,22), id = 18288, name = "Amplify Curse"},-- ok
     demonic_sacrifice           = { flag = bit.lshift(1,23), id = 18791, name = "Demonic Sacrifice (Succ)"},-- ok
-    hazzrahs_charm_of_healing   = { flag = bit.lshift(1,24), id = 24546, name = "Hazza'rah'Charmof Healing"},-- ok
+    hazzrahs_charm_of_healing   = { flag = bit.lshift(1,24), id = 24546, name = "Hazza'rah'Charm Healing"},-- ok
     shadow_form                 = { flag = bit.lshift(1,25), id = 15473, name = "Shadow Form"},-- ok
     wushoolays_charm_of_spirits = { flag = bit.lshift(1,26), id = 24499, name = "Wushoolay's Charm"},-- ok
     wushoolays_charm_of_nature  = { flag = bit.lshift(1,27), id = 24542, name = "Wushoolay's Charm"},-- ok
@@ -114,14 +114,14 @@ local buffs1 = {
 };
 
 local buffs2 = {
-    zandalarian_hero_charm      = { flag = bit.lshift(1,1),  id = 24658, name = "Zandalarian Hero Charm"}, --ok casters
+    zandalarian_hero_charm      = { flag = bit.lshift(1,1),  id = 24658, name = "Zandalarian Hero Charm", item_icon_id = 19950}, --ok casters
     bok                         = { flag = bit.lshift(1,2),  id = 20217, name = "Blessing of Kings"}, --ok
     vengeance                   = { flag = bit.lshift(1,3),  id = 20059, name = "Vengeance"}, --ok
     natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Natural Alignment Crystal"}, --ok
     blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"}, --ok
-    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)"}, --ok
+    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)", item_icon_id = 20557}, --ok
     flask_of_supreme_power      = { flag = bit.lshift(1,7),  id = 17628, name = "Flask of Supreme Power"}, --ok
-    nightfin                    = { flag = bit.lshift(1,8),  id = 18233, name = "Nightfin Soup"}, --ok
+    nightfin                    = { flag = bit.lshift(1,8),  id = 18194, name = "Nightfin Soup"}, --ok
     mage_armor                  = { flag = bit.lshift(1,9),  id = 22783, name = "Mage Armor"}, --ok
     flask_of_distilled_wisdom   = { flag = bit.lshift(1,10), id = 17627, name = "Flask of Distilled Wisdom"}, --ok
     bow                         = { flag = bit.lshift(1,11), id = 25290, name = "Blessing of Wisdom"}, --ok
@@ -8514,16 +8514,16 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
         loadout.always_assume_buffs then
 
         for i = 2, 7 do
-            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + 0.1;
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + 0.03;
         end
-        loadout.healing_crit = loadout.healing_crit + 0.1;
+        loadout.healing_crit = loadout.healing_crit + 0.03;
 
     elseif bit.band(buffs2.boomkin.flag, loadout.buffs2) == 0 and loadout.buffs[buffs2.boomkin.id] then
 
         for i = 2, 7 do
-            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] - 0.1;
+            loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] - 0.03;
         end
-        loadout.healing_crit = loadout.healing_crit - 0.1;
+        loadout.healing_crit = loadout.healing_crit - 0.03;
     end
 
     if bit.band(buffs2.mageblood.flag, loadout.buffs2) ~= 0 and 
@@ -8536,12 +8536,12 @@ local function apply_caster_buffs(loadout, raw_stats_diff)
         loadout.always_assume_buffs then
 
         raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] + 50;
-        raw_stats_diff.stats[stat.stamina] = raw_stats_diff.stats[stat.stamina] + 50;
+        raw_stats_diff.stats[stat.stam] = raw_stats_diff.stats[stat.stam] + 50;
 
     elseif bit.band(buffs2.spirit_of_zanza.flag, loadout.buffs2) == 0 and loadout.buffs[buffs2.spirit_of_zanza.id] then
 
         raw_stats_diff.stats[stat.spirit] = raw_stats_diff.stats[stat.spirit] - 50;
-        raw_stats_diff.stats[stat.stamina] = raw_stats_diff.stats[stat.stamina] - 50;
+        raw_stats_diff.stats[stat.stam] = raw_stats_diff.stats[stat.stam] - 50;
     end
 
     if bit.band(buffs2.kreegs_stout_beatdown.flag, loadout.buffs2) ~= 0 and not loadout.buffs[buffs2.kreegs_stout_beatdown.id] and
@@ -10962,6 +10962,7 @@ local function update_loadouts_rhs()
             end
         end
         v.checkbutton:Hide();
+        v.icon:Hide();
     end
     for k = 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs do
 
@@ -10973,6 +10974,7 @@ local function update_loadouts_rhs()
             v.checkbutton:SetChecked(false);
         end
         v.checkbutton:Hide();
+        v.icon:Hide();
     end
     for k = 1, sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs do
 
@@ -10984,6 +10986,7 @@ local function update_loadouts_rhs()
             v.checkbutton:SetChecked(false);
         end
         v.checkbutton:Hide();
+        v.icon:Hide();
     end
     -- all checkbuttons have been hidden, now unhide and set positions depending on slider
     local y_offset = 0;
@@ -11005,32 +11008,36 @@ local function update_loadouts_rhs()
         num_skips = math.floor(sw_frame.loadouts_frame.target_buffs_slider:GetValue()) + 1;
     end
 
+    local icon_offset = -4;
+
     if self_buffs_tab then
         for i = num_skips, math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs) do
             --print("self: ", i);
-            sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:SetPoint("TOP", 10, y_offset);
+            sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
             sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:Show();
+            sw_frame.loadouts_frame.rhs_list.buffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
+            sw_frame.loadouts_frame.rhs_list.buffs[i].icon:Show();
             y_offset = y_offset - 20;
         end
     else
-        print(buffs_show_max);
         
         for i = num_skips, math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs) do
-            print("target buffs" , i);
-            sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:SetPoint("TOP", 10, y_offset);
+            sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
             sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:Show();
+            sw_frame.loadouts_frame.rhs_list.target_buffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
+            sw_frame.loadouts_frame.rhs_list.target_buffs[i].icon:Show();
             y_offset = y_offset - 20;
         end
 
         local remainder = buffs_show_max - num_skips
             math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs);
         num_skips = sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs - num_skips;
-        print("start_skip " , num_skips, "rem " , remainder);
         if num_skips > 0 then
             for i = num_skips, math.min(num_skips + remainder - 1, sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs) do
-                print("target debuffs: ", i);
-                sw_frame.loadouts_frame.rhs_list.target_debuffs[i].checkbutton:SetPoint("TOP", 10, y_offset);
+                sw_frame.loadouts_frame.rhs_list.target_debuffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
                 sw_frame.loadouts_frame.rhs_list.target_debuffs[i].checkbutton:Show();
+                sw_frame.loadouts_frame.rhs_list.target_debuffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
+                sw_frame.loadouts_frame.rhs_list.target_debuffs[i].icon:Show();
 
                 y_offset = y_offset - 20;
             end
@@ -11063,8 +11070,6 @@ function update_loadouts_lhs()
     local y_offset = -13;
 
     local max_slider_val = math.max(0, sw_frame.loadouts_frame.lhs_list.num_loadouts - sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit);
-
-    print("val: ", sw_frame.loadouts_frame.loadouts_slider:GetValue(), "max: ", max_slider_val);
 
     sw_frame.loadouts_frame.loadouts_slider:SetMinMaxValues(0, max_slider_val);
     if sw_frame.loadouts_frame.loadouts_slider:GetValue() > max_slider_val then
@@ -11110,7 +11115,6 @@ function update_loadouts_lhs()
     for k = num_skips, math.min(num_skips + sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit - 1, 
                                 sw_frame.loadouts_frame.lhs_list.num_loadouts) do
 
-        print(k);
         local v = sw_frame.loadouts_frame.lhs_list.loadouts[k];
 
         getglobal(v.check_button:GetName() .. 'Text'):SetText(v.loadout.name);
@@ -12065,8 +12069,17 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_info, buff_type
     buffs_table[index].checkbutton.buff_info = buff_info;
     buffs_table[index].checkbutton.buff_type = buff_type;
     getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_info.name);
-
     buffs_table[index].checkbutton:SetScript("OnClick", func);
+
+    buffs_table[index].icon = CreateFrame("Frame", "loadout_apply_buffs_icon_"..buff_info.id, parent_frame);
+    buffs_table[index].icon:SetSize(15, 15);
+    local tex = buffs_table[index].icon:CreateTexture(nil);
+    tex:SetAllPoints(buffs_table[index].icon);
+    if buff_info.item_icon_id then
+        tex:SetTexture(GetItemIcon(buff_info.item_icon_id));
+    else
+        tex:SetTexture(GetSpellTexture(buff_info.id));
+    end
 
     buffs_table.num_buffs = index;
 
@@ -12075,30 +12088,39 @@ end
 
 local function create_sw_gui_loadout_frame()
 
-    sw_frame.loadouts_frame:SetWidth(370);
+    sw_frame.loadouts_frame:SetWidth(400);
     sw_frame.loadouts_frame:SetHeight(600);
     sw_frame.loadouts_frame:SetPoint("TOP", sw_frame, 0, -20);
 
     sw_frame.loadouts_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadouts_frame);
-    sw_frame.loadouts_frame.lhs_list:SetWidth(150);
+    sw_frame.loadouts_frame.lhs_list:SetWidth(180);
     sw_frame.loadouts_frame.lhs_list:SetHeight(600-30-200-10-25-10-20-20);
     sw_frame.loadouts_frame.lhs_list:SetPoint("TOPLEFT", sw_frame, 0, -50);
 
+    sw_frame.loadouts_frame.lhs_list:SetScript("OnMouseWheel", function(self, dir)
+        local min_val, max_val = sw_frame.loadouts_frame.loadouts_slider:GetMinMaxValues();
+        local val = sw_frame.loadouts_frame.loadouts_slider:GetValue();
+        if val - dir >= min_val and val - dir <= max_val then
+            sw_frame.loadouts_frame.loadouts_slider:SetValue(val - dir);
+            update_loadouts_lhs();
+        end
+    end);
+
     sw_frame.loadouts_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs", sw_frame.loadouts_frame);
-    sw_frame.loadouts_frame.rhs_list:SetWidth(150);
-    sw_frame.loadouts_frame.rhs_list:SetHeight(600-30);
-    sw_frame.loadouts_frame.rhs_list:SetPoint("TOP", sw_frame, 0, -20);
+    sw_frame.loadouts_frame.rhs_list:SetWidth(400-180);
+    sw_frame.loadouts_frame.rhs_list:SetHeight(600-30-30);
+    sw_frame.loadouts_frame.rhs_list:SetPoint("TOPLEFT", sw_frame, 180, -50);
 
     sw_frame.loadouts_frame.loadouts_select_label = sw_frame.loadouts_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.loadouts_select_label:SetFontObject(font);
-    sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame, 0, -32);
+    sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame.lhs_list, 15, -2);
     sw_frame.loadouts_frame.loadouts_select_label:SetText("Select Active Loadout");
     sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     sw_frame.loadouts_frame.loadouts_slider =
         CreateFrame("Slider", "sw_loadouts_slider", sw_frame.loadouts_frame.lhs_list, "OptionsSliderTemplate");
     sw_frame.loadouts_frame.loadouts_slider:SetOrientation('VERTICAL');
-    sw_frame.loadouts_frame.loadouts_slider:SetPoint("TOPRIGHT", 30, -14);
+    sw_frame.loadouts_frame.loadouts_slider:SetPoint("TOPRIGHT", 0, -14);
     sw_frame.loadouts_frame.loadouts_slider:SetSize(15, 248);
     sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit =
         math.floor(sw_frame.loadouts_frame.loadouts_slider:GetHeight()/20);
@@ -12114,14 +12136,14 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.rhs_list.self_buffs_frame = 
         CreateFrame("ScrollFrame", "sw_loadout_frame_rhs_self_buffs", sw_frame.loadouts_frame.rhs_list);
-    sw_frame.loadouts_frame.rhs_list.self_buffs_frame:SetWidth(150);
-    sw_frame.loadouts_frame.rhs_list.self_buffs_frame:SetHeight(500);
+    sw_frame.loadouts_frame.rhs_list.self_buffs_frame:SetWidth(400-180);
+    sw_frame.loadouts_frame.rhs_list.self_buffs_frame:SetHeight(600-30-30);
     sw_frame.loadouts_frame.rhs_list.self_buffs_frame:SetPoint("TOPLEFT", sw_frame.loadouts_frame.rhs_list, 0, 0);
 
     sw_frame.loadouts_frame.rhs_list.target_buffs_frame = 
         CreateFrame("ScrollFrame", "sw_loadout_frame_rhs_target_buffs", sw_frame.loadouts_frame.rhs_list);
-    sw_frame.loadouts_frame.rhs_list.target_buffs_frame:SetWidth(150);
-    sw_frame.loadouts_frame.rhs_list.target_buffs_frame:SetHeight(500);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_frame:SetWidth(400-180);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_frame:SetHeight(600-30-30);
     sw_frame.loadouts_frame.rhs_list.target_buffs_frame:SetPoint("TOPLEFT", sw_frame.loadouts_frame.rhs_list, 0, 0);
     sw_frame.loadouts_frame.rhs_list.target_buffs_frame:Hide();
 
@@ -12178,7 +12200,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label = sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetFontObject(font);
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Custom talents (Wowhead Link)");
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Custom talents (Wowhead link)");
 
     y_offset_lhs = y_offset_lhs - 20;
 
@@ -12462,8 +12484,7 @@ local function create_sw_gui_loadout_frame()
         print_loadout(active_loadout_buffed_talented_copy());
     end);
 
-    local y_offset_rhs = -30;
-
+    local y_offset_rhs = 0;
 
     sw_frame.loadouts_frame.rhs_list.buffs_button =
         CreateFrame("Button", "sw_frame_buffs_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
@@ -12482,7 +12503,7 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
 
     end);
-    sw_frame.loadouts_frame.rhs_list.buffs_button:SetPoint("TOP", 46, y_offset_rhs);
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetPoint("TOPLEFT", 20, y_offset_rhs);
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetText("SELF");
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetWidth(93);
     sw_frame.loadouts_frame.rhs_list.buffs_button:LockHighlight();
@@ -12505,7 +12526,7 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
 
     end);
-    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOP", 140, y_offset_rhs);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOPLEFT", 93 + 20, y_offset_rhs);
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetText("TARGET");
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetWidth(93);
 
@@ -12606,7 +12627,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton = 
         CreateFrame("CheckButton", "sw_loadout_select_all_buffs", sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "ChatConfigCheckButtonTemplate");
-    sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetPoint("TOP", 10, y_offset_rhs_buffs);
+    sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetPoint("TOPLEFT", 20, y_offset_rhs_buffs);
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
 
@@ -12656,7 +12677,7 @@ local function create_sw_gui_loadout_frame()
     local target_resi_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
 
     target_resi_label:SetFontObject(font);
-    target_resi_label:SetPoint("TOP", 80, y_offset_rhs_target_buffs);
+    target_resi_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
     target_resi_label:SetText("Presumed enemy resistances");
 
     y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
@@ -12666,7 +12687,7 @@ local function create_sw_gui_loadout_frame()
         local resi_school_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
 
         resi_school_label:SetFontObject(font);
-        resi_school_label:SetPoint("TOP", 30, y_offset_rhs_target_buffs);
+        resi_school_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
         resi_school_label:SetText(target_resi_labels[i].label);
         resi_school_label:SetTextColor(
             target_resi_labels[i].color[1], target_resi_labels[i].color[2], target_resi_labels[i].color[3]
@@ -12677,7 +12698,7 @@ local function create_sw_gui_loadout_frame()
             CreateFrame("EditBox", "sw_"..target_resi_labels[i].label.."editbox", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "InputBoxTemplate");
 
         sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i].school_type = i;
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetPoint("TOP", 150, y_offset_rhs_target_buffs);
+        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetPoint("TOPLEFT", 130, y_offset_rhs_target_buffs);
         sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetText("");
         sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetAutoFocus(false);
         sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetSize(60, 10);
@@ -12718,7 +12739,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton = 
         CreateFrame("CheckButton", "sw_loadout_select_all_target_buffs", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "ChatConfigCheckButtonTemplate");
-    sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOP", 10, y_offset_rhs_target_buffs);
+    sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOPLEFT", 20, y_offset_rhs_target_buffs);
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetScript("OnClick", function(self)
@@ -12941,11 +12962,10 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.self_buffs_slider =
         CreateFrame("Slider", "sw_self_buffs_slider", sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "OptionsSliderTemplate");
     sw_frame.loadouts_frame.self_buffs_slider:SetOrientation('VERTICAL');
-    sw_frame.loadouts_frame.self_buffs_slider:SetPoint("TOPRIGHT", 115, -70);
+    sw_frame.loadouts_frame.self_buffs_slider:SetPoint("TOPRIGHT", -10, -42);
     sw_frame.loadouts_frame.self_buffs_slider:SetSize(15, 505);
     sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit =
         math.floor(sw_frame.loadouts_frame.self_buffs_slider:GetHeight()/20);
-    print( sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit);
     sw_frame.loadouts_frame.self_buffs_slider:SetMinMaxValues(
         0, 
         max(0, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs - sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit)
@@ -12960,14 +12980,22 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
     end);
 
+    sw_frame.loadouts_frame.rhs_list.self_buffs_frame:SetScript("OnMouseWheel", function(self, dir)
+        local min_val, max_val = sw_frame.loadouts_frame.self_buffs_slider:GetMinMaxValues();
+        local val = sw_frame.loadouts_frame.self_buffs_slider:GetValue();
+        if val - dir >= min_val and val - dir <= max_val then
+            sw_frame.loadouts_frame.self_buffs_slider:SetValue(val - dir);
+            update_loadouts_rhs();
+        end
+    end);
+
     sw_frame.loadouts_frame.target_buffs_slider =
         CreateFrame("Slider", "sw_target_buffs_slider", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "OptionsSliderTemplate");
     sw_frame.loadouts_frame.target_buffs_slider:SetOrientation('VERTICAL');
-    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", 115, -175);
-    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 395);
+    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -147);
+    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 400);
     sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit = 
         math.floor(sw_frame.loadouts_frame.target_buffs_slider:GetHeight()/20);
-    print(sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit);
     sw_frame.loadouts_frame.target_buffs_slider:SetMinMaxValues(
         0, 
         max(0, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs + sw_frame.loadouts_frame.rhs_list.target_debuffs.num_buffs - sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit)
@@ -12979,6 +13007,15 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.target_buffs_slider:SetValueStep(1);
     sw_frame.loadouts_frame.target_buffs_slider:SetScript("OnValueChanged", function(self, val)
         update_loadouts_rhs();
+    end);
+
+    sw_frame.loadouts_frame.rhs_list.target_buffs_frame:SetScript("OnMouseWheel", function(self, dir)
+        local min_val, max_val = sw_frame.loadouts_frame.target_buffs_slider:GetMinMaxValues();
+        local val = sw_frame.loadouts_frame.target_buffs_slider:GetValue();
+        if val - dir >= min_val and val - dir <= max_val then
+            sw_frame.loadouts_frame.target_buffs_slider:SetValue(val - dir);
+            update_loadouts_rhs();
+        end
     end);
 
 
@@ -13856,4 +13893,4 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
-__sw__use_defaults__ = 1;
+--__sw__use_defaults__ = 1;
