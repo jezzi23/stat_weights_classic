@@ -9481,7 +9481,7 @@ local function spell_coef(spell_info, spell_name)
         -- pyroblast and fireball dots are special...
         if spell_name == localized_spell_name("Pyroblast") then
             direct_coef = 1.0;
-            ot_coef = 0.65;
+            ot_coef = 0.6;
         elseif spell_name == localized_spell_name("Fireball") then
             direct_coef = 1.0;
             ot_coef = 0;
