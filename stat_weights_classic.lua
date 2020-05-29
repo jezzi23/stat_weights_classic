@@ -1,4 +1,3 @@
- --ok
 --MIT License
 --
 --Copyright (c) Stat Weights Classic
@@ -11063,6 +11062,19 @@ function update_loadouts_lhs()
 
     local y_offset = -13;
 
+    local max_slider_val = math.max(0, sw_frame.loadouts_frame.lhs_list.num_loadouts - sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit);
+
+    print("val: ", sw_frame.loadouts_frame.loadouts_slider:GetValue(), "max: ", max_slider_val);
+
+    sw_frame.loadouts_frame.loadouts_slider:SetMinMaxValues(0, max_slider_val);
+    if sw_frame.loadouts_frame.loadouts_slider:GetValue() > max_slider_val then
+        sw_frame.loadouts_frame.loadouts_slider:SetValue(max_slider_val);
+    end
+
+    local num_skips = math.floor(sw_frame.loadouts_frame.loadouts_slider:GetValue()) + 1;
+
+
+    -- precheck to create if needed and hide by default
     for k, v in pairs(sw_frame.loadouts_frame.lhs_list.loadouts) do
 
         local checkbutton_name = "sw_frame_loadouts_lhs_list"..k;
@@ -11089,21 +11101,29 @@ function update_loadouts_lhs()
 
                 update_loadouts_rhs();
             end);
-
         end
+
+        v.check_button:Hide();
+    end
+
+    -- show the ones in frames according to scroll slider
+    for k = num_skips, math.min(num_skips + sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit - 1, 
+                                sw_frame.loadouts_frame.lhs_list.num_loadouts) do
+
+        print(k);
+        local v = sw_frame.loadouts_frame.lhs_list.loadouts[k];
+
+        getglobal(v.check_button:GetName() .. 'Text'):SetText(v.loadout.name);
+        v.check_button:SetPoint("TOPLEFT", 10, y_offset);
+        v.check_button:Show();
+
         if k == sw_frame.loadouts_frame.lhs_list.active_loadout then
             v.check_button:SetChecked(true);
         else
             v.check_button:SetChecked(false);
         end
-        v.check_button.target_index = k;
 
-        v.check_button:Show();
-        v.check_button:SetPoint("TOPLEFT", 10, y_offset);
-
-        getglobal(v.check_button:GetName() .. 'Text'):SetText(v.loadout.name);
-
-       y_offset = y_offset - 20;
+        y_offset = y_offset - 20;
     end
 
     update_loadouts_rhs();
@@ -12074,6 +12094,23 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame, 0, -32);
     sw_frame.loadouts_frame.loadouts_select_label:SetText("Select Active Loadout");
     sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.loadouts_frame.loadouts_slider =
+        CreateFrame("Slider", "sw_loadouts_slider", sw_frame.loadouts_frame.lhs_list, "OptionsSliderTemplate");
+    sw_frame.loadouts_frame.loadouts_slider:SetOrientation('VERTICAL');
+    sw_frame.loadouts_frame.loadouts_slider:SetPoint("TOPRIGHT", 30, -14);
+    sw_frame.loadouts_frame.loadouts_slider:SetSize(15, 248);
+    sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit =
+        math.floor(sw_frame.loadouts_frame.loadouts_slider:GetHeight()/20);
+    getglobal(sw_frame.loadouts_frame.loadouts_slider:GetName()..'Text'):SetText("");
+    getglobal(sw_frame.loadouts_frame.loadouts_slider:GetName()..'Low'):SetText("");
+    getglobal(sw_frame.loadouts_frame.loadouts_slider:GetName()..'High'):SetText("");
+    sw_frame.loadouts_frame.loadouts_slider:SetMinMaxValues(0, 0);
+    sw_frame.loadouts_frame.loadouts_slider:SetValue(0);
+    sw_frame.loadouts_frame.loadouts_slider:SetValueStep(1);
+    sw_frame.loadouts_frame.loadouts_slider:SetScript("OnValueChanged", function(self, val)
+        update_loadouts_lhs();
+    end);
 
     sw_frame.loadouts_frame.rhs_list.self_buffs_frame = 
         CreateFrame("ScrollFrame", "sw_loadout_frame_rhs_self_buffs", sw_frame.loadouts_frame.rhs_list);
