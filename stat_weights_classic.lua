@@ -6732,6 +6732,7 @@ local function loadout_add(primary, diff)
         added.spell_crit_by_school[i] = primary.spell_crit_by_school[i] + diff.spell_crit_by_school[i] + 
             crit_diff_normalized_to_primary;
     end
+    print("int mana, ", (15*diff.stats[stat.int]*(1 + primary.stat_mod[stat.int]*primary.mana_mod))," crit, ", crit_diff_normalized_to_primary);
 
     added.healing_crit = primary.healing_crit + diff.healing_crit + crit_diff_normalized_to_primary;
 
@@ -6888,7 +6889,7 @@ local function apply_talents(loadout)
             new_loadout.ability_crit[fs] = new_loadout.ability_crit[fs] + pts * 0.05;
         end
         -- master of elements
-        local pts = talents:pts(2, 9);
+        local pts = talents:pts(2, 12);
         if pts ~= 0 then
             new_loadout.master_of_elements = pts;
         end
@@ -9528,15 +9529,19 @@ local function spell_coef(spell_info, spell_name)
     return direct_coef, ot_coef;
 end
 
-local function spell_info(base_min, base_max,
-                          base_ot, ot_freq, ot_dur, ot_extra_ticks,
+local function spell_info(spell_data, ot_extra_ticks,
                           cast_time, sp, flat_direct_addition,
                           crit, ot_crit, crit_mod, hit,
                           target_vuln_mod, global_mod, mod, base_mod,
                           direct_coef, ot_coef,
-                          cost, school,
+                          cost,
                           spell_name, loadout)
 
+    local base_min = spell_data.base_min;
+    local base_max = spell_data.base_max;
+    local base_ot = spell_data.over_time;
+    local ot_freq = spell_data.over_time_tick_freq;
+    local ot_dur = spell_data.over_time_duration;
 
     -- improved immolate only works on direct damage -,-
     local base_mod_before_improved_immolate = base_mod;
@@ -9579,7 +9584,7 @@ local function spell_info(base_min, base_max,
         base_dur = 0.0;
     end
 
-    if loadout.ignite and loadout.ignite ~= 0 and school == magic_school.fire then
+    if loadout.ignite and loadout.ignite ~= 0 and spell_data.school == magic_school.fire then
         -- dont include dot for calcs
          ignite_min = loadout.ignite * 0.08 * min_crit_if_hit;
          ignite_max = loadout.ignite * 0.08 * max_crit_if_hit;
@@ -9686,6 +9691,18 @@ local function spell_info(base_min, base_max,
 
         min_crit_if_hit = min_crit_if_hit * shadowbolt_vuln_mod;
         max_crit_if_hit = max_crit_if_hit * shadowbolt_vuln_mod;
+    end
+
+
+    if loadout.illumination ~= 0 and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+
+        cost = cost - spell_data.cost * crit * (loadout.illumination * 0.2);
+    end
+
+    if loadout.master_of_elements ~= 0 and spell_data.base_min > 0 and
+       (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) then
+
+        cost = cost - spell_data.cost * crit * (loadout.master_of_elements * 0.1);
     end
 
     return {
@@ -9871,14 +9888,6 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     if loadout.ability_cost_mod[spell_name] then
         cost_mod = cost_mod - loadout.ability_cost_mod[spell_name]
     end
-    if loadout.illumination ~= 0  and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
-        cost_mod = cost_mod - loadout.healing_crit * (loadout.illumination * 0.2);
-    end
-
-    if loadout.master_of_elements ~= 0 and 
-       (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) ~= 0 then
-        cost_mod = cost_mod - loadout.spell_crit_by_school[spell_data.school] * (loadout.master_of_elements * 0.1);
-    end
 
     cost = cost * cost_mod;
 
@@ -9914,8 +9923,8 @@ local function spell_info_from_loadout_stats(spell_data, spell_name, loadout)
     local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
 
     return spell_info(
-       spell_data.base_min, spell_data.base_max, 
-       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       spell_data, 
+       stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
        stats.flat_direct_addition,
@@ -9925,7 +9934,7 @@ local function spell_info_from_loadout_stats(spell_data, spell_name, loadout)
        stats.hit,
        stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
        stats.direct_coef, stats.over_time_coef,
-       stats.cost, spell_data.school,
+       stats.cost,
        spell_name, loadout
     );
 end
@@ -9933,8 +9942,8 @@ end
 local function evaluate_spell(stats, spell_data, spell_name, loadout)
 
     local spell_effect = spell_info(
-       spell_data.base_min, spell_data.base_max, 
-       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       spell_data,
+       stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
        stats.flat_direct_addition,
@@ -9944,13 +9953,13 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
        stats.hit,
        stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
        stats.direct_coef, stats.over_time_coef,
-       stats.cost, spell_data.school,
+       stats.cost,
        spell_name, loadout
     );
 
     local dmg_1_extra_sp = spell_info(
-        spell_data.base_min, spell_data.base_max, 
-        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+        spell_data,
+        stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power + 1,
         stats.flat_direct_addition,
@@ -9960,12 +9969,12 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
         stats.hit,
         stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
         stats.direct_coef, stats.over_time_coef,
-        stats.cost, spell_data.school,
+        stats.cost,
         spell_name, loadout
     );
     local spell_effect_extra_1crit = spell_info(
-        spell_data.base_min, spell_data.base_max, 
-        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+        spell_data,
+        stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power,
         stats.flat_direct_addition,
@@ -9975,12 +9984,12 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
         stats.hit,
         stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
         stats.direct_coef, stats.over_time_coef,
-        stats.cost, spell_data.school,
+        stats.cost,
         spell_name, loadout
     );
     local spell_effect_extra_1hit = spell_info(
-        spell_data.base_min, spell_data.base_max, 
-        spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+        spell_data, 
+        stats.extra_ticks,
         stats.cast_speed,
         stats.spell_power,
         stats.flat_direct_addition,
@@ -9990,7 +9999,7 @@ local function evaluate_spell(stats, spell_data, spell_name, loadout)
         stats.hit_delta_1,
         stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
         stats.direct_coef, stats.over_time_coef,
-        stats.cost, spell_data.school,
+        stats.cost,
         spell_name, loadout
     );
 
@@ -10030,6 +10039,7 @@ local function race_to_the_bottom_sim(spell_effect, mp5, spirit, mana, loadout)
     local mp1 = mp2/2;
 
     local resource_loss_per_sec = spell_effect.cost/spell_effect.cast_time - mp1;
+    print(spell_effect.cost);
 
     if resource_loss_per_sec <= 0 then
         -- divide by 0 party!
@@ -10045,6 +10055,7 @@ local function race_to_the_bottom_sim(spell_effect, mp5, spirit, mana, loadout)
     local time_until_oom = mana/resource_loss_per_sec; 
     local num_casts = time_until_oom/spell_effect.cast_time;
     local effect_until_oom = num_casts * spell_effect.expectation;
+    print(mana, resource_loss_per_sec, num_casts, spell_effect.cast_time, spell_effect.expectation);
     
     return {
         num_casts = num_casts,
@@ -10081,8 +10092,8 @@ local function race_to_the_bottom_stat_weights(
     local loadout_added_1_spirit = loadout_add(loadout, loadout_1_spirit);
     local stats_1_spirit_added = loadout_stats_for_spell(spell_data, spell_name, loadout_added_1_spirit);
     local added_1_spirit_effect = spell_info(
-       spell_data.base_min, spell_data.base_max, 
-       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       spell_data,
+       stats.extra_ticks,
        stats_1_spirit_added.cast_speed,
        stats_1_spirit_added.spell_power,
        stats_1_spirit_added.flat_direct_addition,
@@ -10096,16 +10107,20 @@ local function race_to_the_bottom_stat_weights(
        stats_1_spirit_added.spell_mod_base,
        stats_1_spirit_added.direct_coef, 
        stats_1_spirit_added.over_time_coef,
-       stats_1_spirit_added.cost, spell_data.school,
+       stats_1_spirit_added.cost,
        spell_name, loadout_added_1_spirit
     );
+    print("race normal");
+    print(until_oom_normal.effect);
 
+    print("race 1 spirit" , loadout_added_1_spirit.mana + loadout.extra_mana);
     local until_oom_1_spirit = race_to_the_bottom_sim(
         added_1_spirit_effect, 
         loadout_added_1_spirit.mp5, 
         loadout_added_1_spirit.stats[stat.spirit], 
         loadout_added_1_spirit.mana + loadout.extra_mana, 
         loadout_added_1_spirit);
+    print(until_oom_1_spirit.effect);
 
     local loadout_1_int = empty_loadout();
     loadout_1_int.stats[stat.int] = 1;
@@ -10113,8 +10128,8 @@ local function race_to_the_bottom_stat_weights(
     local loadout_added_1_int = loadout_add(loadout, loadout_1_int);
     local stats_1_int_added = loadout_stats_for_spell(spell_data, spell_name, loadout_added_1_int);
     local added_1_int_effect = spell_info(
-       spell_data.base_min, spell_data.base_max, 
-       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       spell_data,
+       stats.extra_ticks,
        stats_1_int_added.cast_speed,
        stats_1_int_added.spell_power,
        stats_1_int_added.flat_direct_addition,
@@ -10128,17 +10143,20 @@ local function race_to_the_bottom_stat_weights(
        stats_1_int_added.spell_mod_base,
        stats_1_int_added.direct_coef, 
        stats_1_int_added.over_time_coef,
-       stats_1_int_added.cost, spell_data.school,
+       stats_1_int_added.cost,
        spell_name, loadout_added_1_int
     );
 
+    print("race 1 int" , loadout_added_1_int.mana + loadout.extra_mana);
     local until_oom_1_int = race_to_the_bottom_sim(
         added_1_int_effect, 
         loadout_added_1_int.mp5, 
         loadout_added_1_int.stats[stat.spirit], 
         loadout_added_1_int.mana + loadout.extra_mana,
         loadout_added_1_int);
+    print(until_oom_1_int.effect);
 
+    print("-----------------------------");
     
     local diff_1_sp = until_oom_1_sp.effect - until_oom_normal.effect;
     local diff_1_crit = until_oom_1_crit.effect - until_oom_normal.effect;
@@ -10471,7 +10489,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           tooltip:AddLine(string.format("Average cast time: %.3f sec", eval.spell_data.cast_time), 232.0/255, 225.0/255, 32.0/255);
       end
       if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
-          tooltip:AddLine("Average cost: "..eval.spell_data.cost, 232.0/255, 225.0/255, 32.0/255);
+          tooltip:AddLine(string.format("Average cost: %.1f",eval.spell_data.cost), 232.0/255, 225.0/255, 32.0/255);
       end
 
       -- debug tooltip stuff
@@ -13633,8 +13651,8 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
     local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
 
     local spell_effect = spell_info(
-       spell_data.base_min, spell_data.base_max, 
-       spell_data.over_time, spell_data.over_time_tick_freq, spell_data.over_time_duration, stats.extra_ticks,
+       spell_data,
+       stats.extra_ticks,
        stats.cast_speed,
        stats.spell_power,
        stats.flat_direct_addition,
@@ -13644,7 +13662,7 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
        stats.hit,
        stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
        stats.direct_coef, stats.over_time_coef,
-       stats.cost, spell_data.school,
+       stats.cost,
        spell_name, loadout
     );
 
@@ -13893,4 +13911,4 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
---__sw__use_defaults__ = 1;
+--sw__use_defaults__ = 1;
