@@ -8774,9 +8774,9 @@ local function apply_paladin_buffs(loadout, raw_stats_diff)
     if bit.band(buffs2.vengeance.flag, loadout.buffs2) ~= 0 and
         (loadout.always_assume_buffs or loadout.buffs[localized_spell_name("Vengeance")]) then
 
+        local amount = 0;
         local veng = loadout.buffs[localized_spell_name("Vengeance")];
         if veng then
-            local amount = 0;
             if veng.id == 20049 then
                 amount = 0.03;
             elseif veng.id == 20056 then
