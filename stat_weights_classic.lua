@@ -114,12 +114,12 @@ local buffs1 = {
 };
 
 local buffs2 = {
-    zandalarian_hero_charm      = { flag = bit.lshift(1,1),  id = 24658, name = "Zandalarian Hero Charm", item_icon_id = 19950}, --ok casters
+    zandalarian_hero_charm      = { flag = bit.lshift(1,1),  id = 24658, name = "Zandalarian Hero Charm", icon_id = GetItemIcon(19950)}, --ok casters
     bok                         = { flag = bit.lshift(1,2),  id = 20217, name = "Blessing of Kings"}, --ok
     vengeance                   = { flag = bit.lshift(1,3),  id = 20059, name = "Vengeance"}, --ok
     natural_alignment_crystal   = { flag = bit.lshift(1,4),  id = 23734, name = "Natural Alignment Crystal"}, --ok
     blessed_prayer_beads        = { flag = bit.lshift(1,5),  id = 24354, name = "Blessed Prayer Beads"}, --ok
-    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 0,     name = "Beast Slaying (Trolls)", item_icon_id = 20557}, --ok
+    troll_vs_beast              = { flag = bit.lshift(1,6),  id = 20557, name = "Beast Slaying (Trolls)"}, --ok
     flask_of_supreme_power      = { flag = bit.lshift(1,7),  id = 17628, name = "Flask of Supreme Power"}, --ok
     nightfin                    = { flag = bit.lshift(1,8),  id = 18194, name = "Nightfin Soup"}, --ok
     mage_armor                  = { flag = bit.lshift(1,9),  id = 22783, name = "Mage Armor"}, --ok
@@ -12185,8 +12185,8 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_info, buff_type
     buffs_table[index].icon:SetSize(15, 15);
     local tex = buffs_table[index].icon:CreateTexture(nil);
     tex:SetAllPoints(buffs_table[index].icon);
-    if buff_info.item_icon_id then
-        tex:SetTexture(GetItemIcon(buff_info.item_icon_id));
+    if buff_info.icon_id then
+        tex:SetTexture(buff_info.icon_id );
     else
         tex:SetTexture(GetSpellTexture(buff_info.id));
     end
