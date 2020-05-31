@@ -21,7 +21,7 @@
 --SOFTWARE.
 
 local sw_addon_name = "Stat Weights Classic";
-local version =  "1.2.5";
+local version =  "1.2.6";
 
 local sw_addon_loaded = false;
 
