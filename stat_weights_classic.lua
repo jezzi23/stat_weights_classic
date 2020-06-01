@@ -10237,6 +10237,7 @@ local function race_to_the_bottom_stat_weights(
     };
 end
 
+
 local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
     if spell then
@@ -10795,6 +10796,105 @@ end
 local function active_loadout_buffed_talented_copy()
 
     return apply_buffs(apply_talents(active_loadout_copy()));
+end
+
+
+-- non local functions intended to be usable by other addons
+function __sw__spell_info_from_loadout(spell_id, loadout)
+
+    local spell_data = spells[spell_id];
+
+    if not spell_data or not loadout then
+        return nil;
+    end
+
+    local spell_name = GetSpellInfo(spell_id);
+
+    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
+
+    local info = spell_info(
+       spell_data, 
+       stats.extra_ticks,
+       stats.cast_speed,
+       stats.spell_power,
+       stats.flat_direct_addition,
+       math.max(0, min(1, stats.crit)),
+       math.max(0, min(1, stats.ot_crit)),
+       stats.spell_crit_mod,
+       stats.hit,
+       math.max(0, stats.target_resi),
+       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_mod_base,
+       stats.direct_coef, stats.over_time_coef,
+       stats.cost,
+       spell_name, loadout
+    );
+    return {
+        stats = stats,
+        info = info
+    };
+end
+
+function __sw__spell_info(spell_id)
+    return __sw__spell_info_from_loadout(spell_id, active_loadout_buffed_talented_copy());
+end
+
+function __sw__spell_evaluation_from_loadout(spell_id, loadout)
+
+    local spell_data = spells[spell_id];
+
+    if not spell_data or not loadout then
+        return nil;
+    end
+
+    local spell_name = GetSpellInfo(spell_id);
+
+    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
+
+    local eval = evaluate_spell(stats, spell_data, spell_name, loadout);
+    return {
+        stats = stats,
+        eval = eval
+    };
+end
+
+function __sw__spell_evaluation(spell_id)
+    return __sw__spell_evaluation_from_loadout(spell_id, active_loadout_buffed_talented_copy());
+end
+
+function __sw__spell_race_to_bottom_evaluation_from_loadout(spell_id, loadout)
+
+    local spell_data = spells[spell_id];
+
+    if not spell_data or not loadout then
+        return nil;
+    end
+
+    local spell_name = GetSpellInfo(spell_id);
+
+    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
+
+    local eval = evaluate_spell(stats, spell_data, spell_name, loadout);
+
+    local rtb = race_to_the_bottom_stat_weights(
+        stats,
+        spell_data,
+        spell_name,
+        eval.spell_data, 
+        eval.spell_data_1_sp,
+        eval.spell_data_1_crit,
+        eval.spell_data_1_hit,
+        eval.spell_data_1_target_resi, 
+        loadout
+    );
+
+    return {
+        stats = stats,
+        eval = rtb
+    };
+end
+
+function __sw__spell_race_to_bottom_evaluation(spell_id)
+    return __sw__spell_race_to_bottom_evaluation_from_loadout(spell_id, active_loadout_buffed_talented_copy());
 end
 
 local update_and_display_spell_diffs = nil;
@@ -13615,7 +13715,6 @@ if class_is_supported then
         end
     end)
 end
-
 
 function update_icon_overlay_settings()
 
