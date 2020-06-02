@@ -13615,6 +13615,14 @@ local function create_sw_base_gui()
             end
 
             if spell_id ~= 0 then
+                if __sw__icon_frames.bars[action_id] then
+                    for i = 1, 3 do
+                        if __sw__icon_frames.bars[action_id].overlay_frames[i] then
+                            __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
+                        end
+                    end
+                end
+
                 __sw__icon_frames.bars[action_id] = {};
                 __sw__icon_frames.bars[action_id].spell_id = spell_id;
                 __sw__icon_frames.bars[action_id].frame = getfenv()[__sw__icon_frames.bar_names[action_id]]; 
@@ -13635,7 +13643,6 @@ local function create_sw_base_gui()
             if IsStealthed() or GetShapeshiftForm() ~= 0 then
                 on_special_action_bar_changed();
             end
-
         elseif event ==  "UPDATE_STEALTH" or event == "UPDATE_SHAPESHIFT_FORM" then
 
             if not sw_addon_loaded then
