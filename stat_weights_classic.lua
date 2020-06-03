@@ -7827,6 +7827,11 @@ local function create_set_bonuses()
         set_tier_ids[20034] = set_tiers.pve_2_5;
         set_tier_ids[19845] = set_tiers.pve_2_5;
 
+        -- t1
+        for i = 16795, 16802 do
+            set_tier_ids[i] = set_tiers.pve_1;
+        end
+
         -- t2
         set_tier_ids[16818] = set_tiers.pve_2;
         set_tier_ids[16912] = set_tiers.pve_2;
@@ -8054,6 +8059,13 @@ local function apply_set_bonuses(loadout)
         end
 
     elseif class == "MAGE" then
+
+
+        if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
+            for i = 2, 7 do
+                new_loadout.target_mod_res_by_school[i] = new_loadout.target_mod_res_by_school[i] - 10;
+            end
+        end
 
         if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
 
@@ -9548,12 +9560,32 @@ local function  target_avg_magical_res(self_lvl, target_res)
     return math.min(0.75, 0.75 * (target_res/(self_lvl * 5)))
 end
 
-local function spell_info(spell_data, ot_extra_ticks,
+local function spell_info(spell, ot_extra_ticks,
                           cast_time, sp, flat_direct_addition,
                           crit, ot_crit, crit_mod, hit, target_resi,
                           target_vuln_mod, global_mod, mod, base_mod,
                           direct_coef, ot_coef, cost,
                           spell_name, loadout)
+            
+    local spell_data = nil;
+    if loadout.num_set_pieces[set_tiers.pve_2] >= 8 and spell_name == localized_spell_name("Greater Heal") then
+
+        local r5_renew = spells[6077];
+
+        spell_data = {};
+        for k, v in pairs(spell) do
+            spell_data[k] = v;
+        end
+
+        spell_data.over_time = r5_renew.over_time;
+        spell_data.over_time_tick_freq = r5_renew.over_time_tick_freq;
+        spell_data.over_time_duration = r5_renew.over_time_duration;
+
+        local _, r5_renew_ot_coef = spell_coef(r5_renew, localized_spell_name("Renew"));
+        ot_coef = r5_renew_ot_coef;
+    else
+        spell_data = spell;
+    end
 
     local base_min = spell_data.base_min;
     local base_max = spell_data.base_max;
@@ -13243,6 +13275,7 @@ local function action_id_of_button(button)
 end
 
 local function gather_spell_icons()
+
 
     local action_bar_frame_names = {};
     local spell_book_frames = {};
