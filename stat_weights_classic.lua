@@ -13369,27 +13369,29 @@ local function gather_spell_icons()
         if frame then
 
             local action_id = action_id_of_button(frame);
+            if action_id then
+                local spell_id = 0;
+                local action_type, id, _ = GetActionInfo(action_id);
+                if action_type == "macro" then
+                     spell_id, _ = GetMacroSpell(id);
+                elseif action_type == "spell" then
+                     spell_id = id;
+                else
+                    spell_id = 0;
+                end
+                if not spells[spell_id] then
+                    spell_id = 0;
+                end
+
+                if spell_id ~= 0 then
+
+                    action_bar_frames_of_interest[action_id] = {};
+                    action_bar_frames_of_interest[action_id].spell_id = spell_id;
+                    action_bar_frames_of_interest[action_id].frame = frame; 
+                    action_bar_frames_of_interest[action_id].overlay_frames = {nil, nil, nil}
+                end
+            end
                 
-            local spell_id = 0;
-            local action_type, id, _ = GetActionInfo(action_id);
-            if action_type == "macro" then
-                 spell_id, _ = GetMacroSpell(id);
-            elseif action_type == "spell" then
-                 spell_id = id;
-            else
-                spell_id = 0;
-            end
-            if not spells[spell_id] then
-                spell_id = 0;
-            end
-
-            if spell_id ~= 0 then
-
-                action_bar_frames_of_interest[action_id] = {};
-                action_bar_frames_of_interest[action_id].spell_id = spell_id;
-                action_bar_frames_of_interest[action_id].frame = frame; 
-                action_bar_frames_of_interest[action_id].overlay_frames = {nil, nil, nil}
-            end
         end
     end
     
