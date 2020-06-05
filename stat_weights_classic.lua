@@ -7422,7 +7422,7 @@ local function apply_talents(loadout)
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_cast_mod[v] = new_loadout.ability_cast_mod[v] + pts * 0.02;
+                new_loadout.ability_cast_mod[v] = new_loadout.ability_cast_mod[v] + pts * 0.2;
             end
         end
 
