@@ -212,7 +212,9 @@
         pve_3 = 5,
         pvp_1 = 6,
         pvp_2 = 7,
-        pve_2_5 = 8
+        pve_2_5 = 8,
+        aq20 = 9,
+        aq40 = 10
     };
 
     local spell_name_to_id = {
@@ -6451,7 +6453,7 @@
             improved_immolate = 0,
             improved_shadowbolt = 0,
 
-            num_set_pieces = {0, 0, 0, 0, 0, 0, 0, 0},
+            num_set_pieces = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
             
             -- indexable by ability name
             ability_crit = {},
@@ -6658,7 +6660,7 @@
         end
 
         cpy.num_set_pieces = {};
-        for i = set_tiers.pve_0, set_tiers.pve_2_5 do
+        for i = set_tiers.pve_0, set_tiers.aq40 do
             cpy.num_set_pieces[i] = loadout.num_set_pieces[i];
         end
 
@@ -7741,6 +7743,15 @@ local function create_set_bonuses()
         for i = 16919, 16926 do
             set_tier_ids[i] = set_tiers.pve_2;
         end
+        -- aq20
+        for i = 21410, 21412 do
+            set_tier_ids[i] = set_tiers.aq20;
+        end
+
+        -- aq40
+        for i = 21348, 21352 do
+            set_tier_ids[i] = set_tiers.aq40;
+        end
 
     elseif class == "DRUID" then
         -- stormrage
@@ -7778,6 +7789,16 @@ local function create_set_bonuses()
         set_tier_ids[16573] = set_tiers.pvp_2;
         set_tier_ids[16574] = set_tiers.pvp_2;
         set_tier_ids[16579] = set_tiers.pvp_2;
+
+        -- aq20
+        for i = 21398, 21400 do
+            set_tier_ids[i] = set_tiers.aq20;
+        end
+
+        -- aq40
+        for i = 21372, 21376 do
+            set_tier_ids[i] = set_tiers.aq40;
+        end
 
     elseif class == "WARLOCK" then
         for i = 16803, 16810 do
@@ -7819,6 +7840,11 @@ local function create_set_bonuses()
         set_tier_ids[19848] = set_tiers.pve_2_5;
         set_tier_ids[19849] = set_tiers.pve_2_5;
         set_tier_ids[20033] = set_tiers.pve_2_5;
+
+        -- aq40      
+        for i = 21334, 21338 do
+            set_tier_ids[i] = set_tiers.aq40;
+        end
 
     elseif class == "MAGE" then
 
@@ -7918,6 +7944,25 @@ local function apply_set_bonuses(loadout)
         end
         if new_loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
             new_loadout.regen_while_casting = new_loadout.regen_while_casting + 0.15;
+        end
+
+        if new_loadout.num_set_pieces[set_tiers.aq20] >= 3 then
+
+            local swp = localized_spell_name("Shadow Word: Pain");
+            if not new_loadout.ability_effect_mod[swp] then
+                new_loadout.ability_effect_mod[swp] = 0;
+            end
+            new_loadout.ability_effect_mod[swp] = new_loadout.ability_effect_mod[swp] + 0.05;
+
+        end
+
+        if new_loadout.num_set_pieces[set_tiers.aq40] >= 5 then
+        
+            local renew = localized_spell_name("Renew");
+            if not new_loadout.ability_extra_ticks[renew] then
+                new_loadout.ability_extra_ticks[renew] = 0;
+            end
+            new_loadout.ability_extra_ticks[renew] = new_loadout.ability_extra_ticks[renew] + 1;
         end
 
     elseif class == "DRUID" then
@@ -8109,6 +8154,14 @@ local function apply_set_bonuses(loadout)
             end
         end
 
+        if new_loadout.num_set_pieces[set_tiers.aq40] >= 5 then
+
+            local ch = localized_spell_name("Chain Heal");
+            if not new_loadout.ability_cast_mod[ch] then
+                new_loadout.ability_cast_mod[ch] = 0;
+            end
+            new_loadout.ability_cast_mod[ch] = new_loadout.ability_cast_mod[ch] + 0.4;
+        end
 
     elseif class == "WARLOCK" then
 
@@ -8153,6 +8206,27 @@ local function apply_set_bonuses(loadout)
             new_loadout.ability_base_mod[corr] = new_loadout.ability_base_mod[corr] + 0.02;
         end
 
+        if new_loadout.num_set_pieces[set_tiers.aq40] >= 3 then
+
+            local imm = localized_spell_name("Immolate");
+
+            if not new_loadout.ability_effect_mod[imm] then
+                new_loadout.ability_effect_mod[imm] = 0;
+            end
+            new_loadout.ability_effect_mod[imm] = new_loadout.ability_effect_mod[imm] + 0.05;
+
+            if new_loadout.num_set_pieces[set_tiers.aq40] >= 5 then
+
+                local sb = localized_spell_name("Shadow Bolt");
+
+                if not new_loadout.ability_cost_mod[sb] then
+                    new_loadout.ability_cost_mod[sb] = 0;
+                end
+                new_loadout.ability_cost_mod[sb] = new_loadout.ability_cost_mod[sb] + 0.15;
+            end
+            
+        end
+
     elseif class == "MAGE" then
 
 
@@ -8187,6 +8261,7 @@ local function apply_set_bonuses(loadout)
 
                 new_loadout.ability_sp[localized_spell_name("Flash of Light")] = 
                     new_loadout.ability_sp[localized_spell_name("Flash of Light")] + 53;
+            end
         end
 
         if new_loadout.num_set_pieces[set_tiers.pve_2_5] >= 5 then
@@ -9871,7 +9946,12 @@ local function spell_info(spell, ot_extra_ticks,
     elseif spell_name == localized_spell_name("Tranquility") then
         expectation = 5 * expectation_st;
     elseif spell_name == localized_spell_name("Chain Lightning") then
-        expectation = (1 + 0.7 + 0.7 * 0.7) * expectation_st;
+
+        if loadout.num_set_pieces[set_tiers.aq20] >= 3 then
+            expectation = (1 + 0.75 + 0.75 * 0.75) * expectation_st;
+        else
+            expectation = (1 + 0.7 + 0.7 * 0.7) * expectation_st;
+        end
     end
 
     local effect_per_sec = expectation/cast_time;
@@ -14292,5 +14372,5 @@ SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
---__sw__debug__ = 1;
---__sw__use_defaults__ = 1;
+__sw__debug__ = 1;
+__sw__use_defaults__ = 1;
