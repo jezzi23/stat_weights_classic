@@ -130,8 +130,8 @@
         mageblood                   = { flag = bit.lshift(1,14), id = 24363, name = "Mageblood Potion"}, --ok
         spirit_of_zanza             = { flag = bit.lshift(1,15), id = 24382, name = "Spirit of Zanza"}, --ok
         kreegs_stout_beatdown       = { flag = bit.lshift(1,16), id = 22790, name = "Kreeg's Stout Beatdown"},--ok
-        brilliant_wizard_oil        = { flag = bit.lshift(1,17), id = 25122, name = "Brilliant Wizard Oil"},
-        brilliant_mana_oil          = { flag = bit.lshift(1,18), id = 20748, name = "Brilliant Mana Oil"}
+        brilliant_wizard_oil        = { flag = bit.lshift(1,17), id = 25122, name = "Brilliant Wizard Oil", icon_id = GetItemIcon(20749)}, --ok
+        brilliant_mana_oil          = { flag = bit.lshift(1,18), id = 25123, name = "Brilliant Mana Oil", icon_id = GetItemIcon(20748)} --ok
     };
 
     local target_buffs1 = {
@@ -13298,6 +13298,10 @@ local function create_sw_gui_loadout_frame()
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.spirit_of_zanza, "self2", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.kreegs_stout_beatdown, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.brilliant_wizard_oil, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.brilliant_mana_oil, "self2", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
 
         -- target buffs
