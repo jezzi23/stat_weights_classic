@@ -269,7 +269,7 @@
         ["Starshards"]              = 10797,
         -- Shaman
         ["Healing Stream Totem"]    = 5394,
-        ["Lesser Healing"]          = 8004,
+        ["Lesser Healing Wave"]     = 8004,
         ["Healing Wave"]            = 331,
         ["Chain Heal"]              = 1064,
         ["Lightning Bolt"]          = 403,
@@ -7454,7 +7454,7 @@
         local pts = talents:pts(3, 2);
         if pts ~= 0 then
 
-            local abilities = {"Lesser Healing", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
+            local abilities = {"Lesser Healing Wave", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
 
             for k, v in pairs(abilities) do
                 abilities[k] = localized_spell_name(v);
@@ -8054,6 +8054,7 @@ local function apply_set_bonuses(loadout)
 
         -- check for special items giving special things...
         local relic = GetInventoryItemID("player", 18);
+        --if relic then
         if relic then
 
             local id = relic;
@@ -8089,7 +8090,7 @@ local function apply_set_bonuses(loadout)
                     new_loadout.ability_sp[localized_spell_name("Lesser Healing Wave")] = 0;
                 end
                 new_loadout.ability_sp[localized_spell_name("Lesser Healing Wave")] = 
-                    new_loadout.ability_sp[localized_spell_name("Lesser Healing Wave")] + 53;
+                    new_loadout.ability_sp[localized_spell_name("Lesser Healing Wave")] + 80;
             -- totem of the storm
             elseif id == 23199 then
                 if not new_loadout.ability_sp[localized_spell_name("Chain Lightning")] then
@@ -8107,7 +8108,7 @@ local function apply_set_bonuses(loadout)
 
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
 
-            local lh = localized_spell_name("Lesser Healing");
+            local lh = localized_spell_name("Lesser Healing Wave");
             local hw = localized_spell_name("Healing Wave");
 
             if not new_loadout.ability_cost_mod[lh] then
@@ -9629,6 +9630,8 @@ local function print_loadout(loadout)
           loadout.num_set_pieces[6],
           loadout.num_set_pieces[7],
           loadout.num_set_pieces[8],
+          loadout.num_set_pieces[9],
+          loadout.num_set_pieces[10],
           "}");
 
     for k, v in pairs(loadout.ability_base_mod) do
