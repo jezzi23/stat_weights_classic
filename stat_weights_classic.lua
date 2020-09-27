@@ -131,7 +131,8 @@
         spirit_of_zanza             = { flag = bit.lshift(1,15), id = 24382, name = "Spirit of Zanza"}, --ok
         kreegs_stout_beatdown       = { flag = bit.lshift(1,16), id = 22790, name = "Kreeg's Stout Beatdown"},--ok
         brilliant_wizard_oil        = { flag = bit.lshift(1,17), id = 25122, name = "Brilliant Wizard Oil", icon_id = GetItemIcon(20749)}, --ok
-        brilliant_mana_oil          = { flag = bit.lshift(1,18), id = 25123, name = "Brilliant Mana Oil", icon_id = GetItemIcon(20748)} --ok
+        brilliant_mana_oil          = { flag = bit.lshift(1,18), id = 25123, name = "Brilliant Mana Oil", icon_id = GetItemIcon(20748)}, --ok
+        demonic_sacrifice_imp       = { flag = bit.lshift(1,19), id = 18789, name = "Demonic Sacrifice (Imp)"}-- ok
     };
 
     local target_buffs1 = {
@@ -9001,6 +9002,14 @@ local function apply_warlock_buffs(loadout, raw_stats_diff)
         loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
             loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
     end
+
+    -- demonic sacrifice - imp i.e. burning wish
+    if bit.band(buffs2.demonic_sacrifice_imp.flag, loadout.buffs2) ~= 0 and
+       (loadout.always_assume_buffs or loadout.buffs[buffs2.demonic_sacrifice_imp.id]) 
+        then
+        loadout.spell_dmg_mod_by_school[magic_school.fire] = 
+            loadout.spell_dmg_mod_by_school[magic_school.fire] + 0.15;
+    end
 end
 
 local function apply_paladin_buffs(loadout, raw_stats_diff)
@@ -9075,10 +9084,14 @@ end
 
 local function apply_priest_buffs(loadout, raw_stats_diff)
     -- shadow form
-    if bit.band(buffs1.shadow_form.flag, loadout.buffs1) ~= 0 then
+
+    if bit.band(buffs1.shadow_form.flag, loadout.buffs1) ~= 0 and 
+        (loadout.always_assume_buffs or loadout.buffs[buffs1.shadow_form.id]) then
+
         loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
             loadout.spell_dmg_mod_by_school[magic_school.shadow] + 0.15;
     end
+
     -- ST priest trinket
     if bit.band(buffs2.blessed_prayer_beads.flag, loadout.buffs2) ~= 0 and not loadout.buffs[buffs2.blessed_prayer_beads.id] and 
         loadout.always_assume_buffs then
@@ -13376,6 +13389,9 @@ local function create_sw_gui_loadout_frame()
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.demonic_sacrifice, "self1", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.demonic_sacrifice_imp, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_the_elements,
                                         "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
                                         check_button_buff_func);
