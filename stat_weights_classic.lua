@@ -206,6 +206,8 @@ local simulation_type = {
 };
 
 local set_tiers = {
+    first = 1,
+
     pve_0 = 1,
     pve_0_5 = 2,
     pve_1 = 3,
@@ -215,7 +217,9 @@ local set_tiers = {
     pvp_2 = 7,
     pve_2_5 = 8,
     aq20 = 9,
-    aq40 = 10
+    aq40 = 10,
+
+    last = 10,
 };
 
 local spell_name_to_id = {
@@ -6511,6 +6515,13 @@ local function satisfy_loadout(loadout)
     if not loadout.target_res_by_school then
         loadout.target_res_by_school = {0, 0, 0, 0, 0, 0, 0};
     end
+
+    for i = set_tiers.first, set_tiers.last do
+        if not loadout.num_set_pieces[i] then
+            loadout.num_set_pieces[i] = 0;
+        end
+    end
+    
 end
 
 local function negate_loadout(loadout)
@@ -6661,7 +6672,7 @@ local function loadout_copy(loadout)
     end
 
     cpy.num_set_pieces = {};
-    for i = set_tiers.pve_0, set_tiers.aq40 do
+    for i = set_tiers.first, set_tiers.last do
         cpy.num_set_pieces[i] = loadout.num_set_pieces[i];
     end
 
@@ -8166,10 +8177,6 @@ local function apply_set_bonuses(loadout)
         end
 
     elseif class == "WARLOCK" then
-        -- deleteme
-        new_loadout.num_set_pieces[set_tiers.aq40] = 5;
-        new_loadout.num_set_pieces[set_tiers.aq20] = 3;
-        new_loadout.num_set_pieces[set_tiers.pve_2_5] = 3;
 
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
 
@@ -14399,5 +14406,5 @@ SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-__sw__debug__ = 1;
-__sw__use_defaults__ = 1;
+--__sw__debug__ = 1;
+--__sw__use_defaults__ = 1;
