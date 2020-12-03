@@ -21,7 +21,7 @@
 --SOFTWARE.
 
 local sw_addon_name = "Stat Weights Classic";
-local version =  "1.2.7";
+local version =  "1.2.8";
 
 local sw_addon_loaded = false;
 
@@ -132,7 +132,9 @@ local buffs2 = {
     kreegs_stout_beatdown       = { flag = bit.lshift(1,16), id = 22790, name = "Kreeg's Stout Beatdown"},--ok
     brilliant_wizard_oil        = { flag = bit.lshift(1,17), id = 25122, name = "Brilliant Wizard Oil", icon_id = GetItemIcon(20749)}, --ok
     brilliant_mana_oil          = { flag = bit.lshift(1,18), id = 25123, name = "Brilliant Mana Oil", icon_id = GetItemIcon(20748)}, --ok
-    demonic_sacrifice_imp       = { flag = bit.lshift(1,19), id = 18789, name = "Demonic Sacrifice (Imp)"}-- ok
+    demonic_sacrifice_imp       = { flag = bit.lshift(1,19), id = 18789, name = "Demonic Sacrifice (Imp)"},-- ok
+    lightning_shield            = { flag = bit.lshift(1,20), id = 10432, name = "MP5 (only if T3 active)"},-- 
+    epiphany                    = { flag = bit.lshift(1,21), id = 28804, name = "T3 8set bonus buff"}--
 };
 
 local target_buffs1 = {
@@ -150,7 +152,7 @@ local target_debuffs1 = {
     improved_shadow_bolt        = { flag = bit.lshift(1,5), id = 17800, name = "Improved Shadow Bolt"}, -- ok casters
     shadow_weaving              = { flag = bit.lshift(1,6), id = 15258, name = "Shadow Weaving"}, -- ok casters
     stormstrike                 = { flag = bit.lshift(1,7), id = 17364, name = "Stormstrike"}, -- ok casters
-    curse_of_shadow             = { flag = bit.lshift(1,8), id = 17937, name = "Curse of Shadow"}, -- ok casters
+    curse_of_shadow             = { flag = bit.lshift(1,8), id = 17937, name = "Curse of Shadow"} -- ok casters
 };
 
 local stat_ids_in_ui = {
@@ -218,8 +220,9 @@ local set_tiers = {
     pve_2_5 = 8,
     aq20 = 9,
     aq40 = 10,
+    pve_3 = 11,
 
-    last = 10,
+    last = 11,
 };
 
 local spell_name_to_id = {
@@ -6458,7 +6461,7 @@ local function empty_loadout()
         improved_immolate = 0,
         improved_shadowbolt = 0,
 
-        num_set_pieces = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        num_set_pieces = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         
         -- indexable by ability name
         ability_crit = {},
@@ -6471,6 +6474,7 @@ local function empty_loadout()
         ability_hit = {},
         ability_sp = {},
         ability_flat_add = {},
+        ability_refund = {},
 
         target_friendly = false,
         target_type = "",
@@ -6505,6 +6509,9 @@ local function satisfy_loadout(loadout)
     end
     if not loadout.ability_flat_add then
         loadout.ability_flat_add = {};
+    end
+    if not loadout.ability_refund then
+        loadout.ability_refund = {};
     end
     if not loadout.talents_code then
         loadout.talents_code = wowhead_talent_code();
@@ -6628,6 +6635,7 @@ local function loadout_copy(loadout)
     cpy.ignite = loadout.ignite;
     cpy.spiritual_guidance = loadout.spiritual_guidance;
     cpy.illumination = loadout.illumination;
+    cpy.flat_refund = loadout.flat_refund;
     cpy.master_of_elements = loadout.master_of_elements;
     cpy.natures_grace = loadout.natures_grace;
     cpy.improved_immolate = loadout.improved_immolate;
@@ -6645,6 +6653,7 @@ local function loadout_copy(loadout)
     cpy.ability_hit = {};
     cpy.ability_sp = {};
     cpy.ability_flat_add = {};
+    cpy.ability_refund = {};
 
     cpy.buffs = {};
     cpy.target_buffs = {};
@@ -6709,6 +6718,9 @@ local function loadout_copy(loadout)
     end
     for k, v in pairs(loadout.ability_flat_add) do
         cpy.ability_flat_add[k] = v;
+    end
+    for k, v in pairs(loadout.ability_refund) do
+        cpy.ability_refund[k] = v;
     end
 
     for k, v in pairs(loadout.buffs) do
@@ -7765,6 +7777,12 @@ local function create_set_bonuses()
             set_tier_ids[i] = set_tiers.aq40;
         end
 
+        --naxx
+        for i = 22512, 22519 do
+            set_tier_ids[i] = set_tiers.pve_3;
+        end
+        set_tier_ids[23061] = set_tiers.pve_3;
+
     elseif class == "DRUID" then
         -- stormrage
         for i = 16897, 16904 do
@@ -7777,6 +7795,12 @@ local function create_set_bonuses()
         set_tier_ids[19840] = set_tiers.pve_2_5;
         set_tier_ids[19839] = set_tiers.pve_2_5;
         set_tier_ids[19838] = set_tiers.pve_2_5;
+
+        --naxx
+        for i = 22488, 22495 do
+            set_tier_ids[i] = set_tiers.pve_3;
+        end
+        set_tier_ids[23064] = set_tiers.pve_3;
 
     elseif class == "SHAMAN" then
         -- earthfury
@@ -7811,6 +7835,12 @@ local function create_set_bonuses()
         for i = 21372, 21376 do
             set_tier_ids[i] = set_tiers.aq40;
         end
+
+        --naxx
+        for i = 22464, 22471 do
+            set_tier_ids[i] = set_tiers.pve_3;
+        end
+        set_tier_ids[23065] = set_tiers.pve_3;
 
     elseif class == "WARLOCK" then
         for i = 16803, 16810 do
@@ -7857,6 +7887,12 @@ local function create_set_bonuses()
         for i = 21334, 21338 do
             set_tier_ids[i] = set_tiers.aq40;
         end
+
+        --naxx
+        for i = 22504, 22511 do
+            set_tier_ids[i] = set_tiers.pve_3;
+        end
+        set_tier_ids[23063] = set_tiers.pve_3;
 
     elseif class == "MAGE" then
 
@@ -7927,6 +7963,21 @@ local function apply_set_bonuses(loadout)
             end
         end
     end
+    for item = 13, 14 do
+        local id = GetInventoryItemID("player", item);
+        local item_link = GetInventoryItemLink("player", item);
+        if item_link then
+
+            if id == 19812 and loadout.target_type == "Undead" then
+
+                for i = 2, 7 do
+                    loadout.spell_dmg_by_school[i] = loadout.spell_dmg_by_school[i] + 48;
+                end
+
+            end
+
+        end
+    end
 
     if class == "PRIEST" then
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 3 then
@@ -7975,6 +8026,16 @@ local function apply_set_bonuses(loadout)
                 new_loadout.ability_extra_ticks[renew] = 0;
             end
             new_loadout.ability_extra_ticks[renew] = new_loadout.ability_extra_ticks[renew] + 1;
+        end
+
+        if new_loadout.num_set_pieces[set_tiers.pve_3] >= 2 then
+
+            local renew = localized_spell_name("Renew");
+            if not new_loadout.ability_cost_mod[renew] then
+                new_loadout.ability_cost_mod[renew] = 0;
+            end
+            new_loadout.ability_cost_mod[renew] = new_loadout.ability_cost_mod[renew] + 0.12;
+
         end
 
     elseif class == "DRUID" then
@@ -8062,11 +8123,28 @@ local function apply_set_bonuses(loadout)
             end
         end
 
+        if new_loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+
+            local healing_abilities = {"Healing Touch", "Rejuvenation", "Regrowth", "Tranquility"};
+    
+            for k, v in pairs(healing_abilities) do
+                healing_abilities[k] = localized_spell_name(v);
+            end
+    
+            for k, v in pairs(healing_abilities) do
+                if not loadout.ability_cost_mod[v] then
+                    loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(healing_abilities) do
+                loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + 0.03;
+            end
+        end
+
     elseif class == "SHAMAN" then
 
         -- check for special items giving special things...
         local relic = GetInventoryItemID("player", 18);
-        --if relic then
         if relic then
 
             local id = relic;
@@ -8115,6 +8193,13 @@ local function apply_set_bonuses(loadout)
                     new_loadout.ability_sp[localized_spell_name("Chain Lightning")] + 33;
                 new_loadout.ability_sp[localized_spell_name("Lightning Bolt")] = 
                     new_loadout.ability_sp[localized_spell_name("Lightning Bolt")] + 33;
+            -- totem of flowing water
+            elseif id == 23005 then
+                if not new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] then
+                    new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] = 0;
+                end
+                new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] = 
+                    new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] + 10;
             end
         end
 
@@ -8174,6 +8259,24 @@ local function apply_set_bonuses(loadout)
                 new_loadout.ability_cast_mod[ch] = 0;
             end
             new_loadout.ability_cast_mod[ch] = new_loadout.ability_cast_mod[ch] + 0.4;
+        end
+
+        if new_loadout.num_set_pieces[set_tiers.pve_3] >= 2 then
+
+            local totems = {"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"};
+
+            for k, v in pairs(totems) do
+                totems[k] = localized_spell_name(v);
+            end
+
+            for k, v in pairs(totems) do
+                if not new_loadout.ability_cost_mod[v] then
+                    new_loadout.ability_cost_mod[v] = 0;
+                end
+            end
+            for k, v in pairs(totems) do
+                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + 0.12;
+            end
         end
 
     elseif class == "WARLOCK" then
@@ -8237,7 +8340,16 @@ local function apply_set_bonuses(loadout)
                 end
                 new_loadout.ability_cost_mod[sb] = new_loadout.ability_cost_mod[sb] + 0.15;
             end
-            
+        end
+        if new_loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+
+            local corr = localized_spell_name("Corruption");
+
+            if not new_loadout.ability_effect_mod[corr] then
+                new_loadout.ability_effect_mod[corr] = 0;
+            end
+            new_loadout.ability_effect_mod[corr] = new_loadout.ability_effect_mod[corr] + 0.12;
+
         end
 
     elseif class == "MAGE" then
@@ -8274,6 +8386,15 @@ local function apply_set_bonuses(loadout)
 
                 new_loadout.ability_sp[localized_spell_name("Flash of Light")] = 
                     new_loadout.ability_sp[localized_spell_name("Flash of Light")] + 53;
+            end
+            -- libram of light
+            if id == 23006 then
+                if not new_loadout.ability_sp[localized_spell_name("Flash of Light")] then
+                    new_loadout.ability_sp[localized_spell_name("Flash of Light")] = 0;
+                end
+
+                new_loadout.ability_sp[localized_spell_name("Flash of Light")] = 
+                    new_loadout.ability_sp[localized_spell_name("Flash of Light")] + 83;
             end
         end
 
@@ -8406,7 +8527,6 @@ local function apply_horde_buffs(loadout, raw_stats_diff)
     end
     if bit.band(buffs2.manaspring_totem.flag, loadout.buffs2) ~= 0  and 
         (loadout.always_assume_buffs or loadout.buffs[localized_spell_name("Mana Spring Totem")]) then 
-        -- ehh just assume casters of bow have improved bow...
         local mp2 = 0;
         local mst = loadout.buffs[localized_spell_name("Mana Spring Totem")];
         if mst then
@@ -8421,6 +8541,9 @@ local function apply_horde_buffs(loadout, raw_stats_diff)
             end
         else
             mp2 = 10;
+        end
+        if class == "SHAMAN" and loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+            mp2 = floor(mp2*1.25);
         end
         loadout.mp5 = loadout.mp5 + 5*mp2/2;
     end
@@ -9113,6 +9236,12 @@ local function apply_priest_buffs(loadout, raw_stats_diff)
 
          loadout.healing_power = loadout.healing_power - 190;
     end
+    -- T3 8set bonus
+    if loadout.num_set_pieces[set_tiers.pve_3] >= 8 and bit.band(buffs2.epiphany.flag, loadout.buffs2) ~= 0 and
+        (loadout.always_assume_buffs or loadout.buffs[buffs2.epiphany.id]) then
+    
+        loadout.mp5 = loadout.mp5 + 25;
+    end
 end
 
 local function apply_shaman_buffs(loadout, raw_stats_diff)
@@ -9136,6 +9265,12 @@ local function apply_shaman_buffs(loadout, raw_stats_diff)
         loadout.spell_heal_mod = loadout.spell_heal_mod + 0.2;
         loadout.cost_mod = loadout.cost_mod - 0.2;
     end
+    -- T3 lightning shield bonus
+    if loadout.num_set_pieces[set_tiers.pve_3] >= 8 and bit.band(buffs2.lightning_shield.flag, loadout.buffs2) ~= 0 and
+        (loadout.always_assume_buffs or loadout.buffs[buffs2.lightning_shield.id]) then
+    
+        loadout.mp5 = loadout.mp5 + 15;
+    end
     -- target buffs
     if bit.band(target_buffs1.healing_way.flag, loadout.target_buffs1) ~= 0 then
         --(loadout.always_assume_buffs or loadout.buffs[target_buffs1.healing_way.id]) 
@@ -9156,6 +9291,7 @@ local function apply_shaman_buffs(loadout, raw_stats_diff)
             loadout.ability_effect_mod[hw] = loadout.ability_effect_mod[hw] + effect;
         end
     end
+
 end
 
 local function apply_druid_buffs(loadout, raw_stats_diff)
@@ -9656,6 +9792,7 @@ local function print_loadout(loadout)
           loadout.num_set_pieces[8],
           loadout.num_set_pieces[9],
           loadout.num_set_pieces[10],
+          loadout.num_set_pieces[11]
           "}");
 
     for k, v in pairs(loadout.ability_base_mod) do
@@ -9688,6 +9825,9 @@ local function print_loadout(loadout)
     end
     for k, v in pairs(loadout.ability_flat_add) do
         print("ability flat extra effect: ", k, string.format("%.3f", v));
+    end
+    for k, v in pairs(loadout.ability_refund) do
+        print("ability refund: ", k, string.format("%.3f", v));
     end
 end
 
@@ -10006,6 +10146,12 @@ local function spell_info(spell, ot_extra_ticks,
         cost = cost - spell_data.cost * crit * (loadout.illumination * 0.2);
     end
 
+    if spell_name == localized_spell_name("Healing Touch") and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
+
+        cost = cost - spell_data.cost * crit * 0.3;
+    end
+
+
     if loadout.master_of_elements ~= 0 and spell_data.base_min > 0 and
        (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) then
 
@@ -10204,6 +10350,21 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     end
 
     cost = cost * cost_mod;
+
+    if loadout.ability_refund[spell_name] and loadout.ability_refund[spell_name] ~= 0 then
+
+        local refund = loadout.ability_refund[spell_name];
+        local max_rank = spell_data.rank;
+        if spell_name == localized_spell_name("Lesser Healing Wave") then
+            max_rank = 6;
+        elseif spell_name == localized_spell_name("Healing Touch") then
+            max_rank = 11;
+        end
+
+        coef_estimate = spell_data.rank/max_rank;
+
+        cost = cost - ceil(refund*coef_estimate);
+    end
 
     -- the game seems to round cost up/down to the nearest
     cost = tonumber(string.format("%.0f", cost));
