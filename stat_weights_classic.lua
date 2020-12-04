@@ -8085,6 +8085,13 @@ local function apply_set_bonuses(loadout)
                 end
                 new_loadout.ability_cast_mod[localized_spell_name("Healing Touch")] = 
                     new_loadout.ability_cast_mod[localized_spell_name("Healing Touch")] + 0.15;
+            -- idol of longevity
+            elseif id == 23004 then
+                if not new_loadout.ability_refund[localized_spell_name("Healing Touch")] then
+                    new_loadout.ability_refund[localized_spell_name("Healing Touch")] = 0;
+                end
+                new_loadout.ability_refund[localized_spell_name("Healing Touch")] = 
+                    new_loadout.ability_refund[localized_spell_name("Healing Touch")] + 25;
             end
         end
         
@@ -8202,6 +8209,12 @@ local function apply_set_bonuses(loadout)
                     new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] + 10;
             end
         end
+
+                if not new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] then
+                    new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] = 0;
+                end
+                new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] = 
+                    new_loadout.ability_refund[localized_spell_name("Lesser Healing Wave")] + 10;
 
         if new_loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
 
@@ -9792,7 +9805,7 @@ local function print_loadout(loadout)
           loadout.num_set_pieces[8],
           loadout.num_set_pieces[9],
           loadout.num_set_pieces[10],
-          loadout.num_set_pieces[11]
+          loadout.num_set_pieces[11],
           "}");
 
     for k, v in pairs(loadout.ability_base_mod) do
@@ -10363,7 +10376,7 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
 
         coef_estimate = spell_data.rank/max_rank;
 
-        cost = cost - ceil(refund*coef_estimate);
+        cost = cost - refund*coef_estimate;
     end
 
     -- the game seems to round cost up/down to the nearest
@@ -13578,6 +13591,8 @@ local function create_sw_gui_loadout_frame()
         -- self buffs2
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.natural_alignment_crystal, "self2", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.lightning_shield, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         -- target buffs
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_buffs, target_buffs1.healing_way, "target_buffs1", 
                                         sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func);
@@ -13608,6 +13623,8 @@ local function create_sw_gui_loadout_frame()
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs1.hazzrahs_charm_of_healing, "self1", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.blessed_prayer_beads, "self2", 
+                                        sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
+        create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.buffs, buffs2.epiphany, "self2", 
                                         sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func);
         create_loadout_buff_checkbutton(sw_frame.loadouts_frame.rhs_list.target_debuffs, target_debuffs1.curse_of_shadow,
                                          "target_debuffs1", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, 
