@@ -23,116 +23,133 @@
 local _, class = UnitClass("player");
 local _, race = UnitRace("player");
 
-local spell_name_to_id = {
-    -- Mage
-    ["Frostbolt"]               = 116,
-    ["Frost Nova"]              = 122,
-    ["Cone of Cold"]            = 120,
-    ["Blizzard"]                = 10,
-    ["Fireball"]                = 133,
-    ["Fire Blast"]              = 2136,
-    ["Scorch"]                  = 2948,
-    ["Pyroblast"]               = 11366,
-    ["Blast Wave"]              = 11113,
-    ["Flamestrike"]             = 2120,
-    ["Arcane Missiles"]         = 5143,
-    ["Arcane Explosion"]        = 1449,
-    ["Amplify Magic"]           = 1008,
-    ["Dampen Magic"]            = 604,
-    ["Arcane Intellect"]        = 1459,
-    ["Arcane Brilliance"]       = 23028,
-    ["Mage Armor"]              = 22783,
-    -- Druid
-    ["Healing Touch"]           = 5185,
-    ["Rejuvenation"]            = 774,
-    ["Tranquility"]             = 740,
-    ["Regrowth"]                = 8936,
-    ["Moonfire"]                = 8921,
-    ["Wrath"]                   = 5176,
-    ["Starfire"]                = 2912,
-    ["Insect Swarm"]            = 5570,
-    ["Hurricane"]               = 16914,
-    ["Entangling Roots"]        = 339,
-    ["Mark of the Wild"]        = 1126,
-    ["Gift of the Wild"]        = 21849,
-    ["Lifebloom"]               = 33763,
-    ["Wild Growth"]             = 48438,
-    ["Nourish"]                 = 50464,
-    ["Force of Nature"]         = 33831,
-    ["Typhoon"]                 = 50516,
-    -- Priest
-    ["Lesser Heal"]             = 2050,
-    ["Heal"]                    = 2054,
-    ["Greater Heal"]            = 2060,
-    ["Flash Heal"]              = 2061,
-    ["Prayer of Healing"]       = 596,
-    ["Renew"]                   = 139,
-    ["Power Word: Shield"]      = 17,
-    ["Holy Nova"]               = 15237,
-    ["Smite"]                   = 585,
-    ["Holy Fire"]               = 14914,
-    ["Mind Blast"]              = 8092,
-    ["Shadow Word: Pain"]       = 589,
-    ["Mind Flay"]               = 15407,
-    ["Devouring Plague"]        = 2944,
-    ["Divine Spirit"]           = 14752,
-    ["Prayer of Spirit"]        = 27681,
-    ["Binding Heal"]            = 32546,
-    ["Circle of Healing"]       = 34861,
-    ["Penance"]                 = 47540,
-    ["Prayer of Mending"]       = 33076,
-    ["Vampiric Touch"]          = 34914,
-    ["Mind Sear"]               = 48045,
-    ["Shadow Word: Death"]      = 32379,
-    ["Lightwell"]               = 724,
-    ["Shadowfiend"]             = 34433,
-    ["Desperate Prayer"]        = 19236,
-  
-    -- Shaman
-    ["Healing Stream Totem"]    = 5394,
-    ["Lesser Healing Wave"]     = 8004,
-    ["Healing Wave"]            = 331,
-    ["Chain Heal"]              = 1064,
-    ["Lightning Bolt"]          = 403,
-    ["Chain Lightning"]         = 421,
-    ["Lightning Shield"]        = 324,
-    ["Earth Shock"]             = 8042,
-    ["Magma Totem"]             = 8190,
-    ["Flame Shock"]             = 8050,
-    ["Frost Shock"]             = 8056,
-    ["Fire Nova Totem"]         = 1535,
-    ["Searing Totem"]           = 3599,
-    ["Mana Spring Totem"]       = 5675,
-    -- Paladin
-    ["Flash of Light"]          = 19750,
-    ["Holy Light"]              = 635,
-    ["Holy Shock"]              = 20473,
-    ["Hammer of Wrath"]         = 24275,
-    ["Consecration"]            = 26573,
-    ["Exorcism"]                = 879,
-    ["Holy Wrath"]              = 2812,
-    ["Blessing of Light"]       = 19977,
-    ["Vengeance"]               = 20049,
-    ["Blessing of Wisdom"]      = 19742,
-    ["Beacon of Light"]         = 53563,
-    -- Warlock
-    ["Curse of Agony"]          = 980,
-    ["Siphon Life"]             = 18265,
-    ["Death Coil"]              = 6789,
-    ["Corruption"]              = 172,
-    ["Drain Life"]              = 689,
-    ["Drain Soul"]              = 1120,
-    ["Shadow Bolt"]             = 686,
-    ["Searing Pain"]            = 5676,
-    ["Soul Fire"]               = 6353,
-    ["Hellfire"]                = 1949,
-    ["Rain of Fire"]            = 5740,
-    ["Immolate"]                = 348,
-    ["Conflagrate"]             = 17962,
-    ["Shadowburn"]              = 17877,
-    ["Curse of the Elements"]   = 1490,
-    ["Curse of Shadow"]         = 17937
-};
+local function spell_name_to_ids()
+    if class == "MAGE" then
+        return {
+            ["Frostbolt"]               = 116,
+            ["Frost Nova"]              = 122,
+            ["Cone of Cold"]            = 120,
+            ["Blizzard"]                = 10,
+            ["Fireball"]                = 133,
+            ["Fire Blast"]              = 2136,
+            ["Scorch"]                  = 2948,
+            ["Pyroblast"]               = 11366,
+            ["Blast Wave"]              = 11113,
+            ["Flamestrike"]             = 2120,
+            ["Arcane Missiles"]         = 5143,
+            ["Arcane Explosion"]        = 1449,
+            ["Amplify Magic"]           = 1008,
+            ["Dampen Magic"]            = 604,
+            ["Arcane Intellect"]        = 1459,
+            ["Arcane Brilliance"]       = 23028,
+            ["Mage Armor"]              = 22783,
+        };
+    elseif class == "DRUID" then
+        return {
+            ["Healing Touch"]           = 5185,
+            ["Rejuvenation"]            = 774,
+            ["Tranquility"]             = 740,
+            ["Regrowth"]                = 8936,
+            ["Moonfire"]                = 8921,
+            ["Wrath"]                   = 5176,
+            ["Starfire"]                = 2912,
+            ["Insect Swarm"]            = 5570,
+            ["Hurricane"]               = 16914,
+            ["Entangling Roots"]        = 339,
+            ["Mark of the Wild"]        = 1126,
+            ["Gift of the Wild"]        = 21849,
+            ["Lifebloom"]               = 33763,
+            ["Wild Growth"]             = 48438,
+            ["Nourish"]                 = 50464,
+            ["Force of Nature"]         = 33831,
+            ["Typhoon"]                 = 50516,
+        };
+    elseif class == "PRIEST" then
+        return {
+            ["Lesser Heal"]             = 2050,
+            ["Heal"]                    = 2054,
+            ["Greater Heal"]            = 2060,
+            ["Flash Heal"]              = 2061,
+            ["Prayer of Healing"]       = 596,
+            ["Renew"]                   = 139,
+            ["Power Word: Shield"]      = 17,
+            ["Holy Nova"]               = 15237,
+            ["Smite"]                   = 585,
+            ["Holy Fire"]               = 14914,
+            ["Mind Blast"]              = 8092,
+            ["Shadow Word: Pain"]       = 589,
+            ["Mind Flay"]               = 15407,
+            ["Devouring Plague"]        = 2944,
+            ["Divine Spirit"]           = 14752,
+            ["Prayer of Spirit"]        = 27681,
+            ["Binding Heal"]            = 32546,
+            ["Circle of Healing"]       = 34861,
+            ["Penance"]                 = 47540,
+            ["Prayer of Mending"]       = 33076,
+            ["Vampiric Touch"]          = 34914,
+            ["Mind Sear"]               = 48045,
+            ["Shadow Word: Death"]      = 32379,
+            ["Lightwell"]               = 724,
+            ["Shadowfiend"]             = 34433,
+            ["Desperate Prayer"]        = 19236,
+            ["Shadowform"]              = 15473,
+        };
+    elseif class == "SHAMAN" then
+        return {
+            ["Healing Stream Totem"]    = 5394,
+            ["Lesser Healing Wave"]     = 8004,
+            ["Healing Wave"]            = 331,
+            ["Chain Heal"]              = 1064,
+            ["Lightning Bolt"]          = 403,
+            ["Chain Lightning"]         = 421,
+            ["Lightning Shield"]        = 324,
+            ["Earth Shock"]             = 8042,
+            ["Magma Totem"]             = 8190,
+            ["Flame Shock"]             = 8050,
+            ["Frost Shock"]             = 8056,
+            ["Fire Nova Totem"]         = 1535,
+            ["Searing Totem"]           = 3599,
+            ["Mana Spring Totem"]       = 5675,
+        };
+    elseif class == "PALADIN" then
+        return {
+            ["Flash of Light"]          = 19750,
+            ["Holy Light"]              = 635,
+            ["Holy Shock"]              = 20473,
+            ["Hammer of Wrath"]         = 24275,
+            ["Consecration"]            = 26573,
+            ["Exorcism"]                = 879,
+            ["Holy Wrath"]              = 2812,
+            ["Blessing of Light"]       = 19977,
+            ["Vengeance"]               = 20049,
+            ["Blessing of Wisdom"]      = 19742,
+            ["Beacon of Light"]         = 53563,
+        };
+    elseif class == "WARLOCK" then
+        return {
+            ["Curse of Agony"]          = 980,
+            ["Siphon Life"]             = 18265,
+            ["Death Coil"]              = 6789,
+            ["Corruption"]              = 172,
+            ["Drain Life"]              = 689,
+            ["Drain Soul"]              = 1120,
+            ["Shadow Bolt"]             = 686,
+            ["Searing Pain"]            = 5676,
+            ["Soul Fire"]               = 6353,
+            ["Hellfire"]                = 1949,
+            ["Rain of Fire"]            = 5740,
+            ["Immolate"]                = 348,
+            ["Conflagrate"]             = 17962,
+            ["Shadowburn"]              = 17877,
+            ["Curse of the Elements"]   = 1490,
+            ["Curse of Shadow"]         = 17937
+        };
+    else
+        return {};
+    end
+end
+
+local spell_name_to_id = spell_name_to_ids();
 
 local magic_school = {
      physical = 1,
@@ -4014,8 +4031,8 @@ local function create_spells()
             },
             -- mind sear
             [48045] = {
-                base_min            = 183.0,
-                base_max            = 197.0, 
+                base_min            = 5*183.0,
+                base_max            = 5*197.0, 
                 over_time           = 0.0,
                 over_time_tick_freq = 1,
                 over_time_duration  = 5.0,
@@ -4030,8 +4047,8 @@ local function create_spells()
                 over_time_coef      = 0.2857,
             },
             [53023] = {
-                base_min            = 212.0,
-                base_max            = 228.0, 
+                base_min            = 5*212.0,
+                base_max            = 5*228.0, 
                 over_time           = 0.0,
                 rank                = 2,
                 lvl_req             = 80,
@@ -6462,28 +6479,28 @@ for k, v in pairs(spells) do
     local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
     -- rank1 contains some general fields that we write to all ranks
     local rank1_of_spell = spell_name_to_id[name]
-    if rank1_of_spell ~= k then
-        print(rank1_of_spell, k, name);
-        local spell_data = spells[rank1_of_spell];
+    print(rank1_of_spell, k, name);
+    local spell_data = spells[rank1_of_spell];
 
-        v.over_time_tick_freq = spell_data.over_time_tick_freq;
-        v.over_time_duration  = spell_data.over_time_duration;
-        v.cast_time           = spell_data.cast_time;
-        v.cost_base_percent   = spell_data.cost_base_percent;
-        v.flags               = spell_data.flags;
-        v.school              = spell_data.school;
-        v.coef                = spell_data.coef;
-        v.over_time_coef      = spell_data.over_time_coef;
-        if v.healing_version then
-            v.healing_version.over_time_tick_freq = spell_data.healing_version.over_time_tick_freq;
-            v.healing_version.over_time_duration  = spell_data.healing_version.over_time_duration;
-            v.healing_version.cast_time           = spell_data.healing_version.cast_time;
-            v.healing_version.cost_base_percent   = spell_data.healing_version.cost_base_percent;
-            v.healing_version.flags               = spell_data.healing_version.flags;
-            v.healing_version.school              = spell_data.healing_version.school;
-            v.healing_version.coef                = spell_data.healing_version.coef;
-            v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
-        end
+    v.over_time_tick_freq = spell_data.over_time_tick_freq;
+    v.over_time_duration  = spell_data.over_time_duration;
+    v.cast_time           = spell_data.cast_time;
+    v.cost_base_percent   = spell_data.cost_base_percent;
+    v.flags               = spell_data.flags;
+    v.school              = spell_data.school;
+    v.coef                = spell_data.coef;
+    v.over_time_coef      = spell_data.over_time_coef;
+    v.base_id             = rank1_of_spell;
+    if v.healing_version then
+        v.healing_version.over_time_tick_freq = spell_data.healing_version.over_time_tick_freq;
+        v.healing_version.over_time_duration  = spell_data.healing_version.over_time_duration;
+        v.healing_version.cast_time           = spell_data.healing_version.cast_time;
+        v.healing_version.cost_base_percent   = spell_data.healing_version.cost_base_percent;
+        v.healing_version.flags               = spell_data.healing_version.flags;
+        v.healing_version.school              = spell_data.healing_version.school;
+        v.healing_version.coef                = spell_data.healing_version.coef;
+        v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
+        v.healing_version.base_id             = rank1_of_spell;
     end
 end
 -- exceptions to various spell ranks

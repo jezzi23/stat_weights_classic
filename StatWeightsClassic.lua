@@ -36,6 +36,7 @@ local spell_book_addon_name = nil;
 
 sw_snapshot_loadout_update_freq = 1;
 sw_num_icon_overlay_fields_active = 0;
+local sequence_counter = 0;
 local addon_running_time = 0;
 local snapshot_time_since_last_update = 0;
 local beacon_snapshot_time = -1000;
@@ -125,17 +126,27 @@ local spell_name_to_id = addonTable.spell_name_to_id;
 local magic_school = addonTable.magic_school;
 local spell_flags = addonTable.spell_flags;
 
+local localized_spell_names = {};
+for k, v in pairs(spell_name_to_id) do
+    
+    local name, _, _, _, _, _, _ = GetSpellInfo(v);
+    localized_spell_names[k] = name;
+end
+
 local function localized_spell_name(english_name)
-    local name, _, _, _, _, _, _ = GetSpellInfo(spell_name_to_id[english_name]);
+    local name = localized_spell_names[english_name];
+    if not name then
+        name = "";
+    end
     return name;
 end
 
-local function localize_spell_name_array(english_names)
-    local names = {};
+local function spell_names_to_id(english_names)
+    local base_ids = {};
     for k, v in pairs(english_names) do
-        names[k] = localized_spell_name(v);
+        base_ids[k] = spell_name_to_id[v];
     end
-    return names;
+    return base_ids;
 end
 
 local function ensure_exists_and_add(table, key, add, default_if_not_exists)
@@ -257,7 +268,7 @@ local buffs = {
             else
                 c = 3;
             end
-            local abilities = localize_spell_name_array({"Greater Heal", "Prayer of Heal"});
+            local abilities = spell_names_to_id({"Greater Heal", "Prayer of Heal"});
             for k, v in pairs(abilities) do
                 ensure_exists_and_add(loadout.ability_cast_mod, v, c * effect, 0);
             end
@@ -389,7 +400,7 @@ local target_buffs = {
             local pts = loadout.talents_table:pts(1, 21);
             if pts ~= 0 and loadout.target_friendly then
                     
-                    local abilities = localize_spell_name_array({"Flash Heal", "Greater heal", "Penance"});
+                    local abilities = spell_names_to_id({"Flash Heal", "Greater heal", "Penance"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(loadout.ability_crit, v, pts * 0.02, 0);
                     end
@@ -406,8 +417,8 @@ local target_buffs = {
             -- TODO: should probably be last mulitply
             local pts = loadout.talents_table:pts(3, 26);
             if pts ~= 0 then
-                local abilities = localize_spell_name_array({"Mind Flay", "Mind Blast"});
-                for k, v in pair(abilities) do
+                local abilities = spell_names_to_id({"Mind Flay", "Mind Blast"});
+                for k, v in pairs(abilities) do
                     ensure_exists_and_mul(loadout.ability_effect_mod, v, 1 + pts * 0.02, 1.0);
                 end
                  
@@ -435,7 +446,7 @@ local target_buffs = {
     [8921] = {
         apply = function(loadout, buff)
             local pts = loadout.talents_table:pts(1, 14);
-            ensure_exists_and_add(loadout.ability_crit, localized_spell_name("Starfire"), pts * 0.01, 0);
+            ensure_exists_and_add(loadout.ability_crit, spell_name_to_id["Starfire"], pts * 0.01, 0);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.hostile),
         name = "Improved Insect Swarm",
@@ -521,7 +532,7 @@ local function create_glyphs()
             -- glyph of flash heal
             [55679] = {
                 apply = function(loadout)
-                    local fl = localized_spell_name("Flash Heal");
+                    local fl = spell_name_to_id["Flash Heal"];
                     ensure_exists_and_add(loadout.ability_cost_mod, fl, 0.1, 0);
                 end,
                 wowhead_id = "pbz"
@@ -529,7 +540,7 @@ local function create_glyphs()
             -- glyph of holy nova
             [55683] = {
                 apply = function(loadout)
-                    local hn = localized_spell_name("Holy Nova");
+                    local hn = spell_name_to_id["Holy Nova"];
                     ensure_exists_and_mul(loadout.ability_effect_mod, hn, 1.20, 1.0);
                 end,
                 wowhead_id = "pc3"
@@ -537,7 +548,7 @@ local function create_glyphs()
             -- glyph of prayer of healing
             [57195] = {
                 apply = function(loadout)
-                    local ph = localized_spell_name("Prayer of Healing");
+                    local ph = spell_name_to_id["Prayer of Healing"];
                     --TODO
                 end,
                 wowhead_id = "pc0"
@@ -560,7 +571,7 @@ local function create_glyphs()
             -- glyph of renew
             [55674] = {
                 apply = function(loadout)
-                    local renew = localized_spell_name("Renew");
+                    local renew = spell_name_to_id["Renew"];
 
                     ensure_exists_and_add(loadout.ability_extra_ticks, renew, -1, 0);
                     -- heal increase applied later calculation
@@ -570,7 +581,7 @@ local function create_glyphs()
             -- glyph of lightwell
             [55673] = {
                 apply = function(loadout)
-                    local lw = localized_spell_name("Lightwell");
+                    local lw = spell_name_to_id["Lightwell"];
                     ensure_exists_and_mul(loadout.ability_effect_mod, lw, 1.20, 1.0);
                 end,
                 wowhead_id = "pbs"
@@ -748,9 +759,10 @@ local function empty_loadout()
         name = "Empty";
         is_dynamic_loadout = true,
         talents_code = "",
+        --talents_table = talent_glyphs_table(""),
         talents_table = {},
         always_assume_buffs = true,
-        lvl = 0,
+        lvl = 1,
         target_lvl = 0,
         use_dynamic_target_lvl = true,
         has_target = false; 
@@ -823,6 +835,8 @@ local function empty_loadout()
     };
 end
 
+--local tmp_loadout = empty_loadout();
+
 --TODO: should clean this up before wotlk
 --
 -- add things to loadout that a loadout is assumed to have but don't due to an older version of a loadout
@@ -861,7 +875,6 @@ local function satisfy_loadout(loadout)
     --if not loadout.target_res_by_school then
     --    loadout.target_res_by_school = {0, 0, 0, 0, 0, 0, 0};
     --end
-
 end
 
 local function negate_loadout(loadout)
@@ -937,15 +950,15 @@ end
 
 local function loadout_add(primary, diff)
 
-    local added = loadout_copy(primary);
+    --local added = loadout_copy(primary);
 
     for i = 1, 5 do
-        added.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[i]);
+        primary.stats[i] = primary.stats[i] + diff.stats[i] * (1 + primary.stat_mod[i]);
     end
     -- TODO: outdated stuff here, mana and int crit formula need figuring out
 
-    added.mp5 = primary.mp5 + diff.mp5;
-    added.mana = primary.mana + 
+    primary.mp5 = primary.mp5 + diff.mp5;
+    primary.mana = primary.mana + 
                  (diff.mana * (1 + primary.mana_mod)) + 
                  (15*diff.stats[stat.int]*(1 + primary.stat_mod[stat.int]*primary.mana_mod));
 
@@ -953,51 +966,51 @@ local function loadout_add(primary, diff)
     local sp_gained_from_int = diff.stats[stat.int] * (1 + primary.stat_mod[stat.int]) * primary.lunar_guidance * 0.01;
     sp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
     for i = 1, 7 do
-        added.spell_dmg_by_school[i] = primary.spell_dmg_by_school[i] + diff.spell_dmg_by_school[i] + sp_gained_from_stat;
+        primary.spell_dmg_by_school[i] = primary.spell_dmg_by_school[i] + diff.spell_dmg_by_school[i] + sp_gained_from_stat;
     end
-    added.spell_power = primary.spell_power + diff.spell_power + sp_gained_from_stat;
+    primary.spell_power = primary.spell_power + diff.spell_power + sp_gained_from_stat;
 
     -- introduce crit by intellect here
     crit_diff_normalized_to_primary = diff.stats[stat.int] * ((1 + primary.stat_mod[stat.int])/60)/100; -- assume diff has no stat mod
     for i = 1, 7 do
-        added.spell_crit_by_school[i] = primary.spell_crit_by_school[i] + diff.spell_crit_by_school[i] + 
+        primary.spell_crit_by_school[i] = primary.spell_crit_by_school[i] + diff.spell_crit_by_school[i] + 
             crit_diff_normalized_to_primary;
     end
 
     for i = 1, 7 do
-        added.spell_dmg_hit_by_school[i] = primary.spell_dmg_hit_by_school[i] + diff.spell_dmg_hit_by_school[i];
+        primary.spell_dmg_hit_by_school[i] = primary.spell_dmg_hit_by_school[i] + diff.spell_dmg_hit_by_school[i];
     end
 
     for i = 1, 7 do
-        added.spell_dmg_mod_by_school[i] = primary.spell_dmg_mod_by_school[i] + diff.spell_dmg_mod_by_school[i];
+        primary.spell_dmg_mod_by_school[i] = primary.spell_dmg_mod_by_school[i] + diff.spell_dmg_mod_by_school[i];
     end
 
     for i = 1, 7 do
-        added.spell_crit_mod_by_school[i] = primary.spell_crit_mod_by_school[i] + diff.spell_crit_mod_by_school[i];
+        primary.spell_crit_mod_by_school[i] = primary.spell_crit_mod_by_school[i] + diff.spell_crit_mod_by_school[i];
     end
     for i = 1, 7 do
-        added.target_spell_dmg_taken[i] = primary.target_spell_dmg_taken[i] + diff.target_spell_dmg_taken[i];
+        primary.target_spell_dmg_taken[i] = primary.target_spell_dmg_taken[i] + diff.target_spell_dmg_taken[i];
     end
     for i = 1, 7 do
-        added.target_mod_res_by_school[i] = primary.target_mod_res_by_school[i] + diff.target_mod_res_by_school[i];
+        primary.target_mod_res_by_school[i] = primary.target_mod_res_by_school[i] + diff.target_mod_res_by_school[i];
     end
     for i = 1, 7 do
-        added.target_res_by_school[i] = primary.target_res_by_school[i] + diff.target_res_by_school[i];
+        primary.target_res_by_school[i] = primary.target_res_by_school[i] + diff.target_res_by_school[i];
     end
 
-    added.spell_heal_mod = primary.spell_heal_mod + diff.spell_heal_mod;
+    primary.spell_heal_mod = primary.spell_heal_mod + diff.spell_heal_mod;
 
-    added.target_healing_taken = primary.target_healing_taken + diff.target_healing_taken;
+    primary.target_healing_taken = primary.target_healing_taken + diff.target_healing_taken;
 
-    added.dmg_mod = primary.dmg_mod + diff.dmg_mod;
+    primary.dmg_mod = primary.dmg_mod + diff.dmg_mod;
 
-    added.haste_rating = primary.haste_rating + diff.haste_rating;
-    added.crit_rating = primary.crit_rating + diff.crit_rating;
-    added.hit_rating = primary.hit_rating + diff.hit_rating;
+    primary.haste_rating = primary.haste_rating + diff.haste_rating;
+    primary.crit_rating = primary.crit_rating + diff.crit_rating;
+    primary.hit_rating = primary.hit_rating + diff.hit_rating;
 
-    added.cost_mod = primary.cost_mod + diff.cost_mod;
+    primary.cost_mod = primary.cost_mod + diff.cost_mod;
 
-    return added;
+    return primary;
 end
 
 local active_loadout_base = nil;
@@ -1023,8 +1036,6 @@ local function remove_dynamic_stats_from_talents(loadout)
                 loadout.spell_crit_by_school[magic_school.holy] - pts * 0.01;
         end
     end
-
-    return loadout;
 end
 
 local function static_rescale_from_talents_diff(new_loadout, old_loadout)
@@ -1051,15 +1062,13 @@ end
 
 local function apply_talents_glyphs(loadout)
 
-    local new_loadout = loadout;
-
     local talents, glyphs_table = talent_glyphs_table(loadout.talents_code);
-    new_loadout.talents_table = talents;
-    new_loadout.glyphs = glyphs_table;
+    loadout.talents_table = talents;
+    loadout.glyphs = glyphs_table;
 
-    for k, v in pairs(new_loadout.glyphs) do
+    for k, v in pairs(loadout.glyphs) do
         if v.apply then
-            v.apply(new_loadout);
+            v.apply(loadout);
         end
     end
     
@@ -1069,123 +1078,123 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(1, 1);
         if pts ~= 0 then
             for i = 2, 7 do
-                new_loadout.target_res_by_school[i] = new_loadout.target_res_by_school[i] - pts * 5;
+                loadout.target_res_by_school[i] = loadout.target_res_by_school[i] - pts * 5;
             end
         end
         -- arcane focus
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
-            new_loadout.spell_dmg_hit_by_school[magic_school.arcane] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.arcane] + pts * 0.02;
+            loadout.spell_dmg_hit_by_school[magic_school.arcane] = 
+                loadout.spell_dmg_hit_by_school[magic_school.arcane] + pts * 0.02;
         end
         --  improved arcane explosion
         local pts = talents:pts(1, 8);
         if pts ~= 0 then
-            local ae = localized_spell_name("Arcane Explosion");
-            if not new_loadout.ability_crit[ae] then
-                new_loadout.ability_crit[ae] = 0;
+            local ae = spell_name_to_id["Arcane Explosion"];
+            if not loadout.ability_crit[ae] then
+                loadout.ability_crit[ae] = 0;
             end
-            new_loadout.ability_crit[ae] = new_loadout.ability_crit[ae] + pts * 0.02;
+            loadout.ability_crit[ae] = loadout.ability_crit[ae] + pts * 0.02;
         end
         --  arcane mediation
         local pts = talents:pts(1, 12);
         if pts ~= 0 then
-            new_loadout.regen_while_casting = new_loadout.regen_while_casting + pts * 0.05;
+            loadout.regen_while_casting = loadout.regen_while_casting + pts * 0.05;
         end
         --  arcane mind
         local pts = talents:pts(1, 14);
         if pts ~= 0 then
-            new_loadout.mana_mod = new_loadout.mana_mod + pts * 0.02;
+            loadout.mana_mod = loadout.mana_mod + pts * 0.02;
         end
         -- arcane instability
         local pts = talents:pts(1, 15);
         if pts ~= 0 then
             for i = 1, 7 do
-                new_loadout.spell_dmg_mod_by_school[i] = new_loadout.spell_dmg_mod_by_school[i] + pts * 0.01;
-                new_loadout.spell_crit_by_school[i] = new_loadout.spell_crit_by_school[i] + pts * 0.01;
+                loadout.spell_dmg_mod_by_school[i] = loadout.spell_dmg_mod_by_school[i] + pts * 0.01;
+                loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + pts * 0.01;
             end
         end
         -- improved fireball
         local pts = talents:pts(2, 1);
         if pts ~= 0 then
-            local fb = localized_spell_name("Fireball");
-            if not new_loadout.ability_cast_mod[fb] then
-                new_loadout.ability_cast_mod[fb] = 0;
+            local fb = spell_name_to_id["Fireball"];
+            if not loadout.ability_cast_mod[fb] then
+                loadout.ability_cast_mod[fb] = 0;
             end
-            new_loadout.ability_cast_mod[fb] = new_loadout.ability_cast_mod[fb] + pts * 0.1;
+            loadout.ability_cast_mod[fb] = loadout.ability_cast_mod[fb] + pts * 0.1;
         end
         -- ignite
         local pts = talents:pts(2, 3);
         if pts ~= 0 then
-           new_loadout.ignite = pts; 
+           loadout.ignite = pts; 
         end
         -- incinerate
         local pts = talents:pts(2, 6);
         if pts ~= 0 then
-            local scorch = localized_spell_name("Scorch");
-            local fb = localized_spell_name("Fire Blast");
-            if not new_loadout.ability_crit[scorch] then
-                new_loadout.ability_crit[scorch] = 0;
+            local scorch = spell_name_to_id["Scorch"];
+            local fb = spell_name_to_id["Fire Blast"];
+            if not loadout.ability_crit[scorch] then
+                loadout.ability_crit[scorch] = 0;
             end
-            if not new_loadout.ability_crit[fb] then
-                new_loadout.ability_crit[fb] = 0;
+            if not loadout.ability_crit[fb] then
+                loadout.ability_crit[fb] = 0;
             end
-            new_loadout.ability_crit[scorch] = new_loadout.ability_crit[scorch] + pts * 0.02;
-            new_loadout.ability_crit[fb] = new_loadout.ability_crit[fb] + pts * 0.02;
+            loadout.ability_crit[scorch] = loadout.ability_crit[scorch] + pts * 0.02;
+            loadout.ability_crit[fb] = loadout.ability_crit[fb] + pts * 0.02;
         end
         -- improved flamestrike
         local pts = talents:pts(2, 7);
         if pts ~= 0 then
-            local fs = localized_spell_name("Flamestrike");
-            if not new_loadout.ability_crit[fs] then
-                new_loadout.ability_crit[fs] = 0;
+            local fs = spell_name_to_id["Flamestrike"];
+            if not loadout.ability_crit[fs] then
+                loadout.ability_crit[fs] = 0;
             end
-            new_loadout.ability_crit[fs] = new_loadout.ability_crit[fs] + pts * 0.05;
+            loadout.ability_crit[fs] = loadout.ability_crit[fs] + pts * 0.05;
         end
         -- master of elements
         local pts = talents:pts(2, 12);
         if pts ~= 0 then
-            new_loadout.master_of_elements = pts;
+            loadout.master_of_elements = pts;
         end
         -- critical mass
         local pts = talents:pts(2, 13);
         if pts ~= 0 then
-            new_loadout.spell_crit_by_school[magic_school.fire] =
-                new_loadout.spell_crit_by_school[magic_school.fire] + pts * 0.02;
+            loadout.spell_crit_by_school[magic_school.fire] =
+                loadout.spell_crit_by_school[magic_school.fire] + pts * 0.02;
         end
         -- fire power
         local pts = talents:pts(2, 15);
         if pts ~= 0 then
-            new_loadout.spell_dmg_mod_by_school[magic_school.fire] =
-                new_loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
+            loadout.spell_dmg_mod_by_school[magic_school.fire] =
+                loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
         end
         -- improved frostbolt
         local pts = talents:pts(3, 2);
         if pts ~= 0 then
-            local fb = localized_spell_name("Frostbolt");
-            if not new_loadout.ability_cast_mod[fb] then
-                new_loadout.ability_cast_mod[fb] = 0;
+            local fb = spell_name_to_id["Frostbolt"];
+            if not loadout.ability_cast_mod[fb] then
+                loadout.ability_cast_mod[fb] = 0;
             end
-            new_loadout.ability_cast_mod[fb] = new_loadout.ability_cast_mod[fb] + pts * 0.1;
+            loadout.ability_cast_mod[fb] = loadout.ability_cast_mod[fb] + pts * 0.1;
         end
         -- elemental precision
         local pts = talents:pts(3, 3);
         if pts ~= 0 then
-            new_loadout.spell_dmg_hit_by_school[magic_school.fire] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.fire] + pts * 0.02;
-            new_loadout.spell_dmg_hit_by_school[magic_school.frost] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.frost] + pts * 0.02;
+            loadout.spell_dmg_hit_by_school[magic_school.fire] = 
+                loadout.spell_dmg_hit_by_school[magic_school.fire] + pts * 0.02;
+            loadout.spell_dmg_hit_by_school[magic_school.frost] = 
+                loadout.spell_dmg_hit_by_school[magic_school.frost] + pts * 0.02;
         end
         -- ice shards
         local pts = talents:pts(3, 4);
         if pts ~= 0 then
-            new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * (1 + pts * 0.2);
+            loadout.spell_crit_mod_by_school[magic_school.frost] = 
+                1 + (loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * (1 + pts * 0.2);
         end
         -- piercing ice
         local pts = talents:pts(3, 8);
         if pts ~= 0 then
-            new_loadout.spell_dmg_mod_by_school[5] = new_loadout.spell_dmg_mod_by_school[5] + pts * 0.02;
+            loadout.spell_dmg_mod_by_school[5] = loadout.spell_dmg_mod_by_school[5] + pts * 0.02;
         end
         -- frost channeling
         local pts = talents:pts(3, 12);
@@ -1193,22 +1202,22 @@ local function apply_talents_glyphs(loadout)
 
             local cold_spells = {"Frostbolt", "Blizzard", "Cone of Cold", "Frost Nova"};
             for k, v in pairs(cold_spells) do
-                cold_spells[k] = localized_spell_name(v);
+                cold_spells[k] = spell_name_to_id[v];
             end
 
             for k, v in pairs(cold_spells) do
-                if not new_loadout.ability_cost_mod[v] then
-                    new_loadout.ability_cost_mod[v] = 0;
+                if not loadout.ability_cost_mod[v] then
+                    loadout.ability_cost_mod[v] = 0;
                 end
             end
             for k, v in pairs(cold_spells) do
-                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.05;
+                loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + pts * 0.05;
             end
         end
         -- improved cone of cold
         local pts = talents:pts(3, 15);
         if pts ~= 0 then
-            local coc = localized_spell_name("Cone of Cold");
+            local coc = spell_name_to_id["Cone of Cold"];
         end
     elseif class == "DRUID" then
 
@@ -1216,9 +1225,9 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(1, 1);
         if pts ~= 0 then
 
-            local abilities = localize_spell_name_array({"Wrath", "Starfire"});
+            local abilities = spell_names_to_id({"Wrath", "Starfire"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cast_mod, v, pts * 0.1, 0);
+                ensure_exists_and_add(loadout.ability_cast_mod, v, pts * 0.1, 0);
             end
         end
 
@@ -1226,41 +1235,41 @@ local function apply_talents_glyphs(loadout)
         -- genesis
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
-            new_loadout.ot_mod = new_loadout.ot_mod + 0.01 * pts;
+            loadout.ot_mod = loadout.ot_mod + 0.01 * pts;
         end
 
         -- moonglow
         local pts = talents:pts(1, 3);
         if pts ~= 0 then
 
-            local abilities = localize_spell_name_array({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Nourish", "Regrowth", "Rejuvenation"});
+            local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Nourish", "Regrowth", "Rejuvenation"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, pts * 0.03, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, pts * 0.03, 0);
             end
         end
 
         -- nature's majesty
         local pts = talents:pts(1, 4);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Wrath", "Starfire", "Starfall", "Nourish", "Healing Touch"});
+            local abilities = spell_names_to_id({"Wrath", "Starfire", "Starfall", "Nourish", "Healing Touch"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_crit, v, pts * 0.02, 0);
+                ensure_exists_and_add(loadout.ability_crit, v, pts * 0.02, 0);
             end
         end
 
         -- improved moonfire
         local pts = talents:pts(1, 5);
         if pts ~= 0 then
-            local mf = localized_spell_name("Moonfire");
-            ensure_exists_and_add(new_loadout.ability_crit, mf, pts * 0.05, 0);
-            ensure_exists_and_add(new_loadout.ability_effect_mod, mf, pts * 0.05, 1.0);
+            local mf = spell_name_to_id["Moonfire"];
+            ensure_exists_and_add(loadout.ability_crit, mf, pts * 0.05, 0);
+            ensure_exists_and_add(loadout.ability_effect_mod, mf, pts * 0.05, 1.0);
         end
         -- brambles
         local pts = talents:pts(1, 6);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Thorns", "Entangling Roots"});
+            local abilities = spell_names_to_id({"Thorns", "Entangling Roots"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_mul(new_loadout.ability_effect_mod, v, 1.0 + pts * 0.25, 1.0);
+                ensure_exists_and_mul(loadout.ability_effect_mod, v, 1.0 + pts * 0.25, 1.0);
             end
         end
 
@@ -1269,13 +1278,13 @@ local function apply_talents_glyphs(loadout)
         -- nature's splendor
         local pts = talents:pts(1, 8);
         if pts ~= 0 then
-            local one_ticks = localize_spell_name_array({"Moonfire", "Rejuvenation", "Insect Swarm"});
-            local two_ticks = localize_spell_name_array({"Regrowth", "Lifebloom"});
+            local one_ticks = spell_names_to_id({"Moonfire", "Rejuvenation", "Insect Swarm"});
+            local two_ticks = spell_names_to_id({"Regrowth", "Lifebloom"});
             for k, v in pairs(one_ticks) do
-                ensure_exists_and_add(new_loadout.ability_extra_ticks, v, 1, 0);
+                ensure_exists_and_add(loadout.ability_extra_ticks, v, 1, 0);
             end
             for k, v in pairs(two_ticks) do
-                ensure_exists_and_add(new_loadout.ability_extra_ticks, v, 2, 0);
+                ensure_exists_and_add(loadout.ability_extra_ticks, v, 2, 0);
             end
         end
 
@@ -1283,22 +1292,22 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(1, 10);
         if pts ~= 0 then
 
-            local abilities = localize_spell_name_array({"Starfire", "Starfall", "Moonfire", "Wrath"});
+            local abilities = spell_names_to_id({"Starfire", "Starfall", "Moonfire", "Wrath"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_crit_mod, v, pts * 0.1, 0);
+                ensure_exists_and_add(loadout.ability_crit_mod, v, pts * 0.1, 0);
             end
         end
 
         -- celestial focus
         local pts = talents:pts(1, 11);
         if pts ~= 0 then
-            new_loadout.haste_mod = new_loadout.haste_mod * (1.0 + pts * 0.01);
+            loadout.haste_mod = loadout.haste_mod * (1.0 + pts * 0.01);
         end
 
         -- lunar guidance
         local pts = talents:pts(1, 12);
         if pts ~= 0 then
-           new_loadout.lunar_guidance = pts * 0.04; 
+           loadout.lunar_guidance = pts * 0.04; 
         end
 
         -- improved insect swarm
@@ -1316,19 +1325,19 @@ local function apply_talents_glyphs(loadout)
         -- moonfury
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Starfire", "Moonfire", "Wrath"});
+            local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_effect_mod, v, pts * 0.03, 1.0);
+                ensure_exists_and_add(loadout.ability_effect_mod, v, pts * 0.03, 1.0);
             end
         end
         -- balance of power
         local pts = talents:pts(1, 17);
         if pts ~= 0 then
 
-            new_loadout.spell_dmg_hit_by_school[magic_school.nature] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.nature] + pts * 0.02;
-            new_loadout.spell_dmg_hit_by_school[magic_school.arcane] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.arcane] + pts * 0.02;
+            loadout.spell_dmg_hit_by_school[magic_school.nature] = 
+                loadout.spell_dmg_hit_by_school[magic_school.nature] + pts * 0.02;
+            loadout.spell_dmg_hit_by_school[magic_school.arcane] = 
+                loadout.spell_dmg_hit_by_school[magic_school.arcane] + pts * 0.02;
         end
 
         -- moonkin form
@@ -1362,10 +1371,10 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(1, 22);
         if pts ~= 0 then
 
-            local sf = localized_spell_name("Starfire");
-            local w = localized_spell_name("Wrath");
-            ensure_exists_and_add(new_loadout.ability_coef_mod, sf, pts * 0.04, 0);
-            ensure_exists_and_add(new_loadout.ability_coef_mod, w, pts * 0.02, 0);
+            local sf = spell_name_to_id["Starfire"];
+            local w = spell_name_to_id["Wrath"];
+            ensure_exists_and_add(loadout.ability_coef_mod, sf, pts * 0.04, 0);
+            ensure_exists_and_add(loadout.ability_coef_mod, w, pts * 0.02, 0);
         end
 
         -- eclipse
@@ -1378,19 +1387,19 @@ local function apply_talents_glyphs(loadout)
         -- gale winds
         local pts = talents:pts(1, 26);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Hurricane", "Typhoon"});
+            local abilities = spell_names_to_id({"Hurricane", "Typhoon"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_mul(new_loadout.ability_effect_mod, v, 1.0 + pts * 0.15, 1.0);
+                ensure_exists_and_mul(loadout.ability_effect_mod, v, 1.0 + pts * 0.15, 1.0);
             end
         end
 
         --  earth and moon
         local pts = talents:pts(1, 27);
         if pts ~= 0 then
-            new_loadout.spell_dmg_mod_by_school[magic_school.arcane] = 
-                new_loadout.spell_dmg_mod_by_school[magic_school.arcane] + 0.02 * pts;
-            new_loadout.spell_dmg_mod_by_school[magic_school.nature] = 
-                new_loadout.spell_dmg_mod_by_school[magic_school.nature] + 0.02 * pts;
+            loadout.spell_dmg_mod_by_school[magic_school.arcane] = 
+                loadout.spell_dmg_mod_by_school[magic_school.arcane] + 0.02 * pts;
+            loadout.spell_dmg_mod_by_school[magic_school.nature] = 
+                loadout.spell_dmg_mod_by_school[magic_school.nature] + 0.02 * pts;
         end
 
         --  starfall
@@ -1400,7 +1409,7 @@ local function apply_talents_glyphs(loadout)
         -- heart of the wild
         --local pts = talents:pts(2, 15);
         --if pts ~= 0 then
-        --    new_loadout.stat_mod[stat.int] = new_loadout.stat_mod[stat.int] + pts * 0.04;
+        --    loadout.stat_mod[stat.int] = loadout.stat_mod[stat.int] + pts * 0.04;
         --end
 
 
@@ -1408,82 +1417,82 @@ local function apply_talents_glyphs(loadout)
         -- naturalist
         local pts = talents:pts(3, 4);
         if pts ~= 0 then
-            local ht = localized_spell_name("Healing Touch");
-            ensure_exists_and_add(new_loadout.ability_cast_mod, ht, pts * 0.1, 0);
+            local ht = spell_name_to_id["Healing Touch"];
+            ensure_exists_and_add(loadout.ability_cast_mod, ht, pts * 0.1, 0);
         end
         -- intensity
         local pts = talents:pts(3, 7);
         if pts ~= 0 then
             local effects = {0.17, 0.33, 0.5};
-            new_loadout.regen_while_casting = new_loadout.regen_while_casting + effects[pts];
+            loadout.regen_while_casting = loadout.regen_while_casting + effects[pts];
         end
 
         
         -- tranquil spirit
         local pts = talents:pts(3, 10);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Healing Touch", "Tranquility", "Nourish"});
+            local abilities = spell_names_to_id({"Healing Touch", "Tranquility", "Nourish"});
             
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, pts * 0.02, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, pts * 0.02, 0);
             end
         end
 
         -- improved rejuvenation
         local pts = talents:pts(3, 11);
         if pts ~= 0 then
-            local rejuv = localized_spell_name("Rejuvenation");
-            ensure_exists_and_mul(new_loadout.ability_effect_mod, rejuv, 1.0 + pts * 0.05, 1.0);
+            local rejuv = spell_name_to_id["Rejuvenation"];
+            ensure_exists_and_mul(loadout.ability_effect_mod, rejuv, 1.0 + pts * 0.05, 1.0);
         end
 
         -- gift of nature
         local pts = talents:pts(3, 13);
         if pts ~= 0 then
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
+            loadout.spell_heal_mod = loadout.spell_heal_mod + pts * 0.02;
         end
 
         -- empowered touch
         local pts = talents:pts(3, 15);
         if pts ~= 0 then
 
-            local ht = localized_spell_name("Healing Touch");
-            local no = localized_spell_name("Nourish");
-            ensure_exists_and_add(new_loadout.ability_coef_mod, ht, pts * 0.2, 0);
-            ensure_exists_and_add(new_loadout.ability_coef_mod, no, pts * 0.1, 0);
+            local ht = spell_name_to_id["Healing Touch"];
+            local no = spell_name_to_id["Nourish"];
+            ensure_exists_and_add(loadout.ability_coef_mod, ht, pts * 0.2, 0);
+            ensure_exists_and_add(loadout.ability_coef_mod, no, pts * 0.1, 0);
         end
 
         -- nature's bounty
         local pts = talents:pts(3, 16);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Regrowth", "Nourish"});
+            local abilities = spell_names_to_id({"Regrowth", "Nourish"});
             
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_crit, v, pts * 0.05, 0);
+                ensure_exists_and_add(loadout.ability_crit, v, pts * 0.05, 0);
             end
         end
 
         -- living spirit
         local pts = talents:pts(3, 17);
         if pts ~= 0 then
-            new_loadout.stat_mod[stat.spirit] = new_loadout.stat_mod[stat.spirit] + pts * 0.05;
+            loadout.stat_mod[stat.spirit] = loadout.stat_mod[stat.spirit] + pts * 0.05;
         end
 
         -- natural perfection
         local pts = talents:pts(3, 19);
         if pts ~= 0 then
 
-            new_loadout.spell_crit_by_school[magic_school.nature] = 
-                new_loadout.spell_crit_by_school[magic_school.nature] + 0.01 * pts;
-            new_loadout.spell_crit_by_school[magic_school.arcane] = 
-                new_loadout.spell_crit_by_school[magic_school.arcane] + 0.01 * pts;
+            loadout.spell_crit_by_school[magic_school.nature] = 
+                loadout.spell_crit_by_school[magic_school.nature] + 0.01 * pts;
+            loadout.spell_crit_by_school[magic_school.arcane] = 
+                loadout.spell_crit_by_school[magic_school.arcane] + 0.01 * pts;
         end
 
         -- empowered rejuvenation
         local pts = talents:pts(3, 20);
         if pts ~= 0 then
-            local hots = localize_spell_name_array({"Lifebloom", "Regrowth",  "Wild Growth", "Rejuvenation"});
+            local hots = spell_names_to_id({"Lifebloom", "Regrowth",  "Wild Growth", "Rejuvenation"});
             for k, v in pairs(hots) do
-                ensure_exists_and_add(new_loadout.ability_coef_ot_mod, v, pts * 0.04, 0);
+                ensure_exists_and_add(loadout.ability_coef_ot_mod, v, pts * 0.04, 0);
             end
         end
 
@@ -1504,9 +1513,9 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(3, 23);
         if pts ~= 0 then
             -- TODO: tree tracking aura and self
-            local abilities = localize_spell_name_array({"Regrowth", "Rejuvenation", "Lifebloom", "Wild Growth"});
+            local abilities = spell_names_to_id({"Regrowth", "Rejuvenation", "Lifebloom", "Wild Growth"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, 0.2, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, 0.2, 0);
             end
         end
 
@@ -1519,18 +1528,18 @@ local function apply_talents_glyphs(loadout)
         -- gift of the earthmother
         local pts = talents:pts(3, 25);
         if pts ~= 0 then
-            new_loadout.haste_mod = new_loadout.haste_mod * (1.0 + pts * 0.02);
+            loadout.haste_mod = loadout.haste_mod * (1.0 + pts * 0.02);
         end
 
     elseif class == "PRIEST" then
 
-        local instants = localize_spell_name_array({"Renew", "Holy Nova", "Circle of Healing", "Prayer of Mending", "Devouring Plague", "Shadow Word: Pain", "Shadow Word: Death", "Power Word: Shield", "Mind Flay", "Mind Sear", "Desperate Prayer"});
+        local instants = spell_names_to_id({"Renew", "Holy Nova", "Circle of Healing", "Prayer of Mending", "Devouring Plague", "Shadow Word: Pain", "Shadow Word: Death", "Power Word: Shield", "Mind Flay", "Mind Sear", "Desperate Prayer"});
 
         -- twin disciplines
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
             for k, v in pairs(instants) do
-                ensure_exists_and_add(new_loadout.ability_effect_mod, v, pts * 0.01, 1.0);
+                ensure_exists_and_add(loadout.ability_effect_mod, v, pts * 0.01, 1.0);
             end
         end
 
@@ -1538,14 +1547,14 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(1, 7);
         if pts ~= 0 then
             local effects = {0.17, 0.33, 0.5};
-            new_loadout.regen_while_casting = new_loadout.regen_while_casting + effects[pts];
+            loadout.regen_while_casting = loadout.regen_while_casting + effects[pts];
         end
 
         -- improved power word: shield
         local pts = talents:pts(1, 9);
         if pts ~= 0 then
-            local shield = localized_spell_name("Power Word: Shield");
-            ensure_exists_and_mul(new_loadout.ability_effect_mod, shield, 1.0 + pts * 0.05, 1.0);
+            local shield = spell_name_to_id["Power Word: Shield"];
+            ensure_exists_and_mul(loadout.ability_effect_mod, shield, 1.0 + pts * 0.05, 1.0);
         end
 
         -- mental agility 
@@ -1554,113 +1563,113 @@ local function apply_talents_glyphs(loadout)
 
             local effects = {0.04, 0.07, 0.1};
             for k, v in pairs(instants) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, effects[pts], 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, effects[pts], 0);
             end
-            local shield = localized_spell_name("Power Word: Shield");
-            ensure_exists_and_add(new_loadout.ability_cost_mod, shield, effects[pts], 0);
+            local shield = spell_name_to_id["Power Word: Shield"];
+            ensure_exists_and_add(loadout.ability_cost_mod, shield, effects[pts], 0);
         end
 
         -- mental strength
         local pts = talents:pts(1, 14);
         if pts ~= 0 then
-            new_loadout.stat_mod[stat.int] = new_loadout.stat_mod[stat.int] + pts * 0.03;
+            loadout.stat_mod[stat.int] = loadout.stat_mod[stat.int] + pts * 0.03;
         end
 
         -- focused power
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
             -- TODO: unclear how this spell % dmg is added, before or with other % ?
-            --new_loadout.dmg_mod = new_loadout.dmg_mod + pts * 0.02;
-            --new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
-            new_loadout.gmod = new_loadout.gmod * (1 + pts*0.02);
+            --loadout.dmg_mod = loadout.dmg_mod + pts * 0.02;
+            --loadout.spell_heal_mod = loadout.spell_heal_mod + pts * 0.02;
+            loadout.gmod = loadout.gmod * (1 + pts*0.02);
         end
 
         -- enlightenment
         local pts = talents:pts(1, 17);
         if pts ~= 0 then
-            new_loadout.stat_mod[stat.spirit] = new_loadout.stat_mod[stat.spirit] + pts * 0.02;
-            new_loadout.haste_mod = new_loadout.haste_mod * (1.0 + pts * 0.02);
+            loadout.stat_mod[stat.spirit] = loadout.stat_mod[stat.spirit] + pts * 0.02;
+            loadout.haste_mod = loadout.haste_mod * (1.0 + pts * 0.02);
         end
 
         -- focused will
         local pts = talents:pts(1, 18);
         if pts ~= 0 then
 
-            new_loadout.spell_crit_by_school[magic_school.holy] = 
-                new_loadout.spell_crit_by_school[magic_school.holy] + 0.01 * pts;
-            new_loadout.spell_crit_by_school[magic_school.shadow] = 
-                new_loadout.spell_crit_by_school[magic_school.shadow] + 0.01 * pts;
+            loadout.spell_crit_by_school[magic_school.holy] = 
+                loadout.spell_crit_by_school[magic_school.holy] + 0.01 * pts;
+            loadout.spell_crit_by_school[magic_school.shadow] = 
+                loadout.spell_crit_by_school[magic_school.shadow] + 0.01 * pts;
         end
 
         -- TODO: increased crit dynamically on low hp target
         -- improved flash heal
         local pts = talents:pts(1, 20);
         if pts ~= 0 then
-            local flash_heal = localized_spell_name("Flash Heal");
-            ensure_exists_and_add(new_loadout.ability_cost_mod, flash_heal, pts * 0.05, 0);
+            local flash_heal = spell_name_to_id["Flash Heal"];
+            ensure_exists_and_add(loadout.ability_cost_mod, flash_heal, pts * 0.05, 0);
         end
         -- borrowed time
         local pts = talents:pts(1, 27);
         if pts ~= 0 then
 
-            local shield = localized_spell_name("Power Word: Shield");
-            ensure_exists_and_add(new_loadout.ability_coef_mod, shield, pts * 0.08, 0); 
+            local shield = spell_name_to_id["Power Word: Shield"];
+            ensure_exists_and_add(loadout.ability_coef_mod, shield, pts * 0.08, 0); 
         end
 
         -- improved renew
         local pts = talents:pts(2, 2);
         if pts ~= 0 then
-            local renew = localized_spell_name("Renew");
-            ensure_exists_and_add(new_loadout.ability_effect_mod, renew, pts * 0.05, 1.0); 
+            local renew = spell_name_to_id["Renew"];
+            ensure_exists_and_add(loadout.ability_effect_mod, renew, pts * 0.05, 1.0); 
         end
         -- holy specialization
         local pts = talents:pts(2, 3);
         if pts ~= 0 then
-            new_loadout.spell_crit_by_school[magic_school.holy] = 
-                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
+            loadout.spell_crit_by_school[magic_school.holy] = 
+                loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
         -- divine fury
         local pts = talents:pts(2, 5);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Smite", "Holy Fire", "Heal", "Greater Heal"});
+            local abilities = spell_names_to_id({"Smite", "Holy Fire", "Heal", "Greater Heal"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cast_mod, v, pts * 0.1, 0);
+                ensure_exists_and_add(loadout.ability_cast_mod, v, pts * 0.1, 0);
             end
         end
         -- improved healing
         local pts = talents:pts(2, 10);
         if pts ~= 0 then
             local abilities =
-                localize_spell_name_array({"Lesser Heal", "Heal", "Greater Heal", "Divine Hymn", "Penance"});
+                spell_names_to_id({"Lesser Heal", "Heal", "Greater Heal", "Divine Hymn", "Penance"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, pts * 0.05, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, pts * 0.05, 0);
             end
         end
         -- searing light
         local pts = talents:pts(2, 11);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Smite", "Holy Fire", "Holy Nova", "Penance"});
+            local abilities = spell_names_to_id({"Smite", "Holy Fire", "Holy Nova", "Penance"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_mul(new_loadout.ability_effect_mod, v, 1.0 + pts * 0.05, 1.0);
+                ensure_exists_and_mul(loadout.ability_effect_mod, v, 1.0 + pts * 0.05, 1.0);
             end
         end
         -- healing prayers
         local pts = talents:pts(2, 12);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Prayer of Healing", "Prayer of Mending"});
+            local abilities = spell_names_to_id({"Prayer of Healing", "Prayer of Mending"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, pts * 0.1, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, pts * 0.1, 0);
             end
         end
         -- spiritual redemption 
         local pts = talents:pts(2, 13);
         if pts ~= 0 then
-            new_loadout.stat_mod[stat.spirit] = new_loadout.stat_mod[stat.spirit] + pts * 0.05;
+            loadout.stat_mod[stat.spirit] = loadout.stat_mod[stat.spirit] + pts * 0.05;
         end
         -- spiritual guidance 
         local pts = talents:pts(2, 14);
         if pts ~= 0 then
-           new_loadout.spiritual_guidance = pts * 0.05; 
+           loadout.spiritual_guidance = pts * 0.05; 
         end
         -- surge of light
         -- TODO: refund flash heal mana cost off crit chance, similarly as with holy palas in vanilla?
@@ -1668,7 +1677,7 @@ local function apply_talents_glyphs(loadout)
         -- spiritual healing
         local pts = talents:pts(2, 16);
         if pts ~= 0 then
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
+            loadout.spell_heal_mod = loadout.spell_heal_mod + pts * 0.02;
         end
 
         -- holy concentration
@@ -1677,34 +1686,34 @@ local function apply_talents_glyphs(loadout)
         -- blessed resilience
         local pts = talents:pts(2, 19);
         if pts ~= 0 then
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.01;
+            loadout.spell_heal_mod = loadout.spell_heal_mod + pts * 0.01;
         end
 
         -- empowered healing
         local pts = talents:pts(2, 21);
         if pts ~= 0 then
-            local gh = localized_spell_name("Greater Heal");
-            local fh = localized_spell_name("Flash Heal");
-            local bh = localized_spell_name("Binding Heal");
+            local gh = spell_name_to_id["Greater Heal"];
+            local fh = spell_name_to_id["Flash Heal"];
+            local bh = spell_name_to_id["Binding Heal"];
 
-            ensure_exists_and_add(new_loadout.ability_coef_mod, gh, pts * 0.08, 0);
-            ensure_exists_and_add(new_loadout.ability_coef_mod, fh, pts * 0.04, 0);
-            ensure_exists_and_add(new_loadout.ability_coef_mod, bh, pts * 0.04, 0);
+            ensure_exists_and_add(loadout.ability_coef_mod, gh, pts * 0.08, 0);
+            ensure_exists_and_add(loadout.ability_coef_mod, fh, pts * 0.04, 0);
+            ensure_exists_and_add(loadout.ability_coef_mod, bh, pts * 0.04, 0);
         end
 
         -- empowered renew 
         local pts = talents:pts(2, 23);
         if pts ~= 0 then
-            local renew = localized_spell_name("Renew");
-            ensure_exists_and_add(new_loadout.ability_coef_ot_mod, renew, pts * 0.05, 0);
+            local renew = spell_name_to_id["Renew"];
+            ensure_exists_and_add(loadout.ability_coef_ot_mod, renew, pts * 0.05, 0);
         end
 
         -- divine providence
         local pts = talents:pts(2, 26);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Circle of Healing", "Binding Heal", "Holy Nova", "Prayer of Healing", "Divine Hymn", "Prayer of Mending"});
+            local abilities = spell_names_to_id({"Circle of Healing", "Binding Heal", "Holy Nova", "Prayer of Healing", "Divine Hymn", "Prayer of Mending"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_effect_mod, v, pts * 0.02, 1.0);
+                ensure_exists_and_add(loadout.ability_effect_mod, v, pts * 0.02, 1.0);
             end
         end
 
@@ -1712,73 +1721,73 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(3, 3);
         if pts ~= 0 then
 
-            local abilities = localize_spell_name_array(
+            local abilities = spell_names_to_id(
                 {"Devouring Plague", "Mind Blast", "Shadow Word: Pain", "Mind Flay", "Vampiric Touch", "Shadow Word: Death", "Mind Sear"}
             );
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_effect_mod, v, pts * 0.02, 1.0);
+                ensure_exists_and_add(loadout.ability_effect_mod, v, pts * 0.02, 1.0);
             end
         end
 
         -- improved shadow word: pain
         local pts = talents:pts(3, 5);
         if pts ~= 0 then
-            local swp = localized_spell_name("Shadow Word: Pain");                
-            ensure_exists_and_add(new_loadout.ability_effect_mod, swp, pts * 0.03, 1.0);
+            local swp = spell_name_to_id["Shadow Word: Pain"];                
+            ensure_exists_and_add(loadout.ability_effect_mod, swp, pts * 0.03, 1.0);
         end
         -- shadow focus
         local pts = talents:pts(3, 6);
         if pts ~= 0 then
-            new_loadout.spell_dmg_hit_by_school[magic_school.shadow] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.shadow] + pts * 0.01;
+            loadout.spell_dmg_hit_by_school[magic_school.shadow] = 
+                loadout.spell_dmg_hit_by_school[magic_school.shadow] + pts * 0.01;
 
-            local abilities = localize_spell_name_array(
+            local abilities = spell_names_to_id(
                 {"Devouring Plague", "Mind Blast", "Shadow Word: Pain", "Mind Flay", "Vampiric Touch", "Shadow Word: Death", "Mind Sear"}
             );
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, pts * 0.02, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, pts * 0.02, 0);
             end
         end
 
         -- focused mind
         local pts = talents:pts(3, 16);
         if pts ~= 0 then
-            new_loadout.spell_dmg_hit_by_school[magic_school.shadow] = 
-                new_loadout.spell_dmg_hit_by_school[magic_school.shadow] + pts * 0.01;
+            loadout.spell_dmg_hit_by_school[magic_school.shadow] = 
+                loadout.spell_dmg_hit_by_school[magic_school.shadow] + pts * 0.01;
 
-            local abilities = localize_spell_name_array({"Mind Blast", "Mind Flay", "Mind Sear"});
+            local abilities = spell_names_to_id({"Mind Blast", "Mind Flay", "Mind Sear"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_cost_mod, v, pts * 0.05, 0);
+                ensure_exists_and_add(loadout.ability_cost_mod, v, pts * 0.05, 0);
             end
         end
         -- mind melt
         local pts = talents:pts(3, 17);
         if pts ~= 0 then
 
-            local mind = localize_spell_name_array({"Mind Blast", "Mind Flay", "Mind Sear"});
+            local mind = spell_names_to_id({"Mind Blast", "Mind Flay", "Mind Sear"});
             for k, v in pairs(mind) do
-                ensure_exists_and_add(new_loadout.ability_crit, v, pts * 0.02, 0);
+                ensure_exists_and_add(loadout.ability_crit, v, pts * 0.02, 0);
             end
-            local dots = localize_spell_name_array({"Vampiric Touch", "Shadow Word: Pain", "Devouring Plague"});
+            local dots = spell_names_to_id({"Vampiric Touch", "Shadow Word: Pain", "Devouring Plague"});
             for k, v in pairs(dots) do
-                ensure_exists_and_add(new_loadout.ability_crit, v, pts * 0.03, 0);
+                ensure_exists_and_add(loadout.ability_crit, v, pts * 0.03, 0);
             end
         end
         -- improved devouring plague
         local pts = talents:pts(3, 18);
         if pts ~= 0 then
 
-            local dp = localized_spell_name("Devouring Plague");
-            ensure_exists_and_add(new_loadout.ability_effect_mod, dp, pts * 0.05, 1.0);
+            local dp = spell_name_to_id["Devouring Plague"];
+            ensure_exists_and_add(loadout.ability_effect_mod, dp, pts * 0.05, 1.0);
             -- TODO: instant dmg 10%, as with renew
         end
 
         -- shadow power
         local pts = talents:pts(3, 20);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Mind Blast", "Mind Flay", "Shadow Word: Death"});
+            local abilities = spell_names_to_id({"Mind Blast", "Mind Flay", "Shadow Word: Death"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_crit_mod, v, pts * 0.1, 0);
+                ensure_exists_and_add(loadout.ability_crit_mod, v, pts * 0.1, 0);
             end
         end
 
@@ -1786,14 +1795,14 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(3, 22);
         if pts ~= 0 then
 
-            local mind_flay = localized_spell_name("Mind Flay");
-            --ensure_exists_and_add(new_loadout.ability_coef_ot_mod, mind_flay,  pts * 0.05/(0.2570*3), 0);
-            ensure_exists_and_add(new_loadout.ability_coef_ot_mod, mind_flay,  pts * 0.05, 0);
-            local mind_sear = localized_spell_name("Mind Sear");
-            --ensure_exists_and_add(new_loadout.ability_coef_ot_mod, mind_sear, pts * 0.05, 0);
-            local mind_blast = localized_spell_name("Mind Blast");
-            --ensure_exists_and_add(new_loadout.ability_coef_mod, mind_blast, pts * 0.175/3, 0);
-            ensure_exists_and_add(new_loadout.ability_coef_mod, mind_blast, pts * 0.05 * 0.4286, 0);
+            local mind_flay = spell_name_to_id["Mind Flay"];
+            --ensure_exists_and_add(loadout.ability_coef_ot_mod, mind_flay,  pts * 0.05/(0.2570*3), 0);
+            ensure_exists_and_add(loadout.ability_coef_ot_mod, mind_flay,  pts * 0.05, 0);
+            local mind_sear = spell_name_to_id["Mind Sear"];
+            --ensure_exists_and_add(loadout.ability_coef_ot_mod, mind_sear, pts * 0.05, 0);
+            local mind_blast = spell_name_to_id["Mind Blast"];
+            --ensure_exists_and_add(loadout.ability_coef_mod, mind_blast, pts * 0.175/3, 0);
+            ensure_exists_and_add(loadout.ability_coef_mod, mind_blast, pts * 0.05 * 0.4286, 0);
 
         end
         -- twisted faith
@@ -1801,7 +1810,7 @@ local function apply_talents_glyphs(loadout)
         local pts = talents:pts(3, 26);
         if pts ~= 0 then
              
-           new_loadout.spiritual_guidance = pts * 0.04; 
+           loadout.spiritual_guidance = pts * 0.04; 
         end
         
     elseif class == "SHAMAN" then
@@ -1811,16 +1820,16 @@ local function apply_talents_glyphs(loadout)
         if pts ~= 0 then
             local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
-                abilities[k] = localized_spell_name(v);
+                abilities[k] = spell_name_to_id[v];
             end
 
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_cost_mod[v] then
-                    new_loadout.ability_cost_mod[v] = 0;
+                if not loadout.ability_cost_mod[v] then
+                    loadout.ability_cost_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.02;
+                loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + pts * 0.02;
             end
         end
 
@@ -1829,7 +1838,7 @@ local function apply_talents_glyphs(loadout)
         if pts ~= 0 then
             local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
-                abilities[k] = localized_spell_name(v);
+                abilities[k] = spell_name_to_id[v];
             end
 
         end
@@ -1844,19 +1853,19 @@ local function apply_talents_glyphs(loadout)
         if pts ~= 0 then
             local abilities = {"Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
-                abilities[k] = localized_spell_name(v);
+                abilities[k] = spell_name_to_id[v];
             end
 
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_crit[v] then
-                    new_loadout.ability_crit[v] = 0;
+                if not loadout.ability_crit[v] then
+                    loadout.ability_crit[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
                 if pts == 5 then
-                    new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + 0.06;
+                    loadout.ability_crit[v] = loadout.ability_crit[v] + 0.06;
                 else
-                    new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + pts * 0.01;
+                    loadout.ability_crit[v] = loadout.ability_crit[v] + pts * 0.01;
                 end
             end
         end
@@ -1864,12 +1873,12 @@ local function apply_talents_glyphs(loadout)
         -- elemental fury
         local pts = talents:pts(1, 13);
         if pts ~= 0 then
-            new_loadout.spell_crit_mod_by_school[magic_school.frost] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * 2;
-            new_loadout.spell_crit_mod_by_school[magic_school.fire] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.fire] - 1) * 2;
-            new_loadout.spell_crit_mod_by_school[magic_school.nature] = 
-                1 + (new_loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * 2;
+            loadout.spell_crit_mod_by_school[magic_school.frost] = 
+                1 + (loadout.spell_crit_mod_by_school[magic_school.frost] - 1) * 2;
+            loadout.spell_crit_mod_by_school[magic_school.fire] = 
+                1 + (loadout.spell_crit_mod_by_school[magic_school.fire] - 1) * 2;
+            loadout.spell_crit_mod_by_school[magic_school.nature] = 
+                1 + (loadout.spell_crit_mod_by_school[magic_school.nature] - 1) * 2;
         end
 
         -- lightning mastery
@@ -1878,33 +1887,33 @@ local function apply_talents_glyphs(loadout)
 
             local abilities = {"Lightning Bolt", "Chain Lightning"};
             for k, v in pairs(abilities) do
-                abilities[k] = localized_spell_name(v);
+                abilities[k] = spell_name_to_id[v];
             end
 
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_cast_mod[v] then
-                    new_loadout.ability_cast_mod[v] = 0;
+                if not loadout.ability_cast_mod[v] then
+                    loadout.ability_cast_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_cast_mod[v] = new_loadout.ability_cast_mod[v] + pts * 0.2;
+                loadout.ability_cast_mod[v] = loadout.ability_cast_mod[v] + pts * 0.2;
             end
         end
 
         -- improved lightning shield
         local pts = talents:pts(2, 6);
         if pts ~= 0 then
-            local ls = localized_spell_name("Lightning Shield");
+            local ls = spell_name_to_id["Lightning Shield"];
         end
 
         -- improved healing wave
         local pts = talents:pts(3, 1);
         if pts ~= 0 then
-            local hw = localized_spell_name("Healing Wave");
-            if not new_loadout.ability_cast_mod[hw] then
-                new_loadout.ability_cast_mod[hw] = 0;
+            local hw = spell_name_to_id["Healing Wave"];
+            if not loadout.ability_cast_mod[hw] then
+                loadout.ability_cast_mod[hw] = 0;
             end
-            new_loadout.ability_cast_mod[hw] = new_loadout.ability_cast_mod[hw] + pts * 0.1;
+            loadout.ability_cast_mod[hw] = loadout.ability_cast_mod[hw] + pts * 0.1;
         end
 
         -- tidal focus
@@ -1914,15 +1923,15 @@ local function apply_talents_glyphs(loadout)
             local abilities = {"Lesser Healing Wave", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
 
             for k, v in pairs(abilities) do
-                abilities[k] = localized_spell_name(v);
+                abilities[k] = spell_name_to_id[v];
             end
             for k, v in pairs(abilities) do
-                if not new_loadout.ability_cost_mod[v] then
-                    new_loadout.ability_cost_mod[v] = 0;
+                if not loadout.ability_cost_mod[v] then
+                    loadout.ability_cost_mod[v] = 0;
                 end
             end
             for k, v in pairs(abilities) do
-                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.01;
+                loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + pts * 0.01;
             end
         end
 
@@ -1933,16 +1942,16 @@ local function apply_talents_glyphs(loadout)
             local totems = {"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"};
 
             for k, v in pairs(totems) do
-                totems[k] = localized_spell_name(v);
+                totems[k] = spell_name_to_id[v];
             end
 
             for k, v in pairs(totems) do
-                if not new_loadout.ability_cost_mod[v] then
-                    new_loadout.ability_cost_mod[v] = 0;
+                if not loadout.ability_cost_mod[v] then
+                    loadout.ability_cost_mod[v] = 0;
                 end
             end
             for k, v in pairs(totems) do
-                new_loadout.ability_cost_mod[v] = new_loadout.ability_cost_mod[v] + pts * 0.05;
+                loadout.ability_cost_mod[v] = loadout.ability_cost_mod[v] + pts * 0.05;
             end
         end
 
@@ -1951,7 +1960,7 @@ local function apply_talents_glyphs(loadout)
 
             local totems = {"Healing Stream Totem"};
             for k, v in pairs(totems) do
-                totems[k] = localized_spell_name(v);
+                totems[k] = spell_name_to_id[v];
             end
 
         end
@@ -1964,16 +1973,16 @@ local function apply_talents_glyphs(loadout)
             local lightning_spells = {"Lightning Bolt", "Chain Lightning", "Lightning Shield"};
 
             for k, v in pairs(lightning_spells) do
-                lightning_spells[k] = localized_spell_name(v);
+                lightning_spells[k] = spell_name_to_id[v];
             end
 
             for k, v in pairs(lightning_spells) do
-                if not new_loadout.ability_crit[v] then
-                    new_loadout.ability_crit[v] = 0;
+                if not loadout.ability_crit[v] then
+                    loadout.ability_crit[v] = 0;
                 end
             end
             for k, v in pairs(lightning_spells) do
-                new_loadout.ability_crit[v] = new_loadout.ability_crit[v] + pts * 0.01;
+                loadout.ability_crit[v] = loadout.ability_crit[v] + pts * 0.01;
             end
         end
 
@@ -1989,17 +1998,17 @@ local function apply_talents_glyphs(loadout)
         -- healing light
         local pts = talents:pts(1, 3);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Holy Light", "Flash of Light", "Holy Shock"});
+            local abilities = spell_names_to_id({"Holy Light", "Flash of Light", "Holy Shock"});
 
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_effect_mod, v, pts * 0.04, 1.0);
+                ensure_exists_and_add(loadout.ability_effect_mod, v, pts * 0.04, 1.0);
             end
         end
 
         -- divine intellect
         local pts = talents:pts(1, 4);
         if pts ~= 0 then
-            new_loadout.stat_mod[stat.int] = new_loadout.stat_mod[stat.int] + pts * 0.02;
+            loadout.stat_mod[stat.int] = loadout.stat_mod[stat.int] + pts * 0.02;
         end
 
         -- TODO: bow?
@@ -2007,9 +2016,9 @@ local function apply_talents_glyphs(loadout)
         -- sanctified light
         local pts = talents:pts(1, 14);
         if pts ~= 0 then
-            local abilities = localize_spell_name_array({"Holy Light", "Holy Shock"});
+            local abilities = spell_names_to_id({"Holy Light", "Holy Shock"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(new_loadout.ability_crit, v, pts * 0.02, 0);
+                ensure_exists_and_add(loadout.ability_crit, v, pts * 0.02, 0);
             end
             
         end
@@ -2017,16 +2026,16 @@ local function apply_talents_glyphs(loadout)
         -- holy power
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
-            new_loadout.spell_crit_by_school[magic_school.holy] = 
-                new_loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
+            loadout.spell_crit_by_school[magic_school.holy] = 
+                loadout.spell_crit_by_school[magic_school.holy] + pts * 0.01;
         end
 
         -- lights grace
         local pts = talents:pts(1, 17);
         if pts ~= 0 then
 
-            local hl = localized_spell_name("Holy Light");
-            ensure_exists_and_add(new_loadout.ability_cast_mod, hl, pts * 0.5 / 3.0, 0);
+            local hl = spell_name_to_id["Holy Light"];
+            ensure_exists_and_add(loadout.ability_cast_mod, hl, pts * 0.5 / 3.0, 0);
         end
 
         -- holy guidance
@@ -2057,24 +2066,24 @@ local function apply_talents_glyphs(loadout)
         -- divinity
         local pts = talents:pts(2, 1);
         if pts ~= 0 then
-            new_loadout.spell_heal_mod = new_loadout.spell_heal_mod + pts * 0.02;
-            new_loadout.target_healing_taken = new_loadout.target_healing_taken + pts * 0.02;
+            loadout.spell_heal_mod = loadout.spell_heal_mod + pts * 0.02;
+            loadout.target_healing_taken = loadout.target_healing_taken + pts * 0.02;
         end
         -- benediction
         local pts = talents:pts(3, 2);
         if pts ~= 0 then
-            local hs = localized_spell_name("Holy Shock");
-            ensure_exists_and_add(new_loadout.ability_cost_mod, hs, pts * 0.02, 0.0); 
+            local hs = spell_name_to_id["Holy Shock"];
+            ensure_exists_and_add(loadout.ability_cost_mod, hs, pts * 0.02, 0.0); 
         end
 
     elseif class == "WARLOCK" then
         local affl = {"Corruption", "Siphon Life", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul"};
         for k, v in pairs(affl) do
-            affl[k] = localized_spell_name(v);
+            affl[k] = spell_name_to_id[v];
         end
         local destr = {"Shadow Bolt", "Searing Pain", "Soul Fire", "Hellfire", "Rain of Fire", "Immolate", "Shadowburn", "Conflagrate"};
         for k, v in pairs(destr) do
-            destr[k] = localized_spell_name(v);
+            destr[k] = spell_name_to_id[v];
         end
 
 
@@ -2083,46 +2092,46 @@ local function apply_talents_glyphs(loadout)
         if pts ~= 0 then
 
             for k, v in pairs(affl) do
-                if not new_loadout.ability_hit[v] then
-                    new_loadout.ability_hit[v] = 0;
+                if not loadout.ability_hit[v] then
+                    loadout.ability_hit[v] = 0;
                 end
             end
             for k, v in pairs(affl) do
-                new_loadout.ability_hit[v] = 
-                    new_loadout.ability_hit[v] + pts * 0.02;
+                loadout.ability_hit[v] = 
+                    loadout.ability_hit[v] + pts * 0.02;
             end
         end
         -- improved corruption
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
-            local corruption = localized_spell_name("Corruption");
+            local corruption = spell_name_to_id["Corruption"];
 
-            if not new_loadout.ability_cast_mod[corruption] then
-                new_loadout.ability_cast_mod[corruption] = 0;
+            if not loadout.ability_cast_mod[corruption] then
+                loadout.ability_cast_mod[corruption] = 0;
             end
 
-            new_loadout.ability_cast_mod[corruption] = 
-                new_loadout.ability_cast_mod[corruption] + pts * 0.4;
+            loadout.ability_cast_mod[corruption] = 
+                loadout.ability_cast_mod[corruption] + pts * 0.4;
         end
 
         -- improved curse of agony
         local pts = talents:pts(1, 7);
         if pts ~= 0 then
-            local coa = localized_spell_name("Curse of Agony");
+            local coa = spell_name_to_id["Curse of Agony"];
 
         end
         -- shadow mastery
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
 
-            new_loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
-                new_loadout.spell_dmg_mod_by_school[magic_school.shadow] + pts * 0.02;
+            loadout.spell_dmg_mod_by_school[magic_school.shadow] = 
+                loadout.spell_dmg_mod_by_school[magic_school.shadow] + pts * 0.02;
         end
 
         -- improved shadow bolt
         local pts = talents:pts(3, 1);
         if pts ~= 0 then
-           new_loadout.improved_shadowbolt = pts; 
+           loadout.improved_shadowbolt = pts; 
         end
 
         -- cataclysm
@@ -2130,87 +2139,85 @@ local function apply_talents_glyphs(loadout)
         if pts ~= 0 then
 
             for k, v in pairs(destr) do
-                if not new_loadout.ability_cost_mod[v] then
-                    new_loadout.ability_cost_mod[v] = 0;
+                if not loadout.ability_cost_mod[v] then
+                    loadout.ability_cost_mod[v] = 0;
                 end
             end
             for k, v in pairs(destr) do
-                new_loadout.ability_cost_mod[v] = 
-                    new_loadout.ability_cost_mod[v] + pts * 0.01;
+                loadout.ability_cost_mod[v] = 
+                    loadout.ability_cost_mod[v] + pts * 0.01;
             end
         end
         -- bane
         local pts = talents:pts(3, 3);
         if pts ~= 0 then
-            local imm = localized_spell_name("Immolate");
-            local sb = localized_spell_name("Shadow Bolt");
-            local sf = localized_spell_name("Soul Fire");
+            local imm = spell_name_to_id["Immolate"];
+            local sb = spell_name_to_id["Shadow Bolt"];
+            local sf = spell_name_to_id["Soul Fire"];
 
-            if not new_loadout.ability_cast_mod[imm] then
-                new_loadout.ability_cast_mod[imm] = 0;
+            if not loadout.ability_cast_mod[imm] then
+                loadout.ability_cast_mod[imm] = 0;
             end
-            if not new_loadout.ability_cast_mod[sb] then
-                new_loadout.ability_cast_mod[sb] = 0;
+            if not loadout.ability_cast_mod[sb] then
+                loadout.ability_cast_mod[sb] = 0;
             end
-            if not new_loadout.ability_cast_mod[sf] then
-                new_loadout.ability_cast_mod[sf] = 0;
+            if not loadout.ability_cast_mod[sf] then
+                loadout.ability_cast_mod[sf] = 0;
             end
 
-            new_loadout.ability_cast_mod[imm] = new_loadout.ability_cast_mod[imm] + pts * 0.1;
-            new_loadout.ability_cast_mod[sb] = new_loadout.ability_cast_mod[sb] + pts * 0.1;
-            new_loadout.ability_cast_mod[sf] = new_loadout.ability_cast_mod[sf] + pts * 0.4;
+            loadout.ability_cast_mod[imm] = loadout.ability_cast_mod[imm] + pts * 0.1;
+            loadout.ability_cast_mod[sb] = loadout.ability_cast_mod[sb] + pts * 0.1;
+            loadout.ability_cast_mod[sf] = loadout.ability_cast_mod[sf] + pts * 0.4;
         end
         -- devastation
         local pts = talents:pts(3, 7);
         if pts ~= 0 then
 
             for k, v in pairs(destr) do
-                if not new_loadout.ability_crit[v] then
-                    new_loadout.ability_crit[v] = 0;
+                if not loadout.ability_crit[v] then
+                    loadout.ability_crit[v] = 0;
                 end
             end
             for k, v in pairs(destr) do
-                new_loadout.ability_crit[v] = 
-                    new_loadout.ability_crit[v] + pts * 0.01;
+                loadout.ability_crit[v] = 
+                    loadout.ability_crit[v] + pts * 0.01;
             end
         end
         -- improved searing pain
         local pts = talents:pts(3, 11);
         if pts ~= 0 then
-            local sp = localized_spell_name("Searing Pain");
-            if not new_loadout.ability_crit[sp] then
-                new_loadout.ability_crit[sp] = 0;
+            local sp = spell_name_to_id["Searing Pain"];
+            if not loadout.ability_crit[sp] then
+                loadout.ability_crit[sp] = 0;
             end
-            new_loadout.ability_crit[sp] = new_loadout.ability_crit[sp] + pts * 0.02;
+            loadout.ability_crit[sp] = loadout.ability_crit[sp] + pts * 0.02;
         end
 
         -- improved immolate
         local pts = talents:pts(3, 13);
-        new_loadout.improved_immolate = pts;
+        loadout.improved_immolate = pts;
 
         -- ruin 
         local pts = talents:pts(3, 14);
         if pts ~= 0 then
 
             for k, v in pairs(destr) do
-                if not new_loadout.ability_crit_mod[v] then
-                    new_loadout.ability_crit_mod[v] = 0;
+                if not loadout.ability_crit_mod[v] then
+                    loadout.ability_crit_mod[v] = 0;
                 end
             end
             for k, v in pairs(destr) do
-                new_loadout.ability_crit_mod[v] = 
-                    new_loadout.ability_crit_mod[v] + 0.5;
+                loadout.ability_crit_mod[v] = 
+                    loadout.ability_crit_mod[v] + 0.5;
             end
         end
         --emberstorm
         local pts = talents:pts(3, 15);
         if pts ~= 0 then
-            new_loadout.spell_dmg_mod_by_school[magic_school.fire] =
-                new_loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
+            loadout.spell_dmg_mod_by_school[magic_school.fire] =
+                loadout.spell_dmg_mod_by_school[magic_school.fire] + pts * 0.02;
         end
     end
-
-    return new_loadout;
 end
 
 local function create_sets()
@@ -2308,17 +2315,17 @@ local function create_set_effects()
                     -- TODO: POM calculation done in later stage
                 end
                 if num_pieces >= 4 then
-                    local gh = localized_spell_name("Greater Heal");
+                    local gh = spell_name_to_id["Greater Heal"];
                     ensure_exists_and_add(loadout.ability_cost_mod, gh, 0.05, 0.0);
                 end
             end,
             [set_tiers.pve_t7_3] = function(num_pieces, loadout)
                 if num_pieces >= 2 then
-                    local mb = localized_spell_name("Mind Blast");
+                    local mb = spell_name_to_id["Mind Blast"];
                     ensure_exists_and_add(loadout.ability_cost_mod, mb, 0.1, 0.0);
                 end
                 if num_pieces >= 4 then
-                    local swd = localized_spell_name("Shadow Word: Death");
+                    local swd = spell_name_to_id["Shadow Word: Death"];
                     ensure_exists_and_add(loadout.ability_crit, swd, 0.1, 0.0);
                 end
             end,
@@ -2328,12 +2335,12 @@ local function create_set_effects()
         return {
             [set_tiers.pve_t7_1] = function(num_pieces, loadout)
                 if num_pieces >= 2 then
-                    local is = localized_spell_name("Insect Swarm");
+                    local is = spell_name_to_id["Insect Swarm"];
                     ensure_exists_and_add(loadout.ability_effect_mod, is, 0.1, 1.0);
                     
                 end
                 if num_pieces >= 4 then
-                    local abilities = localize_spell_name_array({"Wrath", "Starfire"});
+                    local abilities = spell_names_to_id({"Wrath", "Starfire"});
                     for k, v in pair(abilities) do
                         ensure_exists_and_add(loadout.ability_crit, v, 0.05, 0.0);
                     end
@@ -2341,7 +2348,7 @@ local function create_set_effects()
             end,
             [set_tiers.pve_t7_3] = function(num_pieces, loadout)
                 if num_pieces >= 2 then
-                    local lb = localized_spell_name("Lifebloom");
+                    local lb = spell_name_to_id["Lifebloom"];
                     ensure_exists_and_add(loadout.ability_cost_mod, lb, 0.05, 0.0);
                 end
                 if num_pieces >= 4 then
@@ -2360,12 +2367,12 @@ local function create_set_effects()
         return {
             [set_tiers.pve_t7_1] = function(num_pieces, loadout)
                 if num_pieces >= 2 then
-                    local hs = localized_spell_name("Holy Shock");
+                    local hs = spell_name_to_id["Holy Shock"];
                     ensure_exists_and_add(loadout.ability_crit, hs, 0.1, 0.0);
 
                 end
                 if num_pieces >= 4 then
-                    local hl = localized_spell_name("Holy Light");
+                    local hl = spell_name_to_id["Holy Light"];
                     ensure_exists_and_add(loadout.ability_cost_mod, hl, 0.05, 0.0);
                 end
             end,
@@ -2378,18 +2385,15 @@ local set_bonus_effects = create_set_effects();
 
 local function apply_set_bonuses(loadout)
 
-    local new_loadout = loadout;
-
     -- go through equipment to find set pieces
-
     for item = 1, 18 do
         local id = GetInventoryItemID("player", item);
         if set_items[id] then
             -- incr counter
-            if not new_loadout.num_set_pieces[set_items[id]] then
-                new_loadout.num_set_pieces[set_items[id]] = 0;
+            if not loadout.num_set_pieces[set_items[id]] then
+                loadout.num_set_pieces[set_items[id]] = 0;
             end
-            new_loadout.num_set_pieces[set_items[id]] = new_loadout.num_set_pieces[set_items[id]] + 1;
+            loadout.num_set_pieces[set_items[id]] = loadout.num_set_pieces[set_items[id]] + 1;
         end
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
@@ -2397,13 +2401,13 @@ local function apply_set_bonuses(loadout)
             if item_stats then
 
                 if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
-                    new_loadout.mp5 = new_loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
+                    loadout.mp5 = loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
                 end
 
                 if item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] then
                     for i = 2,7 do
-                        new_loadout.target_res_by_school[i] = 
-                            new_loadout.target_res_by_school[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
+                        loadout.target_res_by_school[i] = 
+                            loadout.target_res_by_school[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
                     end
                 end
             end
@@ -2412,29 +2416,25 @@ local function apply_set_bonuses(loadout)
 
     if class == "PRIEST" then
         for k, v in pairs(loadout.num_set_pieces) do
-            set_bonus_effects[k](v, new_loadout);
+            set_bonus_effects[k](v, loadout);
         end
     end
-
-    return new_loadout;
 end
 
 local function detect_buffs(loadout)
 
-    local new_loadout = loadout;
-
-    new_loadout.dynamic_buffs = {["player"] = {}, ["target"] = {}, ["mouseover"] = {}};
+    loadout.dynamic_buffs = {["player"] = {}, ["target"] = {}, ["mouseover"] = {}};
     if loadout.player_name == loadout.target_name then
-        new_loadout.dynamic_buffs["target"] = new_loadout.dynamic_buffs["player"]
+        loadout.dynamic_buffs["target"] = loadout.dynamic_buffs["player"]
     end
     if loadout.player_name == loadout.mouseover_name then
-        new_loadout.dynamic_buffs["mouseover"] = new_loadout.dynamic_buffs["player"]
+        loadout.dynamic_buffs["mouseover"] = loadout.dynamic_buffs["player"]
     end
     if loadout.target_name == loadout.mouseover_name then
-        new_loadout.dynamic_buffs["mouseover"] = new_loadout.dynamic_buffs["target"]
+        loadout.dynamic_buffs["mouseover"] = loadout.dynamic_buffs["target"]
     end
 
-    for k, v in pairs(new_loadout.dynamic_buffs) do
+    for k, v in pairs(loadout.dynamic_buffs) do
         local i = 1;
         while true do
               local name, icon_tex, count, _, _, _, src, _, _, spell_id = UnitBuff(k, i);
@@ -2454,8 +2454,6 @@ local function detect_buffs(loadout)
               i = i + 1;
         end
     end
-
-    return new_loadout;
 end
 
 local function apply_buffs(loadout)
@@ -2477,7 +2475,7 @@ local function apply_buffs(loadout)
         for k, v in pairs(loadout.target_buffs) do
             v.apply(loadout, v);
         end
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) ~= 0 and loadout.target_buffs[localized_spell_name("Beacon of Light")] then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) ~= 0 and loadout.target_buffs[spell_name_to_id["Beacon of Light"]] then
             loadout.beacon = true;
         else
             loadout.beacon = nil
@@ -2501,16 +2499,14 @@ local function apply_buffs(loadout)
             end
         end
 
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and loadout.target_buffs[localized_spell_name("Beacon of Light")] and beacon_snapshot_time + 60 >= addon_running_time then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and loadout.target_buffs[spell_name_to_id["Beacon of Light"]] and beacon_snapshot_time + 60 >= addon_running_time then
             loadout.beacon = true;
         else
             loadout.beacon = nil
         end
     end
 
-    loadout = loadout_add(loadout, stats_diff_loadout);
-
-    return loadout;
+    loadout_add(loadout, stats_diff_loadout);
 end
 
 local function default_loadout()
@@ -2543,7 +2539,6 @@ local function default_loadout()
        loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_power;
    end
    for i = 1, 7 do
-       print(loadout.spell_crit_by_school[i]);
        loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
    end
 
@@ -2575,12 +2570,9 @@ local function default_loadout()
 
    --loadout = apply_talents_glyphs(loadout);
 
-   --loadout = apply_glyphs(loadout);
+   --apply_set_bonuses(loadout);
 
-   --loadout = apply_set_bonuses(loadout);
-
-   --loadout = detect_buffs(loadout);
-
+   --detect_buffs(loadout);
    return loadout;
 end
 
@@ -2666,11 +2658,11 @@ local function dynamic_loadout(base_loadout)
    -- talents may not be applied here as they are parameterized
    --loadout = apply_talents_glyphs(loadout);
 
-   loadout = remove_dynamic_stats_from_talents(loadout);
+   remove_dynamic_stats_from_talents(loadout);
 
-   loadout = apply_set_bonuses(loadout);
+   apply_set_bonuses(loadout);
 
-   loadout = detect_buffs(loadout);
+   detect_buffs(loadout);
 
    return loadout;
 end
@@ -2744,11 +2736,11 @@ local function static_loadout_from_dynamic(base_loadout)
 
    -- talents may not be applied here as they are parameterized
    --loadout = apply_talents_glyphs(loadout);
-   loadout = remove_dynamic_stats_from_talents(loadout);
+   remove_dynamic_stats_from_talents(loadout);
 
-   loadout = apply_set_bonuses(loadout);
+   apply_set_bonuses(loadout);
 
-   loadout = detect_buffs(loadout);
+   detect_buffs(loadout);
 
    return loadout;
 end
@@ -2957,7 +2949,7 @@ local function spell_hit(lvl, lvl_target, hit)
     return math.max(0.01, math.min(0.99, base_hit + hit));
 end
 
-local function  target_avg_magical_res(self_lvl, target_res)
+local function target_avg_magical_res(self_lvl, target_res)
     return math.min(0.75, 0.75 * (target_res/(self_lvl * 5)))
 end
 
@@ -3061,60 +3053,145 @@ local function mana_regen_per_5(int, spirit, level)
     return mana_regen;
 end
 
-local function spell_info(spell, ot_extra_ticks,
-                          cast_time, sp, flat_direct_addition,
-                          crit, ot_crit, crit_mod, hit, target_resi,
-                          target_vuln_mod, global_mod, mod, ot_mod,
-                          direct_coef, ot_coef, cost,
-                          spell_name, loadout)
+local special_abilities = nil;
+if class == "SHAMAN" then
+    special_abilities = {
+        [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
+            --if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+            --    expectation = (1 + 1.3*0.5 + 1.3*1.3*0.5*0.5) * expectation_st;
+            --else
+            info.expectation = (1 + 0.5 + 0.5*0.5) * info.expectation_st;
+            --end
+        end,
+        [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
+            --if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+            --    info.expectation = (1 + 0.2 + 0.2*0.2) * info.expectation_st;
+            --end
+        end,
+        [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
+            --if loadout.num_set_pieces[set_tiers.aq20] >= 3 then
+            --    info.expectation = (1 + 0.75 + 0.75 * 0.75) * info.expectation_st;
+            --else
+            info.expectation = (1 + 0.7 + 0.7 * 0.7) * info.expectation_st;
+            --end
+        end,
+    };
+elseif class == "PRIEST" then
+    special_abilities = {
+        [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout)
+
+            if loadout.glyphs[57195] then
+                info.expectation_st = info.expectation_st * 1.2;
+                -- hot displayed specialized in tooltip section
+            end
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Circle of Healing"]] = function(spell, info, loadout)
+
+            if loadout.glyphs[55675] then
+                info.expectation = 6 * info.expectation_st;
+            else
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout)
+            if loadout.num_set_pieces[set_tiers.pve_t7_1] and
+                loadout.num_set_pieces[set_tiers.pve_t7_1] >= 2 then
+                info.expectation = 6 * info.expectation_st;
+            else
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Power Word: Shield"]] = function(spell, info, loadout)
+
+           info.absorb = info.min_noncrit_if_hit;
+
+            if loadout.glyphs[55672] then
+                info.min_noncrit_if_hit = 0.2 * info.min_noncrit_if_hit;
+                info.max_noncrit_if_hit = 0.2 * info.max_noncrit_if_hit;
+
+                info.min_crit_if_hit = 0.2 * info.min_crit_if_hit;
+                info.max_crit_if_hit = 0.2 * info.max_crit_if_hit;
+                info.expectation_st = info.expectation_st * 1.2;
+                info.expectation = info.expectation_st;
+            else
+
+                info.min_noncrit_if_hit = 0.0;
+                info.max_noncrit_if_hit = 0.0;
+
+                info.min_crit_if_hit = 0.0;
+                info.max_crit_if_hit = 0.0;
+            end
+        end,
+        [spell_name_to_id["Holy Nova"]] = function(spell, info, loadout)
+            if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Binding Heal"]] = function(spell, info, loadout)
+            info.expectation = 2 * info.expectation_st;
+        end,
+        [spell_name_to_id["Penance"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Lightwell"]] = function(spell, info, loadout)
+            info.expectation = 10 * info.expectation_st;
+        end,
+    };
+elseif class == "DRUID" then
+    special_abilities = {
+        [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Tranquility"]] = function(spell, info, loadout)
+            info.expectation = 5 * info.expectation_st;
+        end,
+    };
+else
+    special_abilities = {};
+end
+
+local function spell_info(info, spell, stats, loadout)
+
+    local _t1 = GetTimePreciseSec();
             
-    local spell_data = spell;
+    local base_min = spell.base_min;
+    local base_max = spell.base_max;
+    local base_ot = spell.over_time;
+    local ot_freq = spell.over_time_tick_freq;
+    local ot_dur = spell.over_time_duration;
 
-    local base_min = spell_data.base_min;
-    local base_max = spell_data.base_max;
-    local base_ot = spell_data.over_time;
-    local ot_freq = spell_data.over_time_tick_freq;
-    local ot_dur = spell_data.over_time_duration;
+    info.ot_if_crit = 0;
+    info.ot_ticks = 0;
 
-    local ot = 0;
-    local ot_if_crit = 0;
-    local ot_ticks = 0;
-
-    if spell_data.cast_time == spell_data.over_time_duration then
-        ot_freq = spell_data.over_time_tick_freq*(cast_time/ot_dur);
-        ot_dur = cast_time;
+    if spell.cast_time == spell.over_time_duration then
+        ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
+        ot_dur = stats.cast_time;
     end
 
     -- certain ticks may tick faster
+    --local shadow_form = localize_spell_name("Shadowform");
     local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
     if (loadout.buffs[shadow_form] and
         (loadout.always_assume_buffs or loadout.dynamic_buffs["player"][shadow_form])) then -- warlock stuff
-        if spell_name == localized_spell_name("Devouring Plague") or spell_name == localized_spell_name("Vampiric Touch") then
+        if spell.base_id == spell_name_to_id["Devouring Plague"] or spell.base_id == spell_name_to_id["Vampiric Touch"] then
             -- but locks?
-            ot_freq  = spell_data.over_time_tick_freq/loadout.haste_mod;
-            ot_dur = ot_dur/loadout.haste_mod;
+            ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            ot_dur = ot_dur/stats.haste_mod;
         end
     end
-    if class == "PRIEST" and bit.band(spell_flags.heal, spell_data.flags) ~= 0 and min ~= 0 then
-        -- divine aegis
-        local pts = loadout.talents_table:pts(1, 24);
-        crit_mod = crit_mod * (1 + 0.1 * pts);
-    elseif class == "DRUID" and bit.band(spell_flags.heal, spell_data.flags) ~= 0 and min ~= 0 then
-        -- living seed
-        local pts = loadout.talents_table:pts(3, 21);
-        crit_mod = crit_mod * (1 + 0.1 * pts);
-    end
-
-    local target_vuln_mod_direct = target_vuln_mod;
 
 
-    local min_noncrit_if_hit = 
-        (base_min + sp * direct_coef + flat_direct_addition) * mod * target_vuln_mod * global_mod;
-    local max_noncrit_if_hit = 
-        (base_max + sp * direct_coef + flat_direct_addition) * mod * target_vuln_mod * global_mod;
+    info.min_noncrit_if_hit = 
+        (spell.base_min + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
+    info.max_noncrit_if_hit = 
+        (spell.base_max + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
 
-    local min_crit_if_hit = min_noncrit_if_hit * crit_mod;
-    local max_crit_if_hit = max_noncrit_if_hit * crit_mod;
+    info.min_crit_if_hit = info.min_noncrit_if_hit * stats.crit_mod;
+    info.max_crit_if_hit = info.max_noncrit_if_hit * stats.crit_mod;
 
     -- TODO: Looks like min is ceiled and max is floored
     --       do this until we know any better!
@@ -3125,210 +3202,125 @@ local function spell_info(spell, ot_extra_ticks,
     --min_crit_if_hit = math.ceil(min_crit_if_hit);
     --max_crit_if_hit = math.ceil(max_crit_if_hit);
     
-    local direct_crit = crit;
-    if bit.band(spell_flags.absorb, spell_data.flags) ~= 0 then
+    local direct_crit = stats.crit;
+
+    if bit.band(spell_flags.absorb, spell.flags) ~= 0 then
         direct_crit = 0.0;
     end
 
-    local min = hit * ((1 - direct_crit) * min_noncrit_if_hit + (direct_crit * min_crit_if_hit));
-    local max = hit * ((1 - direct_crit) * max_noncrit_if_hit + (direct_crit * max_crit_if_hit));
+    info.min = stats.hit * ((1 - direct_crit) * info.min_noncrit_if_hit + (direct_crit * info.min_crit_if_hit));
+    info.max = stats.hit * ((1 - direct_crit) * info.max_noncrit_if_hit + (direct_crit * info.max_crit_if_hit));
 
-    local absorb = 0.0;
+    info.absorb = 0.0;
 
-    if spell_name == localized_spell_name("Fireball") then
+    local base_ot = spell.over_time;
+    local base_dur = spell.over_time_duration;
+    if spell.base_id == spell_name_to_id["Fireball"] then
         -- dont include dot for calcs
         base_ot = 0.0;
         base_dur = 0.0;
     end
 
+    local ot = 0.0;
     if base_ot > 0 then
 
-        local base_ot_num_ticks = (ot_dur / ot_freq);
-        local ot_coef_per_tick = ot_coef
+        local base_ot_num_ticks = (ot_dur/ot_freq);
+        local ot_coef_per_tick = stats.ot_coef
         local base_ot_tick = base_ot / base_ot_num_ticks;
 
-        ot_ticks = base_ot_num_ticks + ot_extra_ticks;
+        info.ot_ticks = base_ot_num_ticks + stats.ot_extra_ticks;
 
-        ot = (base_ot_tick + ot_coef_per_tick * sp) * ot_ticks * ot_mod * target_vuln_mod * global_mod;
+        ot = (base_ot_tick + ot_coef_per_tick * stats.spell_power) * info.ot_ticks * stats.spell_ot_mod;
 
-        if ot_crit > 0 then
-            ot_if_crit = ot * crit_mod;
+        if stats.ot_crit > 0 then
+            info.ot_if_crit = ot * stats.crit_mod;
         else
-            ot_if_crit = 0;
+            info.ot_if_crit = 0;
         end
     end
 
-    local expectation_ot_if_hit = (1 - ot_crit) * ot + ot_crit * ot_if_crit;
-    local expected_ot = hit * expectation_ot_if_hit;
+    info.ot_if_hit = (1 - stats.ot_crit) * ot + stats.ot_crit * info.ot_if_crit;
+    info.expected_ot = stats.hit * info.ot_if_hit;
     -- soul drain, life drain, mind flay are all directed casts that can only miss on the channel itself
     -- 1.5 sec gcd is always implied which is the only penalty for misses
-    if spell_name == localized_spell_name("Drain Soul") or 
-       spell_name == localized_spell_name("Drain Life") or
-       spell_name == localized_spell_name("Mind Flay") or 
-       spell_name == localized_spell_name("Starshards") then 
+    if spell.base_id == spell_name_to_id["Drain Soul"] or 
+       spell.base_id == spell_name_to_id["Drain Life"] or
+       spell.base_id == spell_name_to_id["Mind Flay"] or 
+       spell.base_id == spell_name_to_id["Starshards"] then 
 
         local channel_ratio_time_lost_to_miss = 1 - (ot_dur - 1.5)/ot_dur;
-        expected_ot = expectation_ot_if_hit - (1 - hit) * channel_ratio_time_lost_to_miss * expectation_ot_if_hit;
+        info.expected_ot = info.ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * info.ot_if_hit;
     end
 
     if class == "PRIEST" then
         local pts = 0;
-        if spell_name == localized_spell_name("Renew") then
+        if spell.base_id == spell_name_to_id["Renew"] then
             pts = loadout.talents_table:pts(2, 23);
-        elseif spell_name == localized_spell_name("Devouring Plague") then
+        elseif spell.base_id == spell_name_to_id["Devouring Plague"] then
             pts = 2 * loadout.talents_table:pts(3, 18);
         end
 
         if pts ~= 0 then
             local direct = pts * 0.05 * ot
 
-            min_noncrit_if_hit = direct;
-            max_noncrit_if_hit = direct;
+            info.min_noncrit_if_hit = direct;
+            info.max_noncrit_if_hit = direct;
 
             -- crit mod on direct devouring plague effect is always 1.5 even if specced into 2.0
-            min_crit_if_hit = direct * 1.5;
-            max_crit_if_hit = direct * 1.5;
+            info.min_crit_if_hit = direct * 1.5;
+            info.max_crit_if_hit = direct * 1.5;
 
-            min = hit * ((1 - crit) * min_noncrit_if_hit + (crit * min_crit_if_hit));
-            max = hit * ((1 - crit) * max_noncrit_if_hit + (crit * max_crit_if_hit));
+            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
+            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
         end
     end
 
-    local expectation_direct = (min + max) / 2;
+    info.expectation_direct = (info.min + info.max) / 2;
 
-    if spell_name == localized_spell_name("Searing Totem") then
-        expectation_direct = expectation_direct * ot_dur/ot_freq;
+    if spell.base_id == spell_name_to_id["Searing Totem"] then
+        info.expectation_direct = info.expectation_direct * ot_dur/ot_freq;
     end
       
-    local expectation = expectation_direct + expected_ot;
+    info.expectation = info.expectation_direct + info.expected_ot;
 
-    if loadout.ignite and loadout.ignite ~= 0 and spell_data.school == magic_school.fire then
-        -- dont include dot for calcs
-         local ignite_min = loadout.ignite * 0.08 * min_crit_if_hit;
-         local ignite_max = loadout.ignite * 0.08 * max_crit_if_hit;
-         expectation = expectation + hit * crit * (ignite_min + ignite_max)/2;
-     end
+    -- TODO: dont do this here
+    --if loadout.ignite and loadout.ignite ~= 0 and spell.school == magic_school.fire then
+    --    -- dont include dot for calcs
+    --     local ignite_min = loadout.ignite * 0.08 * min_crit_if_hit;
+    --     local ignite_max = loadout.ignite * 0.08 * max_crit_if_hit;
+    --     expectation = expectation + hit * crit * (ignite_min + ignite_max)/2;
+    -- end
 
     --if class == "MAGE" and base_min > 0 and loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
     --    cast_time = cast_time - math.max(0, (cast_time - 1.5)) * 0.1;
     --end
 
-    if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
-        -- a reasonably good, generous estimate, 
-        -- assumes all other warlocks in raid/party have same crit chance/improved shadowbolt talent
-        -- and just spam shadow bolt allt fight, other abilities like shadowburn/mind blast will skew this estimate
-        local sb_dmg_bonus = loadout.improved_shadowbolt * 0.04;
-        local improved_sb_uptime = 1 - math.pow(1-crit, 4);
-        local sb_dmg_taken_mod = sb_dmg_bonus * improved_sb_uptime;
-        local new_vuln_mod = (target_vuln_mod + sb_dmg_taken_mod)/target_vuln_mod;
+    -- if we do this, do it elsewhere
+    --if loadout.improved_shadowbolt ~= 0 and spell.base_id == spell_name_to_id["Shadow Bolt"] then
+    --    -- a reasonably good, generous estimate, 
+    --    -- assumes all other warlocks in raid/party have same crit chance/improved shadowbolt talent
+    --    -- and just spam shadow bolt allt fight, other abilities like shadowburn/mind blast will skew this estimate
+    --    local sb_dmg_bonus = loadout.improved_shadowbolt * 0.04;
+    --    local improved_sb_uptime = 1 - math.pow(1-crit, 4);
+    --    local sb_dmg_taken_mod = sb_dmg_bonus * improved_sb_uptime;
+    --    local new_vuln_mod = (target_vuln_mod + sb_dmg_taken_mod)/target_vuln_mod;
 
-        expectation = expectation * new_vuln_mod;
-    end
+    --    expectation = expectation * new_vuln_mod;
+    --end
 
-    local target_avg_resi = target_avg_magical_res(loadout.lvl, target_resi);
-    expectation = expectation * (1 - target_avg_resi);
+    info.expectation = info.expectation * (1 - stats.target_avg_resi);
 
-    local expectation_st = expectation;
+    info.expectation_st = info.expectation;
 
-    local special_abilities = {
-        [localized_spell_name("Chain Heal")] = function()
-            --if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-            --    expectation = (1 + 1.3*0.5 + 1.3*1.3*0.5*0.5) * expectation_st;
-            --else
-            expectation = (1 + 0.5 + 0.5*0.5) * expectation_st;
-            --end
-        end,
-        [localized_spell_name("Healing Wave")] = function()
-            --if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
-            --    expectation = (1 + 0.2 + 0.2*0.2) * expectation_st;
-            --end
-        end,
-        [localized_spell_name("Lightning Shield")] = function()
-            expectation = 3 * expectation_st;
-        end,
-        [localized_spell_name("Prayer of Healing")] = function()
-
-            if loadout.glyphs[57195] then
-                expectation_st = expectation_st * 1.2;
-                -- hot displayed specialized in tooltip section
-            end
-            expectation = 5 * expectation_st;
-        end,
-        [localized_spell_name("Circle of Healing")] = function()
-
-            if loadout.glyphs[55675] then
-                expectation = 6 * expectation_st;
-            else
-                expectation = 5 * expectation_st;
-            end
-        end,
-        [localized_spell_name("Prayer of Mending")] = function()
-            if loadout.num_set_pieces[set_tiers.pve_t7_1] and
-                loadout.num_set_pieces[set_tiers.pve_t7_1] >= 2 then
-                expectation = 6 * expectation_st;
-            else
-                expectation = 5 * expectation_st;
-            end
-        end,
-        [localized_spell_name("Power Word: Shield")] = function()
-
-           absorb = min_noncrit_if_hit;
-
-            if loadout.glyphs[55672] then
-                min_noncrit_if_hit = 0.2 * min_noncrit_if_hit;
-                max_noncrit_if_hit = 0.2 * max_noncrit_if_hit;
-
-                min_crit_if_hit = 0.2 * min_crit_if_hit;
-                max_crit_if_hit = 0.2 * max_crit_if_hit;
-                expectation_st = expectation_st * 1.2;
-                expectation = expectation_st;
-            else
-
-                min_noncrit_if_hit = 0.0;
-                max_noncrit_if_hit = 0.0;
-
-                min_crit_if_hit = 0.0;
-                max_crit_if_hit = 0.0;
-            end
-        end,
-        [localized_spell_name("Holy Nova")] = function()
-            if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
-                expectation = 5 * expectation_st;
-            end
-        end,
-        [localized_spell_name("Binding Heal")] = function()
-            expectation = 2 * expectation_st;
-        end,
-        [localized_spell_name("Penance")] = function()
-            expectation = 3 * expectation_st;
-        end,
-        [localized_spell_name("Lightwell")] = function()
-            expectation = 10 * expectation_st;
-        end,
-        [localized_spell_name("Wild Growth")] = function()
-            expectation = 5 * expectation_st;
-        end,
-        [localized_spell_name("Tranquility")] = function()
-            expectation = 5 * expectation_st;
-        end,
-        [localized_spell_name("Chain Lightning")] = function()
-            --if loadout.num_set_pieces[set_tiers.aq20] >= 3 then
-            --    expectation = (1 + 0.75 + 0.75 * 0.75) * expectation_st;
-            --else
-            expectation = (1 + 0.7 + 0.7 * 0.7) * expectation_st;
-            --end
-        end,
-    };
-
-    if special_abilities[spell_name] then
-        special_abilities[spell_name]();
+    if special_abilities[spell.base_id] then
+        special_abilities[spell.base_id](spell, info, loadout);
     end
 
     if loadout.beacon then
-        expectation = expectation * 2;
+        info.expectation = inof.expectation * 2;
     end
 
-    local effect_per_sec = expectation/cast_time;
+    info.effect_per_sec = info.expectation/stats.cast_time;
 
     -- TODO: delete this?
     -- improved shadow bolt invuln mod has been ignored before for shadow bolt only
@@ -3337,7 +3329,7 @@ local function spell_info(spell, ot_extra_ticks,
     --if bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
     --    (loadout.always_assume_buffs or 
     --    (loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id] and not loadout.target_friendly and loadout.has_target)) and 
-    --    spell_name == localized_spell_name("Shadow Bolt") then
+    --    spell.base_id == spell_name_to_id["Shadow Bolt"] then
 
     --    local shadowbolt_vuln_mod = (target_vuln_mod + 0.2)/target_vuln_mod;
 
@@ -3349,107 +3341,95 @@ local function spell_info(spell, ot_extra_ticks,
     --end
     --
 
-    return {
-        min_noncrit = min_noncrit_if_hit,
-        max_noncrit = max_noncrit_if_hit,
+    info.effect_per_cost = info.expectation/stats.cost;
+    info.cost_per_sec = stats.cost/stats.cast_time;
+    info.ot_duration = ot_dur + stats.ot_extra_ticks * ot_freq;
 
-        min_crit = min_crit_if_hit,
-        max_crit = max_crit_if_hit,
+    --return {
+    --    min_noncrit = min_noncrit_if_hit,
+    --    max_noncrit = max_noncrit_if_hit,
 
-        absorb = absorb,
+    --    min_crit = min_crit_if_hit,
+    --    max_crit = max_crit_if_hit,
 
-        --including crit/hit
-        expectation_direct = expectation_direct,
+    --    absorb = absorb,
 
-        ot_num_ticks = ot_ticks,
-        ot_duration = ot_dur + ot_extra_ticks * ot_freq,
-        ot_if_hit = ot,
-        ot_crit_if_hit = ot_if_crit,
-        ot = expected_ot,
+    --    --including crit/hit
+    --    expectation_direct = expectation_direct,
 
-        expectation = expectation,
-        expectation_st = expectation_st,
-        effect_per_sec = effect_per_sec,
-        target_avg_resi = target_avg_resi,
+    --    ot_num_ticks = ot_ticks,
+    --    ot_duration = ot_dur + ot_extra_ticks * ot_freq,
+    --    ot_if_hit = ot,
+    --    ot_crit_if_hit = ot_if_crit,
+    --    ot = expected_ot,
 
-        effect_per_cost = expectation/cost,
-        cost_per_sec = cost / cast_time,
+    --    expectation = expectation,
+    --    expectation_st = expectation_st,
+    --    effect_per_sec = effect_per_sec,
+    --    target_avg_resi = target_avg_resi,
 
-        cast_time = cast_time,
+    --    effect_per_cost = expectation/cost,
+    --    cost_per_sec = cost / cast_time,
 
-        cost = cost
-    };
+    --};
 end
 
-local function loadout_stats_for_spell(spell_data, spell_name, loadout)
+local function stats_for_spell(stats, spell, loadout)
 
-    local crit = 0;
-    local ot_crit = 0;
-    local crit_delta_1 = 0;
-    local ot_crit_delta_1 = 0;
+    local _t1 = GetTimePreciseSec();
 
-    crit = loadout.spell_crit_by_school[spell_data.school];
-    if not loadout.ability_crit[spell_name] then
-        loadout.ability_crit[spell_name] = 0;
+    stats.crit = loadout.spell_crit_by_school[spell.school];
+    stats.ot_crit = 0.0;
+    if loadout.ability_crit[spell.base_id] then
+        stats.crit = stats.crit + loadout.ability_crit[spell.base_id];
     end
     -- rating may come from diffed loadout
     local crit_rating_per_perc = get_combat_rating_effect(CR_CRIT_SPELL, loadout.lvl);
     local crit_from_rating = 0.01 * loadout.crit_rating/crit_rating_per_perc;
-    crit = math.max(0.0, crit + loadout.ability_crit[spell_name] + crit_from_rating);
-    crit_delta_1 = math.min(crit + 0.01/crit_rating_per_perc, 1.0);
+    stats.crit = math.max(0.0, math.min(1.0, stats.crit + crit_from_rating));
 
-    if bit.band(spell_data.flags, spell_flags.over_time_crit) ~= 0 then
-        ot_crit = crit;
-        ot_crit_delta_1 = crit_delta_1;
+    if bit.band(spell.flags, spell_flags.over_time_crit) ~= 0 then
+        stats.ot_crit = stats.crit;
     end
 
-    local spell_crit_mod = loadout.spell_crit_mod_by_school[spell_data.school];
-    if not loadout.ability_crit_mod[spell_name] then
-        loadout.ability_crit_mod[spell_name] = 0;
+    stats.crit_mod = loadout.spell_crit_mod_by_school[spell.school];
+    if loadout.ability_crit_mod[spell.base_id] then
+        stats.crit_mod = stats.crit_mod + loadout.ability_crit_mod[spell.base_id];
     end
-    spell_crit_mod = spell_crit_mod + loadout.ability_crit_mod[spell_name];
 
     local target_vuln_mod = 1;
     local global_mod = loadout.gmod; 
-    local spell_mod = 1;
-    local spell_ot_mod = 1;
-    local flat_addition = 0;
+    stats.spell_mod = 1;
+    stats.spell_ot_mod = 1;
+    stats.flat_addition = 0;
     local resource_refund = 0;
 
-    if not loadout.ability_effect_mod[spell_name] then
-        loadout.ability_effect_mod[spell_name] = 1.0;
+    if not loadout.ability_effect_mod[spell.base_id] then
+        loadout.ability_effect_mod[spell.base_id] = 1.0;
     end
 
     -- regarding blessing of light effect
-    if loadout.ability_flat_add[spell_name] and class == "PALADIN" then
+    if loadout.ability_flat_add[spell.base_id] and class == "PALADIN" then
 
         local scaling_coef_by_lvl = 1;
-        if spell_data.lvl_req == 1 then -- rank 1 holy light
+        if spell.lvl_req == 1 then -- rank 1 holy light
             scaling_coef_by_lvl = 0.2;
-        elseif spell_data.lvl_req == 6 then -- rank 2 holy light
+        elseif spell.lvl_req == 6 then -- rank 2 holy light
             scaling_coef_by_lvl = 0.4;
-        elseif spell_data.lvl_req == 14 then -- rank 3 holy light
+        elseif spell.lvl_req == 14 then -- rank 3 holy light
             scaling_coef_by_lvl = 0.7;
         end
         
-        flat_addition = 
-            flat_addition + loadout.ability_flat_add[spell_name] * scaling_coef_by_lvl;
+        stats.flat_addition = 
+            stats.flat_addition + loadout.ability_flat_add[spell.base_id] * scaling_coef_by_lvl;
     end
 
-    local gcd = 1.0;
-
-    if class == "DRUID" then
-        local pts = loadout.talents_table:pts(3, 25);
-        if pts ~= 0 then
-            gcd = gcd - pts * 0.02;
-        end
-
-    end
+    stats.gcd = 1.0;
 
     if class == "PRIEST" then
-        if spell_name == localized_spell_name("Flash Heal") and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
+        if spell.base_id == spell_name_to_id["Flash Heal"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
             local pts = loadout.talents_table:pts(1, 20);
-            crit = crit + pts * 0.04;
+            stats.crit = stats.crit + pts * 0.04;
         end
         -- test of faith
         if loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5 then
@@ -3459,65 +3439,83 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
         local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
         if loadout.buffs[shadow_form] and
             (loadout.always_assume_buffs or loadout.dynamic_buffs["player"][shadow_form]) then
-            if spell_data.base_min == 0.0 and ot_crit == 0.0  and bit.band(spell_data.flags, spell_flags.heal) == 0 then
+            if spell.base_min == 0.0 and stats.ot_crit == 0.0  and bit.band(spell.flags, spell_flags.heal) == 0 then
                 -- must be shadow word pain, devouring plague or vampiric touch
-                ot_crit = crit;
-                ot_crit_delta_1 = crit_delta_1;
-                spell_crit_mod = 2.0;
+                stats.ot_crit = stats.crit;
+                stats.crit_mod = 2.0;
             end
         end
         -- glyph of renew
-        if spell_name == localized_spell_name("Renew") and loadout.glyphs[55674] then
+        if spell.base_id == spell_name_to_id["Renew"] and loadout.glyphs[55674] then
             global_mod = global_mod * 1.25;
         end
+
+        if bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 then
+            -- divine aegis
+            local pts = loadout.talents_table:pts(1, 24);
+            stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
+        end
+
     elseif  class == "DRUID" then
+
+        local pts = loadout.talents_table:pts(3, 25);
+        if pts ~= 0 then
+            stats.gcd = stats.gcd - pts * 0.02;
+        end
 
         --moonkin form
         local moonkin_form, _, _, _, _, _, _ = GetSpellInfo(24858);
         if loadout.buffs[moonkin_form] and
             (loadout.always_assume_buffs or loadout.dynamic_buffs["player"][moonkin_form]) then
-            resource_refund = crit * 0.02 * loadout.max_mana;
+            resource_refund = stats.crit * 0.02 * loadout.max_mana;
 
         -- never mind ...this tick resource refund is only on target,... could apply if targeting self?
         --local pts = loadout.talents_table:pts(3, 22);
-        --if (spell_name == localized_spell_name("Wild Growth") or spell_name == localized_spell_name("Rejuvenation"))
-        --    and pts ~= 0 and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+        --if (spell.base_id == spell_name_to_id["Wild Growth") or spell.base_id == localized_spell_name("Rejuvenation")]
+        --    and pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
         --    local refund_amount = 0.15 * loadout.max_mana * 0.01 * ot_ticks;
-        --    if spell_name == localized_spell_name("Wild Growth") then
+        --    if spell.base_id == spell_name_to_id["Wild Growth"] then
         --        refund_amount = refund_amount * 5;
         --    end
         --    cost = cost - refund_amount;
         --end
         --
         --improved insect swarm talent
-        local insect_swarm = localized_spell_name("Insect Swarm");
+        local insect_swarm = spell_name_to_id["Insect Swarm"];
         if loadout.target_buffs[insect_swarm] and
             (loadout.always_assume_buffs or loadout.dynamic_buffs["target"][insect_swarm]) then
-            if spell_name == localized_spell_name("Wrath") then
+            if spell.base_id == spell_name_to_id["Wrath"] then
                 global_mod = global_mod + 0.01 * loadout.talents_table:pts(1, 14);
                 --target_vuln_mod = target_vuln_mod * (1.0 + 0.01 * loadout.talents_table:pts(1, 14));
                 --796
             end
         end
+
+        if bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 then
+            -- living seed
+            local pts = loadout.talents_table:pts(3, 21);
+            stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
+        end
+
         
-    elseif class == "PALADIN" and bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+    elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
         -- illumination
         local pts = loadout.talents_table:pts(1, 7);
 
-            local mana_refund = 0.3 * spell_data.cost_base_percent * base_mana_pool();
-            resource_refund = crit * pts*0.2 * mana_refund;
+            local mana_refund = 0.3 * spell.cost_base_percent * base_mana_pool();
+            resource_refund = stats.crit * pts*0.2 * mana_refund;
         end
     end
 
-    --if spell_name == localized_spell_name("Healing Touch") and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
+    --if spell.base_id == spell_name_to_id["Healing Touch"] and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
 
     --    cost = cost - cost * crit * 0.3;
     --end
 
 
-    --if loadout.master_of_elements ~= 0 and spell_data.base_min > 0 and
-    --   (spell_data.school == magic_school.fire or spell_data.school == magic_school.frost) then
+    --if loadout.master_of_elements ~= 0 and spell.base_min > 0 and
+    --   (spell.school == magic_school.fire or spell.school == magic_school.frost) then
 
     --    cost = cost - cost * crit * (loadout.master_of_elements * 0.1);
     --end
@@ -3525,20 +3523,19 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
 
     --TODO: wotlk haste, cast speed calculation is different
     -- so far it seems like gcd cap is 1.0 instead of 1.5?
-    local cast_speed = spell_data.cast_time;
-    if not loadout.ability_cast_mod[spell_name] then
-        loadout.ability_cast_mod[spell_name] = 0;
+    stats.cast_time = spell.cast_time;
+    if loadout.ability_cast_mod[spell.base_id] then
+        stats.cast_time = stats.cast_time - loadout.ability_cast_mod[spell.base_id];
     end
-    cast_speed = cast_speed - loadout.ability_cast_mod[spell_name];
 
     -- nature's grace
     local pts = loadout.talents_table:pts(1, 7);
-    if pts ~= 0 and class == "DRUID" and spell_data.base_min ~= 0 then
-        cast_speed = cast_speed/(1.0 + pts * 0.2*crit/3);
+    if class == "DRUID" and pts ~= 0 and spell.base_min ~= 0 then
+        stats.cast_time = stats.cast_time/(1.0 + pts * 0.2*stats.crit/3);
     end
 
     --if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time > 1.5 and 
-    --    spell_name ~= localized_spell_name("Tranquility") and spell_name ~= localized_spell_name("Hurricane") then
+    --    spell.base_id ~= spell_name_to_id["Tranquility") and spell.base_id ~= localized_spell_name("Hurricane"] then
     --    local cast_reduction = 0.5;
     --    if cast_time - 1.5 < 0.5 then
     --        --cast_time is between ]1.5:2]
@@ -3552,15 +3549,13 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
     local haste_from_rating = 0.01 * max(0.0, loadout.haste_rating) / haste_rating_per_perc;
 
-    local haste_mod_delta_1 = loadout.haste_mod * (1.0 + haste_from_rating + 0.01/haste_rating_per_perc);
-    local haste_mod = loadout.haste_mod * (1.0 + haste_from_rating);
+    stats.haste_mod = loadout.haste_mod * (1.0 + haste_from_rating);
 
-    cast_speed_haste_delta_1 = math.max(cast_speed/haste_mod_delta_1, gcd);
-    cast_speed = math.max(cast_speed/haste_mod, gcd);
+    stats.cast_time = math.max(stats.cast_time/stats.haste_mod, stats.gcd);
 
 
     -- delete this?
-    --if spell_name == localized_spell_name("Shadow Bolt") and 
+    --if spell.base_id == spell_name_to_id["Shadow Bolt"] and 
     --    bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
     --    ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
     --    loadout.always_assume_buffs) then
@@ -3571,445 +3566,308 @@ local function loadout_stats_for_spell(spell_data, spell_name, loadout)
     --        loadout.target_spell_dmg_taken[magic_school.shadow] - 0.2;
     --end
     -- multiplicitive vs additive can become an error here 
-    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
-        target_vuln_mod = target_vuln_mod * (1.0 + loadout.target_healing_taken);
-        spell_ot_mod =
-            spell_mod
-            *
-            (loadout.ability_effect_mod[spell_name] + loadout.spell_heal_mod + loadout.ot_mod);
-        spell_mod =
-            spell_mod
-            *
-            (loadout.ability_effect_mod[spell_name] + loadout.spell_heal_mod);
+        local target_vuln_mod = target_vuln_mod * (1.0 + loadout.target_healing_taken);
+        --spell_ot_mod =
+        --    spell_mod
+        --    *
+        --    (loadout.ability_effect_mod[spell_name] + loadout.spell_heal_mod + loadout.ot_mod);
+        --spell_mod =
+        --    spell_mod
+        --    *
+        --    (loadout.ability_effect_mod[spell_name] + loadout.spell_heal_mod);
 
-    elseif bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
+        stats.spell_mod = target_vuln_mod * global_mod *
+            (loadout.ability_effect_mod[spell.base_id] + loadout.spell_heal_mod);
+        stats.spell_ot_mod = target_vuln_mod * global_mod *
+            (loadout.ability_effect_mod[spell.base_id] + loadout.spell_heal_mod + loadout.ot_mod);
+
+    elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
 
         -- TODO: looks like healing % from talents is added with twin disciples talent
         -- then multiplied by effect mod...
         --spell_mod = 1 + loadout.spell_heal_mod;
-        spell_mod =
-            spell_mod
-            * 
-            loadout.ability_effect_mod[spell_name]
-            *
-            (1.0 + loadout.spell_heal_mod);
+        --spell_mod =
+        --    spell_mod
+        --    * 
+        --    loadout.ability_effect_mod[spell.base_id]
+        --    *
+        --    (1.0 + loadout.spell_heal_mod);
+
+        stats.spell_mod = target_vuln_mod * global_mod *
+            (loadout.ability_effect_mod[spell.base_id] * (1.0 + loadout.spell_heal_mod));
     else 
-        target_vuln_mod = target_vuln_mod * (1.0 + loadout.target_spell_dmg_taken[spell_data.school]);
-        spell_ot_mod =
-            spell_mod
+        target_vuln_mod = target_vuln_mod * (1.0 + loadout.target_spell_dmg_taken[spell.school]);
+        --spell_ot_mod =
+        --    spell_mod
+        --    *
+        --    (1 + loadout.spell_dmg_mod_by_school[spell.school])
+        --    *
+        --    (loadout.ability_effect_mod[spell.base_id] + loadout.dmg_mod + loadout.ot_mod);
+        --spell_mod = 
+        --    spell_mod
+        --    *
+        --    (1 + loadout.spell_dmg_mod_by_school[spell.school])
+        --    *
+        --    (loadout.ability_effect_mod[spell.base_id] + loadout.dmg_mod);
+        stats.spell_mod = target_vuln_mod * global_mod
             *
-            (1 + loadout.spell_dmg_mod_by_school[spell_data.school])
+            (1 + loadout.spell_dmg_mod_by_school[spell.school])
             *
-            (loadout.ability_effect_mod[spell_name] + loadout.dmg_mod + loadout.ot_mod);
-        spell_mod = 
-            spell_mod
+            (loadout.ability_effect_mod[spell.base_id] + loadout.dmg_mod);
+
+        stats.spell_ot_mod = target_vuln_mod * global_mod
             *
-            (1 + loadout.spell_dmg_mod_by_school[spell_data.school])
+            (1 + loadout.spell_dmg_mod_by_school[spell.school])
             *
-            (loadout.ability_effect_mod[spell_name] + loadout.dmg_mod);
+            (loadout.ability_effect_mod[spell.base_id] + loadout.dmg_mod + loadout.ot_mod);
     end
 
 
-    local extra_hit = 0;
-    if loadout.ability_hit[spell_name] then
-        extra_hit = loadout.spell_dmg_hit_by_school[spell_data.school] + loadout.ability_hit[spell_name];
-    else
-        extra_hit = loadout.spell_dmg_hit_by_school[spell_data.school];
+    stats.extra_hit = loadout.spell_dmg_hit_by_school[spell.school];
+    if loadout.ability_hit[spell.base_id] then
+        stats.extra_hit = stats.extra_hit + loadout.ability_hit[spell.base_id];
     end
 
     local hit_rating_per_perc = get_combat_rating_effect(CR_HIT_SPELL, loadout.lvl);
     local hit_from_rating = 0.01 * loadout.hit_rating/hit_rating_per_perc
-    extra_hit = extra_hit + loadout.ability_crit[spell_name] + hit_from_rating;
+    stats.extra_hit = stats.extra_hit + hit_from_rating;
 
-    local hit = spell_hit(loadout.lvl, loadout.target_lvl, extra_hit);
-    local hit_delta_1 = hit + 0.01/hit_rating_per_perc;
-    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 or bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
-        hit = 1.0;
-        hit_delta_1 = 1.0;
+    stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit);
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+        stats.hit = 1.0;
     else
-        hit = math.min(0.99, hit);
-        hit_delta_1 = math.min(0.99, hit_delta_1);
+        stats.hit = math.min(0.99, stats.hit);
     end
 
     -- 
-    local extra_ticks = loadout.ability_extra_ticks[spell_name];
-    if not extra_ticks then
-        extra_ticks = 0;
+    stats.ot_extra_ticks = loadout.ability_extra_ticks[spell.base_id];
+    if not stats.ot_extra_ticks then
+       stats.ot_extra_ticks = 0.0;
     end
 
-    local spell_power = 0;
-    if bit.band(spell_data.flags, spell_flags.heal) ~= 0 or bit.band(spell_data.flags, spell_flags.absorb) ~= 0 then
-        spell_power = loadout.spell_power;
+    stats.spell_power = 0;
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+        stats.spell_power = loadout.spell_power;
     else
-        spell_power = loadout.spell_power + loadout.spell_dmg_by_school[spell_data.school];
+        stats.spell_power = loadout.spell_power + loadout.spell_dmg_by_school[spell.school];
     end
 
-    if loadout.ability_sp[spell_name] then
-        spell_power = spell_power + loadout.ability_sp[spell_name];
+    -- redundant in wotlk?
+    if loadout.ability_sp[spell.base_id] then
+        stats.spell_power = stats.spell_power + loadout.ability_sp[spell.base_id];
     end
 
-    local target_resi = 0;
-    if bit.band(spell_data.flags, spell_flags.heal) == 0 then
+    stats.target_resi = 0;
+    if bit.band(spell.flags, spell_flags.heal) == 0 then
         -- mod res by school currently used to snapshot equipment and set bonuses
-        target_resi = loadout.target_res_by_school[spell_data.school] + loadout.target_mod_res_by_school[spell_data.school];
+        stats.target_resi = math.max(0, loadout.target_res_by_school[spell.school] + loadout.target_mod_res_by_school[spell.school]);
     end
 
-    local cost = spell_data.cost_base_percent * base_mana_pool();
+    stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
+
+    stats.cost = spell.cost_base_percent * base_mana_pool();
     local cost_mod = 1 - loadout.cost_mod;
 
-    if loadout.ability_cost_mod[spell_name] then
-        cost_mod = cost_mod - loadout.ability_cost_mod[spell_name]
+    if loadout.ability_cost_mod[spell.base_id] then
+        cost_mod = cost_mod - loadout.ability_cost_mod[spell.base_id]
     end
 
-    cost = cost * cost_mod;
-    cost = cost - resource_refund;
+    stats.cost = stats.cost * cost_mod;
+    stats.cost = stats.cost - resource_refund;
 
-    if loadout.ability_refund[spell_name] and loadout.ability_refund[spell_name] ~= 0 then
+    if loadout.ability_refund[spell.base_id] and loadout.ability_refund[spell.base_id] ~= 0 then
 
-        local refund = loadout.ability_refund[spell_name];
-        local max_rank = spell_data.rank;
-        if spell_name == localized_spell_name("Lesser Healing Wave") then
+        local refund = loadout.ability_refund[spell.base_id];
+        local max_rank = spell.rank;
+        if spell.base_id == spell_name_to_id["Lesser Healing Wave"] then
             max_rank = 6;
-        elseif spell_name == localized_spell_name("Healing Touch") then
+        elseif spell.base_id == spell_name_to_id["Healing Touch"] then
             max_rank = 11;
         end
 
-        coef_estimate = spell_data.rank/max_rank;
+        coef_estimate = spell.rank/max_rank;
 
-        cost = cost - refund*coef_estimate;
+        stats.cost = satts.cost - refund*coef_estimate;
     end
 
-    -- the game seems to round cost up/down to the nearest
-    cost = tonumber(string.format("%.0f", cost));
+    -- cost rounding?
+    stats.cost = tonumber(string.format("%.0f", stats.cost));
 
     local lvl_scaling = level_scaling(loadout.lvl);
-    local direct_coef = spell_data.coef * lvl_scaling;
-    local over_time_coef = spell_data.over_time_coef *lvl_scaling;
+    stats.coef = spell.coef * lvl_scaling;
+    stats.ot_coef = spell.over_time_coef *lvl_scaling;
 
-    if loadout.ability_coef_mod[spell_name] then
-        direct_coef = direct_coef + loadout.ability_coef_mod[spell_name];
+    if loadout.ability_coef_mod[spell.base_id] then
+        stats.coef = stats.coef + loadout.ability_coef_mod[spell.base_id];
     end
-    if loadout.ability_coef_ot_mod[spell_name] then
-        over_time_coef = over_time_coef * (1 + loadout.ability_coef_ot_mod[spell_name]);
+    if loadout.ability_coef_ot_mod[spell.base_id] then
+        stats.ot_coef = stats.ot_coef * (1 + loadout.ability_coef_ot_mod[spell.base_id]);
     end
 
-
-    return {
-        extra_ticks = extra_ticks,
-        cast_speed = cast_speed,
-        cast_speed_haste_delta_1 = cast_speed_haste_delta_1,
-        spell_power = spell_power,
-        flat_direct_addition = flat_addition,
-        crit = crit,
-        crit_delta_1 = crit_delta_1,
-        ot_crit = ot_crit,
-        ot_crit_delta_1 = ot_crit_delta_1,
-        spell_crit_mod = spell_crit_mod,
-        hit = hit,
-        hit_delta_1 = hit_delta_1,
-        target_vuln_mod = target_vuln_mod,
-        global_mod = global_mod,
-        spell_mod = spell_mod,
-        spell_ot_mod = spell_ot_mod,
-        direct_coef = direct_coef,
-        over_time_coef = over_time_coef,
-        cost = cost,
-        target_resi = target_resi
-    };
+    stats.cost_per_sec = stats.cost / stats.cast_time;
 end
 
-local function spell_info_from_loadout_stats(spell_data, spell_name, loadout)
+local function spell_info_from_stats(spell_info, stats, spell, loadout)
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
-
-    return spell_info(
-       spell_data, 
-       stats.extra_ticks,
-       stats.cast_speed,
-       stats.spell_power,
-       stats.flat_direct_addition,
-       math.max(0, min(1, stats.crit)),
-       math.max(0, min(1, stats.ot_crit)),
-       stats.spell_crit_mod,
-       stats.hit,
-       math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-       stats.direct_coef, stats.over_time_coef,
-       stats.cost,
-       spell_name, loadout
-    );
+    stats_for_spell(stats, spell, loadout);
+    spell_info(spell_info, spell, stats, loadout);
 end
 
-local function evaluate_spell(stats, spell_data, spell_name, loadout)
+local function evaluate_spell(spell, stats, loadout)
 
-    local spell_effect = spell_info(
-       spell_data,
-       stats.extra_ticks,
-       stats.cast_speed,
-       stats.spell_power,
-       stats.flat_direct_addition,
-       max(0, min(1, stats.crit)),
-       max(0, min(1, stats.ot_crit)),
-       stats.spell_crit_mod,
-       stats.hit,
-       math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-       stats.direct_coef, stats.over_time_coef,
-       stats.cost,
-       spell_name, loadout
-    );
+    local spell_effect = {};
+    local spell_effect_extra_1sp = {};
+    local spell_effect_extra_1crit = {};
+    local spell_effect_extra_1hit = {};
+    local spell_effect_extra_1haste = {};
 
-    local spell_effect_extra_1sp = spell_info(
-        spell_data,
-        stats.extra_ticks,
-        stats.cast_speed,
-        stats.spell_power + 1,
-        stats.flat_direct_addition,
-        max(0, min(1, stats.crit)),
-        max(0, min(1, stats.ot_crit)),
-        stats.spell_crit_mod,
-        stats.hit,
-        math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-        stats.direct_coef, stats.over_time_coef,
-        stats.cost,
-        spell_name, loadout
-    );
-    local spell_effect_extra_1crit = spell_info(
-        spell_data,
-        stats.extra_ticks,
-        stats.cast_speed,
-        stats.spell_power,
-        stats.flat_direct_addition,
-        max(0, min(1, stats.crit_delta_1)),
-        max(0, min(1, stats.ot_crit_delta_1)),
-        stats.spell_crit_mod,
-        stats.hit,
-        math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-        stats.direct_coef, stats.over_time_coef,
-        stats.cost,
-        spell_name, loadout
-    );
-    local spell_effect_extra_1hit = spell_info(
-        spell_data, 
-        stats.extra_ticks,
-        stats.cast_speed,
-        stats.spell_power,
-        stats.flat_direct_addition,
-        max(0, min(1, stats.crit)),
-        max(0, min(1, stats.ot_crit)),
-        stats.spell_crit_mod,
-        stats.hit_delta_1,
-        math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-        stats.direct_coef, stats.over_time_coef,
-        stats.cost,
-        spell_name, loadout
-    );
-    local spell_effect_extra_1haste = spell_info(
-        spell_data, 
-        stats.extra_ticks,
-        stats.cast_speed_haste_delta_1,
-        stats.spell_power,
-        stats.flat_direct_addition,
-        max(0, min(1, stats.crit)),
-        max(0, min(1, stats.ot_crit)),
-        stats.spell_crit_mod,
-        stats.hit,
-        math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-        stats.direct_coef, stats.over_time_coef,
-        stats.cost,
-        spell_name, loadout
-    );
+    spell_info(spell_effect, spell, stats, loadout);
 
-    local spell_effect_extra_1_target_resi = spell_info(
-        spell_data, 
-        stats.extra_ticks,
-        stats.cast_speed,
-        stats.spell_power,
-        stats.flat_direct_addition,
-        max(0, min(1, stats.crit)),
-        max(0, min(1, stats.ot_crit)),
-        stats.spell_crit_mod,
-        stats.hit,
-        math.max(0, stats.target_resi - 1),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-        stats.direct_coef, stats.over_time_coef,
-        stats.cost,
-        spell_name, loadout
-    );
+    -- careful of reusing stats for each diff if stats is used further
+
+    local spell_power_prev = stats.spell_power;
+    stats.spell_power = stats.spell_power - 1;
+    spell_info(spell_effect_extra_1sp, spell, stats, loadout);
+    stats.spell_power = spell_power_prev;
+
+    local crit_prev = stats.crit;  
+    local ot_crit_prev = stats.ot_crit; 
+
+    local crit_rating_per_perc = get_combat_rating_effect(CR_CRIT_SPELL, loadout.lvl);
+    if stats.crit ~= 0.0 then
+        stats.crit = math.min(1.0, stats.crit + 0.01/crit_rating_per_perc);
+    end
+    if stats.ot_crit ~= 0.0 then
+        stats.ot_crit = math.min(1.0, stats.ot_crit + 0.01/crit_rating_per_perc);
+    end
+    spell_info(spell_effect_extra_1crit, spell, stats, loadout);
+    stats.crit = crit_prev;
+    stats.ot_crit = ot_crit_prev;
+
+    local hit_prev = stats.hit;
+    local hit_rating_per_perc = get_combat_rating_effect(CR_HIT_SPELL, loadout.lvl);
+    if bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0 then
+        stats.hit = math.min(0.99, stats.hit + 0.01/hit_rating_per_perc);
+    end
+    spell_info(spell_effect_extra_1hit, spell, stats, loadout);
+    stats.hit = hit_prev;
+
+    local cast_time_prev = stats.cast_time;
+    local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
+    local haste_from_rating = 0.01 * math.max(0.0, loadout.haste_rating) / haste_rating_per_perc;
+    local cast_time_wo_haste = cast_time_prev * (1.0 + haste_from_rating);
+    stats.cast_time = math.max(cast_time_wo_haste/(1.0 + haste_from_rating + 0.01/haste_rating_per_perc), stats.gcd);
+
+    spell_info(spell_effect_extra_1haste, spell, stats, loadout);
+    stats.cast_time = cast_time_prev;
 
     local spell_effect_per_sec_1sp_delta = spell_effect_extra_1sp.effect_per_sec - spell_effect.effect_per_sec;
     local spell_effect_per_sec_1crit_delta = spell_effect_extra_1crit.effect_per_sec - spell_effect.effect_per_sec;
     local spell_effect_per_sec_1hit_delta = spell_effect_extra_1hit.effect_per_sec - spell_effect.effect_per_sec;
     local spell_effect_per_sec_1haste_delta = spell_effect_extra_1haste.effect_per_sec - spell_effect.effect_per_sec;
-    local spell_effect_per_sec_1target_resi_delta = spell_effect_extra_1_target_resi.effect_per_sec - spell_effect.effect_per_sec;
 
     local sp_per_crit = spell_effect_per_sec_1crit_delta/(spell_effect_per_sec_1sp_delta);
     local sp_per_hit = spell_effect_per_sec_1hit_delta/(spell_effect_per_sec_1sp_delta);
     local sp_per_haste = spell_effect_per_sec_1haste_delta/(spell_effect_per_sec_1sp_delta);
-    local sp_per_target_resi = spell_effect_per_sec_1target_resi_delta/(spell_effect_per_sec_1sp_delta);
 
     return {
         effect_per_sec_per_sp = spell_effect_per_sec_1sp_delta,
         sp_per_crit = sp_per_crit,
         sp_per_hit = sp_per_hit,
         sp_per_haste = sp_per_haste,
-        sp_per_target_resi = sp_per_target_resi,
 
-        spell_data = spell_effect,
-        spell_data_1_sp = spell_effect_extra_1sp,
-        spell_data_1_crit = spell_effect_extra_1crit,
-        spell_data_1_hit = spell_effect_extra_1hit,
-        spell_data_1_haste = spell_effect_extra_1haste,
-        spell_data_1_target_resi = spell_effect_extra_1_target_resi
+        spell = spell_effect,
+        spell_1_sp = spell_effect_extra_1sp,
+        spell_1_crit = spell_effect_extra_1crit,
+        spell_1_hit = spell_effect_extra_1hit,
+        spell_1_haste = spell_effect_extra_1haste,
+        spell_1_target_resi = spell_effect_extra_1_target_resi
     };
 end
 
-local function cast_until_oom_sim(spell_effect, mp5, spirit, int, mana, loadout)
+local function cast_until_oom_sim(spell_effect, stats, loadout)
 
     local num_casts = 0;
     local effect = 0;
 
-    -- src: https://wowwiki-archive.fandom.com/wiki/Spirit
-    local mp1_not_casting = 0.2 * mana_regen_per_5(int, spirit, loadout.lvl);
-    local mp1_casting = 0.2 * (0.05 * base_mana_pool() + mp5) + mp1_not_casting * loadout.regen_while_casting;
+    local mana = loadout.mana + loadout.extra_mana;
 
-    local resource_loss_per_sec = spell_effect.cost/spell_effect.cast_time - mp1_casting;
+    -- src: https://wowwiki-archive.fandom.com/wiki/Spirit
+    local mp1_not_casting = 0.2 * mana_regen_per_5(loadout.stats[stat.int], loadout.stats[stat.spirit], loadout.lvl);
+    local mp1_casting = 0.2 * (0.05 * base_mana_pool() + loadout.mp5) + mp1_not_casting * loadout.regen_while_casting;
+
+    local resource_loss_per_sec = stats.cost/stats.cast_time - mp1_casting;
 
     if resource_loss_per_sec <= 0 then
         -- divide by 0 party!
-        return {
-            num_casts = 1/0,
-            effect = 1/0,
-            time_until_oom = 1/0,
-            mp1 = mp1_casting
-
-        };
+        spell_effect.num_casts_until_oom = 1/0;
+        spell_effect.effect_until_oom = 1/0;
+        spell_effect.time_until_oom = 1/0;
+        spell_effect.mp1 = mp1_casting;
+    else
+        spell_effect.time_until_oom = mana/resource_loss_per_sec;
+        spell_effect.num_casts_until_oom = spell_effect.time_until_oom/stats.cast_time;
+        spell_effect.effect_until_oom = spell_effect.num_casts_until_oom * spell_effect.expectation;
+        spell_effect.mp1 = mp1_casting;
     end
-
-    local time_until_oom = mana/resource_loss_per_sec; 
-    local num_casts = time_until_oom/spell_effect.cast_time;
-    local effect_until_oom = num_casts * spell_effect.expectation;
-    
-    return {
-        num_casts = num_casts,
-        effect = effect_until_oom,
-        time_until_oom = time_until_oom,
-        mp1 = mp1_casting
-    };
 end
 
-local function cast_until_oom_sim_default(spell_effect, loadout)
+local function cast_until_oom_sim_default(spell_effect, stats, loadout)
 
-    return cast_until_oom_sim(
-        spell_effect, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int],
-        loadout.mana + loadout.extra_mana, loadout
-    );
+    cast_until_oom_sim(spell_effect, stats, loadout);
 end
 
 local function cast_until_oom_stat_weights(
-        stats, spell_data, spell_name, 
-        spell_effect_normal, spell_effect_1_sp, spell_effect_1_crit, spell_effect_1_hit, spell_effect_1_haste, spell_effect_1_target_resi, loadout)
+        spell, stats,
+        spell_effect_normal, spell_effect_1_sp, spell_effect_1_crit, spell_effect_1_hit, spell_effect_1_haste, loadout)
 
-    local until_oom_normal = 
-        cast_until_oom_sim(spell_effect_normal, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
-    local until_oom_1_sp = 
-        cast_until_oom_sim(spell_effect_1_sp, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
-    local until_oom_1_crit = 
-        cast_until_oom_sim(spell_effect_1_crit, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
-    local until_oom_1_hit = 
-        cast_until_oom_sim(spell_effect_1_hit, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
-    local until_oom_1_haste = 
-        cast_until_oom_sim(spell_effect_1_haste, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
-    local until_oom_1_target_resi = 
-        cast_until_oom_sim(spell_effect_1_target_resi, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
-    local until_oom_1_mp5 = 
-        cast_until_oom_sim(spell_effect_normal, loadout.mp5 + 1, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout);
+    -- TODO: stats must be tied to effect
+    cast_until_oom_sim(spell_effect_normal, stats, loadout);
+    cast_until_oom_sim(spell_effect_1_sp, stats, loadout);
+    cast_until_oom_sim(spell_effect_1_crit, stats, loadout);
+    cast_until_oom_sim(spell_effect_1_hit, stats, loadout);
+    cast_until_oom_sim(spell_effect_1_haste, stats, loadout);
+
+    local loadout_1_mp5 = empty_loadout();
+    loadout_1_mp5.mp5  = loadout_1_mp5.mp5 + 1;
+    local loadout_added_1_mp5 = loadout_add(loadout, loadout_1_mp5);
+    local stats_1_mp5_added = {};
+    stats_for_spell(stats_1_mp5_added, spell, loadout_added_1_mp5);
+    local spell_effect_1_mp5 = {};
+    spell_info(spell_effect_1_mp5, spell, stats_1_mp5_added, loadout_added_1_mp5);
+    cast_until_oom_sim(spell_effect_1_mp5, stats, loadout_added_1_mp5);
 
     local loadout_1_spirit = empty_loadout();
     loadout_1_spirit.stats[stat.spirit] = 1;
     local loadout_added_1_spirit = loadout_add(loadout, loadout_1_spirit);
-    local stats_1_spirit_added = loadout_stats_for_spell(spell_data, spell_name, loadout_added_1_spirit);
-    local added_1_spirit_effect = spell_info(
-       spell_data,
-       stats.extra_ticks,
-       stats_1_spirit_added.cast_speed,
-       stats_1_spirit_added.spell_power,
-       stats_1_spirit_added.flat_direct_addition,
-       max(0, min(1, stats_1_spirit_added.crit)),
-       max(0, min(1, stats_1_spirit_added.ot_crit)),
-       stats_1_spirit_added.spell_crit_mod,
-       stats_1_spirit_added.hit,
-       max(0, stats_1_spirit_added.target_resi),
-       stats_1_spirit_added.target_vuln_mod, 
-       stats_1_spirit_added.global_mod, 
-       stats_1_spirit_added.spell_mod, 
-       stats_1_spirit_added.spell_ot_mod, 
-       stats_1_spirit_added.direct_coef, 
-       stats_1_spirit_added.over_time_coef,
-       stats_1_spirit_added.cost,
-       spell_name, loadout_added_1_spirit
-    );
-
-    local until_oom_1_spirit = cast_until_oom_sim(
-        added_1_spirit_effect, 
-        loadout_added_1_spirit.mp5, 
-        loadout_added_1_spirit.stats[stat.spirit], 
-        loadout_added_1_spirit.stats[stat.int], 
-        loadout_added_1_spirit.mana + loadout.extra_mana, 
-        loadout_added_1_spirit);
+    local stats_1_spirit_added = {};
+    stats_for_spell(stats_1_spirit_added, spell, loadout_added_1_spirit);
+    local added_1_spirit_effect = {};
+    spell_info(added_1_spirit_effect, spell, stats_1_spirit_added, loadout_added_1_spirit);
+    cast_until_oom_sim(added_1_spirit_effect, stats_1_spirit_added, loadout_added_1_spirit);
 
     local loadout_1_int = empty_loadout();
     loadout_1_int.stats[stat.int] = 1;
-
     local loadout_added_1_int = loadout_add(loadout, loadout_1_int);
-    local stats_1_int_added = loadout_stats_for_spell(spell_data, spell_name, loadout_added_1_int);
-    local added_1_int_effect = spell_info(
-       spell_data,
-       stats.extra_ticks,
-       stats_1_int_added.cast_speed,
-       stats_1_int_added.spell_power,
-       stats_1_int_added.flat_direct_addition,
-       max(0, min(1, stats_1_int_added.crit)),
-       max(0, min(1, stats_1_int_added.ot_crit)),
-       stats_1_int_added.spell_crit_mod,
-       stats_1_int_added.hit,
-       max(0, stats_1_int_added.target_resi),
-       stats_1_int_added.target_vuln_mod, 
-       stats_1_int_added.global_mod, 
-       stats_1_int_added.spell_mod, 
-       stats_1_spirit_added.spell_ot_mod, 
-       stats_1_int_added.direct_coef, 
-       stats_1_int_added.over_time_coef,
-       stats_1_int_added.cost,
-       spell_name, loadout_added_1_int
-    );
+    local stats_1_int_added = {};
+    stats_for_spell(stats_1_int_added, spell, loadout_added_1_int);
+    local added_1_int_effect = {};
+    spell_info(added_1_int_effect, spell, stats_1_int_added, loadout_added_1_int);
+    cast_until_oom_sim(added_1_int_effect, stats_1_int_added, loadout_added_1_int);
 
-    local until_oom_1_int = cast_until_oom_sim(
-        added_1_int_effect, 
-        loadout_added_1_int.mp5, 
-        loadout_added_1_int.stats[stat.spirit], 
-        loadout_added_1_int.stats[stat.int], 
-        loadout_added_1_int.mana + loadout.extra_mana,
-        loadout_added_1_int);
-
-    local diff_1_sp = until_oom_1_sp.effect - until_oom_normal.effect;
-    local diff_1_crit = until_oom_1_crit.effect - until_oom_normal.effect;
-    local diff_1_hit = until_oom_1_hit.effect - until_oom_normal.effect;
-    local diff_1_haste = until_oom_1_haste.effect - until_oom_normal.effect;
-    local diff_1_target_resi = until_oom_1_target_resi.effect - until_oom_normal.effect;
-    local diff_1_mp5 = until_oom_1_mp5.effect - until_oom_normal.effect;
-    local diff_1_spirit = until_oom_1_spirit.effect - until_oom_normal.effect;
-    local diff_1_int = until_oom_1_int.effect - until_oom_normal.effect;
+    local diff_1_sp = spell_effect_1_sp.effect_until_oom - spell_effect_normal.effect_until_oom;
+    local diff_1_crit = spell_effect_1_crit.effect_until_oom - spell_effect_normal.effect_until_oom;
+    local diff_1_hit = spell_effect_1_hit.effect_until_oom - spell_effect_normal.effect_until_oom;
+    local diff_1_haste = spell_effect_1_haste.effect_until_oom - spell_effect_normal.effect_until_oom;
+    local diff_1_mp5 = spell_effect_1_mp5.effect_until_oom - spell_effect_normal.effect_until_oom;
+    local diff_1_spirit = added_1_spirit_effect.effect_until_oom - spell_effect_normal.effect_until_oom;
+    local diff_1_int = added_1_int_effect.effect_until_oom - spell_effect_normal.effect_until_oom;
 
     local sp_per_crit = diff_1_crit/diff_1_sp;
     local sp_per_hit = diff_1_hit/diff_1_sp;
     local sp_per_haste = diff_1_haste/diff_1_sp;
-    local sp_per_target_resi = diff_1_target_resi/diff_1_sp;
     local sp_per_mp5 = diff_1_mp5/diff_1_sp;
     local sp_per_spirit = diff_1_spirit/diff_1_sp;
     local sp_per_int = diff_1_int/diff_1_sp;
@@ -4020,17 +3878,17 @@ local function cast_until_oom_stat_weights(
         sp_per_crit = sp_per_crit,
         sp_per_hit = sp_per_hit,
         sp_per_haste = sp_per_haste,
-        sp_per_target_resi = sp_per_target_resi,
         sp_per_mp5 = sp_per_mp5,
         sp_per_spirit = sp_per_spirit,
         sp_per_int = sp_per_int,
 
-        normal = until_oom_normal,
+        normal = spell_effect_normal,
     };
 end
 
+local spell_cache = {};    
 
-local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
+local function tooltip_spell_info(tooltip, spell, loadout)
 
     if spell then
 
@@ -4039,12 +3897,13 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             return;
         end
 
-        local stats = loadout_stats_for_spell(spell, spell_name, loadout); 
-        local eval = evaluate_spell(stats, spell, spell_name, loadout);
+        local stats = {};
+        stats_for_spell(stats, spell, loadout); 
+        local eval = evaluate_spell(spell, stats, loadout);
 
         local cast_til_oom = cast_until_oom_stat_weights(
-          stats, spell, spell_name, 
-          eval.spell_data, eval.spell_data_1_sp, eval.spell_data_1_crit, eval.spell_data_1_hit, eval.spell_data_1_haste, eval.spell_data_1_target_resi, 
+          spell, stats,
+          eval.spell, eval.spell_1_sp, eval.spell_1_crit, eval.spell_1_hit, eval.spell_1_haste, 
           loadout
         );
 
@@ -4092,46 +3951,46 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         else
             tooltip:AddLine(string.format("Active Loadout (%s): %s - Target lvl %d", loadout_type, loadout.name, loadout.target_lvl), 1, 1, 1);
         end
-        if eval.spell_data.min_noncrit + eval.spell_data.absorb ~= 0 then
+        if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
             if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
-                if eval.spell_data.min_noncrit ~= eval.spell_data.max_noncrit then
+                if eval.spell.min_noncrit_if_hit ~= eval.spell.max_noncrit_if_hit then
                     -- dmg spells with real direct range
                     if stats.hit ~= 1 then
-                        if spell_name == localized_spell_name("Searing Totem") then
+                        if spell.base_id == spell_name_to_id["Searing Totem"] then
                             local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
                             tooltip:AddLine(
                                 string.format("Normal %s (%.1f%% hit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                               effect, 
                                               stats.hit*100,
-                                              (eval.spell_data.min_noncrit + eval.spell_data.max_noncrit)*num_ticks/2,
+                                              (eval.spell.min_noncrit_if_hit + eval.spell.max_noncrit_if_hit)*num_ticks/2,
                                               spell.over_time_duration,
-                                              math.floor(eval.spell_data.min_noncrit), 
-                                              math.ceil(eval.spell_data.max_noncrit),
+                                              math.floor(eval.spell.min_noncrit_if_hit), 
+                                              math.ceil(eval.spell.max_noncrit_if_hit),
                                               num_ticks),
                                 232.0/255, 225.0/255, 32.0/255);
                         else
                             tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d-%d", 
                                                            effect, 
                                                            stats.hit*100,
-                                                           math.floor(eval.spell_data.min_noncrit), 
-                                                           math.ceil(eval.spell_data.max_noncrit)),
+                                                           math.floor(eval.spell.min_noncrit_if_hit), 
+                                                           math.ceil(eval.spell.max_noncrit_if_hit)),
                                              232.0/255, 225.0/255, 32.0/255);
                         end
                     -- heal spells with real direct range
                     else
                         tooltip:AddLine(string.format("Normal %s: %d-%d", 
                                                       effect, 
-                                                      math.floor(eval.spell_data.min_noncrit), 
-                                                      math.ceil(eval.spell_data.max_noncrit)),
+                                                      math.floor(eval.spell.min_noncrit_if_hit), 
+                                                      math.ceil(eval.spell.max_noncrit_if_hit)),
                                         232.0/255, 225.0/255, 32.0/255);
 
-                        if spell_name == localized_spell_name("Prayer of Healing") and loadout.glyphs[57195] then
+                        if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[57195] then
                             tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d per tick for %d ticks)", 
-                                                          math.floor(0.2*eval.spell_data.min_noncrit),
-                                                          math.ceil(0.2*eval.spell_data.max_noncrit),
+                                                          math.floor(0.2*eval.spell.min_noncrit_if_hit),
+                                                          math.ceil(0.2*eval.spell.max_noncrit_if_hit),
                                                           6,
-                                                          math.floor(0.2*eval.spell_data.min_noncrit/6),
-                                                          math.ceil(0.2*eval.spell_data.max_noncrit/6),
+                                                          math.floor(0.2*eval.spell.min_noncrit_if_hit/6),
+                                                          math.ceil(0.2*eval.spell.max_noncrit_if_hit/6),
                                                           6),
                                             232.0/255, 225.0/255, 32.0/255);
                         end
@@ -4141,20 +4000,20 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
                         tooltip:AddLine(string.format("Normal %s (%.1f%% hit): %d", 
                                                       effect,
                                                       stats.hit*100,
-                                                      math.floor(eval.spell_data.min_noncrit)),
-                                                      --string.format("%.0f", eval.spell_data.min_noncrit)),
+                                                      math.floor(eval.spell.min_noncrit_if_hit)),
+                                                      --string.format("%.0f", eval.spell.min_noncrit_if_hit)),
                                         232.0/255, 225.0/255, 32.0/255);
                     else
-                        if eval.spell_data.absorb ~= 0 then
+                        if eval.spell.absorb ~= 0 then
                             tooltip:AddLine(string.format("Absorb: %d", 
-                                                          math.floor(eval.spell_data.absorb)),
+                                                          math.floor(eval.spell.absorb)),
                                             232.0/255, 225.0/255, 32.0/255);
                         end
-                        if eval.spell_data.min_noncrit ~= 0 then
+                        if eval.spell.min_noncrit_if_hit ~= 0 then
                             tooltip:AddLine(string.format("Normal %s: %d", 
                                                           effect,
-                                                          math.floor(eval.spell_data.min_noncrit)),
-                                                          --string.format("%.0f", eval.spell_data.min_noncrit)),
+                                                          math.floor(eval.spell.min_noncrit_if_hit)),
+                                                          --string.format("%.0f", eval.spell.min_noncrit_if_hit)),
                                             232.0/255, 225.0/255, 32.0/255);
                         end
                     end
@@ -4163,79 +4022,79 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
             end
             if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
                 if stats.crit ~= 0 then
-                    if loadout.ignite ~= 0 and eval.spell_data.ignite_min > 0 then
-                        local ignite_min = loadout.ignite * 0.08 * eval.spell_data.min_crit;
-                        local ignite_max = loadout.ignite * 0.08 * eval.spell_data.max_crit;
+                    if loadout.ignite ~= 0 and eval.spell.ignite_min > 0 then
+                        local ignite_min = loadout.ignite * 0.08 * eval.spell.min_crit_if_hit;
+                        local ignite_max = loadout.ignite * 0.08 * eval.spell.max_crit_if_hit;
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d (ignites for %d-%d)", 
                                                       effect, 
                                                       stats.crit*100, 
-                                                      math.floor(eval.spell_data.min_crit), 
-                                                      math.ceil(eval.spell_data.max_crit),
+                                                      math.floor(eval.spell.min_crit_if_hit), 
+                                                      math.ceil(eval.spell.max_crit_if_hit),
                                                       math.floor(ignite_min), 
                                                       math.ceil(ignite_max)),
                                        252.0/255, 69.0/255, 3.0/255);
 
 
                     -- divine aegis
-                    elseif class == "PRIEST" and bit.band(spell_flags.heal, spell.flags) ~= 0 and eval.spell_data.min_crit ~= 0 and loadout.talents_table:pts(1, 24) ~= 0 then
+                    elseif class == "PRIEST" and bit.band(spell_flags.heal, spell.flags) ~= 0 and eval.spell.min_crit_if_hit ~= 0 and loadout.talents_table:pts(1, 24) ~= 0 then
                         local pts = loadout.talents_table:pts(1, 24)
-                        local min_crit = eval.spell_data.min_crit/(1 + pts * 0.1);
-                        local max_crit = eval.spell_data.max_crit/(1 + pts * 0.1);
-                        local absorb_min = pts * 0.1 * min_crit;
-                        local absorb_max = pts * 0.1 * max_crit;
+                        local min_crit_if_hit = eval.spell.min_crit_if_hit/(1 + pts * 0.1);
+                        local max_crit_if_hit = eval.spell.max_crit_if_hit/(1 + pts * 0.1);
+                        local absorb_min = pts * 0.1 * min_crit_if_hit;
+                        local absorb_max = pts * 0.1 * max_crit_if_hit;
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d (absorbs %d-%d)", 
                                                       effect, 
                                                       stats.crit*100, 
-                                                      math.floor(min_crit), 
-                                                      math.ceil(max_crit),
+                                                      math.floor(min_crit_if_hit), 
+                                                      math.ceil(max_crit_if_hit),
                                                       math.floor(absorb_min), 
                                                       math.ceil(absorb_max)),
                                        252.0/255, 69.0/255, 3.0/255);
 
-                        if spell_name == localized_spell_name("Prayer of Healing") and loadout.glyphs[57195] then
+                        if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[57195] then
                             tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d per tick for %d ticks)", 
-                                                          math.floor(0.2*min_crit), 
-                                                          math.ceil(0.2*max_crit),
+                                                          math.floor(0.2*min_crit_if_hit), 
+                                                          math.ceil(0.2*max_crit_if_hit),
                                                           6,
-                                                          math.floor(0.2*min_crit/6), 
-                                                          math.ceil(0.2*max_crit/6),
+                                                          math.floor(0.2*min_crit_if_hit/6), 
+                                                          math.ceil(0.2*max_crit_if_hit/6),
                                                           6),
                                            252.0/255, 69.0/255, 3.0/255);
                         end
                     -- living seeds
-                    elseif class == "DRUID" and bit.band(spell_flags.heal, spell.flags) ~= 0 and eval.spell_data.min_crit ~= 0 and loadout.talents_table:pts(3, 21) ~= 0 then
+                    elseif class == "DRUID" and bit.band(spell_flags.heal, spell.flags) ~= 0 and eval.spell.min_crit_if_hit ~= 0 and loadout.talents_table:pts(3, 21) ~= 0 then
                         local pts = loadout.talents_table:pts(3, 21)
-                        local min_crit = eval.spell_data.min_crit/(1 + pts * 0.1);
-                        local max_crit = eval.spell_data.max_crit/(1 + pts * 0.1);
-                        local seed_min = pts * 0.1 * min_crit;
-                        local seed_max = pts * 0.1 * max_crit;
+                        local min_crit_if_hit = eval.spell.min_crit_if_hit/(1 + pts * 0.1);
+                        local max_crit_if_hit = eval.spell.max_crit_if_hit/(1 + pts * 0.1);
+                        local seed_min = pts * 0.1 * min_crit_if_hit;
+                        local seed_max = pts * 0.1 * max_crit_if_hit;
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d (seeds %d-%d)", 
                                                       effect, 
                                                       stats.crit*100, 
-                                                      math.floor(min_crit), 
-                                                      math.ceil(max_crit),
+                                                      math.floor(min_crit_if_hit), 
+                                                      math.ceil(max_crit_if_hit),
                                                       math.floor(seed_min), 
                                                       math.ceil(seed_max)),
                                        252.0/255, 69.0/255, 3.0/255);
 
-                    elseif spell_name == localized_spell_name("Searing Totem") then
+                    elseif spell.base_id == spell_name_to_id["Searing Totem"] then
                         local num_ticks = spell.over_time_duration/spell.over_time_tick_freq;
                         tooltip:AddLine(
                             string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)", 
                                           effect, 
                                           stats.crit*100, 
-                                          (eval.spell_data.min_crit + eval.spell_data.max_crit)*num_ticks/2,
+                                          (eval.spell.min_crit_if_hit + eval.spell.max_crit_if_hit)*num_ticks/2,
                                           spell.over_time_duration,
-                                          math.floor(eval.spell_data.min_crit), 
-                                          math.ceil(eval.spell_data.max_crit),
+                                          math.floor(eval.spell.min_crit_if_hit), 
+                                          math.ceil(eval.spell.max_crit_if_hit),
                                           num_ticks),
                             252.0/255, 69.0/255, 3.0/255);
-                    elseif eval.spell_data.min_crit ~= 0 then
+                    elseif eval.spell.min_crit_if_hit ~= 0 then
                         tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d-%d", 
                                                       effect, 
                                                       stats.crit*100, 
-                                                      math.floor(eval.spell_data.min_crit), 
-                                                      math.ceil(eval.spell_data.max_crit)),
+                                                      math.floor(eval.spell.min_crit_if_hit), 
+                                                      math.ceil(eval.spell.max_crit_if_hit)),
                                        252.0/255, 69.0/255, 3.0/255);
                     end
 
@@ -4244,75 +4103,75 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         end
 
 
-        if eval.spell_data.ot_if_hit ~= 0 and sw_frame.settings_frame.tooltip_normal_ot:GetChecked() then
+        if eval.spell.ot_if_hit ~= 0 and sw_frame.settings_frame.tooltip_normal_ot:GetChecked() then
 
             -- round over time num for niceyness
-            local ot = tonumber(string.format("%.0f", eval.spell_data.ot_if_hit));
+            local ot = tonumber(string.format("%.0f", eval.spell.ot_if_hit));
 
             if stats.hit ~= 1 then
-                if spell_name == localized_spell_name("Curse of Agony") then
+                if spell.base_id == spell_name_to_id["Curse of Agony"] then
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %.1f sec (%.0f-%.0f-%.0f per tick for %d ticks)",
                                                   effect,
                                                   stats.hit * 100,
-                                                  eval.spell_data.ot_if_hit, 
-                                                  eval.spell_data.ot_duration, 
-                                                  eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * 0.6,
-                                                  eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks,
-                                                  eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * 1.4,
-                                                  eval.spell_data.ot_num_ticks), 
+                                                  eval.spell.ot_if_hit, 
+                                                  eval.spell.ot_duration, 
+                                                  eval.spell.ot_if_hit/eval.spell.ot_ticks * 0.6,
+                                                  eval.spell.ot_if_hit/eval.spell.ot_ticks,
+                                                  eval.spell.ot_if_hit/eval.spell.ot_ticks * 1.4,
+                                                  eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 else
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %.1f sec (%d-%d per tick for %d ticks)",
                                                   effect,
                                                   stats.hit * 100,
-                                                  eval.spell_data.ot_if_hit, 
-                                                  eval.spell_data.ot_duration, 
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                                  math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                                  eval.spell_data.ot_num_ticks), 
+                                                  eval.spell.ot_if_hit, 
+                                                  eval.spell.ot_duration, 
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks),
+                                                  math.ceil(eval.spell.ot_if_hit/eval.spell.ot_ticks),
+                                                  eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 end
                 
 
             else
                 -- wild growth
-                if spell_name == localized_spell_name("Wild Growth") then
+                if spell.base_id == spell_name_to_id["Wild Growth"] then
                     tooltip:AddLine(string.format("%s: %d over %d sec (%d, %d, %d, %d, %d, %d, %d ticks)",
                                                   effect,
-                                                  eval.spell_data.ot_if_hit, 
-                                                  eval.spell_data.ot_duration, 
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 *  3) + 0.5),
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 *  2) + 0.5),
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 *  1) + 0.5),
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 *  0) + 0.5),
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 * -1) + 0.5),
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 * -2) + 0.5),
-                                                  math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks * (1.0 + 0.09245475363 * -3) + 0.5)
+                                                  eval.spell.ot_if_hit, 
+                                                  eval.spell.ot_duration, 
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  3) + 0.5),
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  2) + 0.5),
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  1) + 0.5),
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  0) + 0.5),
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -1) + 0.5),
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -2) + 0.5),
+                                                  math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -3) + 0.5)
                                                   ), 
                                     232.0/255, 225.0/255, 32.0/255);
                 else
                      tooltip:AddLine(string.format("%s: %d over %.1f sec (%d-%d per tick for %d ticks)",
                                                    effect,
-                                                   eval.spell_data.ot_if_hit, 
-                                                   eval.spell_data.ot_duration, 
-                                                   math.floor(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                                   math.ceil(eval.spell_data.ot_if_hit/eval.spell_data.ot_num_ticks),
-                                                   eval.spell_data.ot_num_ticks), 
+                                                   eval.spell.ot_if_hit, 
+                                                   eval.spell.ot_duration, 
+                                                   math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks),
+                                                   math.ceil(eval.spell.ot_if_hit/eval.spell.ot_ticks),
+                                                   eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 end
             end
 
-            if eval.spell_data.ot_crit_if_hit ~= 0.0 and 
+            if eval.spell.ot_if_crit ~= 0.0 and 
                sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
                 -- over time can crit (e.g. arcane missiles)
                 tooltip:AddLine(string.format("Critical %s (%.2f%% crit): %d over %d sec (%d-%d per tick for %d ticks)",
                                               effect,
                                               stats.crit*100, 
-                                              eval.spell_data.ot_crit_if_hit, 
-                                              eval.spell_data.ot_duration, 
-                                              math.floor(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
-                                              math.ceil(eval.spell_data.ot_crit_if_hit/eval.spell_data.ot_num_ticks),
-                                              eval.spell_data.ot_num_ticks), 
+                                              eval.spell.ot_if_crit, 
+                                              eval.spell.ot_duration, 
+                                              math.floor(eval.spell.ot_if_crit/eval.spell.ot_ticks),
+                                              math.ceil(eval.spell.ot_if_crit/eval.spell.ot_ticks),
+                                              eval.spell.ot_ticks), 
                            252.0/255, 69.0/255, 3.0/255);
                     
             end
@@ -4326,53 +4185,53 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
         if stats.target_resi > 0 then
             tooltip:AddLine(string.format("Target resi: %d with average %.2f%% resists",
                                           stats.target_resi,
-                                          eval.spell_data.target_avg_resi * 100
+                                          eval.spell.target_avg_resi * 100
                                           ), 
                           232.0/255, 225.0/255, 32.0/255);
         end
 
         local effect_extra_str = "";
         if loadout.ignite ~= 0 then
-            if spell_name == localized_spell_name("Fireball") then
+            if spell.base_id == spell_name_to_id["Fireball"] then
                 effect_extra_str = " (ignite)";
-            elseif spell_name == localized_spell_name("Pyroblast") then
+            elseif spell.base_id == spell_name_to_id["Pyroblast"] then
                 effect_extra_str = " (ignite & pyro dot)";
             else
                 effect_extra_str = " (ignite)";
             end
         else
-            if spell_name == localized_spell_name("Fireball") then
+            if spell.base_id == spell_name_to_id["Fireball"] then
                 effect_extra_str = " (excl: fireball dot)";
-            elseif spell_name == localized_spell_name("Pyroblast") then
+            elseif spell.base_id == spell_name_to_id["Pyroblast"] then
                 effect_extra_str = " (pyro dot)";
             end
         end
-        if loadout.improved_shadowbolt ~= 0 and spell_name == localized_spell_name("Shadow Bolt") then
+        if loadout.improved_shadowbolt ~= 0 and spell.base_id == spell_name_to_id["Shadow Bolt"] then
             effect_extra_str = string.format(" (incl: %.1f%% improved shadow bolt uptime)", 
                                              100*(1 - math.pow(1-stats.crit, 4)));
         end
-        if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell_data.cast_time > 1.5 then
+        if loadout.natures_grace and loadout.natures_grace ~= 0 and eval.spell.cast_time > 1.5 then
             effect_extra_str = " (nature's grace)";
         end
 
-        if spell_name == localized_spell_name("Prayer of Healing") or 
-           spell_name == localized_spell_name("Chain Heal") or 
-           spell_name == localized_spell_name("Chain Heal") or 
-           spell_name == localized_spell_name("Tranquility") then
+        if spell.base_id == spell_name_to_id["Prayer of Healing"] or 
+           spell.base_id == spell_name_to_id["Chain Heal"] or 
+           spell.base_id == spell_name_to_id["Chain Heal"] or 
+           spell.base_id == spell_name_to_id["Tranquility"] then
 
             effect_extra_str = "";
         elseif bit.band(spell.flags, spell_flags.aoe) ~= 0 and 
-                eval.spell_data.expectation == eval.spell_data.expectation_st then
+                eval.spell.expectation == eval.spell.expectation_st then
             effect_extra_str = "(single effect)";
         end
 
 
-        tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell_data.expectation)..effect_extra_str,
+        tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell.expectation)..effect_extra_str,
                         255.0/256, 128.0/256, 0);
 
-        if eval.spell_data.base_min ~= 0.0 and eval.spell_data.expectation ~=  eval.spell_data.expectation_st then
+        if eval.spell.base_min ~= 0.0 and eval.spell.expectation ~=  eval.spell.expectation_st then
 
-          tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell_data.expectation_st).." (incl: single effect)",
+          tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell.expectation_st).." (incl: single effect)",
                           255.0/256, 128.0/256, 0);
         end
       end
@@ -4381,14 +4240,14 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
       if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
         tooltip:AddLine(string.format("%s: %.1f", 
                                       effect_per_sec,
-                                      eval.spell_data.effect_per_sec),
+                                      eval.spell.effect_per_sec),
                         255.0/256, 128.0/256, 0);
       end
       if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
-        tooltip:AddLine(effect_per_cost..": "..string.format("%.1f",eval.spell_data.effect_per_cost), 0.0, 1.0, 1.0);
+        tooltip:AddLine(effect_per_cost..": "..string.format("%.1f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
       end
       if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
-        tooltip:AddLine(cost_per_sec.." burn: "..string.format("%.1f",eval.spell_data.cost_per_sec), 0.0, 1.0, 1.0);
+        tooltip:AddLine(cost_per_sec.." burn: "..string.format("%.1f",eval.spell.cost_per_sec), 0.0, 1.0, 1.0);
         tooltip:AddLine(cost_per_sec.." gain: "..string.format("%.1f",cast_til_oom.normal.mp1), 0.0, 1.0, 1.0);
       end
 
@@ -4406,9 +4265,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           bit.band(spell.flags, spell_flags.cd) == 0 then
         tooltip:AddLine("Scenario: Cast until OOM", 1, 1, 1);
 
-        tooltip:AddLine("Time until OOM "..string.format("%.1f sec",cast_til_oom.normal.time_until_oom));
-        tooltip:AddLine(effect.." until OOM: "..string.format("%.1f",cast_til_oom.normal.effect));
-        tooltip:AddLine("Casts until OOM: "..string.format("%.1f",cast_til_oom.normal.num_casts));
+        tooltip:AddLine(string.format("%s until OOM : %.1f (%.1f casts, %.1f sec)", effect, cast_til_oom.normal.effect_until_oom, cast_til_oom.normal.num_casts_until_oom, cast_til_oom.normal.time_until_oom));
         --tooltip:AddLine("Effect per 1 sp: "..string.format("%.3f",cast_til_oom.effect_per_1_sp), 0.0, 1.0, 0.0);
         --tooltip:AddLine("Spell power per 1% crit: "..string.format("%.2f",cast_til_oom.sp_per_crit), 0.0, 1.0, 0.0);
         --if cast_til_oom.sp_per_hit ~= 0 then
@@ -4430,10 +4287,10 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
       end
       if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
 
-          tooltip:AddLine(string.format("Average cast time: %.3f sec", eval.spell_data.cast_time), 232.0/255, 225.0/255, 32.0/255);
+          tooltip:AddLine(string.format("Average cast time: %.3f sec", eval.spell.cast_time), 232.0/255, 225.0/255, 32.0/255);
       end
       if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
-          tooltip:AddLine(string.format("Average cost: %.1f",eval.spell_data.cost), 232.0/255, 225.0/255, 32.0/255);
+          tooltip:AddLine(string.format("Average cost: %.1f",eval.spell.cost), 232.0/255, 225.0/255, 32.0/255);
       end
 
       -- debug tooltip stuff
@@ -4441,20 +4298,18 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
           tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
           tooltip:AddLine("Base "..effect..": "..spell.over_time);
           tooltip:AddLine(
-            string.format("Stats: sp %d, crit %.4f, crit_mod %.4f, hit %.4f, vuln_mod %.4f, gmod %.4f, mod %.4f, ot_mod %.4f, flat add %.4f, cost %f, cast %f, coef %f, %f",
+            string.format("Stats: sp %d, crit %.4f, crit_mod %.4f, hit %.4f, mod %.4f, ot_mod %.4f, flat add %.4f, cost %f, cast %f, coef %f, %f",
                           stats.spell_power,
                           stats.crit,
-                          stats.spell_crit_mod,
+                          stats.crit_mod,
                           stats.hit,
-                          stats.target_vuln_mod,
-                          stats.global_mod,
                           stats.spell_mod,
                           stats.spell_ot_mod,
-                          stats.flat_direct_addition,
-                          eval.spell_data.cost,
-                          eval.spell_data.cast_time,
-                          stats.direct_coef,
-                          stats.over_time_coef
+                          stats.flat_addition,
+                          stats.cost,
+                          stats.cast_time,
+                          stats.coef,
+                          stats.ot_coef
 
             
           ));
@@ -4465,7 +4320,7 @@ local function tooltip_spell_info(tooltip, spell, spell_name, loadout)
 
       if spell.healing_version then
           -- used for holy nova
-          tooltip_spell_info(tooltip, spell.healing_version, spell_name, loadout);
+          tooltip_spell_info(tooltip, spell.healing_version, loadout);
       end
     end
 end
@@ -4474,8 +4329,9 @@ local function print_spell(spell, spell_name, loadout)
 
     if spell then
 
-        local stats = loadout_stats_for_spell(spell, spell_name, loadout); 
-        local eval = evaluate_spell(stats, spell, spell_name, loadout);
+        local stats = {};
+        stats_for_spell(stats, spell, loadout); 
+        local eval = evaluate_spell(spell, stats, loadout);
         
         print(string.format("Base spell: min %d, max %d, ot %d, ot_freq %d, ot_dur %d, cast %.3f, rank %d, lvl_req %d, flags %d, school %d, direct coef %.3f, ot coef %.3f, cost: %d", 
                             spell.base_min,
@@ -4493,16 +4349,16 @@ local function print_spell(spell, spell_name, loadout)
                             spell.cost_base_percent
                             ));
 
-        print(string.format("Spell noncrit: min %d, max %d", eval.spell_data.min_noncrit, eval.spell_data.max_noncrit));
-        print(string.format("Spell crit: min %d, max %d", eval.spell_data.min_crit, eval.spell_data.max_crit));
+        print(string.format("Spell noncrit: min %d, max %d", eval.spell.min_noncrit_if_hit, eval.spell.max_noncrit_if_hit));
+        print(string.format("Spell crit: min %d, max %d", eval.spell.min_crit_if_hit, eval.spell.max_crit_if_hit));
                             
 
         print("Spell evaluation");
-        print(string.format("ot if hit: %.3f", eval.spell_data.ot_if_hit));
+        print(string.format("ot if hit: %.3f", eval.spell.ot_if_hit));
         print(string.format("including hit/miss - expectation: %.3f, effect_per_sec: %.3f, effect per cost:%.3f, effect_per_sec_per_sp : %.3f, sp_per_crit: %.3f, sp_per_hit: %.3f", 
-                            eval.spell_data.expectation, 
-                            eval.spell_data.effect_per_sec, 
-                            eval.spell_data.effect_per_cost, 
+                            eval.spell.expectation, 
+                            eval.spell.effect_per_sec, 
+                            eval.spell.effect_per_cost, 
                             eval.effect_per_sec_per_sp, 
                             eval.sp_per_crit, 
                             eval.sp_per_hit
@@ -4511,14 +4367,14 @@ local function print_spell(spell, spell_name, loadout)
     end
 end
 
---local function diff_spell(spell_data, spell_name, loadout1, loadout2)
+--local function diff_spell(spell, spell_name, loadout1, loadout2)
 --
 
---    lhs = evaluate_spell(spell_data, spell_name, loadout1);
---    rhs = evaluate_spell(spell_data, spell_name, loadout2);
+--    lhs = evaluate_spell(spell, spell_name, loadout1);
+--    rhs = evaluate_spell(spell, spell_name, loadout2);
 --    return {
---        expectation = rhs.spell_data.expectation - lhs.spell_data.expectation,
---        effect_per_sec = rhs.spell_data.effect_per_sec - lhs.spell_data.effect_per_sec
+--        expectation = rhs.spell.expectation - lhs.spell.expectation,
+--        effect_per_sec = rhs.spell.effect_per_sec - lhs.spell.effect_per_sec
 --    };
 --end
 
@@ -4587,12 +4443,16 @@ local function create_loadout_from_ui_diff(frame)
     return loadout;
 end
 
-local function spell_diff(spell_data, spell_name, loadout, diff, sim_type)
+local function spell_diff(spell, loadout, diff, sim_type)
 
     local loadout_diffed = loadout_add(loadout, diff);
 
-    local expectation_loadout = spell_info_from_loadout_stats(spell_data, spell_name, loadout);
-    local expectation_loadout_diffed = spell_info_from_loadout_stats(spell_data, spell_name, loadout_diffed);
+    local stats = {};
+    local stats_diff = {};
+    local expectation_loadout = {};
+    spell_info_from_stats(expectation_loadout, stats, spell, loadout);
+    local expectation_loadout_diffed = {};
+    spell_info_from_stats(expectation_loadout_diffed, stats_diff, spell, loadout_diffed);
 
     if sim_type == simulation_type.spam_cast then
         return {
@@ -4605,14 +4465,16 @@ local function spell_diff(spell_data, spell_name, loadout, diff, sim_type)
         };
     elseif sim_type == simulation_type.cast_until_oom then
         
-        local race_for_loadout = cast_until_oom_sim_default(expectation_loadout, loadout);
-        local race_for_loadout_diffed = cast_until_oom_sim_default(expectation_loadout_diffed, loadout_diffed);
+        local race_for_loadout = {};
+        cast_until_oom_sim_default(race_for_loadout, expectation_loadout, loadout);
+        local race_for_loadout_diffed = {};
+        cast_until_oom_sim_default(race_for_loadout_diffed, expectation_loadout_diffed, loadout_diffed);
         -- Misleading! effect_per_sec used here to use previous code but doesnt mean efect_per_sec here
         return {
             diff_ratio = 100 * 
-                (race_for_loadout_diffed.effect/race_for_loadout.effect - 1),
-            expectation = race_for_loadout_diffed.effect - 
-                race_for_loadout.effect,
+                (race_for_loadout_diffed.effect_until_oom/race_for_loadout.effect_until_oom - 1),
+            expectation = race_for_loadout_diffed.effect_until_oom - 
+                race_for_loadout.effect_until_oom,
             effect_per_sec = race_for_loadout_diffed.time_until_oom - 
                 race_for_loadout.time_until_oom
         };
@@ -4641,44 +4503,32 @@ end
 
 local function active_loadout_talented_copy()
 
-    return apply_talents_glyphs(active_loadout_copy());
+    local loadout = active_loadout_copy();
+    apply_talents_glyphs(loadout);
+    return loadout;
 end
 
 local function active_loadout_buffed_talented_copy()
 
-    return apply_buffs(apply_talents_glyphs(active_loadout_copy()));
+    local loadout = active_loadout_copy();
+    apply_talents_glyphs(loadout);
+    apply_buffs(loadout);
+    return loadout;
 end
-
 
 -- non local functions intended to be usable by other addons
 function __sw__spell_info_from_loadout(spell_id, loadout)
 
-    local spell_data = spells[spell_id];
+    local spell = spells[spell_id];
 
-    if not spell_data or not loadout then
+    if not spell or not loadout then
         return nil;
     end
 
-    local spell_name = GetSpellInfo(spell_id);
+    local stats = stats_for_spell(spell, loadout);
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
+    local info = spell_info(spell, stats, loadout);
 
-    local info = spell_info(
-       spell_data, 
-       stats.extra_ticks,
-       stats.cast_speed,
-       stats.spell_power,
-       stats.flat_direct_addition,
-       math.max(0, min(1, stats.crit)),
-       math.max(0, min(1, stats.ot_crit)),
-       stats.spell_crit_mod,
-       stats.hit,
-       math.max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-       stats.direct_coef, stats.over_time_coef,
-       stats.cost,
-       spell_name, loadout
-    );
     return {
         stats = stats,
         info = info
@@ -4691,17 +4541,15 @@ end
 
 function __sw__spell_evaluation_from_loadout(spell_id, loadout)
 
-    local spell_data = spells[spell_id];
+    local spell = spells[spell_id];
 
-    if not spell_data or not loadout then
+    if not spell or not loadout then
         return nil;
     end
 
-    local spell_name = GetSpellInfo(spell_id);
+    local stats = stats_for_spell(spell, loadout);
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
-
-    local eval = evaluate_spell(stats, spell_data, spell_name, loadout);
+    local eval = evaluate_spell(spell, stats, loadout);
     return {
         stats = stats,
         eval = eval
@@ -4714,28 +4562,24 @@ end
 
 function __sw__spell_cast_til_oom_evaluation_from_loadout(spell_id, loadout)
 
-    local spell_data = spells[spell_id];
+    local spell = spells[spell_id];
 
-    if not spell_data or not loadout then
+    if not spell or not loadout then
         return nil;
     end
 
-    local spell_name = GetSpellInfo(spell_id);
+    local stats = stats_for_spell(spell, loadout);
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout);
-
-    local eval = evaluate_spell(stats, spell_data, spell_name, loadout);
+    local eval = evaluate_spell(spell, stats, loadout);
 
     local rtb = cast_until_oom_stat_weights(
+        spell,
         stats,
-        spell_data,
-        spell_name,
-        eval.spell_data, 
-        eval.spell_data_1_sp,
-        eval.spell_data_1_crit,
-        eval.spell_data_1_hit,
-        eval.spell_data_1_haste,
-        eval.spell_data_1_target_resi, 
+        eval.spell, 
+        eval.spell_1_sp,
+        eval.spell_1_crit,
+        eval.spell_1_hit,
+        eval.spell_1_haste,
         loadout
     );
 
@@ -4751,9 +4595,9 @@ end
 
 local update_and_display_spell_diffs = nil;
 
-local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell, sim_type)
+local function display_spell_diff(spell_id, spell, spell_diff_line, loadout, loadout_diff, frame, is_duality_spell, sim_type)
 
-    local diff = spell_diff(spell_data, spell_diff_line.name, loadout, loadout_diff, sim_type);
+    local diff = spell_diff(spell, loadout, loadout_diff, sim_type);
 
     local v = nil;
     if is_duality_spell then
@@ -4782,21 +4626,21 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
         v.effect_per_sec:SetFontObject(font);
     
 
-        if not spell_data.healing_version then
+        if not spell.healing_version then
             v.cancel_button = CreateFrame("Button", "button", frame, "UIPanelButtonTemplate"); 
         end
     end
     
     v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
     if is_duality_spell and 
-        bit.band(spell_data.flags, spell_flags.heal) ~= 0 then
+        bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
-        v.name_str:SetText(v.name.." H (Rank "..spell_data.rank..")");
-    elseif v.name == localized_spell_name("Holy Nova") or v.name == localized_spell_name("Holy Shock") then
+        v.name_str:SetText(v.name.." H (Rank "..spell.rank..")");
+    elseif v.name == spell_name_to_id["Holy Nova"] or v.name == spell_name_to_id["Holy Shock"] then
 
-        v.name_str:SetText(v.name.." D (Rank "..spell_data.rank..")");
+        v.name_str:SetText(v.name.." D (Rank "..spell.rank..")");
     else
-        v.name_str:SetText(v.name.." (Rank "..spell_data.rank..")");
+        v.name_str:SetText(v.name.." (Rank "..spell.rank..")");
     end
 
     v.name_str:SetTextColor(222/255, 192/255, 40/255);
@@ -4855,7 +4699,7 @@ local function display_spell_diff(spell_id, spell_data, spell_diff_line, loadout
         end
             
 
-        if not spell_data.healing_version then
+        if not spell.healing_version then
             v.cancel_button:SetScript("OnClick", function()
     
                 v.change:Hide();
@@ -5231,7 +5075,7 @@ local function default_sw_settings()
                 tooltip_stat_display.stat_weights,
                 tooltip_stat_display.cast_until_oom);
 
-    settings.icon_overlay_update_freq = 10;
+    settings.icon_overlay_update_freq = 3;
     settings.icon_overlay_font_size = 8;
     settings.show_tooltip_only_when_shift = false;
     settings.libstub_minimap_icon = { hide = false };
@@ -5480,8 +5324,8 @@ local function create_sw_gui_settings_frame()
             sw_snapshot_loadout_update_freq = tonumber(hz);
             
         else
-            self:SetText("10"); 
-            sw_snapshot_loadout_update_freq = 10;
+            self:SetText("3"); 
+            sw_snapshot_loadout_update_freq = 3;
         end
 
     	self:ClearFocus();
@@ -6009,61 +5853,61 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
 
     -- TODO: wotlk stuff
-    if UnitLevel("player") == 60 then
+    --if UnitLevel("player") == 60 then
 
-        if class == "MAGE" then
-            sw_frame.stat_comparison_frame.spells[25304] = {
-                name = localized_spell_name("Frostbolt")
-            };
-            sw_frame.stat_comparison_frame.spells[25306] = {
-                name = localized_spell_name("Fireball")
-            };
-        elseif class == "DRUID" then
+    --    if class == "MAGE" then
+    --        sw_frame.stat_comparison_frame.spells[25304] = {
+    --            name = localized_spell_name("Frostbolt")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[25306] = {
+    --            name = localized_spell_name("Fireball")
+    --        };
+    --    elseif class == "DRUID" then
 
-            sw_frame.stat_comparison_frame.spells[25297] = {
-                name = localized_spell_name("Healing Touch")
-            };
-            sw_frame.stat_comparison_frame.spells[25298] = {
-                name = localized_spell_name("Starfire")
-            };
+    --        sw_frame.stat_comparison_frame.spells[25297] = {
+    --            name = localized_spell_name("Healing Touch")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[25298] = {
+    --            name = localized_spell_name("Starfire")
+    --        };
 
-        elseif class == "PALADIN" then
+    --    elseif class == "PALADIN" then
 
-            sw_frame.stat_comparison_frame.spells[19943] = {
-                name = localized_spell_name("Flash of Light")
-            };
-            sw_frame.stat_comparison_frame.spells[25292] = {
-                name = localized_spell_name("Holy Light")
-            };
-        elseif class == "SHAMAN" then
+    --        sw_frame.stat_comparison_frame.spells[19943] = {
+    --            name = localized_spell_name("Flash of Light")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[25292] = {
+    --            name = localized_spell_name("Holy Light")
+    --        };
+    --    elseif class == "SHAMAN" then
 
-            sw_frame.stat_comparison_frame.spells[25357] = {
-                name = localized_spell_name("Healing Wave")
-            };
-            sw_frame.stat_comparison_frame.spells[15208] = {
-                name = localized_spell_name("Lightning Bolt")
-            };
-        elseif class == "PRIEST" then
+    --        sw_frame.stat_comparison_frame.spells[25357] = {
+    --            name = localized_spell_name("Healing Wave")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[15208] = {
+    --            name = localized_spell_name("Lightning Bolt")
+    --        };
+    --    elseif class == "PRIEST" then
 
-            sw_frame.stat_comparison_frame.spells[25314] = {
-                name = localized_spell_name("Greater Heal")
-            };
-            sw_frame.stat_comparison_frame.spells[25315] = {
-                name = localized_spell_name("Renew")
-            };
-        elseif class == "WARLOCK" then
+    --        sw_frame.stat_comparison_frame.spells[25314] = {
+    --            name = localized_spell_name("Greater Heal")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[25315] = {
+    --            name = localized_spell_name("Renew")
+    --        };
+    --    elseif class == "WARLOCK" then
 
-            sw_frame.stat_comparison_frame.spells[25307] = {
-                name = localized_spell_name("Shadow Bolt")
-            };
-            sw_frame.stat_comparison_frame.spells[25311] = {
-                name = localized_spell_name("Corruption")
-            };
-            sw_frame.stat_comparison_frame.spells[11713] = {
-                name = localized_spell_name("Curse of Agony")
-            };
-        end
-    end
+    --        sw_frame.stat_comparison_frame.spells[25307] = {
+    --            name = localized_spell_name("Shadow Bolt")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[25311] = {
+    --            name = localized_spell_name("Corruption")
+    --        };
+    --        sw_frame.stat_comparison_frame.spells[11713] = {
+    --            name = localized_spell_name("Curse of Agony")
+    --        };
+    --    end
+    --end
 
 end
 
@@ -7024,8 +6868,10 @@ local function create_sw_base_gui()
     -- TODO: Reorganize this into a table switch
     sw_frame:RegisterEvent("ADDON_LOADED");
     sw_frame:RegisterEvent("PLAYER_LOGIN");
+
     sw_frame:RegisterEvent("PLAYER_LOGOUT");
     sw_frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED");
+    sw_frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
     --sw_frame:RegisterEvent("UPDATE_BONUS_ACTIONBAR");
     --sw_frame:RegisterEvent("ACTIONBAR_UPDATE_STATE");
     sw_frame:RegisterEvent("UPDATE_STEALTH");
@@ -7188,6 +7034,10 @@ local function create_sw_base_gui()
 
             sw_addon_loaded = true;
 
+        elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
+            __sw__icon_frames = gather_spell_icons();
+            update_icon_overlay_settings();
+
         elseif event ==  "ACTIONBAR_SLOT_CHANGED"  then
 
             if not sw_addon_loaded then
@@ -7302,9 +7152,9 @@ if class_is_supported then
     
         local spell = get_spell(spell_id);
 
-        local loadout = active_loadout_buffed_talented_copy();
+        local loadout = active_loadout_buffed_talented_copy()
     
-        tooltip_spell_info(GameTooltip, spell, spell_name, loadout);
+        tooltip_spell_info(GameTooltip, spell, loadout);
     
         if spell and IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
                 not sw_frame.stat_comparison_frame.spells[spell_id]then
@@ -7439,12 +7289,12 @@ function update_icon_overlay_settings()
     end
 end
 
-local function update_spell_icon_frame(frame_info, spell_data, spell_name, loadout)
+local function update_spell_icon_frame(frame_info, spell, spell_id, loadout)
 
-    if not spell_data.lvl_max then
-        print(spell_name, spell_data.rank);
+    if not spell.lvl_max then
+        print(spell.base_id, spell.rank);
     end
-    if loadout.lvl > spell_data.lvl_max and not __sw__debug__ then
+    if loadout.lvl > spell.lvl_max and not __sw__debug__ then
         -- low spell rank
 
         for i = 1, 3 do
@@ -7471,55 +7321,58 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
         return;
     end
 
-    local stats = loadout_stats_for_spell(spell_data, spell_name, loadout); 
+    if not spell_cache[spell_id] then
+        spell_cache[spell_id] = {};
+        spell_cache[spell_id].dmg = {};
+        spell_cache[spell_id].heal = {};
+    end
+    local spell_variant = spell_cache[spell_id].dmg;
+    if bit.band(spell.flags, spell_flags.heal) then
+        spell_variant = spell_cache[spell_id].heal;
+    end
+    if not spell_variant.seq then
 
-    local spell_effect = spell_info(
-       spell_data,
-       stats.extra_ticks,
-       stats.cast_speed,
-       stats.spell_power,
-       stats.flat_direct_addition,
-       max(0, min(1, stats.crit)),
-       max(0, min(1, stats.ot_crit)),
-       stats.spell_crit_mod,
-       stats.hit,
-       max(0, stats.target_resi),
-       stats.target_vuln_mod, stats.global_mod, stats.spell_mod, stats.spell_ot_mod,
-       stats.direct_coef, stats.over_time_coef,
-       stats.cost,
-       spell_name, loadout
-    );
+        spell_variant.seq = -1;
+        spell_variant.stats = {};
+        spell_variant.spell_effect = {};
+    end
+    local spell_effect = spell_variant.spell_effect;
+    local stats = spell_variant.stats;
+    if spell_cache[spell_id].seq ~= sequence_counter then
 
-    local cast_until_oom = cast_until_oom_sim(
-        spell_effect, loadout.mp5, loadout.stats[stat.spirit], loadout.stats[stat.int], loadout.mana + loadout.extra_mana, loadout
-    );
+        spell_cache[spell_id].seq = sequence_counter;
+        stats_for_spell(stats, spell, loadout);
+        spell_info(spell_effect, spell, stats, loadout);
+        cast_until_oom_sim(spell_effect, stats, loadout);
+    end
 
     for i = 1, 3 do
         
         if sw_frame.settings_frame.icon_overlay[i] then
             if not frame_info.overlay_frames[i] then
                 frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
-            end
-            frame_info.overlay_frames[i]:SetFont(
-                icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
 
-            if i == 1 then
-                frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
-            elseif i == 2 then
-                frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
-            elseif i == 3 then 
-                frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
+                frame_info.overlay_frames[i]:SetFont(
+                    icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+
+                if i == 1 then
+                    frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
+                elseif i == 2 then
+                    frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
+                elseif i == 3 then 
+                    frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
+                end
             end
             if sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.normal then
                 frame_info.overlay_frames[i]:SetText(string.format("%d",
-                    (spell_effect.min_noncrit + spell_effect.max_noncrit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
+                    (spell_effect.min_noncrit_if_hit + spell_effect.max_noncrit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit  then
-                if spell_effect.ot_crit_if_hit > 0  then
+                if spell_effect.ot_if_crit > 0  then
                     frame_info.overlay_frames[i]:SetText(string.format("%d",
-                        (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_crit_if_hit + spell_effect.absorb));
-                elseif spell_effect.min_crit ~= 0.0 then
+                        (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_crit + spell_effect.absorb));
+                elseif spell_effect.min_crit_if_hit ~= 0.0 then
                     frame_info.overlay_frames[i]:SetText(string.format("%d", 
-                        (spell_effect.min_crit + spell_effect.max_crit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
+                        (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
                 else
                     frame_info.overlay_frames[i]:SetText("");
                 end
@@ -7530,9 +7383,9 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_cost then
                 frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.effect_per_cost));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cost then
-                frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.cost));
+                frame_info.overlay_frames[i]:SetText(string.format("%d", stats.cost));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
-                frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.cast_time));
+                frame_info.overlay_frames[i]:SetText(string.format("%.2f", stats.cast_time));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit and 
                     stats.hit < 1 then
 
@@ -7543,11 +7396,11 @@ local function update_spell_icon_frame(frame_info, spell_data, spell_name, loado
                 frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
                 ---
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.casts_until_oom then
-                frame_info.overlay_frames[i]:SetText(string.format("%.1f", cast_until_oom.num_casts));
+                frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_until_oom then
-                frame_info.overlay_frames[i]:SetText(string.format("%.0f", cast_until_oom.effect));
+                frame_info.overlay_frames[i]:SetText(string.format("%.0f", spell_effect.effect_until_oom));
             elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.time_until_oom then
-                frame_info.overlay_frames[i]:SetText(string.format("%.1fs", cast_until_oom.time_until_oom));
+                frame_info.overlay_frames[i]:SetText(string.format("%.1fs", spell_effect.time_until_oom));
             end
             frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
                                                       sw_frame.settings_frame.icon_overlay[i].color[2], 
@@ -7575,9 +7428,9 @@ local function update_spell_icons(loadout)
                         local spell_name = GetSpellInfo(id);
                         -- TODO: icon overlay not working for healing version checkbox
                         if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                            update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
+                            update_spell_icon_frame(v, spells[id].healing_version, id, loadout);
                         else
-                            update_spell_icon_frame(v, spells[id], spell_name, loadout);
+                            update_spell_icon_frame(v, spells[id], id, loadout);
                         end
                     else
                         for i = 1, 3 do
@@ -7603,14 +7456,12 @@ local function update_spell_icons(loadout)
         if v.frame and v.frame:IsShown() then
 
             local id = v.spell_id;
-            local spell_name = GetSpellInfo(id);
 
             if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                update_spell_icon_frame(v, spells[id].healing_version, spell_name, loadout);
+                update_spell_icon_frame(v, spells[id].healing_version, id, loadout);
             else
-                update_spell_icon_frame(v, spells[id], spell_name, loadout);
+                update_spell_icon_frame(v, spells[id], id, loadout);
             end
-
         else
             for i = 1, 3 do
                 if v.overlay_frames[i] then
@@ -7634,6 +7485,7 @@ if class_is_supported then
 
             update_spell_icons(active_loadout_buffed_talented_copy());
 
+            sequence_counter = sequence_counter + 1;
             snapshot_time_since_last_update = 0;
         end
 
@@ -7727,8 +7579,10 @@ end
 SLASH_STAT_WEIGHTS1 = "/sw"
 SLASH_STAT_WEIGHTS2 = "/stat-weights"
 SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
+SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-__sw__debug__ = 1;
-__sw__use_defaults__ = 1;
+--__sw__debug__ = 1;
+--__sw__use_defaults__ = 1;
+--__sw__profile__ = 1;
