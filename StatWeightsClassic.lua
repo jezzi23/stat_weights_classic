@@ -29,7 +29,7 @@ local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
 
 local font = "GameFontHighlightSmall";
-local icon_overlay_font = "Interface\\AddOns\\stat_weights_classic\\fonts\\Oswald-Bold.ttf";
+local icon_overlay_font = "Interface\\AddOns\\StatWeightsClassic\\fonts\\Oswald-Bold.ttf";
 
 local action_bar_addon_name = nil;
 local spell_book_addon_name = nil;
@@ -6895,7 +6895,7 @@ local function create_sw_base_gui()
         if event == "UNIT_SPELLCAST_SUCCEEDED" and msg3 == 53563 then -- beacon
              beacon_snapshot_time = addon_running_time;
 
-        elseif event == "ADDON_LOADED" and msg == "stat_weights_classic" then
+        elseif event == "ADDON_LOADED" and msg == "StatWeightsClassic" then
 
             if not class_is_supported then
                 return;
@@ -7584,5 +7584,5 @@ SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
 --__sw__debug__ = 1;
---__sw__use_defaults__ = 1;
+__sw__use_defaults__ = 1;
 --__sw__profile__ = 1;
