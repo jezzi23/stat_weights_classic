@@ -93,6 +93,7 @@ local function spell_name_to_ids()
             ["Shadowfiend"]             = 34433,
             ["Desperate Prayer"]        = 19236,
             ["Shadowform"]              = 15473,
+            ["Divine Hymn"]             = 64843,
         };
     elseif class == "SHAMAN" then
         return {
@@ -162,12 +163,14 @@ local magic_school = {
 };
 
 local spell_flags = {
-    aoe = bit.lshift(1,1),
-    snare = bit.lshift(1,2),
-    heal = bit.lshift(1,3),
-    absorb = bit.lshift(1,4),
-    over_time_crit = bit.lshift(1,5),
-    cd = bit.lshift(1,6)
+    aoe              = bit.lshift(1,1),
+    snare            = bit.lshift(1,2),
+    heal             = bit.lshift(1,3),
+    absorb           = bit.lshift(1,4),
+    over_time_crit   = bit.lshift(1,5),
+    cd               = bit.lshift(1,6),
+    over_time_range  = bit.lshift(1,7),
+    channel_missable = bit.lshift(1,8), -- e.g. missing mid flay only loses you one gcd instead of the whole cast
 };
 
 
@@ -1723,7 +1726,7 @@ local function create_spells()
                 over_time           = 335*7,
                 rank                = 12,
                 lvl_req             = 77,
-                lvl_max             = 78,
+                lvl_max             = 80,
             },
             -- moonfire
             [8921] = {
@@ -3830,7 +3833,7 @@ local function create_spells()
                 lvl_req             = 20,
                 lvl_max             = 27,
                 cost_base_percent   = 0.09,
-                flags               = bit.bor(spell_flags.snare, spell_flags.over_time_crit),
+                flags               = bit.bor(spell_flags.snare, spell_flags.over_time_crit, spell_flags.channel_missable),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0.2570,
@@ -4031,9 +4034,10 @@ local function create_spells()
             },
             -- mind sear
             [48045] = {
-                base_min            = 5*183.0,
-                base_max            = 5*197.0, 
-                over_time           = 0.0,
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 5*183.0,
+                over_time_max       = 5*197.0,
                 over_time_tick_freq = 1,
                 over_time_duration  = 5.0,
                 cast_time           = 5.0,
@@ -4041,15 +4045,16 @@ local function create_spells()
                 lvl_req             = 75,
                 lvl_max             = 79,
                 cost_base_percent   = 0.28,
-                flags               = bit.bor(spell_flags.aoe, spell_flags.over_time_crit),
+                flags               = bit.bor(spell_flags.aoe, spell_flags.over_time_crit, spell_flags.over_time_range),
                 school              = magic_school.shadow,
                 coef                = 0.0,
-                over_time_coef      = 0.2857,
+                over_time_coef      = 0.266,
             },
             [53023] = {
-                base_min            = 5*212.0,
-                base_max            = 5*228.0, 
-                over_time           = 0.0,
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 5*212.0,
+                over_time_max       = 5*228.0,
                 rank                = 2,
                 lvl_req             = 80,
                 lvl_max             = 80,
@@ -4160,6 +4165,24 @@ local function create_spells()
                 rank                = 5,
                 lvl_req             = 80,
                 lvl_max             = 80,
+            },
+            -- divine hymn
+            [64843] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 4 * 3024,
+                over_time_max       = 4 * 3342,
+                over_time_tick_freq = 2.0,
+                over_time_duration  = 8.0,
+                cast_time           = 8.0,
+                rank                = 1,
+                lvl_req             = 80,
+                lvl_max             = 80,
+                cost_base_percent   = 0.63,
+                flags               = bit.bor(spell_flags.heal, spell_flags.aoe, spell_flags.over_time_crit, spell_flags.over_time_range),
+                school              = magic_school.holy,
+                coef                = 0.0,
+                over_time_coef      = 0.564,
             },
         }; 
     elseif class == "SHAMAN" then
@@ -6479,7 +6502,6 @@ for k, v in pairs(spells) do
     local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
     -- rank1 contains some general fields that we write to all ranks
     local rank1_of_spell = spell_name_to_id[name]
-    print(rank1_of_spell, k, name);
     local spell_data = spells[rank1_of_spell];
 
     v.over_time_tick_freq = spell_data.over_time_tick_freq;
@@ -6557,10 +6579,18 @@ elseif class == "SHAMAN" then
     spells[547].cast_time = 2.5;
 end
 
+local function spell_names_to_id(english_names)
+    local base_ids = {};
+    for k, v in pairs(english_names) do
+        base_ids[k] = spell_name_to_id[v];
+    end
+    return base_ids;
+end
 
 local addonName, addonTable = ...;
 addonTable.spells = spells;
 addonTable.spell_name_to_id = spell_name_to_id;
+addonTable.spell_names_to_id = spell_names_to_id;
 addonTable.magic_school = magic_school;
 addonTable.spell_flags = spell_flags;
 
