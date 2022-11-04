@@ -29,6 +29,7 @@ local faction                           = addonTable.faction;
 local ensure_exists_and_add             = addonTable.ensure_exists_and_add;
 local ensure_exists_and_mul             = addonTable.ensure_exists_and_mul;
 local deep_table_copy                   = addonTable.deep_table_copy;
+local stat                              = addonTable.stat;
 
 local spells                            = addonTable.spells;
 local spell_name_to_id                  = addonTable.spell_name_to_id;
@@ -79,20 +80,13 @@ local equipment_update_needed = true;
 
 local function class_supported()
     -- wotlk ready classes
-    return class == "PRIEST" or class == "DRUID" or class == "PALADIN";
+    return class == "PRIEST" or class == "DRUID" or class == "PALADIN" or class == "SHAMAN";
     
     --return class == "MAGE" or class == "PRIEST" or class == "WARLOCK" or
     --   class == "SHAMAN" or class == "DRUID" or class == "PALADIN";
 end
 local class_is_supported = class_supported();
 
-local stat = {
-    str = 1,
-    agi = 2,
-    stam = 3,
-    int = 4,
-    spirit = 5
-};
 
 local stat_ids_in_ui = {
     int = 1,
@@ -245,7 +239,8 @@ local function empty_effects(effects)
     effects.ability = {};
     effects.ability.crit = {};
     effects.ability.effect_mod = {};
-    effects.ability.cast_mod = {};
+    effects.ability.cast_mod = {}; -- flat before mul
+    effects.ability.cast_mod_mul = {}; -- after flat
     effects.ability.extra_ticks = {};
     effects.ability.cost_mod = {};
     effects.ability.crit_mod = {};
@@ -256,6 +251,7 @@ local function empty_effects(effects)
     effects.ability.coef_mod = {};
     effects.ability.coef_ot_mod = {};
     effects.ability.vuln_mod = {};
+    effects.ability.effect_ot_mod = {};
 
     -- DELETE
     effects.raw.ignite = 0;
@@ -507,6 +503,7 @@ end
 local function default_loadout(loadout)
 
     loadout.name = "Default";
+    loadout.is_dynamic_loadout = true;
 end
 
 local function loadout_prepare_buffs(loadout)
@@ -635,90 +632,90 @@ local function base_mana_pool()
     return base_mana;
 end
 
-local function mana_regen_per_5(int, spirit, level)
-    local lvl_to_base_regen = {
-        [1 ] = 0.034965,
-        [2 ] = 0.034191,
-        [3 ] = 0.033465,
-        [4 ] = 0.032526,
-        [5 ] = 0.031661,
-        [6 ] = 0.031076,
-        [7 ] = 0.030523,
-        [8 ] = 0.029994,
-        [9 ] = 0.029307,
-        [10] = 0.028661,
-        [11] = 0.027584,
-        [12] = 0.026215,
-        [13] = 0.025381,
-        [14] = 0.024300,
-        [15] = 0.023345,
-        [16] = 0.022748,
-        [17] = 0.021958,
-        [18] = 0.021386,
-        [19] = 0.020790,
-        [20] = 0.020121,
-        [21] = 0.019733,
-        [22] = 0.019155,
-        [23] = 0.018819,
-        [24] = 0.018316,
-        [25] = 0.017936,
-        [26] = 0.017576,
-        [27] = 0.017201,
-        [28] = 0.016919,
-        [29] = 0.016581,
-        [30] = 0.016233,
-        [31] = 0.015994,
-        [32] = 0.015707,
-        [33] = 0.015464,
-        [34] = 0.015204,
-        [35] = 0.014956,
-        [36] = 0.014744,
-        [37] = 0.014495,
-        [38] = 0.014302,
-        [39] = 0.014094,
-        [40] = 0.013895,
-        [41] = 0.013724,
-        [42] = 0.013522,
-        [43] = 0.013363,
-        [44] = 0.013175,
-        [45] = 0.012996,
-        [46] = 0.012853,
-        [47] = 0.012687,
-        [48] = 0.012539,
-        [49] = 0.012384,
-        [50] = 0.012233,
-        [51] = 0.012113,
-        [52] = 0.011973,
-        [53] = 0.011859,
-        [54] = 0.011714,
-        [55] = 0.011575,
-        [56] = 0.011473,
-        [57] = 0.011342,
-        [58] = 0.011245,
-        [59] = 0.011110,
-        [60] = 0.010999,
-        [61] = 0.010700,
-        [62] = 0.010522,
-        [63] = 0.010290,
-        [64] = 0.010119,
-        [65] = 0.009968,
-        [66] = 0.009808,
-        [67] = 0.009651,
-        [68] = 0.009553,
-        [69] = 0.009445,
-        [70] = 0.009327,
-        [71] = 0.008859,
-        [72] = 0.008415,
-        [73] = 0.007993,
-        [74] = 0.007592,
-        [75] = 0.007211,
-        [76] = 0.006849,
-        [77] = 0.006506,
-        [78] = 0.006179,
-        [79] = 0.005869,
-        [80] = 0.005575,
-    };
+local lvl_to_base_regen = {
+    [1 ] = 0.034965,
+    [2 ] = 0.034191,
+    [3 ] = 0.033465,
+    [4 ] = 0.032526,
+    [5 ] = 0.031661,
+    [6 ] = 0.031076,
+    [7 ] = 0.030523,
+    [8 ] = 0.029994,
+    [9 ] = 0.029307,
+    [10] = 0.028661,
+    [11] = 0.027584,
+    [12] = 0.026215,
+    [13] = 0.025381,
+    [14] = 0.024300,
+    [15] = 0.023345,
+    [16] = 0.022748,
+    [17] = 0.021958,
+    [18] = 0.021386,
+    [19] = 0.020790,
+    [20] = 0.020121,
+    [21] = 0.019733,
+    [22] = 0.019155,
+    [23] = 0.018819,
+    [24] = 0.018316,
+    [25] = 0.017936,
+    [26] = 0.017576,
+    [27] = 0.017201,
+    [28] = 0.016919,
+    [29] = 0.016581,
+    [30] = 0.016233,
+    [31] = 0.015994,
+    [32] = 0.015707,
+    [33] = 0.015464,
+    [34] = 0.015204,
+    [35] = 0.014956,
+    [36] = 0.014744,
+    [37] = 0.014495,
+    [38] = 0.014302,
+    [39] = 0.014094,
+    [40] = 0.013895,
+    [41] = 0.013724,
+    [42] = 0.013522,
+    [43] = 0.013363,
+    [44] = 0.013175,
+    [45] = 0.012996,
+    [46] = 0.012853,
+    [47] = 0.012687,
+    [48] = 0.012539,
+    [49] = 0.012384,
+    [50] = 0.012233,
+    [51] = 0.012113,
+    [52] = 0.011973,
+    [53] = 0.011859,
+    [54] = 0.011714,
+    [55] = 0.011575,
+    [56] = 0.011473,
+    [57] = 0.011342,
+    [58] = 0.011245,
+    [59] = 0.011110,
+    [60] = 0.010999,
+    [61] = 0.010700,
+    [62] = 0.010522,
+    [63] = 0.010290,
+    [64] = 0.010119,
+    [65] = 0.009968,
+    [66] = 0.009808,
+    [67] = 0.009651,
+    [68] = 0.009553,
+    [69] = 0.009445,
+    [70] = 0.009327,
+    [71] = 0.008859,
+    [72] = 0.008415,
+    [73] = 0.007993,
+    [74] = 0.007592,
+    [75] = 0.007211,
+    [76] = 0.006849,
+    [77] = 0.006506,
+    [78] = 0.006179,
+    [79] = 0.005869,
+    [80] = 0.005575,
+};
 
+local function mana_regen_per_5(int, spirit, level)
     local base_regen = lvl_to_base_regen[level];
     if not base_regen then
         base_regen = lvl_to_base_regen[80];
@@ -731,27 +728,27 @@ local special_abilities = nil;
 if class == "SHAMAN" then
     special_abilities = {
         [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
-            --if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-            --    expectation = (1 + 1.3*0.5 + 1.3*1.3*0.5*0.5) * expectation_st;
-            --else
-            info.expectation = (1 + 0.5 + 0.5*0.5) * info.expectation_st;
-            --end
+            info.expectation = (1 + 0.6 + 0.6*0.6) * info.expectation_st;
         end,
-        [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
-            --if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
-            --    info.expectation = (1 + 0.2 + 0.2*0.2) * info.expectation_st;
-            --end
+        [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
+            info.expectation = 6 * info.expectation_st;
         end,
         [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
             info.expectation = 3 * info.expectation_st;
         end,
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
-            --if loadout.num_set_pieces[set_tiers.aq20] >= 3 then
-            --    info.expectation = (1 + 0.75 + 0.75 * 0.75) * info.expectation_st;
-            --else
-            info.expectation = (1 + 0.7 + 0.7 * 0.7) * info.expectation_st;
-            --end
+            -- TODO glyph
+            info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
+
+            local pts = loadout.talents_table:pts(1, 20);
+            -- lightning overload
+            info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
         end,
+        [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout)
+            local pts = loadout.talents_table:pts(1, 20);
+            -- lightning overload
+            info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
+        end
     };
 elseif class == "PRIEST" then
     special_abilities = {
@@ -1063,24 +1060,35 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if not effects.ability.effect_mod[spell.base_id] then
         effects.ability.effect_mod[spell.base_id] = 0.0;
     end
-
-    -- regarding blessing of light effect
-    if effects.ability.flat_add[spell.base_id] and class == "PALADIN" then
-
-        local scaling_coef_by_lvl = 1;
-        if spell.lvl_req == 1 then -- rank 1 holy light
-            scaling_coef_by_lvl = 0.2;
-        elseif spell.lvl_req == 6 then -- rank 2 holy light
-            scaling_coef_by_lvl = 0.4;
-        elseif spell.lvl_req == 14 then -- rank 3 holy light
-            scaling_coef_by_lvl = 0.7;
-        end
-        
-        stats.flat_addition = 
-            stats.flat_addition + effects.ability.flat_add[spell.base_id] * scaling_coef_by_lvl;
+    if not effects.ability.effect_ot_mod[spell.base_id] then
+        effects.ability.effect_ot_mod[spell.base_id] = 0.0;
     end
 
+    ---- regarding blessing of light effect
+    --if effects.ability.flat_add[spell.base_id] and class == "PALADIN" then
+
+    --    local scaling_coef_by_lvl = 1;
+    --    if spell.lvl_req == 1 then -- rank 1 holy light
+    --        scaling_coef_by_lvl = 0.2;
+    --    elseif spell.lvl_req == 6 then -- rank 2 holy light
+    --        scaling_coef_by_lvl = 0.4;
+    --    elseif spell.lvl_req == 14 then -- rank 3 holy light
+    --        scaling_coef_by_lvl = 0.7;
+    --    end
+    --    
+    --    stats.flat_addition = 
+    --        stats.flat_addition + effects.ability.flat_add[spell.base_id] * scaling_coef_by_lvl;
+    --end
+
     stats.gcd = 1.0;
+
+    stats.cost = spell.cost_base_percent * base_mana_pool();
+    local cost_mod = 1 - effects.raw.cost_mod;
+
+    if effects.ability.cost_mod[spell.base_id] then
+        cost_mod = cost_mod - effects.ability.cost_mod[spell.base_id]
+    end
+
 
     if class == "PRIEST" then
         if spell.base_id == spell_name_to_id["Flash Heal"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
@@ -1169,6 +1177,49 @@ local function stats_for_spell(stats, spell, loadout, effects)
             local mana_refund = 0.3 * spell.cost_base_percent * base_mana_pool();
             resource_refund = stats.crit * pts*0.2 * mana_refund;
         end
+    elseif class == "SHAMAN" ~= 0 then
+        -- shaman clearcast
+        -- elemental focus
+        local pts = loadout.talents_table:pts(1, 7);
+        if spell.base_min ~= 0 and bit.band(spell.flags, spell_flags.heal) == 0 then
+            local not_crit = 1.0 - stats.crit;
+            local probability_of_critting_at_least_once_in_two = 1.0 - not_crit*not_crit;
+            cost_mod = cost_mod - 0.4*probability_of_critting_at_least_once_in_two;
+            
+        end
+        
+        -- improved water shield
+        local pts = loadout.talents_table:pts(3, 6);
+        if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.water_shield) ~= 0 and pts ~= 0 then
+            local mana_proc_chance = 0.0;
+            if spell.base_id == spell_name_to_id["Healing Wave"] or spell.base_id == spell_name_to_id["Riptide"] then
+                mana_proc_chance = pts * 1.0/3;
+            elseif spell.base_id == spell_name_to_id["Lesser Healing Wave"] then
+                mana_proc_chance = 0.2*pts;
+            elseif spell.base_id == spell_name_to_id["Chain Heal"] then
+                local bounces = 3;
+                mana_proc_chance = 0.1*pts*bounces;
+            end
+            local water_shield_proc_gain = 52;
+            if loadout.lvl >= 76 then
+                water_shield_proc_gain = 428;
+            elseif loadout.lvl >= 69 then
+                water_shield_proc_gain = 214;
+            elseif loadout.lvl >= 62 then
+                water_shield_proc_gain = 182;
+            elseif loadout.lvl >= 55 then
+                water_shield_proc_gain = 162;
+            elseif loadout.lvl >= 48 then
+                water_shield_proc_gain = 142;
+            elseif loadout.lvl >= 41 then
+                water_shield_proc_gain = 117;
+            elseif loadout.lvl >= 34 then
+                water_shield_proc_gain = 97;
+            elseif loadout.lvl >= 28 then
+                water_shield_proc_gain = 81;
+            end
+            resource_refund = stats.crit * mana_proc_chance * water_shield_proc_gain;
+        end
     end
 
     --if spell.base_id == spell_name_to_id["Healing Touch"] and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
@@ -1189,6 +1240,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.cast_time = spell.cast_time;
     if effects.ability.cast_mod[spell.base_id] then
         stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
+    end
+    if effects.ability.cast_mod_mul[spell.base_id] then
+        stats.cast_time = stats.cast_time/(1.0 + effects.ability.cast_mod_mul[spell.base_id]);
     end
 
     -- nature's grace
@@ -1245,7 +1299,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.spell_mod = target_vuln_mod * global_mod *
             (1.0 + effects.ability.effect_mod[spell.base_id] + effects.raw.spell_heal_mod);
         stats.spell_ot_mod = target_vuln_mod * global_mod *
-            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.raw.spell_heal_mod + effects.raw.ot_mod);
+            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id]+ effects.raw.spell_heal_mod + effects.raw.ot_mod);
 
     elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
 
@@ -1285,7 +1339,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             *
             (1 + effects.by_school.spell_dmg_mod[spell.school])
             *
-            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.raw.dmg_mod + effects.raw.ot_mod);
+            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id] + effects.raw.dmg_mod + effects.raw.ot_mod);
     end
 
     stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
@@ -1328,13 +1382,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
-
-    stats.cost = spell.cost_base_percent * base_mana_pool();
-    local cost_mod = 1 - effects.raw.cost_mod;
-
-    if effects.ability.cost_mod[spell.base_id] then
-        cost_mod = cost_mod - effects.ability.cost_mod[spell.base_id]
-    end
 
     stats.cost = stats.cost * cost_mod;
     stats.cost = stats.cost - resource_refund;
@@ -2233,6 +2280,11 @@ local function active_loadout()
     
     return active_loadout_entry().loadout;
 end
+
+function __sw_active_loadout()
+    return active_loadout();
+end
+
 
 local function active_loadout_and_effects()
 
@@ -5319,7 +5371,6 @@ local function update_spell_icons(loadout, effects)
         if v.frame and v.frame:IsShown() then
 
             local id = v.spell_id;
-
             if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
                 update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);
             else

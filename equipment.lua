@@ -21,11 +21,13 @@
 --SOFTWARE.
 
 local addonName, addonTable = ...;
-local ensure_exists_and_add = addonTable.ensure_exists_and_add;
-local ensure_exists_and_mul = addonTable.ensure_exists_and_mul;
+local ensure_exists_and_add             = addonTable.ensure_exists_and_add;
+local ensure_exists_and_mul             = addonTable.ensure_exists_and_mul;
 
-local _, class = UnitClass("player");
-local _, race = UnitRace("player");
+local spell_name_to_id                  = addonTable.spell_name_to_id;
+local spell_names_to_id                 = addonTable.spell_names_to_id;
+
+local class                             = addonTable.class;
 
 local set_tiers = {
     pve_t7_1         = 1,
@@ -33,34 +35,11 @@ local set_tiers = {
     pve_t7_3         = 3,
 };
 
-
 local function create_sets()
 
     local set_tier_ids = {};
 
     if class == "PRIEST" then
-        -- of prophecy
-        for i = 16811, 16819 do
-            set_tier_ids[i] = set_tiers.pve_1;
-        end
-        for i = 16919, 16926 do
-            set_tier_ids[i] = set_tiers.pve_2;
-        end
-        -- aq20
-        for i = 21410, 21412 do
-            set_tier_ids[i] = set_tiers.aq20;
-        end
-
-        -- aq40
-        for i = 21348, 21352 do
-            set_tier_ids[i] = set_tiers.aq40;
-        end
-
-        --naxx
-        for i = 22512, 22519 do
-            set_tier_ids[i] = set_tiers.pve_3;
-        end
-        set_tier_ids[23061] = set_tiers.pve_3;
 
         -- t7 healing 
         for i = 39514, 39519 do
@@ -69,6 +48,8 @@ local function create_sets()
         for i = 40445, 40450 do
             set_tier_ids[i] = set_tiers.pve_t7_1;
         end
+        -- DELETE
+        set_tier_ids[37684] = set_tiers.pve_t7_1;
         -- t7 shadow
         set_tier_ids[39521] = set_tiers.pve_t7_3;
         set_tier_ids[39523] = set_tiers.pve_t7_3;
@@ -196,14 +177,18 @@ end
 
 
 local set_items = create_sets();
+
 local set_bonus_effects = create_set_effects();
 
 local function detect_sets(loadout)
     -- go through equipment to find set pieces
+    for k, v in pairs(loadout.num_set_pieces) do
+        loadout.num_set_pieces[k] = 0;
+    end
+
     for item = 1, 18 do
         local id = GetInventoryItemID("player", item);
         if set_items[id] then
-            -- incr counter
             if not loadout.num_set_pieces[set_items[id]] then
                 loadout.num_set_pieces[set_items[id]] = 0;
             end
@@ -239,10 +224,8 @@ local function apply_equipment(loadout, effects)
         end
     end
     -- TODO: idols
-    if class == "PRIEST" then
-        for k, v in pairs(loadout.num_set_pieces) do
-            set_bonus_effects[k](v, loadout, effects);
-        end
+    for k, v in pairs(loadout.num_set_pieces) do
+        set_bonus_effects[k](v, loadout, effects);
     end
 end
 

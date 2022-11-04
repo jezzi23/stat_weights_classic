@@ -50,6 +50,14 @@ local function deep_table_copy(obj, seen)
   return res
 end
 
+local stat = {
+    str = 1,
+    agi = 2,
+    stam = 3,
+    int = 4,
+    spirit = 5
+};
+
 
 local beacon_snapshot_time = -1000;
 local sequence_counter = 0;
@@ -64,4 +72,5 @@ addonTable.class = class;
 addonTable.race = race;
 addonTable.faction = faction;
 addonTable.deep_table_copy = deep_table_copy;
+addonTable.stat = stat;
 

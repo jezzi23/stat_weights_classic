@@ -30,6 +30,8 @@ local magic_school                  = addonTable.magic_school;
 local spell_name_to_id              = addonTable.spell_name_to_id;
 local spell_names_to_id             = addonTable.spell_names_to_id;
 
+local stat                          = addonTable.stat;
+
 local function create_glyphs()
     if class == "PRIEST" then
         return {
@@ -426,6 +428,7 @@ local function apply_talents_glyphs(loadout, effects)
         if pts ~= 0 then
             local coc = spell_name_to_id["Cone of Cold"];
         end
+
     elseif class == "DRUID" then
 
         -- starlight wrath
@@ -687,10 +690,10 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 19);
         if pts ~= 0 then
 
-            effects.spell_crit_by_school[magic_school.nature] = 
-                effects.spell_crit_by_school[magic_school.nature] + 0.01 * pts;
-            effects.spell_crit_by_school[magic_school.arcane] = 
-                effects.spell_crit_by_school[magic_school.arcane] + 0.01 * pts;
+            effects.by_school.spell_crit[magic_school.nature] = 
+                effects.by_school.spell_crit[magic_school.nature] + 0.01 * pts;
+            effects.by_school.spell_crit[magic_school.arcane] = 
+                effects.by_school.spell_crit[magic_school.arcane] + 0.01 * pts;
         end
 
         -- empowered rejuvenation
@@ -1020,186 +1023,244 @@ local function apply_talents_glyphs(loadout, effects)
         if pts ~= 0 then
              
            effects.raw.spiritual_guidance = pts * 0.04; 
-        end
+       end
         
     elseif class == "SHAMAN" then
 
-        -- convection
+        local ele_abilities = spell_names_to_id({"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning", "Lava Burst", "Thunderstorm"});
+
+        ---- convection
         local pts = talents:pts(1, 1);
         if pts ~= 0 then
-            local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
-            for k, v in pairs(abilities) do
-                abilities[k] = spell_name_to_id[v];
-            end
-
-            for k, v in pairs(abilities) do
-                if not effects.ability.cost_mod[v] then
-                    effects.ability.cost_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(abilities) do
-                effects.ability.cost_mod[v] = effects.ability.cost_mod[v] + pts * 0.02;
+            for k, v in pairs(ele_abilities) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0);
             end
         end
-
         -- concussion
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
-            local abilities = {"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"};
-            for k, v in pairs(abilities) do
-                abilities[k] = spell_name_to_id[v];
+            for k, v in pairs(ele_abilities) do
+                ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
             end
-
+        end
+        -- call of flame
+        local pts = talents:pts(1, 3);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Magma Totem", "Searing Totem", "Fire Nova"})) do
+                ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.05, 0.0);
+            end
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lava Burst"], pts * 0.02, 0.0);
+        end
+        -- elemental focus implemented in later stage
+        
+        -- elemental fury
+        local pts = talents:pts(1, 8);
+        if pts ~= 0 then
+            effects.by_school.spell_crit_mod[magic_school.frost] = 
+                effects.by_school.spell_crit_mod[magic_school.frost] + pts * 0.1;
+            effects.by_school.spell_crit_mod[magic_school.fire] = 
+                effects.by_school.spell_crit_mod[magic_school.fire] + pts * 0.1;
+            effects.by_school.spell_crit_mod[magic_school.nature] = 
+                effects.by_school.spell_crit_mod[magic_school.nature] + pts * 0.1;
         end
 
-        -- call of flame
-        local pts = talents:pts(1, 5);
+        -- improved fire nova
+        local pts = talents:pts(1, 9);
         if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Fire Nova"], pts * 0.1, 0.0);
         end
 
         -- call of thunder
-        local pts = talents:pts(1, 8);
+        local pts = talents:pts(1, 12);
         if pts ~= 0 then
-            local abilities = {"Lightning Bolt", "Chain Lightning"};
-            for k, v in pairs(abilities) do
-                abilities[k] = spell_name_to_id[v];
-            end
-
-            for k, v in pairs(abilities) do
-                if not effects.ability.crit[v] then
-                    effects.ability.crit[v] = 0;
-                end
-            end
-            for k, v in pairs(abilities) do
-                if pts == 5 then
-                    effects.ability.crit[v] = effects.ability.crit[v] + 0.06;
-                else
-                    effects.ability.crit[v] = effects.ability.crit[v] + pts * 0.01;
-                end
+            for k, v in pairs(spell_names_to_id({"Lightning Bolt", "Chain Lightning", "Thunderstorm"})) do
+                ensure_exists_and_add(effects.ability.crit, v, 0.05, 0.0);
             end
         end
 
-        -- elemental fury
-        local pts = talents:pts(1, 13);
+        -- unrlenting storm
+        -- TODO: mana regen off % intellect, same as boomies
+        
+        -- elemental precision
+        local pts = talents:pts(1, 14);
         if pts ~= 0 then
-            effects.by_school.spell_crit_mod[magic_school.frost] = 
-                1 + (effects.by_school.spell_crit_mod[magic_school.frost] - 1) * 2;
-            effects.by_school.spell_crit_mod[magic_school.fire] = 
-                1 + (effects.by_school.spell_crit_mod[magic_school.fire] - 1) * 2;
-            effects.by_school.spell_crit_mod[magic_school.nature] = 
-                1 + (effects.by_school.spell_crit_mod[magic_school.nature] - 1) * 2;
+            effects.by_school.spell_dmg_hit[magic_school.frost] = 
+                effects.by_school.spell_dmg_hit[magic_school.frost] + pts * 0.01;
+            effects.by_school.spell_dmg_hit[magic_school.fire] = 
+                effects.by_school.spell_dmg_hit[magic_school.fire] + pts * 0.01;
+            effects.by_school.spell_dmg_hit[magic_school.nature] = 
+                effects.by_school.spell_dmg_hit[magic_school.nature] + pts * 0.01;
         end
 
         -- lightning mastery
-        local pts = talents:pts(1, 14);
+        local pts = talents:pts(1, 15);
         if pts ~= 0 then
-
-            local abilities = {"Lightning Bolt", "Chain Lightning"};
-            for k, v in pairs(abilities) do
-                abilities[k] = spell_name_to_id[v];
-            end
-
-            for k, v in pairs(abilities) do
-                if not effects.ability.cast_mod[v] then
-                    effects.ability.cast_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(abilities) do
-                effects.ability.cast_mod[v] = effects.ability.cast_mod[v] + pts * 0.2;
+            for k, v in pairs(spell_names_to_id({"Lightning Bolt", "Chain Lightning", "Lava Burst"})) do
+                ensure_exists_and_add(effects.ability.cast_mod, v, pts * 0.1, 0.0);
             end
         end
 
-        -- improved lightning shield
-        local pts = talents:pts(2, 6);
+        -- storm, earth and fire
+        local pts = talents:pts(1, 17);
         if pts ~= 0 then
-            local ls = spell_name_to_id["Lightning Shield"];
+            ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Flame Shock"], pts * 0.2, 0.0);
+        end
+
+        -- booming echoes
+        -- TODO: the wording is interesting, could be a multiplier instead of add?
+        local pts = talents:pts(1, 18);
+        if pts ~= 0 then
+            local flame_shock = spell_name_to_id["Flame Shock"];
+            ensure_exists_and_add(effects.ability.effect_mod, flame_shock, pts * 0.1, 0.0);
+            ensure_exists_and_add(effects.ability.effect_ot_mod, flame_shock, -pts * 0.1, 0.0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Frost Shock"], pts * 0.1, 0.0);
+        end
+
+        -- TODO: figure out crit mod calculation
+        -- lava flows
+        local pts = talents:pts(1, 23);
+        if pts ~= 0 then
+            local crit_mod = 0.03*bit.lshift(1, pts);
+            -- 0.06, 0.12 or 0.24
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Lava Burst"], 0.5*crit_mod, 0.0);
+        end
+
+        -- shamanism
+        local pts = talents:pts(1, 24);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Lightning Bolt"], pts * 0.04, 0);
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Chain Lightning"], pts * 0.04, 0);
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Lava Burst"], pts * 0.05, 0);
+        end
+
+        -- ancestral knowledge
+        local pts = talents:pts(2, 3);
+        if pts ~= 0 then
+            effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + pts * 0.02;
+        end
+
+        -- thundering strikes
+        local pts = talents:pts(2, 5);
+        if pts ~= 0 then
+            for i = 2,7 do
+                effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01 * pts;
+            end
+        end
+
+        -- improved shields
+        local pts = talents:pts(2, 7);
+        if pts ~= 0 then
+
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], pts * 0.05, 0.0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Earth Shield"], pts * 0.05, 0.0);
+        end
+
+        -- shamanistic focus
+        local pts = talents:pts(2, 9);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Earth Shock", "Flame Shock", "Frost Shock"})) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.45, 0.0);
+            end
         end
 
         -- improved healing wave
         local pts = talents:pts(3, 1);
         if pts ~= 0 then
-            local hw = spell_name_to_id["Healing Wave"];
-            if not effects.ability.cast_mod[hw] then
-                effects.ability.cast_mod[hw] = 0;
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Healing Wave"], pts * 0.1, 0.0);
+        end
+        
+        -- totemic focus
+        local pts = talents:pts(3, 2);
+        if pts ~= 0 then
+            -- TODO: is fire nova not a totem?
+            for k, v in pairs(spell_names_to_id({"Healing Stream Totem", "Magma Totem", "Searing Totem"})) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.05, 0.0);
             end
-            effects.ability.cast_mod[hw] = effects.ability.cast_mod[hw] + pts * 0.1;
         end
 
         -- tidal focus
-        local pts = talents:pts(3, 2);
-        if pts ~= 0 then
-
-            local abilities = {"Lesser Healing Wave", "Healing Wave", "Chain Heal", "Healing Stream Totem"};
-
-            for k, v in pairs(abilities) do
-                abilities[k] = spell_name_to_id[v];
-            end
-            for k, v in pairs(abilities) do
-                if not effects.ability.cost_mod[v] then
-                    effects.ability.cost_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(abilities) do
-                effects.ability.cost_mod[v] = effects.ability.cost_mod[v] + pts * 0.01;
-            end
-        end
-
-        -- totemic focus
         local pts = talents:pts(3, 5);
         if pts ~= 0 then
-
-            local totems = {"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"};
-
-            for k, v in pairs(totems) do
-                totems[k] = spell_name_to_id[v];
-            end
-
-            for k, v in pairs(totems) do
-                if not effects.ability.cost_mod[v] then
-                    effects.ability.cost_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(totems) do
-                effects.ability.cost_mod[v] = effects.ability.cost_mod[v] + pts * 0.05;
+            -- TODO: healing totem included?
+            local healing_spells = spell_names_to_id({"Healing Stream Totem", "Lesser Healing Wave", "Healing Wave", "Riptide", "Earth Shield"});
+            for k, v in pairs(healing_spells) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.01, 0.0);
             end
         end
 
+        -- tidal force
+        -- Could track this but should then also do inner focus
+        --
+        -- restorative totems
         local pts = talents:pts(3, 10);
         if pts ~= 0 then
-
-            local totems = {"Healing Stream Totem"};
-            for k, v in pairs(totems) do
-                totems[k] = spell_name_to_id[v];
-            end
-
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Healing Stream Totem"], pts * 0.15, 0.0);
         end
 
         -- tidal mastery
         local pts = talents:pts(3, 11);
         if pts ~= 0 then
-
-
-            local lightning_spells = {"Lightning Bolt", "Chain Lightning", "Lightning Shield"};
-
-            for k, v in pairs(lightning_spells) do
-                lightning_spells[k] = spell_name_to_id[v];
-            end
-
-            for k, v in pairs(lightning_spells) do
-                if not effects.ability.crit[v] then
-                    effects.ability.crit[v] = 0;
-                end
-            end
-            for k, v in pairs(lightning_spells) do
-                effects.ability.crit[v] = effects.ability.crit[v] + pts * 0.01;
+            local abilities = spell_names_to_id({"Lightning Bolt", "Chain Lightning", "Thunderstorm",  "Lesser Healing Wave", "Healing Wave", "Riptide", "Earth Shield"});
+            for k, v in pairs(abilities) do
+                ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
             end
         end
 
+        -- restorative totems
+        local pts = talents:pts(3, 12);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Healing Wave"], pts * 0.25/3, 0.0);
+        end
+
         -- purification
-        local pts = talents:pts(3, 14);
+        local pts = talents:pts(3, 15);
+        if pts ~= 0 then
+            effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + pts * 0.02;
+        end
+
+        -- blessing of the eternals
+        -- TODO: wtf is earthliving heal??
+        local pts = talents:pts(3, 19);
+        if pts ~= 0 then
+            for i = 2,7 do
+                effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + pts * 0.2;
+            end
+        end
+
+        -- improved chain heal
+        local pts = talents:pts(3, 20);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], pts * 0.1, 0.0);
+        end
+
+        -- nature's blessing
+        -- TODO; figure out
+        local pts = talents:pts(3, 21);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], pts * 0.1, 0.0);
+        end
+
+        -- ancestral awakening
+        -- TODO: do like divine aegis?
+        local pts = talents:pts(3, 22);
+        if pts ~= 0 then
+        end
+
+        -- ancestral awakening
+        -- TODO: do like divine aegis?
+        local pts = talents:pts(3, 24);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Earth Shield"], pts * 0.05, 0.0);
+        end
+
+        -- tidal waves
+        local pts = talents:pts(3, 25);
         if pts ~= 0 then
 
-
+            local sf = spell_name_to_id["Starfire"];
+            local w = spell_name_to_id["Wrath"];
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Healing Wave"], pts * 0.04, 0);
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Lesser Healing Wave"], pts * 0.02, 0);
         end
 
     elseif class == "PALADIN" then
@@ -1286,146 +1347,6 @@ local function apply_talents_glyphs(loadout, effects)
         end
 
     elseif class == "WARLOCK" then
-        local affl = {"Corruption", "Siphon Life", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul"};
-        for k, v in pairs(affl) do
-            affl[k] = spell_name_to_id[v];
-        end
-        local destr = {"Shadow Bolt", "Searing Pain", "Soul Fire", "Hellfire", "Rain of Fire", "Immolate", "Shadowburn", "Conflagrate"};
-        for k, v in pairs(destr) do
-            destr[k] = spell_name_to_id[v];
-        end
-
-
-        -- suppression
-        local pts = talents:pts(1, 1);
-        if pts ~= 0 then
-
-            for k, v in pairs(affl) do
-                if not effects.ability.hit[v] then
-                    effects.ability.hit[v] = 0;
-                end
-            end
-            for k, v in pairs(affl) do
-                effects.ability.hit[v] = 
-                    effects.ability.hit[v] + pts * 0.02;
-            end
-        end
-        -- improved corruption
-        local pts = talents:pts(1, 2);
-        if pts ~= 0 then
-            local corruption = spell_name_to_id["Corruption"];
-
-            if not effects.ability.cast_mod[corruption] then
-                effects.ability.cast_mod[corruption] = 0;
-            end
-
-            effects.ability.cast_mod[corruption] = 
-                effects.ability.cast_mod[corruption] + pts * 0.4;
-        end
-
-        -- improved curse of agony
-        local pts = talents:pts(1, 7);
-        if pts ~= 0 then
-            local coa = spell_name_to_id["Curse of Agony"];
-
-        end
-        -- shadow mastery
-        local pts = talents:pts(1, 16);
-        if pts ~= 0 then
-
-            effects.by_school.spell_dmg_mod[magic_school.shadow] = 
-                effects.by_school.spell_dmg_mod[magic_school.shadow] + pts * 0.02;
-        end
-
-        -- improved shadow bolt
-        local pts = talents:pts(3, 1);
-        if pts ~= 0 then
-           effects.improved_shadowbolt = pts; 
-        end
-
-        -- cataclysm
-        local pts = talents:pts(3, 2);
-        if pts ~= 0 then
-
-            for k, v in pairs(destr) do
-                if not effects.ability.cost_mod[v] then
-                    effects.ability.cost_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(destr) do
-                effects.ability.cost_mod[v] = 
-                    effects.ability.cost_mod[v] + pts * 0.01;
-            end
-        end
-        -- bane
-        local pts = talents:pts(3, 3);
-        if pts ~= 0 then
-            local imm = spell_name_to_id["Immolate"];
-            local sb = spell_name_to_id["Shadow Bolt"];
-            local sf = spell_name_to_id["Soul Fire"];
-
-            if not effects.ability.cast_mod[imm] then
-                effects.ability.cast_mod[imm] = 0;
-            end
-            if not effects.ability.cast_mod[sb] then
-                effects.ability.cast_mod[sb] = 0;
-            end
-            if not effects.ability.cast_mod[sf] then
-                effects.ability.cast_mod[sf] = 0;
-            end
-
-            effects.ability.cast_mod[imm] = effects.ability.cast_mod[imm] + pts * 0.1;
-            effects.ability.cast_mod[sb] = effects.ability.cast_mod[sb] + pts * 0.1;
-            effects.ability.cast_mod[sf] = effects.ability.cast_mod[sf] + pts * 0.4;
-        end
-        -- devastation
-        local pts = talents:pts(3, 7);
-        if pts ~= 0 then
-
-            for k, v in pairs(destr) do
-                if not effects.ability.crit[v] then
-                    effects.ability.crit[v] = 0;
-                end
-            end
-            for k, v in pairs(destr) do
-                effects.ability.crit[v] = 
-                    effects.ability.crit[v] + pts * 0.01;
-            end
-        end
-        -- improved searing pain
-        local pts = talents:pts(3, 11);
-        if pts ~= 0 then
-            local sp = spell_name_to_id["Searing Pain"];
-            if not effects.ability.crit[sp] then
-                effects.ability.crit[sp] = 0;
-            end
-            effects.ability.crit[sp] = effects.ability.crit[sp] + pts * 0.02;
-        end
-
-        -- improved immolate
-        local pts = talents:pts(3, 13);
-        effects.improved_immolate = pts;
-
-        -- ruin 
-        local pts = talents:pts(3, 14);
-        if pts ~= 0 then
-
-            for k, v in pairs(destr) do
-                if not effects.ability.crit_mod[v] then
-                    effects.ability.crit_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(destr) do
-                effects.ability.crit_mod[v] = 
-                    effects.ability.crit_mod[v] + 0.5;
-            end
-        end
-        --emberstorm
-        local pts = talents:pts(3, 15);
-        if pts ~= 0 then
-            effects.by_school.spell_dmg_mod[magic_school.fire] =
-                effects.by_school.spell_dmg_mod[magic_school.fire] + pts * 0.02;
-        end
     end
 end
 

@@ -76,6 +76,7 @@ local non_stackable_effects = {
     misery_hit                  = bit.lshift(1, 6),
     mage_crit_target            = bit.lshift(1, 7),
     divine_hymn_buff            = bit.lshift(1, 8),
+    water_shield                = bit.lshift(1, 9),
 };
 
 
@@ -148,7 +149,7 @@ local buffs_predefined = {
             end
             local abilities = spell_names_to_id({"Greater Heal", "Prayer of Heal"});
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(effects.ability.cast_mod, v, c * effect, 0);
+                ensure_exists_and_add(effects.ability.cast_mod_mul, v, c * effect, 0);
             end
         
         end,
@@ -392,6 +393,70 @@ local buffs_predefined = {
         end,
         filter = buff_filters.caster,
     },
+    --riptide
+    [61295] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Chain Heal"], 0.25, 0.0);
+        end,
+        filter = buff_filters.shaman,
+    },
+    --elemental mastery
+    [64701] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.15 - 1.0;
+        end,
+        filter = buff_filters.shaman,
+    },
+    --elemental focus (clearcasting with talent)
+    [16246] = {
+        apply = function(loadout, effects, buff, inactive)
+
+            local pts = loadout.talents_table:pts(1, 19);
+
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.05 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.05 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.nature] = 
+                effects.by_school.spell_dmg_mod[magic_school.nature] + 0.05 * pts;
+        end,
+        filter = buff_filters.shaman,
+        name = "Elemental Focus Clearcasting";
+    },
+    --lava flows
+    [64694] = {
+        apply = function(loadout, effects, buff)
+            local haste = 1.3;
+            if buff.src then
+                if buff.id == 64694 then
+                    haste = 1.1;
+                elseif buff.id == 65263 then
+                    haste = 1.2;
+                end
+            end
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * haste - 1.0;
+        end,
+        filter = buff_filters.shaman,
+    },
+    --water shield
+    [52127] = {
+        apply = function(loadout, effects, buff)
+
+            --trickery to flag that healing crits restore mana
+           effects.raw.non_stackable_effect_flags =
+               bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.water_shield);
+        end,
+        filter = buff_filters.shaman,
+    },
+    --tidal waves
+    [53390] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lesser Healing Wave"], 0.25, 0.0);
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Wave"], 0.3, 0.0);
+        end,
+        filter = buff_filters.shaman,
+    },
+
 };
 -- identical implementations
 buffs_predefined[31583] = buffs_predefined[31869];-- arcane_empowerment
@@ -629,6 +694,14 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+    },
+    -- flame shock (lava burst crit)
+    [17800] = {
+        apply = function(loadout, effects, buff)
+
+            ensure_exists_and_add(effects.ability.spell_crit, spell_name_to_id["Lava Burst"], 1.0, 0.0);    
+        end,
+        filter = bit.bor(buff_filters.shaman, buff_filters.hostile),
     },
 };
 
