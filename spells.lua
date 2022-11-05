@@ -4263,7 +4263,7 @@ local function create_spells()
                 lvl_req             = 76,
                 lvl_max             = 79,
             },
-            [10463] = {
+            [58757] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 25 * 30.0 * 5,
@@ -4358,7 +4358,7 @@ local function create_spells()
                 cost_base_percent   = 0.25,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
-                coef                = 0.16114,
+                coef                = 1.6114,
                 over_time_coef      = 0.0,
             },
             [332] = {
@@ -4418,8 +4418,8 @@ local function create_spells()
                 lvl_max             = 55,
             },
             [10396] = {
-                base_min            = 1934.0,
-                base_max            = 1589.0, 
+                base_min            = 1389.0,
+                base_max            = 1583.0, 
                 over_time           = 0,
                 rank                = 9,
                 lvl_req             = 56,
@@ -4736,7 +4736,7 @@ local function create_spells()
                 lvl_req             = 8,
                 lvl_max             = 15,
                 cost_base_percent   = 0,
-                flags               = 0,
+                flags               = spell_flags.cd,
                 school              = magic_school.nature,
                 coef                = 0.33,
                 over_time_coef      = 0.0,
@@ -4922,7 +4922,7 @@ local function create_spells()
                 lvl_req             = 26,
                 lvl_max             = 35,
                 cost_base_percent   = 0.27,
-                flags               = spell_flags.aoe,
+                flags               = bit.bor(spell_flags.aoe, spell_flags.cd),
                 school              = magic_school.fire,
                 coef                = 0.0,
                 over_time_coef      = 0.1,
@@ -5127,8 +5127,8 @@ local function create_spells()
             [3599] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 9,
-                over_time_max       = 11.0 ,
+                over_time           = 9.0 * 12,
+                over_time_max       = 11.0 * 12,
                 over_time_tick_freq = 2.5,
                 over_time_duration  = 60.0,
                 cast_time           = 1.5,
@@ -5144,8 +5144,8 @@ local function create_spells()
             [6363] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 13.0,
-                over_time_max       = 17.0,
+                over_time           = 13.0 * 14,
+                over_time_max       = 17.0 * 14,
                 rank                = 2,
                 lvl_req             = 20, 
                 lvl_max             = 29, 
@@ -5153,8 +5153,8 @@ local function create_spells()
             [6364] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 19.0,
-                over_time_max       = 25.0,
+                over_time           = 19.0 * 16,
+                over_time_max       = 25.0 * 16,
                 rank                = 3,
                 lvl_req             = 30, 
                 lvl_max             = 39, 
@@ -5162,8 +5162,8 @@ local function create_spells()
             [6365] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 26.0,
-                over_time_max       = 34.0,
+                over_time           = 26.0 * 18,
+                over_time_max       = 34.0 * 18,
                 rank                = 4,
                 lvl_req             = 40, 
                 lvl_max             = 49, 
@@ -5171,8 +5171,8 @@ local function create_spells()
             [10437] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 33.0,
-                over_time_max       = 45.0,
+                over_time           = 33.0 * 20,
+                over_time_max       = 45.0 * 20,
                 rank                = 5,
                 lvl_req             = 50, 
                 lvl_max             = 59, 
@@ -5180,8 +5180,8 @@ local function create_spells()
             [10438] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 40.0,
-                over_time_max       = 54.0,
+                over_time           = 40.0 * 22,
+                over_time_max       = 54.0 * 22,
                 rank                = 6,
                 lvl_req             = 60, 
                 lvl_max             = 68, 
@@ -5189,8 +5189,8 @@ local function create_spells()
             [25533] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 56.0,
-                over_time_max       = 74.0,
+                over_time           = 56.0 * 24,
+                over_time_max       = 74.0 * 24,
                 rank                = 7,
                 lvl_req             = 69, 
                 lvl_max             = 70, 
@@ -5198,8 +5198,8 @@ local function create_spells()
             [58699] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 68.0,
-                over_time_max       = 92.0,
+                over_time           = 68.0 * 24,
+                over_time_max       = 92.0 * 24,
                 rank                = 8,
                 lvl_req             = 71, 
                 lvl_max             = 74, 
@@ -5207,8 +5207,8 @@ local function create_spells()
             [58703] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 77.0,
-                over_time_max       = 103.0,
+                over_time           = 77.0 * 24,
+                over_time_max       = 103.0 * 24,
                 rank                = 9,
                 lvl_req             = 75, 
                 lvl_max             = 79, 
@@ -5216,8 +5216,8 @@ local function create_spells()
             [58704] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 90.0,
-                over_time_max       = 120.0,
+                over_time           = 90.0 * 24,
+                over_time_max       = 120.0 * 24,
                 rank                = 10,
                 lvl_req             = 80, 
                 lvl_max             = 80, 
@@ -5234,7 +5234,7 @@ local function create_spells()
                 lvl_req             = 12,
                 lvl_max             = 21,
                 cost_base_percent   = 0.22,
-                flags               = spell_flags.aoe,
+                flags               = bit.bor(spell_flags.aoe, spell_flags.cd),
                 school              = magic_school.fire,
                 coef                = 0.2142,
                 over_time_coef      = 0.0,
@@ -6854,6 +6854,7 @@ elseif class == "SHAMAN" then
     spells[6365].over_time_duration = 45.0;
     spells[10437].over_time_duration = 50.0;
     spells[10438].over_time_duration = 55.0;
+
 end
 
 local function spell_names_to_id(english_names)

@@ -590,6 +590,7 @@ local function static_loadout_from_dynamic(loadout)
    loadout.mana = loadout.max_mana;
    loadout.talents_code = wowhead_talent_code();
    loadout.extra_mana = loadout.extra_mana;
+   loadout.is_dynamic_loadout = false;
    --TODO:
    --remove_dynamic_stats_from_talents(loadout);
 end
@@ -1181,7 +1182,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         -- shaman clearcast
         -- elemental focus
         local pts = loadout.talents_table:pts(1, 7);
-        if spell.base_min ~= 0 and bit.band(spell.flags, spell_flags.heal) == 0 then
+        if pts ~= 0 and spell.base_min ~= 0 and bit.band(spell.flags, spell_flags.heal) == 0 then
             local not_crit = 1.0 - stats.crit;
             local probability_of_critting_at_least_once_in_two = 1.0 - not_crit*not_crit;
             cost_mod = cost_mod - 0.4*probability_of_critting_at_least_once_in_two;
@@ -2579,7 +2580,7 @@ end
 
 local function update_loadouts_rhs()
 
-    local loadout = active_loadout_entry().loadout;
+    local loadout = active_loadout();
 
     if sw_frame.loadouts_frame.lhs_list.num_loadouts == 1 then
 
@@ -2620,6 +2621,7 @@ local function update_loadouts_rhs()
 
     else
 
+        print("found ourselves in static mode");
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
             wowhead_talent_link(loadout.talents_code)
         );
@@ -2755,8 +2757,6 @@ local function update_loadouts_rhs()
             sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetChecked(true);
         end
     end
-
-
 end
 
 local loadout_checkbutton_id_counter = 1;
@@ -3923,7 +3923,6 @@ local function create_sw_gui_loadout_frame()
         if loadout.is_dynamic_loadout then
 
             static_loadout_from_dynamic(loadout);
-            loadout.is_dynamic_loadout = false;
         end
         talents_update_needed = true;
 
@@ -4088,12 +4087,12 @@ local function create_sw_gui_loadout_frame()
             talents_update_needed = true;
             equipment_update_needed = true;
             
+            print("setting dynamic from dyn button");
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(false);
         else
 
-            loadout_entry.loadout.is_dynamic_loadout = false;
-
             static_loadout_from_dynamic(loadout_entry.loadout);
+            print("setting static from dyn button");
 
             sw_frame.loadouts_frame.rhs_list.static_button:SetChecked(true);
         end
@@ -4109,17 +4108,17 @@ local function create_sw_gui_loadout_frame()
         "Static loadouts never change and can be used to create custom setups. When checked, a static loadout is a snapshot of a dynamic loadout or can be created with modified stats through the stat comparison tool. Max mana is always assumed before Cast until OOM type of fight starts."
     sw_frame.loadouts_frame.rhs_list.static_button:SetScript("OnClick", function(self)
 
+        local loadout = active_loadout();
         if self:GetChecked() then
-            sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = false;
 
-            static_loadout_from_dynamic(active_loadout());
+            static_loadout_from_dynamic(loadout);
 
+            print("setting static from static button");
             sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
         else
-            sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.is_dynamic_loadout = true;
+            print("setting dynamic from static button");
 
+            loadout.is_dynamic_loadout = true;
             talents_update_needed = true;
             equipment_update_needed = true;
 
@@ -4947,29 +4946,40 @@ local event_dispatch = {
     --    buffs_update_needed = true;
     --end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
-       __sw__icon_frames = gather_spell_icons();
-       update_icon_overlay_settings();
-       if active_loadout_entry().loadout.is_dynamic_loadout then
-           talents_update_needed = true;
-       end
+        __sw__icon_frames = gather_spell_icons();
+        update_icon_overlay_settings();
+        if active_loadout_entry().loadout.is_dynamic_loadout then
+            talents_update_needed = true;
+        end
+    end,
+    ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
+
+        local loadout = active_loadout();
+       
+        if loadout.is_dynamic_loadout then
+
+            loadout.talents_code = wowhead_talent_code();
+            talents_update_needed = true;
+            update_loadouts_rhs();
+        end
     end,
     ["PLAYER_EQUIPMENT_CHANGED"] = function(self, msg, msg2, msg3)
         equipment_update_needed = true;
     end,
     ["GLYPH_ADDED"] = function(self, msg, msg2, msg3)
-       if active_loadout_entry().loadout.is_dynamic_loadout then
-           talents_update_needed = true;
-       end
+        if active_loadout_entry().loadout.is_dynamic_loadout then
+            talents_update_needed = true;
+        end
     end,
     ["GLYPH_REMOVED"] = function(self, msg, msg2, msg3)
-       if active_loadout_entry().loadout.is_dynamic_loadout then
-           talents_update_needed = true;
-       end
+        if active_loadout_entry().loadout.is_dynamic_loadout then
+            talents_update_needed = true;
+        end
     end,
     ["GLYPH_UPDATED"] = function(self, msg, msg2, msg3)
-       if active_loadout_entry().loadout.is_dynamic_loadout then
-           talents_update_needed = true;
-       end
+        if active_loadout_entry().loadout.is_dynamic_loadout then
+            talents_update_needed = true;
+        end
     end,
 };
 
@@ -5070,7 +5080,6 @@ if class_is_supported then
 
         local loadout, effects = active_loadout_and_effects();
     
-
         tooltip_spell_info(GameTooltip, spell, loadout, effects);
     
         if IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
@@ -5497,5 +5506,5 @@ SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
---__sw__debug__ = 1;
+__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;

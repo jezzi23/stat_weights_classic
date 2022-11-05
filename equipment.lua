@@ -48,8 +48,6 @@ local function create_sets()
         for i = 40445, 40450 do
             set_tier_ids[i] = set_tiers.pve_t7_1;
         end
-        -- DELETE
-        set_tier_ids[37684] = set_tiers.pve_t7_1;
         -- t7 shadow
         set_tier_ids[39521] = set_tiers.pve_t7_3;
         set_tier_ids[39523] = set_tiers.pve_t7_3;
@@ -189,10 +187,11 @@ local function detect_sets(loadout)
     for item = 1, 18 do
         local id = GetInventoryItemID("player", item);
         if set_items[id] then
-            if not loadout.num_set_pieces[set_items[id]] then
-                loadout.num_set_pieces[set_items[id]] = 0;
+            set_id = set_items[id];
+            if not loadout.num_set_pieces[set_id] then
+                loadout.num_set_pieces[set_id] = 0;
             end
-            loadout.num_set_pieces[set_items[id]] = loadout.num_set_pieces[set_items[id]] + 1;
+            loadout.num_set_pieces[set_id] = loadout.num_set_pieces[set_id] + 1;
         end
         --local item_link = GetInventoryItemLink("player", item);
         --if item_link then

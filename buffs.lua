@@ -699,7 +699,7 @@ local target_buffs_predefined = {
     [17800] = {
         apply = function(loadout, effects, buff)
 
-            ensure_exists_and_add(effects.ability.spell_crit, spell_name_to_id["Lava Burst"], 1.0, 0.0);    
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lava Burst"], 1.0, 0.0);    
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.hostile),
     },
