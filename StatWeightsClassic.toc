@@ -1,11 +1,3 @@
-## Interface: 11303
-## Title: Stat Weights Classic
-## Notes: Advanced ability information, icon overlays and a stat comparison tool
-## SavedVariablesPerCharacter: __sw__persistent_data_per_char
-## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
-utils.lua
-spells.lua
-buffs.lua
-equipment.lua
-talents.lua
-stat_weights_classic.lua
+## Interface: 00000
+## Title: Stat Weights Classic is not supported for this client!
+## Notes: Stat Weights Classic is not supported for this client!

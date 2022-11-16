@@ -50,6 +50,13 @@ local buff_filters = {
     alliance    = bit.lshift(1,14),
 };
 
+local buff_category = {
+    talent      = 1,
+    class       = 2,
+    raid        = 3,
+    consumes    = 4,
+};
+
 local filter_flags_active = 0;
 filter_flags_active = bit.bor(filter_flags_active, buff_filters.caster);
 if class == "PRIEST" then
@@ -75,7 +82,6 @@ local non_stackable_effects = {
     totem_of_wrath_crit_target  = bit.lshift(1, 5),
     misery_hit                  = bit.lshift(1, 6),
     mage_crit_target            = bit.lshift(1, 7),
-    divine_hymn_buff            = bit.lshift(1, 8),
     water_shield                = bit.lshift(1, 9),
 };
 
@@ -90,9 +96,11 @@ local buffs_predefined = {
     [10060] = {
         apply = function(loadout, effects, buff)
             effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.2 - 1.0;
-            effects.raw.cost_mod = effects.raw.cost_mod * 0.2;
+            effects.raw.cost_mod = effects.raw.cost_mod + 0.2;
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "20% haste (fom priest)",
     },
     -- inner fire
     [48040] = {
@@ -108,6 +116,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.priest,
+        category = buff_category.class,
+        tooltip = "Spell power increase",
     },
     -- shadow weaving
     [15258] = {
@@ -123,6 +133,8 @@ local buffs_predefined = {
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * (1.0 + c * 0.02) - 1.0;
         end,
         filter = buff_filters.priest,
+        category = buff_category.class,
+        tooltip = "10% shadow damage",
     },
     --shadow form
     [15473] = {
@@ -131,6 +143,8 @@ local buffs_predefined = {
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.15 - 1.0;
         end,
         filter = buff_filters.priest,
+        category = buff_category.class,
+        tooltip = "15% shadow damage",
     },
     --serendipity
     [63734] = {
@@ -154,17 +168,17 @@ local buffs_predefined = {
         
         end,
         filter = buff_filters.priest,
+        category = buff_category.class,
+        tooltip = "Prayer and Greater Heal cast speed increase",
     },
     --divine hymn buff
     [24907] = {
         apply = function(loadout, effects, buff, inactive)
-            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.divine_hymn_buff) == 0 then
-                effects.raw.target_healing_taken = effects.raw.target_healing_taken + 0.1;
-                effects.raw.non_stackable_effect_flags =
-                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.divine_hymn_buff);
-            end
+            effects.raw.target_healing_taken = effects.raw.target_healing_taken + 0.1;
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "10% more healing taken after hymn procs",
     },
     --eclipse lunar
     [48518] = {
@@ -172,6 +186,8 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.4, 0);
         end,
         filter = buff_filters.druid,
+        category = buff_category.class,
+        tooltip = "40% starfire crit",
     },
     --eclipse solar
     [48517] = {
@@ -179,6 +195,8 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.4, 1.0);
         end,
         filter = buff_filters.druid,
+        category = buff_category.class,
+        tooltip = "40% wrath damage",
     },
     --moonkin aura
     [24907] = {
@@ -204,6 +222,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "5% crit and 3% haste (from druids)",
     },
     --moonkin form
     [24858] = {
@@ -211,12 +231,14 @@ local buffs_predefined = {
             -- mana refund done in later stage
             -- master shapeshifter
             local pts = loadout.talents_table:pts(3, 9);
-            effects.by_school.target_spell_dmg_taken[magic_school.arcane] =
-                effects.by_school.target_spell_dmg_taken[magic_school.arcane] + pts * 0.02;
-            effects.by_school.target_spell_dmg_taken[magic_school.nature] =
-                effects.by_school.target_spell_dmg_taken[magic_school.nature] + pts * 0.02;
+            effects.by_school.spell_dmg_mod[magic_school.arcane] =
+                effects.by_school.spell_dmg_mod[magic_school.arcane] + pts * 0.02;
+            effects.by_school.spell_dmg_mod[magic_school.nature] =
+                effects.by_school.spell_dmg_mod[magic_school.nature] + pts * 0.02;
         end,
         filter = buff_filters.druid,
+        category = buff_category.class,
+        tooltip = "Mana refund on crit and spell damage",
     },
     --tree of life form
     [33891] = {
@@ -224,36 +246,30 @@ local buffs_predefined = {
             -- mana refund done in later stage
             -- master shapeshifter
             local pts = loadout.talents_table:pts(3, 9);
-            effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + pts * 0.02;
+            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + pts * 0.02;
         end,
         filter = buff_filters.druid,
+        category = buff_category.class,
     },
     -- bloodlust
     [2825] = {
         apply = function(loadout, effects, buff)
             effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.3 - 1.0;
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.horde),
+        filter = buff_filters.horde,
+        category = buff_category.raid,
+        tooltip = "30% haste (from shamans)",
     },
     -- heroism
     [32182] = {
         apply = function(loadout, effects, buff)
             effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.3 - 1.0;
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.alliance),
+        filter = buff_filters.alliance,
+        category = buff_category.raid,
+        tooltip = "30% haste (from shamans)",
     },
-    -- focus magic (mage being src)
-    [32182] = {
-        apply = function(loadout, effects, buff, inactive)
-            if inactive then
-                for i = 2, 7 do
-                    effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.03;
-                end
-            end
-        end,
-        filter = buff_filters.mage,
-    },
-    -- focus magic (any target)
+    -- focus magic (rebound effect for src mage)
     [54648] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
@@ -262,7 +278,22 @@ local buffs_predefined = {
                 end
             end
         end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "3% crit from Focus Magic rebound",
+    },
+    -- focus magic (any target)
+    [54646] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                for i = 2, 7 do
+                    effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.03;
+                end
+            end
+        end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "3% crit from another mage's Focus Magic",
     },
     -- hyperspeed acceleration (engineering gloves enchant)
     [54758] = {
@@ -272,6 +303,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.consumes,
+        tooltip = "340 haste rating from engineering gloves enchant",
     },
     -- lightweave (tailoring cloak enchant)
     [55637] = {
@@ -282,6 +315,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.consumes,
+        tooltip = "295 spell power from tailoring cloak enchant proc",
     },
     -- potion of wild magic
     [53909] = {
@@ -293,6 +328,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.consumes,
+        tooltip = "200 spell power and crit",
     },
     -- potion of speed
     [53908] = {
@@ -303,6 +340,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.consumes,
+        tooltip = "500 haste rating",
     },
     -- flask of the frost wyrm
     [53755] = {
@@ -313,6 +352,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.consumes,
+        tooltip = "125 spell power",
     },
     --wrath of air
     [3738] = {
@@ -320,6 +361,8 @@ local buffs_predefined = {
             effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.05) - 1.0;
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "5% haste (from shamans)",
     },
     --totem of wrath
     [57722] = {
@@ -333,6 +376,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "280 spell power (from shamans)",
     },
     --demonic pact
     [47240] = {
@@ -348,6 +393,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "spell power (from warlock)",
     },
     --sanctified retribution
     [31869] = {
@@ -364,6 +411,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "3% damage (from paladins)",
     },
     --elemental oath
     [51470] = {
@@ -380,6 +429,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "5% crit (from shamans)",
     },
     --swift retribution
     [53648] = {
@@ -392,6 +443,8 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "3% haste (from paladins)",
     },
     --riptide
     [61295] = {
@@ -399,6 +452,8 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Chain Heal"], 0.25, 0.0);
         end,
         filter = buff_filters.shaman,
+        category = buff_category.class,
+        tooltip = "Chain Heal 25% more healing with riptide on",
     },
     --elemental mastery
     [64701] = {
@@ -406,6 +461,8 @@ local buffs_predefined = {
             effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.15 - 1.0;
         end,
         filter = buff_filters.shaman,
+        category = buff_category.class,
+        tooltip = "15% haste",
     },
     --elemental focus (clearcasting with talent)
     [16246] = {
@@ -422,6 +479,8 @@ local buffs_predefined = {
         end,
         filter = buff_filters.shaman,
         name = "Elemental Focus Clearcasting";
+        category = buff_category.class,
+        tooltip = "10% spell damage while clearcasting",
     },
     --lava flows
     [64694] = {
@@ -437,6 +496,8 @@ local buffs_predefined = {
             effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * haste - 1.0;
         end,
         filter = buff_filters.shaman,
+        category = buff_category.class,
+        tooltip = "30% haste after flame shock is dispelled",
     },
     --water shield
     [52127] = {
@@ -447,6 +508,8 @@ local buffs_predefined = {
                bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.water_shield);
         end,
         filter = buff_filters.shaman,
+        category = buff_category.class,
+        tooltip = "May proc restore on healing crits if talented",
     },
     --tidal waves
     [53390] = {
@@ -455,8 +518,112 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Wave"], 0.3, 0.0);
         end,
         filter = buff_filters.shaman,
+        category = buff_category.class,
+        tooltip = "Healing Wave cast speed 30% or Lesser Healing Wave 25% crit",
     },
+    --heroic presence (ally only)
+    [28878] = {
+        apply = function(loadout, effects, buff)
+            for i = 2, 7 do 
+                effects.by_school.spell_dmg_hit[i] = 
+                    effects.by_school.spell_dmg_hit[i] + 0.01;
+            end
+        end,
+        filter = buff_filters.alliance,
+        category = buff_category.raid,
+        tooltip = "1% hit",
+    },
+    --metamorphosis
+    [47241] = {
+        apply = function(loadout, effects, buff)
+            effects.by_school.spell_dmg_mod[magic_school.fire] =
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.2;
+            effects.by_school.spell_dmg_mod[magic_school.shadow] =
+                effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.2;
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "20% spell dmg",
+    },
+    --arcane power
+    [12042] = {
+        apply = function(loadout, effects, buff)
+            effects.by_school.spell_dmg_mod[magic_school.fire] =
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.2;
+            effects.by_school.spell_dmg_mod[magic_school.arcane] =
+                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.2;
+            effects.by_school.spell_dmg_mod[magic_school.frost] =
+                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.2;
 
+            effects.raw.cost_mod = effects.raw.cost_mod - 0.2;
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "20% spell dmg and mana costs",
+    },
+    --icy veins
+    [12472] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.2 - 1.0;
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "20% haste",
+    },
+    --eradication
+    [64371] = {
+        apply = function(loadout, effects, buff)
+            local pts = loadout.talents_table:pts(1, 19);
+            local by_pts = {0.06, 0.12, 0.2};
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0+ by_pts[pts]) - 1.0;
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "20% haste",
+    },
+    --molten core
+    [47383] = {
+        apply = function(loadout, effects, buff)
+            local pts = loadout.talents_table:pts(2, 16);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Incinerate"], pts * 0.06, 0.0); 
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Incinerate"], pts * 0.1, 0.0); 
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Soul Fire"], pts * 0.06, 0.0); 
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Soul Fire"], pts * 0.05, 0.0); 
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "Incinerate 30% cast speed, Soul Fire 15% crit, 18% dmg to both (procs from Immolate)",
+    },
+    --pyroclasm
+    [63243] = {
+        apply = function(loadout, effects, buff)
+            local pts = loadout.talents_table:pts(3, 19);
+
+            -- TODO: additive or mul?
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * (1.0 + pts * 0.02) - 1.0;
+            effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * (1.0 + pts * 0.02) - 1.0;
+
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "6% fire and shadow spell damage",
+    },
+    --backdraft
+    [54277] = {
+        apply = function(loadout, effects, buff)
+            local pts = loadout.talents_table:pts(3, 22);
+
+            for k, v in pairs(spell_names_to_id({"Shadow Bolt", "Chaos Bolt", "Immolate", "Soul Fire", "Shadowburn", "Shadowfury", "Searing Pain", "Incinerate"})) do
+                ensure_exists_and_add(effects.ability.cast_mod_mul, v, pts * 0.1, 0.0); 
+            end
+
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "30% haste to destruction spells",
+    },
 };
 -- identical implementations
 buffs_predefined[31583] = buffs_predefined[31869];-- arcane_empowerment
@@ -474,6 +641,8 @@ local target_buffs_predefined = {
             effects.raw.target_healing_taken = effects.raw.target_healing_taken + c * 0.03; 
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.friendly),
+        category = buff_category.raid,
+        tooltip = "9% more healing taken",
     },
     -- focused will
     [45242] = {
@@ -493,6 +662,8 @@ local target_buffs_predefined = {
             
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "5% more healing taken",
     },
     -- weakened soul (renewed hope talent effect)
     [6788] = {
@@ -509,6 +680,8 @@ local target_buffs_predefined = {
         filter = bit.bor(buff_filters.priest, buff_filters.friendly),
         name = "Renewed Hope",
         icon_id = GetSpellTexture(63944),
+        category = buff_category.class,
+        tooltip = "4% crit with Greater, Flash Heal, and Penance",
     },
     --shadow word: pain (twisted faith)
     [589] = {
@@ -529,6 +702,8 @@ local target_buffs_predefined = {
         filter = bit.bor(buff_filters.priest, buff_filters.hostile),
         name = "Twisted Faith",
         icon_id = GetSpellTexture(51167),
+        category = buff_category.class,
+        tooltip = "10% damage taken from Mind Flay and Mind Blast (+ Mind Flay glyph)",
     },
     --beacon of light
     [53563] = {
@@ -536,6 +711,8 @@ local target_buffs_predefined = {
         apply = function(loadout, effects, buff)
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "Beacon is assumed to be up for 60s after each Beacon cast",
     },
     --tree of life
     [34123] = {
@@ -543,6 +720,8 @@ local target_buffs_predefined = {
             effects.raw.target_healing_taken = effects.raw.target_healing_taken + 0.06;
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.friendly),
+        category = buff_category.raid,
+        tooltip = "6% healing taken (from druids)",
     },
     --moonfire (improved insect swarm talent)
     [8921] = {
@@ -552,6 +731,8 @@ local target_buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.hostile),
         name = "Improved Insect Swarm",
+        category = buff_category.class,
+        tooltip = "3% Starfire crit",
     },
     --insect swarm (improved insect swarm talent)
     [5570] = {
@@ -560,6 +741,8 @@ local target_buffs_predefined = {
         end,
         name = "Improved Insect Swarm",
         filter = bit.bor(buff_filters.druid, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "3% Wrath damage",
     },
     --earth and moon
     [60431] = {
@@ -583,6 +766,8 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "13% spell damage taken",
     },
     --ebon plaguebringer
     [51161] = {
@@ -597,6 +782,8 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "13% spell damage taken",
     },
     --curse of elemements
     [47865] = {
@@ -611,6 +798,8 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "13% spell damage taken",
     },
     --misery
     [33198] = {
@@ -633,6 +822,8 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "3% spell hit",
     },
     --faerie fire 3% hit
     [770] = {
@@ -651,9 +842,11 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "3% spell hit",
     },
-    --totem of wrath crit
-    [57722] = {
+    -- heart of the crusader
+    [54499] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.totem_of_wrath_crit_target) == 0 then
                 for i = 2, 7 do
@@ -664,6 +857,8 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "3% crit",
     },
     -- shadow mastery
     [17800] = {
@@ -677,9 +872,11 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "5% crit",
     },
     -- winter's chill
-    [17800] = {
+    [12579] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.mage_crit_target) == 0 then
                 local crit = 0.05;
@@ -694,20 +891,77 @@ local target_buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "5% crit",
     },
     -- flame shock (lava burst crit)
-    [17800] = {
+    [8050] = {
         apply = function(loadout, effects, buff)
 
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lava Burst"], 1.0, 0.0);    
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "Lava Burst 100% crit chance",
+    },
+    --haunt
+    [48181] = {
+        apply = function(loadout, effects, buff)
+            if buff.src and buff.src ~= "player" then
+                return;
+            end
+            for k, v in pairs(spell_names_to_id({"Unstable Affliction", "Curse of Agony", "Curse of Doom", "Seed of Corruption", "Corruption"})) do
+                ensure_exists_and_add(effects.ability.vuln_ot_mod, v, 0.2, 0.0);
+            end
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "20% periodic shadow damage taken",
+    },
+    --immolate
+    [348] = {
+        apply = function(loadout, effects, buff)
+            -- incinerate damage flat dmg increase done in later stage
+            if buff.src and buff.src ~= "player" then
+                return;
+            end
+            local pts = talents:pts(3, 25);
+            ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Incinerate"], pts * 0.02, 0.0);
+            ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Chaos Bolt"], pts * 0.02, 0.0);
+
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "Incinerate extra damage. 10% more taken from Incinerate and Chaos Bolt. Conflagrate 25% crit",
+    },
+    --shadow embrace talent
+    [32386] = {
+        apply = function(loadout, effects, buff)
+            local c = 3;
+            if buff.src then
+                if buff.src ~= "player" then
+                    return;
+                else
+                    c = buff.count;
+                end
+            end
+
+            local pts  = loadout.talents_table:pts(1, 14);
+            for k, v in pairs(spell_names_to_id({"Unstable Affliction", "Curse of Agony", "Curse of Doom", "Seed of Corruption", "Corruption"})) do
+                ensure_exists_and_add(effects.ability.vuln_ot_mod, v, c*pts*0.01, 0.0);
+            end
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "15% periodic shadow damage taken",
     },
 };
 
 -- identical implementations
-target_buffs_predefined[58410] = target_buffs_predefined[57722]; -- master poisoner 3% crit
-target_buffs_predefined[20337] = target_buffs_predefined[57722]; -- heart of the crusader 3% crit
+-- is master poisoner baked into the poison debuff??
+--target_buffs_predefined[45176] = target_buffs_predefined[54499]; -- master poisoner 3% crit
+target_buffs_predefined[30708] = target_buffs_predefined[54499]; -- totem of wrath 3% crit
+
 
 target_buffs_predefined[22959] = target_buffs_predefined[17800]; -- improved scorch 5% crit
 
@@ -757,7 +1011,10 @@ local function detect_buffs(loadout)
               if not name then
                   break;
               end
-              v[name] = {count = count, id = spell_id, src = src};
+              -- if multiple buffs with same name, prioritize player applied
+              if not v[name] or v[name].src ~= "player" then
+                v[name] = {count = count, id = spell_id, src = src};
+              end
               i = i + 1;
         end
     end
@@ -824,6 +1081,7 @@ end
 
 addonTable.buff_filters = buff_filters;
 addonTable.filter_flags_active = filter_flags_active;
+addonTable.buff_category = buff_category;
 addonTable.buffs = buffs;
 addonTable.target_buffs = target_buffs;
 addonTable.detect_buffs = detect_buffs;

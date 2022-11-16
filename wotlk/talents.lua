@@ -94,7 +94,6 @@ local function create_glyphs()
             -- glyph of smite
             [55692] = {
                 apply = function(loadout, effects)
-                    -- add to gmod?
                     --TODO
                 end,
                 wowhead_id = "pcc"
@@ -283,150 +282,255 @@ local function apply_talents_glyphs(loadout, effects)
     
     if class == "MAGE" then
 
-        -- arcane subtlety
-        local pts = talents:pts(1, 1);
-        if pts ~= 0 then
-            for i = 2, 7 do
-                effects.target_res_by_school[i] = effects.target_res_by_school[i] - pts * 5;
-            end
-        end
         -- arcane focus
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
-            effects.spell_dmg_hit_by_school[magic_school.arcane] = 
-                effects.spell_dmg_hit_by_school[magic_school.arcane] + pts * 0.02;
+            effects.by_school.spell_dmg_hit[magic_school.arcane] = 
+                effects.by_school.spell_dmg_hit[magic_school.arcane] + pts * 0.01;
+
+            for k, v in pairs(spell_names_to_id({"Arcane Blast", "Arcane Missiles", "Arcane Explosion", "Arcane Barrage"})) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.01, 0);
+            end
+
         end
-        --  improved arcane explosion
+
+        --  clearclast
+        --  done in later stage
+        
+        --  spell impact
         local pts = talents:pts(1, 8);
         if pts ~= 0 then
-            local ae = spell_name_to_id["Arcane Explosion"];
-            if not effects.ability.crit[ae] then
-                effects.ability.crit[ae] = 0;
+            for k, v in pairs(spell_names_to_id({"Arcane Explosion", "Arcane Blast", "Blast Wave", "Fire Blast", "Scorch", "Fireball", "Ice Lance", "Cone of Cold"})) do
+                ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.02, 0.0);
             end
-            effects.ability.crit[ae] = effects.ability.crit[ae] + pts * 0.02;
+        end
+        local pts = talents:pts(1, 9);
+        if pts ~= 0 then
+            local val_by_pts = {0.04, 0.07, 0.1};
+            effects.by_attribute.stat_mod[stat.spirit] = 
+                effects.by_attribute.stat_mod[stat.spirit] + val_by_pts[pts];
         end
         --  arcane mediation
-        local pts = talents:pts(1, 12);
+        local pts = talents:pts(1, 13);
         if pts ~= 0 then
-            effects.regen_while_casting = effects.regen_while_casting + pts * 0.05;
+            effects.raw.regen_while_casting = effects.raw.regen_while_casting + pts * 0.5/3;
         end
-        --  arcane mind
+        --  torment of the weak
         local pts = talents:pts(1, 14);
         if pts ~= 0 then
-            effects.mana_mod = effects.mana_mod + pts * 0.02;
+            --effects.mana_mod = effects.mana_mod + pts * 0.02;
+            -- TODO: more dmg to snared
+        end
+        -- arcane mind
+        local pts = talents:pts(1, 17);
+        if pts ~= 0 then
+            effects.by_attribute.stat_mod[stat.int] = 
+                effects.by_attribute.stat_mod[stat.int] + pts*0.03;
         end
         -- arcane instability
-        local pts = talents:pts(1, 15);
+        local pts = talents:pts(1, 19);
         if pts ~= 0 then
-            for i = 1, 7 do
-                effects.spell_dmg_mod_by_school[i] = effects.spell_dmg_mod_by_school[i] + pts * 0.01;
-                effects.spell_crit_by_school[i] = effects.spell_crit_by_school[i] + pts * 0.01;
+            --TODO: dynamic crit
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.01 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.arcane] = 
+                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.01 * pts;
+
+        end
+        -- arcane potency
+        local pts = talents:pts(1, 20);
+        if pts ~= 0 then
+            -- NOTE: add crit as is expected by clearcast proc chance
+            local expected_extra_crit = loadout.talents_table:pts(1, 6)*0.02*0.15*pts;
+            effects.by_school.spell_crit[magic_school.fire] = 
+                effects.by_school.spell_crit[magic_school.fire] + expected_extra_crit;
+            effects.by_school.spell_crit[magic_school.frost] = 
+                effects.by_school.spell_crit[magic_school.frost] + expected_extra_crit;
+            effects.by_school.spell_crit[magic_school.arcane] = 
+                effects.by_school.spell_crit[magic_school.arcane] + expected_extra_crit;
+        end
+        -- arcane empowerment
+        local pts = talents:pts(1, 21);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.coef_mod,
+                                  spell_name_to_id["Arcane Blast"], pts * 0.03, 0.0);
+            ensure_exists_and_add(effects.ability.coef_ot_mod,
+                                  spell_name_to_id["Arcane Missiles"], pts * 0.314685314/3, 0.0);
+        end
+        -- mind mastery
+        local pts = talents:pts(1, 25);
+        if pts ~= 0 then
+            -- TODO: spell power based on int
+        end
+        -- netherwind presence
+        local pts = talents:pts(1, 28);
+        if pts ~= 0 then
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + pts*0.02) - 1.0;
+        end
+
+        -- spell power
+        local pts = talents:pts(1, 29);
+        if pts ~= 0 then
+            effects.by_school.spell_crit_mod[magic_school.frost] = 
+                effects.by_school.spell_crit_mod[magic_school.frost] + 0.5*pts*0.25;
+            effects.by_school.spell_crit_mod[magic_school.fire] = 
+                effects.by_school.spell_crit_mod[magic_school.fire] + 0.5*pts*0.25;
+            effects.by_school.spell_crit_mod[magic_school.arcane] = 
+                effects.by_school.spell_crit_mod[magic_school.arcane] + 0.5*pts*0.25;
+            
+        end
+
+        -- incineration
+        local pts = talents:pts(2, 2);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Fire Blast", "Scorch", "Arcane Blast", "Cone of Cold"})) do
+                ensure_exists_and_add(effects.ability.crit, v, pts * 0.02, 0.0);
             end
         end
+
         -- improved fireball
-        local pts = talents:pts(2, 1);
-        if pts ~= 0 then
-            local fb = spell_name_to_id["Fireball"];
-            if not effects.ability.cast_mod[fb] then
-                effects.ability.cast_mod[fb] = 0;
-            end
-            effects.ability.cast_mod[fb] = effects.ability.cast_mod[fb] + pts * 0.1;
-        end
-        -- ignite
         local pts = talents:pts(2, 3);
         if pts ~= 0 then
-           effects.ignite = pts; 
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Fireball"], pts * 0.1, 0.0);
         end
-        -- incinerate
+        -- ignite
+        local pts = talents:pts(2, 4);
+        if pts ~= 0 then
+           -- done in later stage
+        end
+        -- world in flames
         local pts = talents:pts(2, 6);
         if pts ~= 0 then
-            local scorch = spell_name_to_id["Scorch"];
-            local fb = spell_name_to_id["Fire Blast"];
-            if not effects.ability.crit[scorch] then
-                effects.ability.crit[scorch] = 0;
+            for k, v in pairs(spell_names_to_id({"Flamestrike", "Pyroblast", "Blast Wave", "Dragon's Breath", "Living Bomb", "Blizzard", "Arcane Explosion"})) do
+                ensure_exists_and_add(effects.ability.crit, v, pts * 0.02, 0.0);
             end
-            if not effects.ability.crit[fb] then
-                effects.ability.crit[fb] = 0;
-            end
-            effects.ability.crit[scorch] = effects.ability.crit[scorch] + pts * 0.02;
-            effects.ability.crit[fb] = effects.ability.crit[fb] + pts * 0.02;
         end
-        -- improved flamestrike
-        local pts = talents:pts(2, 7);
+        -- improved scorch
+        local pts = talents:pts(2, 11);
         if pts ~= 0 then
-            local fs = spell_name_to_id["Flamestrike"];
-            if not effects.ability.crit[fs] then
-                effects.ability.crit[fs] = 0;
+            for k, v in pairs(spell_names_to_id({"Fireball", "Scorch", "Frostfire Bolt"})) do
+                ensure_exists_and_add(effects.ability.crit, v, pts * 0.02, 0.0);
             end
-            effects.ability.crit[fs] = effects.ability.crit[fs] + pts * 0.05;
         end
         -- master of elements
-        local pts = talents:pts(2, 12);
+        -- done in later stage
+
+        -- playing with fire
+        local pts = talents:pts(2, 14);
         if pts ~= 0 then
-            effects.master_of_elements = pts;
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.01 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.arcane] = 
+                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.01 * pts;
         end
         -- critical mass
-        local pts = talents:pts(2, 13);
-        if pts ~= 0 then
-            loadout.spell_crit_by_school[magic_school.fire] =
-                loadout.spell_crit_by_school[magic_school.fire] + pts * 0.02;
-        end
-        -- fire power
         local pts = talents:pts(2, 15);
         if pts ~= 0 then
-            effects.by_school.spell_dmg_mod[magic_school.fire] =
-                effects.by_school.spell_dmg_mod[magic_school.fire] + pts * 0.02;
+            -- TODO: dynamic crit
         end
+        -- fire power
+        local pts = talents:pts(2, 18);
+        if pts ~= 0 then
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.02 * pts;
+        end
+        --pyromaniac
+        local pts = talents:pts(2, 19);
+        if pts ~= 0 then
+            -- TODO: dynamic crit
+        end
+        --molten fury
+        local pts = talents:pts(2, 21);
+        if pts ~= 0 then
+            -- done in later stage
+        end
+
+        --empowered fire
+        local pts = talents:pts(2, 23);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Fireball"], pts * 0.05, 0);
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Frostfire Bolt"], pts * 0.05, 0);
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Pyroblast"], pts * 0.05, 0);
+            -- TODO: refund on ignite, tricky and assumptions must be made
+        end
+
+        --burnout
+        local pts = talents:pts(2, 27);
+        if pts ~= 0 then
+            effects.by_school.spell_crit_mod[magic_school.frost] = 
+                effects.by_school.spell_crit_mod[magic_school.frost] + 0.05*pts;
+            effects.by_school.spell_crit_mod[magic_school.fire] = 
+                effects.by_school.spell_crit_mod[magic_school.fire] + 0.05*pts;
+            effects.by_school.spell_crit_mod[magic_school.arcane] = 
+                effects.by_school.spell_crit_mod[magic_school.arcane] + 0.05*pts;
+        end
+
         -- improved frostbolt
         local pts = talents:pts(3, 2);
         if pts ~= 0 then
-            local fb = spell_name_to_id["Frostbolt"];
-            if not effects.ability.cast_mod[fb] then
-                effects.ability.cast_mod[fb] = 0;
-            end
-            effects.ability.cast_mod[fb] = effects.ability.cast_mod[fb] + pts * 0.1;
-        end
-        -- elemental precision
-        local pts = talents:pts(3, 3);
-        if pts ~= 0 then
-            effects.by_school.spell_dmg_hit[magic_school.fire] = 
-                effects.by_school.spell_dmg_hit[magic_school.fire] + pts * 0.02;
-            effects.by_school.spell_dmg_hit[magic_school.frost] = 
-                effects.by_school.spell_dmg_hit[magic_school.frost] + pts * 0.02;
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Frostbolt"], pts * 0.1, 0.0);
         end
         -- ice shards
-        local pts = talents:pts(3, 4);
+        local pts = talents:pts(3, 3);
         if pts ~= 0 then
             effects.by_school.spell_crit_mod[magic_school.frost] = 
-                1 + (effects.by_school.spell_crit_mod[magic_school.frost] - 1) * (1 + pts * 0.2);
+                effects.by_school.spell_crit_mod[magic_school.frost] + pts*0.1;
+        end
+        -- precision
+        local pts = talents:pts(3, 6);
+        if pts ~= 0 then
+            effects.by_school.spell_dmg_hit[magic_school.frost] = 
+                effects.by_school.spell_dmg_hit[magic_school.frost] + pts * 0.01;
+            effects.by_school.spell_dmg_hit[magic_school.arcane] = 
+                effects.by_school.spell_dmg_hit[magic_school.arcane] + pts * 0.01;
+            effects.by_school.spell_dmg_hit[magic_school.fire] = 
+                effects.by_school.spell_dmg_hit[magic_school.fire] + pts * 0.01;
+            effects.raw.cost_mod = effects.raw.cost_mod + pts* 0.01;
+        
         end
         -- piercing ice
         local pts = talents:pts(3, 8);
         if pts ~= 0 then
-            effects.by_school.spell_dmg_mod[5] = effects.by_school.spell_dmg_mod[5] + pts * 0.02;
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.02 * pts;
         end
         -- frost channeling
         local pts = talents:pts(3, 12);
         if pts ~= 0 then
+            local by_pts = {0.04, 0.07, 0.1};
+            effects.raw.cost_mod = effects.raw.cost_mod + by_pts[pts];
 
-            local cold_spells = {"Frostbolt", "Blizzard", "Cone of Cold", "Frost Nova"};
-            for k, v in pairs(cold_spells) do
-                cold_spells[k] = spell_name_to_id[v];
-            end
-
-            for k, v in pairs(cold_spells) do
-                if not effects.ability.cost_mod[v] then
-                    effects.ability.cost_mod[v] = 0;
-                end
-            end
-            for k, v in pairs(cold_spells) do
-                effects.ability.cost_mod[v] = effects.ability.cost_mod[v] + pts * 0.05;
-            end
         end
         -- improved cone of cold
         local pts = talents:pts(3, 15);
         if pts ~= 0 then
-            local coc = spell_name_to_id["Cone of Cold"];
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Cone of Cold"], pts * 0.15, 0.0);
+        end
+
+        -- winters chill
+        local pts = talents:pts(3, 18);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostbolt"], pts * 0.01, 0.0);
+        end
+
+        -- empowered frostbolt
+        local pts = talents:pts(3, 22);
+        if pts ~= 0 then
+            local fb = spell_name_to_id["Frostbolt"];
+            ensure_exists_and_add(effects.ability.cast_mod, fb, pts * 0.1, 0.0);
+            ensure_exists_and_add(effects.ability.coef_mod, fb, pts * 0.05, 0.0);
+        end
+
+        -- chilled to the bone
+        local pts = talents:pts(3, 27);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Frostbolt", "Frostfire Bolt", "Ice Lance"})) do
+                ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
+            end
         end
 
     elseif class == "DRUID" then
@@ -444,7 +548,7 @@ local function apply_talents_glyphs(loadout, effects)
         -- genesis
         local pts = talents:pts(1, 2);
         if pts ~= 0 then
-            effects.ot_mod = effects.ot_mod + 0.01 * pts;
+            effects.raw.ot_mod = effects.raw.ot_mod + 0.01 * pts;
         end
 
         -- moonglow
@@ -535,8 +639,9 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
             local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath"});
+            local dmg_mod_by_pts = {0.03, 0.06, 0.1};
             for k, v in pairs(abilities) do
-                ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.03, 0.0);
+                ensure_exists_and_add(effects.ability.effect_mod, v, dmg_mod_by_pts[pts], 0.0);
             end
         end
         -- balance of power
@@ -552,14 +657,10 @@ local function apply_talents_glyphs(loadout, effects)
         -- moonkin form
         local pts = talents:pts(1, 18);
         if pts ~= 0 then
-
-            -- TODO: boomkin tracking for self and party
         end
         -- improved moonkin form
         local pts = talents:pts(1, 19);
         if pts ~= 0 then
-
-            -- TODO: boomkin tracking for self and party
         end
 
         -- improved faerie fire
@@ -589,8 +690,6 @@ local function apply_talents_glyphs(loadout, effects)
         -- eclipse
         local pts = talents:pts(1, 23);
         if pts ~= 0 then
-
-            -- TODO: eclipse tracking
         end
 
         -- gale winds
@@ -633,7 +732,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 7);
         if pts ~= 0 then
             local regen = {0.17, 0.33, 0.5};
-            effects.regen_while_casting = effects.regen_while_casting + regen[pts];
+            effects.raw.regen_while_casting = effects.raw.regen_while_casting + regen[pts];
         end
 
         
@@ -690,10 +789,11 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 19);
         if pts ~= 0 then
 
-            effects.by_school.spell_crit[magic_school.nature] = 
-                effects.by_school.spell_crit[magic_school.nature] + 0.01 * pts;
-            effects.by_school.spell_crit[magic_school.arcane] = 
-                effects.by_school.spell_crit[magic_school.arcane] + 0.01 * pts;
+            -- TODO: dynamic crit
+            --effects.by_school.spell_crit[magic_school.nature] = 
+            --    effects.by_school.spell_crit[magic_school.nature] + 0.01 * pts;
+            --effects.by_school.spell_crit[magic_school.arcane] = 
+            --    effects.by_school.spell_crit[magic_school.arcane] + 0.01 * pts;
         end
 
         -- empowered rejuvenation
@@ -792,10 +892,11 @@ local function apply_talents_glyphs(loadout, effects)
         -- focused power
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
-            -- TODO: unclear how this spell % dmg is added, before or with other % ?
-            --effects.dmg_mod = effects.dmg_mod + pts * 0.02;
-            --effects.spell_heal_mod = effects.spell_heal_mod + pts * 0.02;
-            effects.raw.gmod = (1.0 + effects.raw.gmod) * (1 + pts*0.02) - 1.0;
+            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + pts * 0.02;
+            effects.by_school.spell_dmg_mod[magic_school.holy] =
+                effects.by_school.spell_dmg_mod[magic_school.holy] + pts * 0.02;
+            effects.by_school.spell_dmg_mod[magic_school.shadow] =
+                effects.by_school.spell_dmg_mod[magic_school.shadow] + pts * 0.02;
         end
 
         -- enlightenment
@@ -839,8 +940,9 @@ local function apply_talents_glyphs(loadout, effects)
         -- holy specialization
         local pts = talents:pts(2, 3);
         if pts ~= 0 then
-            effects.by_school.spell_crit[magic_school.holy] = 
-                effects.by_school.spell_crit[magic_school.holy] + pts * 0.01;
+            -- TODO: dynamic crit
+            --effects.by_school.spell_crit[magic_school.holy] = 
+            --    effects.by_school.spell_crit[magic_school.holy] + pts * 0.01;
         end
         -- divine fury
         local pts = talents:pts(2, 5);
@@ -966,9 +1068,6 @@ local function apply_talents_glyphs(loadout, effects)
         -- focused mind
         local pts = talents:pts(3, 16);
         if pts ~= 0 then
-            effects.by_school.spell_dmg_hit[magic_school.shadow] = 
-                effects.by_school.spell_dmg_hit[magic_school.shadow] + pts * 0.01;
-
             local abilities = spell_names_to_id({"Mind Blast", "Mind Flay", "Mind Sear"});
             for k, v in pairs(abilities) do
                 ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.05, 0);
@@ -1023,7 +1122,7 @@ local function apply_talents_glyphs(loadout, effects)
         if pts ~= 0 then
              
            effects.raw.spiritual_guidance = pts * 0.04; 
-       end
+        end
         
     elseif class == "SHAMAN" then
 
@@ -1182,7 +1281,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 5);
         if pts ~= 0 then
             -- TODO: healing totem included?
-            local healing_spells = spell_names_to_id({"Healing Stream Totem", "Lesser Healing Wave", "Healing Wave", "Riptide", "Earth Shield"});
+            local healing_spells = spell_names_to_id({"Chain Heal", "Lesser Healing Wave", "Healing Wave", "Riptide", "Earth Shield"});
             for k, v in pairs(healing_spells) do
                 ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.01, 0.0);
             end
@@ -1200,7 +1299,7 @@ local function apply_talents_glyphs(loadout, effects)
         -- tidal mastery
         local pts = talents:pts(3, 11);
         if pts ~= 0 then
-            local abilities = spell_names_to_id({"Lightning Bolt", "Chain Lightning", "Thunderstorm",  "Lesser Healing Wave", "Healing Wave", "Riptide", "Earth Shield"});
+            local abilities = spell_names_to_id({"Lightning Bolt", "Chain Lightning", "Thunderstorm",  "Lesser Healing Wave", "Healing Wave", "Riptide", "Earth Shield", "Chain Heal"});
             for k, v in pairs(abilities) do
                 ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
             end
@@ -1223,7 +1322,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 19);
         if pts ~= 0 then
             for i = 2,7 do
-                effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + pts * 0.2;
+                effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + pts * 0.02;
             end
         end
 
@@ -1235,19 +1334,12 @@ local function apply_talents_glyphs(loadout, effects)
 
         -- nature's blessing
         -- TODO; figure out
-        local pts = talents:pts(3, 21);
-        if pts ~= 0 then
-            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], pts * 0.1, 0.0);
-        end
+        --local pts = talents:pts(3, 21);
 
         -- ancestral awakening
-        -- TODO: do like divine aegis?
-        local pts = talents:pts(3, 22);
-        if pts ~= 0 then
-        end
+        -- done in later stage
 
-        -- ancestral awakening
-        -- TODO: do like divine aegis?
+        -- 
         local pts = talents:pts(3, 24);
         if pts ~= 0 then
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Earth Shield"], pts * 0.05, 0.0);
@@ -1296,8 +1388,9 @@ local function apply_talents_glyphs(loadout, effects)
         -- holy power
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
-            effects.by_school.spell_crit[magic_school.holy] = 
-                effects.by_school.spell_crit[magic_school.holy] + pts * 0.01;
+            -- TODO: dynamic crit
+            --effects.by_school.spell_crit[magic_school.holy] = 
+            --    effects.by_school.spell_crit[magic_school.holy] + pts * 0.01;
         end
 
         -- lights grace
@@ -1347,6 +1440,235 @@ local function apply_talents_glyphs(loadout, effects)
         end
 
     elseif class == "WARLOCK" then
+        -- improved curse of agony
+        local pts = talents:pts(1, 1);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Curse of Agony"], pts * 0.05, 0.0); 
+        end
+
+        -- suppression
+        local pts = talents:pts(1, 2);
+        if pts ~= 0 then
+            effects.by_school.spell_dmg_hit[magic_school.shadow] = 
+                effects.by_school.spell_dmg_hit[magic_school.shadow] + pts * 0.01;
+            effects.by_school.spell_dmg_hit[magic_school.fire] = 
+                effects.by_school.spell_dmg_hit[magic_school.fire] + pts * 0.01;
+
+            local affl_abilities = spell_names_to_id({"Corruption", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul", "Curse of Doom", "Unstable Affliction", "Haunt", "Seed of Corruption"});
+            for k, v in pairs(affl_abilities) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0); 
+            end
+        end
+
+        -- improved corruption
+        local pts = talents:pts(1, 3);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], pts * 0.02, 0.0); 
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Seed of Corruption"], pts * 0.01, 0.0); 
+        end
+
+        -- soul siphon
+        local pts = talents:pts(1, 7);
+        if pts ~= 0 then
+            --TODO: need to track affliction debuffs on target
+        end
+
+        -- amplify curse
+        local pts = talents:pts(1, 10);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Curse of Agony", "Curse of Doom"})) do
+                ensure_exists_and_add(effects.ability.cast_mod, v, 0.5, 0.0); 
+            end
+        end
+
+        -- empowered corruption
+        local pts = talents:pts(1, 13);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Corruption"], pts*0.1, 0.0); 
+        end
+
+        -- shadow embrace
+        -- implemented in buffs
+        
+        -- siphon life
+        local pts = talents:pts(1, 15);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Seed of Corruption", "Corruption", "Unstable Affliction"})) do
+                ensure_exists_and_add(effects.ability.effect_ot_mod, v, pts*0.05, 0.0); 
+            end
+        end
+
+        -- shadow mastery
+        local pts = talents:pts(1, 18);
+        if pts ~= 0 then
+            -- TODO: multiplicative or additive?
+            effects.by_school.spell_dmg_mod_add[magic_school.shadow] = 
+                effects.by_school.spell_dmg_mod_add[magic_school.shadow] + pts * 0.03;
+        end
+
+        -- eradication
+        -- implemented in buffs
+
+        -- contagion
+        local pts = talents:pts(1, 20);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Curse of Agony", "Seed of Corruption", "Corruption"})) do
+                ensure_exists_and_add(effects.ability.effect_mod, v, pts*0.01, 0.0); 
+            end
+        end
+
+        -- malediction
+        local pts = talents:pts(1, 23);
+        if pts ~= 0 then
+            effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.01 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
+            for k, v in pairs(spell_names_to_id({"Corruption", "Unstable Affliction"})) do
+                ensure_exists_and_add(effects.ability.crit_ot, v, pts*0.03, 0.0); 
+            end
+        end
+
+        -- death's embrace
+        -- implemented in later stage
+        
+
+        -- pandemic
+        local pts = talents:pts(1, 26);
+        if pts ~= 0 then
+
+            local abilities = spell_names_to_id({"Corruption", "Unstable Affliction", "Haunt"});
+            for k, v in pairs(abilities) do
+                ensure_exists_and_add(effects.ability.crit_mod, v, 0.5, 0);
+            end
+        end
+
+        -- everlasting affliction
+        local pts = talents:pts(1, 27);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Unstable Affliction"], pts*0.05, 0.0); 
+            ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Corruption"], pts*0.05, 0.0); 
+        end
+
+        -- master demonoligist
+        -- TODO: buff tracking
+        local pts = talents:pts(2, 16);
+
+        -- molten core
+        local pts = talents:pts(2, 17);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Immolate"], pts, 0.0); 
+            -- rest is done in buffs
+        end
+
+        -- decimation done in later stage
+        
+        -- demonic pact
+        local pts = talents:pts(2, 26);
+        if pts ~= 0 then
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.02 * pts;
+            effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.02 * pts;
+        end
+
+        -- improved shadow bolt
+        local pts = talents:pts(3, 1);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Bolt"], pts*0.02, 0.0); 
+        end
+
+        -- bane
+        local pts = talents:pts(3, 2);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Shadow Bolt"], pts*0.1, 0.0); 
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Chaos Bolt"], pts*0.1, 0.0); 
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], pts*0.1, 0.0); 
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Soul Fire"], pts*0.4, 0.0); 
+        end
+
+        -- aftermath
+        local pts = talents:pts(3, 3);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], pts*0.03, 0.0); 
+        end
+
+        -- TODO: are these all the destr spells? conflagrate doesnt have an id atm
+        local destr = spell_names_to_id({"Rain of Fire", "Hellfire", "Shadow Bolt", "Chaos Bolt", "Immolate", "Soul Fire", "Shadowburn", "Shadowfury", "Searing Pain", "Incinerate"});
+
+        -- cataclysm
+        local pts = talents:pts(3, 5);
+        if pts ~= 0 then
+            local by_pts = {0.04, 0.07, 0.1};
+            for k, v in pairs(destr) do
+                ensure_exists_and_add(effects.ability.cost_mod, v, by_pts[pts], 0.0); 
+            end
+        end
+        -- ruin
+        local pts = talents:pts(3, 8);
+        if pts ~= 0 then
+            for k, v in pairs(destr) do
+                ensure_exists_and_add(effects.ability.crit_mod, v, pts * 0.1, 0.0); 
+            end
+        end
+
+        -- improved searing pain
+        local pts = talents:pts(3, 11);
+        if pts ~= 0 then
+            local by_pts = {0.04, 0.07, 0.1};
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Searing Pain"], by_pts[pts], 0.0); 
+        end
+
+        -- backlash
+        local pts = talents:pts(3, 12);
+        if pts ~= 0 then
+            -- TODO: dynamic crit
+        end
+
+        -- improved immolate
+        local pts = talents:pts(3, 13);
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], pts*0.1, 0.0); 
+        end
+
+        -- devastation
+        local pts = talents:pts(3, 14);
+        -- TODO: make sure this isn't being dynamically added ingame
+        if pts ~= 0 then
+            for k, v in pairs(destr) do
+                ensure_exists_and_add(effects.ability.crit, v, 0.05, 0.0); 
+            end
+        end
+
+        -- emberstorm
+        local pts = talents:pts(3, 16);
+        -- TODO: make sure this isn't being dynamically added ingame
+        if pts ~= 0 then
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Incinerate"], pts * 0.05, 0.0); 
+            effects.by_school.spell_dmg_mod_add[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod_add[magic_school.fire] + 0.03 * pts;
+        end
+
+        -- pyroclasm
+        -- done in buffs
+        
+        -- shadow and flame
+        local pts = talents:pts(3, 20);
+        if pts ~= 0 then
+            for k, v in pairs(spell_names_to_id({"Shadow Bolt", "Shadowburn", "Chaos Bolt", "Incinerate"})) do
+                ensure_exists_and_add(effects.ability.coef_mod, v, pts * 0.04, 0.0); 
+            end
+        end
+
+        -- fire and brimstone
+        local pts = talents:pts(3, 25);
+        if pts ~= 0 then
+            -- TODO: when conflagrate is implemented uncomment this
+            --ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Conflagrate"], pts * 0.05, 0.0); 
+        end
+
+
+
     end
 end
 

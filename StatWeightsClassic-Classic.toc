@@ -1,0 +1,6 @@
+## Interface: 11403
+## Title: Stat Weights Classic Vanilla
+## Notes: Advanced ability information, icon overlays and more
+## SavedVariablesPerCharacter: __sw__persistent_data_per_char
+## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
+vanilla/stat_weights_classic.lua

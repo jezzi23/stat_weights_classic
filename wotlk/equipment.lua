@@ -134,7 +134,7 @@ local function create_set_effects()
                 end
                 if num_pieces >= 4 then
                     local abilities = spell_names_to_id({"Wrath", "Starfire"});
-                    for k, v in pair(abilities) do
+                    for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.crit, v, 0.05, 0.0);
                     end
                 end
@@ -218,7 +218,7 @@ local function apply_equipment(loadout, effects)
     -- head slot gems
     for _, v in pairs({GetInventoryItemGems(1)}) do
         -- chaotic skyflare diamond 3% crit dmg, totally janky behaviour
-        if v == 41285 then
+        if v == 41285 or v == 34220 then
             effects.raw.special_crit_mod = effects.raw.special_crit_mod + 0.045;
         end
     end
