@@ -5567,5 +5567,5 @@ SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-__sw__debug__ = 1;
+--__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;
