@@ -170,6 +170,14 @@ end
 
 local spell_name_to_id = spell_name_to_ids();
 
+local localized_spell_names_to_id = {};
+for _, v in pairs(spell_name_to_id) do
+    local lname = GetSpellInfo(v);
+
+    localized_spell_names_to_id[lname] = v;
+end
+
+
 local magic_school = {
      physical = 1,
      holy     = 2,
@@ -9343,7 +9351,7 @@ local spells = create_spells();
 for k, v in pairs(spells) do
     local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
     -- rank1 contains some general fields that we write to all ranks
-    local rank1_of_spell = spell_name_to_id[name]
+    local rank1_of_spell = localized_spell_names_to_id[name]
     local spell_data = spells[rank1_of_spell];
     if not spell_data then
         print(k, name,  rank1_of_spell);

@@ -1439,7 +1439,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     -- cost rounding?
     stats.cost = tonumber(string.format("%.0f", stats.cost));
 
-    local lvl_scaling = level_scaling(loadout.lvl);
+    local lvl_scaling = level_scaling(spell.lvl_req);
     stats.coef = spell.coef * lvl_scaling;
     stats.ot_coef = spell.over_time_coef *lvl_scaling;
 
@@ -1806,7 +1806,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     local effect_min = pts * 0.1 * min_crit_if_hit;
                     local effect_max = pts * 0.1 * max_crit_if_hit;
                     if eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
-                        tooltip:AddLine(string.format("Critical (%.2f%% crit): %d-%d (+ %s %d-%d)", 
+                        tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d (+ %s %d-%d)", 
                                                       stats.crit*100, 
                                                       math.floor(min_crit_if_hit), 
                                                       math.ceil(max_crit_if_hit),
@@ -1815,7 +1815,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                       math.ceil(effect_max)),
                                        252.0/255, 69.0/255, 3.0/255);
                     else
-                        tooltip:AddLine(string.format("Critical (%.2f%% crit): %d (+ %s %d)", 
+                        tooltip:AddLine(string.format("Critical (%.2f%%): %d (+ %s %d)", 
                                                       stats.crit*100, 
                                                       math.floor(min_crit_if_hit), 
                                                       effect_type_str,
@@ -1842,7 +1842,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     local max_crit_if_hit = eval.spell.max_crit_if_hit/(1 + pts * 0.08);
                     local ignite_min = pts * 0.08 * min_crit_if_hit;
                     local ignite_max = pts * 0.08 * max_crit_if_hit;
-                    tooltip:AddLine(string.format("Critical (%.2f%% crit): %d-%d (+ ignites %d-%d)", 
+                    tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d (+ ignites %d-%d)", 
                                                   stats.crit*100, 
                                                   math.floor(min_crit_if_hit), 
                                                   math.ceil(max_crit_if_hit),
@@ -1851,13 +1851,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                    252.0/255, 69.0/255, 3.0/255);
 
                 elseif eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
-                    tooltip:AddLine(string.format("Critical (%.2f%% crit): %d-%d", 
+                    tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d", 
                                                   stats.crit*100, 
                                                   math.floor(eval.spell.min_crit_if_hit), 
                                                   math.ceil(eval.spell.max_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
                 else 
-                    tooltip:AddLine(string.format("Critical (%.2f%% crit): %d", 
+                    tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
                                                   stats.crit*100, 
                                                   math.floor(eval.spell.min_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
@@ -1961,7 +1961,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                            252.0/255, 69.0/255, 3.0/255);
                 
             else
-                tooltip:AddLine(string.format("Critical (%.2f%% crit): %d over %.2fs (%d-%d for %d ticks)",
+                tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%d-%d for %d ticks)",
                                               stats.crit*100, 
                                               eval.spell.ot_if_crit, 
                                               eval.spell.ot_duration, 
