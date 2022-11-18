@@ -78,6 +78,8 @@ local snapshot_time_since_last_update = 0;
 local sequence_counter = 0;
 local talents_update_needed = true;
 local equipment_update_needed = true;
+local special_action_bar_changed = false;
+local setup_action_bar_needed = true;
 
 local function class_supported()
     return class == "MAGE" or class == "PRIEST" or class == "WARLOCK" or
@@ -4605,8 +4607,6 @@ local function gather_spell_icons()
         spell_book_frames[i].overlay_frames = {nil, nil, nil};
     end
 
-    -- danni er faggi
-
     -- gather action bar icons
     index = 1;
     if IsAddOnLoaded("Bartender4") then -- check for some common addons if they overrite spellbook frames
@@ -4711,10 +4711,73 @@ local function gather_spell_icons()
     };
 end
 
+local function reassign_overlay_icon_spell(action_id, spell_id, action_button_frame)
+
+    if not spells[spell_id] then
+        spell_id = 0;
+    end
+
+    if spell_id ~= 0 then
+        if __sw__icon_frames.bars[action_id] then
+            for i = 1, 3 do
+                if __sw__icon_frames.bars[action_id].overlay_frames[i] then
+                    __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
+                end
+            end
+        end
+
+        __sw__icon_frames.bars[action_id] = {};
+        __sw__icon_frames.bars[action_id].spell_id = spell_id;
+        __sw__icon_frames.bars[action_id].frame = action_button_frame;
+        __sw__icon_frames.bars[action_id].overlay_frames = {nil, nil, nil}
+    else
+        if __sw__icon_frames.bars[action_id] then
+            for i = 1, 3 do
+                if __sw__icon_frames.bars[action_id].overlay_frames[i] then
+                    __sw__icon_frames.bars[action_id].overlay_frames[i]:SetText("");
+                    __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
+                end
+                __sw__icon_frames.bars[action_id].overlay_frames[i] = nil;
+            end
+        end
+        __sw__icon_frames.bars[action_id] = nil; 
+    end
+
+end
+
+local function reassign_overlay_icon(action_id)
+
+    local spell_id = 0;
+    local action_type, id, _ = GetActionInfo(action_id);
+    if action_type == "macro" then
+        spell_id, _ = GetMacroSpell(id);
+    elseif action_type == "spell" then
+         spell_id = id;
+    else
+        spell_id = 0;
+    end
+    -- NOTE: any action_id > 12 we might have mirrored action ids
+    -- with Bar 1 due to shapeshifts, and forms taking over Bar 1
+    -- so check if the action slot in bar 1 is the same
+    if action_id > 12 then
+        local mirrored_bar_id = (action_id-1)%12 + 1;
+        local mirrored_action_button_frame = getfenv()[__sw__icon_frames.bar_names[mirrored_bar_id]];
+        local mirrored_action_id = action_id_of_button(mirrored_action_button_frame);
+        if mirrored_action_id == action_id then
+            -- yep was mirrored, update that as well
+            reassign_overlay_icon_spell(mirrored_bar_id, spell_id, mirrored_action_button_frame)
+        end
+    end
+    local button_frame = getfenv()[__sw__icon_frames.bar_names[action_id]]; 
+
+    reassign_overlay_icon_spell(action_id, spell_id, button_frame)
+end
+
 local function on_special_action_bar_changed()
 
     for i = 1, 12 do
     
+        -- Hopefully the Actionbar host has updated the new action id of its 1-12 action id bar
         local frame = getfenv()[__sw__icon_frames.bar_names[i]];
         if frame then
     
@@ -4729,39 +4792,19 @@ local function on_special_action_bar_changed()
             else
                 spell_id = 0;
             end
-            if not spells[spell_id] then
-                spell_id = 0;
-            end
-    
-            if spell_id ~= 0 then
-    
-                if __sw__icon_frames.bars[i] then
-                    for j = 1, 3 do
-                        if __sw__icon_frames.bars[i].overlay_frames[j] then
-                            __sw__icon_frames.bars[i].overlay_frames[j]:SetText("");
-                            __sw__icon_frames.bars[i].overlay_frames[j]:Hide();
-                        end
-                    end
-                end
-    
-                __sw__icon_frames.bars[i] = {};
-                __sw__icon_frames.bars[i].spell_id = spell_id;
-                __sw__icon_frames.bars[i].frame = frame; 
-                __sw__icon_frames.bars[i].overlay_frames = {nil, nil, nil}
-            else
-                if __sw__icon_frames.bars[i] then
-                    for j = 1, 3 do
-                        if __sw__icon_frames.bars[i].overlay_frames[j] then
-                            __sw__icon_frames.bars[i].overlay_frames[j]:SetText("");
-                            __sw__icon_frames.bars[i].overlay_frames[j]:Hide();
-                        end
-                    end
-                end
-                __sw__icon_frames.bars[i] = nil; 
-            end
+
+            reassign_overlay_icon_spell(action_id, spell_id, getfenv()[__sw__icon_frames.bar_names[action_id]]);
+            reassign_overlay_icon_spell(i, spell_id, frame);
         end
     end
+
 end
+
+local function setup_action_bars()
+    __sw__icon_frames = gather_spell_icons();
+    update_icon_overlay_settings();
+end
+
 
 local event_dispatch = {
     ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, msg, msg2, msg3)
@@ -4771,9 +4814,7 @@ local event_dispatch = {
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
         if msg == "StatWeightsClassic" then
-            if not class_is_supported then
-                return;
-            end
+
             create_sw_gui_stat_comparison_frame();
 
             if not __sw__persistent_data_per_char then
@@ -4895,9 +4936,6 @@ local event_dispatch = {
         end
     end,
     ["PLAYER_LOGOUT"] = function(self, msg, msg2, msg3)
-        if not class_is_supported then
-            return;
-        end
         if __sw__use_defaults__ then
             __sw__persistent_data_per_char = nil;
         end
@@ -4924,12 +4962,8 @@ local event_dispatch = {
         save_sw_settings();
     end,
     ["PLAYER_LOGIN"] = function(self, msg, msg2, msg3)
-        if not class_is_supported then
-            return;
-        end
-        __sw__icon_frames = gather_spell_icons();
-        update_icon_overlay_settings();
 
+        setup_action_bars();
         sw_addon_loaded = true;
     end,
     ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
@@ -4937,63 +4971,28 @@ local event_dispatch = {
             return;
         end
 
-        local action_id = msg;
-
-        local spell_id = 0;
-        local action_type, id, _ = GetActionInfo(action_id);
-        if action_type == "macro" then
-            spell_id, _ = GetMacroSpell(id);
-        elseif action_type == "spell" then
-             spell_id = id;
-        else
-            spell_id = 0;
-        end
-        if not spells[spell_id] then
-            spell_id = 0;
-        end
-
-        if spell_id ~= 0 then
-            if __sw__icon_frames.bars[action_id] then
-                for i = 1, 3 do
-                    if __sw__icon_frames.bars[action_id].overlay_frames[i] then
-                        __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
-                    end
-                end
-            end
-
-            __sw__icon_frames.bars[action_id] = {};
-            __sw__icon_frames.bars[action_id].spell_id = spell_id;
-            __sw__icon_frames.bars[action_id].frame = getfenv()[__sw__icon_frames.bar_names[action_id]]; 
-            __sw__icon_frames.bars[action_id].overlay_frames = {nil, nil, nil}
-        else
-            if __sw__icon_frames.bars[action_id] then
-                for i = 1, 3 do
-                    if __sw__icon_frames.bars[action_id].overlay_frames[i] then
-                        __sw__icon_frames.bars[action_id].overlay_frames[i]:SetText("");
-                        __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
-                    end
-                    __sw__icon_frames.bars[action_id].overlay_frames[i] = nil;
-                end
-            end
-            __sw__icon_frames.bars[action_id] = nil; 
-        end
-
-        if IsStealthed() or GetShapeshiftForm() ~= 0 then
-            on_special_action_bar_changed();
-        end
+        reassign_overlay_icon(msg)
     end,
     ["UPDATE_STEALTH"] = function(self, msg, msg2, msg3)
         if not sw_addon_loaded then
             return;
         end
-        on_special_action_bar_changed();
+        special_action_bar_changed = true;
     end,
-    ["UPDATE_SHAPESHIFT_FORM"] = function(self, msg, msg2, msg3)
+    -- NOTE: Some bug is causing this event to be spammed even if no shapeshifts
+    --       of any sort are taking place
+    --["UPDATE_SHAPESHIFT_FORM"] = function(self, msg, msg2, msg3)
+    --end,
+    ["UPDATE_BONUS_ACTIONBAR"] = function(self, msg, msg2, msg3)
         if not sw_addon_loaded then
             return;
         end
-        on_special_action_bar_changed();
+
+        special_action_bar_changed = true;
     end,
+    --["ACTIONBAR_UPDATE_STATE"] = function(self, msg, msg2, msg3)
+    --    -- test
+    --end,
     --["UNIT_AURA"] = function(self, msg, msg2, msg3)
     --    if msg == "player" or msg == "target" or msg == "mouseover" then
     --        buffs_update_needed = true;
@@ -5003,8 +5002,15 @@ local event_dispatch = {
     --    buffs_update_needed = true;
     --end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
-        __sw__icon_frames = gather_spell_icons();
-        update_icon_overlay_settings();
+        for k, v in pairs(__sw__icon_frames.bars) do
+            for i = 1, 3 do
+                if v.overlay_frames[i] then
+                    v.overlay_frames[i]:Hide();
+                end
+            end
+
+        end
+        setup_action_bar_needed = true;
         if active_loadout_entry().loadout.is_dynamic_loadout then
             talents_update_needed = true;
         end
@@ -5063,7 +5069,6 @@ local function create_sw_base_gui()
     if class ~= "PALADIN" then
         sw_frame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED");
     end
-    sw_frame:RegisterEvent("UPDATE_SHAPESHIFT_FORM");
 
     sw_frame:SetWidth(400);
     sw_frame:SetHeight(600);
@@ -5073,6 +5078,7 @@ local function create_sw_base_gui()
     sw_frame.title:SetFontObject(font)
     sw_frame.title:SetText("Stat Weights Classic WOTLK");
     sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
+    counter = 2
 
     sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
         event_dispatch[event](self, msg, msg2, msg3);
@@ -5399,6 +5405,16 @@ end
 __sw__icon_frames = {};
 
 local function update_spell_icons(loadout, effects)
+
+    if setup_action_bar_needed then
+        setup_action_bars();
+        setup_action_bar_needed = false;
+    end
+
+    if special_action_bar_changed then
+        on_special_action_bar_changed();
+        special_action_bar_changed = false;
+    end
 
     -- update spell book icons
     if SpellBookFrame:IsShown() then

@@ -322,7 +322,7 @@ local function create_spells()
                 rank                = 11,
                 lvl_req             = 60,
                 lvl_max             = 64,
-                lvl_outdated        = 60,
+                lvl_outdated        = 62,
                 lvl_scaling         = 3.2,
             },
             [27071] = {
