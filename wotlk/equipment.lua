@@ -81,6 +81,35 @@ local function create_sets()
         set_tier_ids[39543] = set_tiers.pve_t7_3;
 
     elseif class == "SHAMAN" then
+        -- t7 elemental
+        for i = 39592, 39596 do
+            set_tier_ids[i] = set_tiers.pve_t7_1;
+        end
+        for i = 40514, 40518 do
+            set_tier_ids[i] = set_tiers.pve_t7_1;
+        end
+        -- t7 enhancement
+        set_tier_ids[39597] = set_tiers.pve_t7_2;
+        for i = 39601, 39604 do
+            set_tier_ids[i] = set_tiers.pve_t7_2;
+        end
+        for i = 40520, 40524 do
+            set_tier_ids[i] = set_tiers.pve_t7_2;
+        end
+
+        -- t7 restoration
+        for i = 40508, 40513 do
+            set_tier_ids[i] = set_tiers.pve_t7_3;
+        end
+        for i = 40520, 40524 do
+            set_tier_ids[i] = set_tiers.pve_t7_3;
+        end
+
+        set_tier_ids[39583] = set_tiers.pve_t7_3;
+        set_tier_ids[39588] = set_tiers.pve_t7_3;
+        for i = 39589, 39591 do
+            set_tier_ids[i] = set_tiers.pve_t7_3;
+        end
 
     elseif class == "WARLOCK" then
 
@@ -159,6 +188,30 @@ local function create_set_effects()
         };
 
     elseif class == "SHAMAN" then
+        return {
+            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Lightning Bolt"], 0.05, 0.0);
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Lava Burst"], 0.05, 0.0);
+                end
+            end,
+            [set_tiers.pve_t7_2] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effet_mod, spell_name_to_id["Lightning Bolt"], 0.1, 0.0);
+                end
+            end,
+            [set_tiers.pve_t7_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    -- TODO: water shield
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Healing Wave"], 0.05, 0.0);
+                end
+            end,
+        };
 
     elseif class == "WARLOCK" then
 

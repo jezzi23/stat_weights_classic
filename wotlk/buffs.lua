@@ -661,6 +661,15 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "Combustion, 50% bonus crit damage",
     },
+    -- fingers of frost
+    [74396] = {
+        apply = function(loadout, effects, buff)
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_frozen);
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "Frozen effect",
+    },
 };
 -- identical implementations
 buffs_predefined[31583] = buffs_predefined[31869];-- arcane_empowerment
@@ -995,7 +1004,7 @@ local target_buffs_predefined = {
     --thunder clap
     [23931] = {
         apply = function(loadout, effects, buff)
-            loadout.target_snared = true;
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_snared);
 
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.hostile),
@@ -1014,6 +1023,11 @@ target_buffs_predefined[246] = target_buffs_predefined[23931]; -- snared
 target_buffs_predefined[67719] = target_buffs_predefined[23931]; -- snared
 target_buffs_predefined[53696] = target_buffs_predefined[23931]; -- snared
 target_buffs_predefined[48485] = target_buffs_predefined[23931]; -- snared
+
+target_buffs_predefined[65792] = buffs_predefined[74396]; -- frozen
+target_buffs_predefined[33395] = buffs_predefined[74396]; -- frozen
+target_buffs_predefined[44572] = buffs_predefined[74396]; -- frozen
+
 
 target_buffs_predefined[22959] = target_buffs_predefined[17800]; -- improved scorch 5% crit
 
@@ -1078,7 +1092,7 @@ local function apply_buffs(loadout, effects)
     --       go together through change
     --local stats_diff_loadout = empty_loadout();
 
-    if loadout.always_assume_buffs then
+    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
         for k, v in pairs(loadout.buffs) do
             -- if dynamically present, some type of buffs must be removed
             -- as they were already counted for, things like sp, crit
@@ -1120,7 +1134,7 @@ local function apply_buffs(loadout, effects)
             end
         end
 
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and (loadout.target_buffs[spell_name_to_id["Beacon of Light"]] or not loadout.always_assume_buffs) and addonTable.beacon_snapshot_time + 60 >= addonTable.addon_running_time then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and (loadout.target_buffs[spell_name_to_id["Beacon of Light"]] or bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) and addonTable.beacon_snapshot_time + 60 >= addonTable.addon_running_time then
             loadout.beacon = true;
         else
             loadout.beacon = nil

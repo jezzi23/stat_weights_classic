@@ -537,16 +537,23 @@ local function dynamic_loadout(loadout)
     loadout.hostile_towards = nil; 
     loadout.friendly_towards = "player";
 
-    loadout.has_target = false; 
+    loadout.flags =
+        bit.band(loadout.flags, bit.band(bit.bnot(loadout_flags.has_target),
+                                         bit.bnot(loadout_flags.target_snared),
+                                         bit.bnot(loadout_flags.target_frozen),
+                                         bit.bnot(loadout_flags.target_friendly)));
     if UnitExists("target") then
-        loadout.target_snared = false;
-        loadout.has_target = true; 
+        loadout.flags = bit.bor(loadout.flags, loadout_flags.has_target);
         loadout.hostile_towards = "target";
         loadout.friendly_towards = "target";
 
-        loadout.target_friendly = UnitIsFriend("player", "target");
+        if UnitIsFriend("player", "target") then
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_friendly);
+        end
 
-        if loadout.use_dynamic_target_lvl and not loadout.target_friendly then
+        
+        if bit.band(loadout.flags, loadout_flags.use_dynamic_target_lvl) ~= 0
+            and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
             local target_lvl = UnitLevel("target");
             if target_lvl == -1 then
                 loadout.target_lvl = loadout.lvl + 3;
@@ -563,7 +570,7 @@ local function dynamic_loadout(loadout)
     end
     loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     loadout.player_hp_perc = UnitHealth("player")/UnitHealthMax("player")
-    if loadout.hostile_towards == "target" and not loadout.target_friendly then
+    if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
         loadout.enemy_hp_perc = UnitHealth("target")/UnitHealthMax("target");
     end
 
@@ -810,7 +817,11 @@ elseif class == "PRIEST" then
 elseif class == "DRUID" then
     special_abilities = {
         [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
+            if loadout.glyphs[62970] then
+                info.expectation = 6 * info.expectation_st;
+            else
+                info.expectation = 5 * info.expectation_st;
+            end
         end,
         [spell_name_to_id["Tranquility"]] = function(spell, info, loadout)
             info.expectation = 5 * info.expectation_st;
@@ -869,8 +880,8 @@ local function spell_info(info, spell, stats, loadout, effects)
     --local shadow_form = localize_spell_name("Shadowform");
     if class == "PRIEST" then
         local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
-        if (loadout.buffs[shadow_form] and loadout.always_assume_buffs) or
-            (loadout.dynamic_buffs["player"][shadow_form] and not loadout.always_assume_buffs) then -- warlock stuff
+        if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then -- warlock stuff
             if spell.base_id == spell_name_to_id["Devouring Plague"] or spell.base_id == spell_name_to_id["Vampiric Touch"] then
                 -- but locks?
                 ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
@@ -879,8 +890,8 @@ local function spell_info(info, spell, stats, loadout, effects)
         end
     elseif class == "WARLOCK" then
         local immolate, _, _, _, _, _, _ = GetSpellInfo(348);
-        if (loadout.target_buffs[immolate] and loadout.always_assume_buffs) or
-            (loadout.dynamic_buffs["target"][immolate] and not loadout.always_assume_buffs) then
+        if (loadout.target_buffs[immolate] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["target"][immolate] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
             if spell.base_id == spell_name_to_id["Incinerate"] then
                 base_min = base_min + math.floor((base_min-0.001) * 0.25);
                 base_max = base_max + math.floor(base_max * 0.25);
@@ -894,6 +905,13 @@ local function spell_info(info, spell, stats, loadout, effects)
         -- glyph of living bomb
         if loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"] then
             stats.ot_crit = stats.crit;
+        end
+    elseif class == "DRUID" then
+
+        -- rapid rejvenation
+        if loadout.glyphs[71013] and spell.base_id == spell_name_to_id["Rejuvenation"] then
+            ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            ot_dur = ot_dur/stats.haste_mod;
         end
     end
 
@@ -1104,8 +1122,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
         end
         --shadow form
         local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
-        if (loadout.buffs[shadow_form] and loadout.always_assume_buffs) or
-            (loadout.dynamic_buffs["player"][shadow_form] and not loadout.always_assume_buffs) then
+        if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
             if spell.base_min == 0.0 and stats.ot_crit == 0.0  and bit.band(spell.flags, spell_flags.heal) == 0 then
                 -- must be shadow word pain, devouring plague or vampiric touch
                 stats.ot_crit = stats.crit;
@@ -1132,8 +1150,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         --moonkin form
         local moonkin_form, _, _, _, _, _, _ = GetSpellInfo(24858);
-        if (loadout.buffs[moonkin_form] and loadout.always_assume_buffs) or
-            (loadout.dynamic_buffs["player"][moonkin_form] and not loadout.always_assume_buffs) then
+        if (loadout.buffs[moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["player"][moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
             resource_refund = stats.crit * 0.02 * loadout.max_mana;
         end
 
@@ -1152,8 +1170,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
         --improved insect swarm talent
 
         local insect_swarm = spell_name_to_id["Insect Swarm"];
-        if (loadout.target_buffs[insect_swarm] and loadout.always_assume_buffs) or
-            (loadout.dynamic_buffs["target"][insect_swarm] and not loadout.always_assume_buffs) then
+        if (loadout.target_buffs[insect_swarm] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["target"][insect_swarm] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) then
             -- TODO: is this correct? 
             if spell.base_id == spell_name_to_id["Wrath"] then
                 global_mod = global_mod + 0.01 * loadout.talents_table:pts(1, 14);
@@ -1166,6 +1184,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
             -- living seed
             local pts = loadout.talents_table:pts(3, 21);
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
+        end
+
+        if loadout.glyph[54754] and  spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
+            target_vuln_ot_mod = target_vuln_ot_mod + 0.5;
         end
         
     elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
@@ -1260,7 +1282,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         -- torment of the weak
         local pts = loadout.talents_table:pts(1, 14);
-        if loadout.target_snared then
+        if bit.band(loadout.flags, loadout_flags.target_snared) ~= 0 then
             if spell.base_id == spell_name_to_id["Frostbolt"] or
                 spell.base_id == spell_name_to_id["Fireball"] or
                 spell.base_id == spell_name_to_id["Frostfire Bolt"] or
@@ -2700,7 +2722,7 @@ local function update_loadouts_rhs()
         loadout.extra_mana
     );
 
-    if loadout.use_dynamic_target_lvl then
+    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
         sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(true);
     else
         sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(false);
@@ -2725,7 +2747,7 @@ local function update_loadouts_rhs()
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
     end
 
-    if loadout.always_assume_buffs then
+    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetChecked(true);
         sw_frame.loadouts_frame.rhs_list.apply_buffs_button:SetChecked(false);
@@ -2740,7 +2762,7 @@ local function update_loadouts_rhs()
 
     local num_checked_buffs = 0;
     local num_checked_target_buffs = 0;
-    if not loadout.always_assume_buffs then
+    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
         for k = 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs do
             local v = sw_frame.loadouts_frame.rhs_list.buffs[k];
             v.checkbutton:SetChecked(true);
@@ -2836,7 +2858,7 @@ local function update_loadouts_rhs()
     sw_frame.loadouts_frame.rhs_list.num_checked_buffs = num_checked_buffs;
     sw_frame.loadouts_frame.rhs_list.num_checked_target_buffs = num_checked_target_buffs;
 
-    if not loadout.always_assume_buffs then
+    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
         sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetChecked(true);
         sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetChecked(true);
     else
@@ -4178,7 +4200,13 @@ local function create_sw_gui_loadout_frame()
         "Only works with dynamic loadouts. If level is unknown '?' 3 levels above yourself is assumed";
 
     sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton :SetScript("OnClick", function(self)
-        active_loadout().use_dynamic_target_lvl = self:GetChecked();
+        local loadout = active_loadout();
+        if self:GetChecked() then
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.use_dynamic_target_lvl);
+
+        else    
+            loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.use_dynamic_target_lvl));
+        end
     end)
 
     y_offset_lhs = y_offset_lhs - 20;
@@ -4247,18 +4275,21 @@ local function create_sw_gui_loadout_frame()
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName()).tooltip = 
         "The selected buffs always be applied, but only if not already active";
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetScript("OnClick", function(self)
+        -- TODO; are buffs being set correctly here?
 
         local loadout = active_loadout();
         if self:GetChecked() then
-            sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.always_assume_buffs = true;
+
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.always_assume_buffs);
             loadout.buffs = {};
             loadout.target_buffs = {};
             
             sw_frame.loadouts_frame.rhs_list.apply_buffs_button:SetChecked(false);
         else
-            sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.always_assume_buffs = false;
+            loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.always_assume_buffs));
+
+            loadout.buffs = {};
+            loadout.target_buffs = {};
             sw_frame.loadouts_frame.rhs_list.apply_buffs_button:SetChecked(true);
         end
         update_loadouts_rhs();
@@ -4272,13 +4303,15 @@ local function create_sw_gui_loadout_frame()
         "The selected buffs will be applied only if already active";
     sw_frame.loadouts_frame.rhs_list.apply_buffs_button:SetScript("OnClick", function(self)
 
+        local loadout = active_loadout();
         if self:GetChecked() then
-            sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.always_assume_buffs = false;
+
+            loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.always_assume_buffs));
             sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetChecked(false);
+            loadout.buffs = {};
+            loadout.target_buffs = {};
         else
-            sw_frame.loadouts_frame.lhs_list.loadouts[
-                sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.always_assume_buffs = true;
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.always_assume_buffs);
             sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetChecked(true);
             loadout.buffs = {};
             loadout.target_buffs = {};
@@ -4356,7 +4389,7 @@ local function create_sw_gui_loadout_frame()
     local check_button_buff_func = function(self)
 
         local loadout = sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout;
-        if not loadout.always_assume_buffs then
+        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             self:SetChecked(true);
             return;
         end
@@ -4406,7 +4439,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetScript("OnClick", function(self) 
 
         local loadout = active_loadout();
-        if not loadout.always_assume_buffs then
+        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             self:SetChecked(true)
             return;
         end
@@ -4529,7 +4562,7 @@ local function create_sw_gui_loadout_frame()
     getglobal(sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetScript("OnClick", function(self)
         local loadout = active_loadout();
-        if not loadout.always_assume_buffs then
+        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             self:SetChecked(true)
             return;
         end

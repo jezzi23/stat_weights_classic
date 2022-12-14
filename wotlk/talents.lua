@@ -125,7 +125,83 @@ local function create_glyphs()
             }
         };
     elseif class == "DRUID" then
-        return {};
+        return {
+            -- glyph of focus
+            [62080] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.1, 0.0);
+                end,
+                wowhead_id = "wm0"
+            },
+            -- glyph of healing touch
+            [54825] = {
+                apply = function(loadout, effects)
+                    local ht = spell_name_to_id["Healing Touch"];
+                    ensure_exists_and_add(effects.ability.effect_mod, ht, -0.5, 0.0);
+                    ensure_exists_and_add(effects.ability.cost_mod, ht, 0.25, 0.0);
+                    ensure_exists_and_add(effects.ability.cast_mod, ht, 1.5, 0.0);
+                end,
+                wowhead_id = "nh9"
+            },
+            -- glyph of insect swarm
+            [54830] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Insect Swarm"], 0.3, 0.0);
+                end,
+                wowhead_id = "nhe"
+            },
+            -- glyph of lifebloom
+            [54826] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Lifebloom"], 1, 0.0);
+                end,
+                wowhead_id = "nha"
+            },
+            -- glyph of moonfire
+            [54829] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Moonfire"], -0.9 , 0.0);
+                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Moonfire"], 0.9 + 0.75, 0.0);
+                end,
+                wowhead_id = "nhd"
+            },
+            -- glyph of nourish
+            [62971] = {
+                apply = function(loadout, effects)
+                    -- TODO: need to track  some druid hots and
+                    --       swiftmend could be implemented in the process
+                end,
+                wowhead_id = "xfv"
+            },
+            -- glyph of rapid rejuvenation
+            -- TODO: wowhead id begins with _002 intead of _001???
+            [71013] = {
+                apply = function(loadout, effects)
+                    -- implementeed in later stage
+                end,
+                wowhead_id = "5b5"
+            },
+            -- glyph of regrowth
+            [54743] = {
+                apply = function(loadout, effects)
+                    -- TODO: regrowth tracking
+                end,
+                wowhead_id = "neq"
+            },
+            -- glyph of rejuvenatioin
+            [54754] = {
+                apply = function(loadout, effects)
+                end,
+                wowhead_id = "nf2"
+            },
+            -- glyph of wild growth
+            [62970] = {
+                apply = function(loadout, effects)
+                    -- implemented in later stage
+                end,
+                wowhead_id = "xft"
+            },
+        };
     elseif class == "PALADIN" then
         return {};
     elseif class == "MAGE" then
