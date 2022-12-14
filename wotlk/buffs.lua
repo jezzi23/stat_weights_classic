@@ -404,7 +404,7 @@ local buffs_predefined = {
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.arcane_empowerment) == 0 then
                 for i = 2, 7 do
                     effects.by_school.spell_dmg_mod[i] = 
-                        effects.by_school.spell_dmg_mod[i] + 0.03;
+                        (1.0 + effects.by_school.spell_dmg_mod[i]) * 1.03 - 1.0;
                 end
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.arcane_empowerment);
@@ -549,11 +549,11 @@ local buffs_predefined = {
     [12042] = {
         apply = function(loadout, effects, buff)
             effects.by_school.spell_dmg_mod[magic_school.fire] =
-                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.2;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.2 - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.arcane] =
-                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.2;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * 1.2 - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.frost] =
-                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.2;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost]) * 1.2 - 1.0;
 
             effects.raw.cost_mod = effects.raw.cost_mod - 0.2;
         end,
@@ -575,7 +575,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             local pts = loadout.talents_table:pts(1, 19);
             local by_pts = {0.06, 0.12, 0.2};
-            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0+ by_pts[pts]) - 1.0;
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + by_pts[pts]) - 1.0;
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,
@@ -623,6 +623,43 @@ local buffs_predefined = {
         filter = buff_filters.warlock,
         category = buff_category.class,
         tooltip = "30% haste to destruction spells",
+    },
+    --arcane blast
+    [36032] = {
+        apply = function(loadout, effects, buff)
+            local stacks = 4;
+
+            if buff.count then
+                stacks = buff.count;
+            end
+            effects.by_school.spell_dmg_mod[magic_school.arcane] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + 0.15 * stacks) - 1.0;
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Arcane Blast"], -stacks * 1.75, 0.0); 
+
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "Arcane Blast stacks",
+    },
+    --combustion
+    [28682] = {
+        apply = function(loadout, effects, buff)
+            local stacks = 10;
+
+            if buff.count then
+                stacks = buff.count;
+            end
+
+            effects.by_school.spell_crit_mod[magic_school.fire] = 
+                effects.by_school.spell_crit_mod[magic_school.fire] + 0.25;
+
+            effects.by_school.spell_crit[magic_school.fire] = 
+                effects.by_school.spell_crit[magic_school.fire] + 0.1 * stacks;
+
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "Combustion, 50% bonus crit damage",
     },
 };
 -- identical implementations
@@ -955,6 +992,16 @@ local target_buffs_predefined = {
         category = buff_category.class,
         tooltip = "15% periodic shadow damage taken",
     },
+    --thunder clap
+    [23931] = {
+        apply = function(loadout, effects, buff)
+            loadout.target_snared = true;
+
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.hostile),
+        category = buff_category.raid,
+        tooltip = "Snared effect",
+    },
 };
 
 -- identical implementations
@@ -962,6 +1009,11 @@ local target_buffs_predefined = {
 --target_buffs_predefined[45176] = target_buffs_predefined[54499]; -- master poisoner 3% crit
 target_buffs_predefined[30708] = target_buffs_predefined[54499]; -- totem of wrath 3% crit
 
+target_buffs_predefined[116] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[246] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[67719] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[53696] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[48485] = target_buffs_predefined[23931]; -- snared
 
 target_buffs_predefined[22959] = target_buffs_predefined[17800]; -- improved scorch 5% crit
 

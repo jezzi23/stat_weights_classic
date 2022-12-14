@@ -24,6 +24,7 @@ local addonName, addonTable = ...;
 local ensure_exists_and_add             = addonTable.ensure_exists_and_add;
 local ensure_exists_and_mul             = addonTable.ensure_exists_and_mul;
 
+local magic_school                      = addonTable.magic_school;
 local spell_name_to_id                  = addonTable.spell_name_to_id;
 local spell_names_to_id                 = addonTable.spell_names_to_id;
 
@@ -84,6 +85,13 @@ local function create_sets()
     elseif class == "WARLOCK" then
 
     elseif class == "MAGE" then
+        -- t7
+        for i = 39491, 39495 do
+            set_tier_ids[i] = set_tiers.pve_t7_1;
+        end
+        for i = 40415, 40419 do
+            set_tier_ids[i] = set_tiers.pve_t7_1;
+        end
 
 
     elseif class == "PALADIN" then
@@ -155,6 +163,16 @@ local function create_set_effects()
     elseif class == "WARLOCK" then
 
     elseif class == "MAGE" then
+        return {
+            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
+                effects.by_school.spell_crit_mod[magic_school.fire] = 
+                    effects.by_school.spell_crit_mod[magic_school.fire] + 0.025;
+                effects.by_school.spell_crit_mod[magic_school.arcane] = 
+                    effects.by_school.spell_crit_mod[magic_school.arcane] + 0.025;
+                effects.by_school.spell_crit_mod[magic_school.frost] = 
+                    effects.by_school.spell_crit_mod[magic_school.frost] + 0.025;
+            end,
+        };
 
     elseif class == "PALADIN" then
         return {
@@ -219,7 +237,7 @@ local function apply_equipment(loadout, effects)
     for _, v in pairs({GetInventoryItemGems(1)}) do
         -- chaotic skyflare diamond 3% crit dmg, totally janky behaviour
         if v == 41285 or v == 34220 then
-            effects.raw.special_crit_mod = effects.raw.special_crit_mod + 0.045;
+            effects.raw.special_crit_mod = effects.raw.special_crit_mod + 0.03;
         end
     end
     -- TODO: idols

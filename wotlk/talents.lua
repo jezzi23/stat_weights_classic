@@ -128,6 +128,23 @@ local function create_glyphs()
         return {};
     elseif class == "PALADIN" then
         return {};
+    elseif class == "MAGE" then
+        return {
+            -- glyph of fireball
+            [56368] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Fireball"], 0.15, 0.0);
+                end,
+                wowhead_id = "q1g"
+            },
+            -- glyph of living bomb
+            [63091] = {
+                apply = function(loadout, effects)
+                    -- implemented in later stage
+                end,
+                wowhead_id = "xkk"
+            }
+        };
     else
         return {};
     end
@@ -332,11 +349,12 @@ local function apply_talents_glyphs(loadout, effects)
         if pts ~= 0 then
             --TODO: dynamic crit
             effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * (1.0 + 0.01 * pts) - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.frost] = 
-                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.01 * pts;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost]) * (1.0 + 0.01 * pts) - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.01 * pts;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + 0.01 * pts) - 1.0;
+
 
         end
         -- arcane potency
@@ -411,7 +429,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(2, 11);
         if pts ~= 0 then
             for k, v in pairs(spell_names_to_id({"Fireball", "Scorch", "Frostfire Bolt"})) do
-                ensure_exists_and_add(effects.ability.crit, v, pts * 0.02, 0.0);
+                ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
             end
         end
         -- master of elements
@@ -420,12 +438,13 @@ local function apply_talents_glyphs(loadout, effects)
         -- playing with fire
         local pts = talents:pts(2, 14);
         if pts ~= 0 then
+
             effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
-            effects.by_school.spell_dmg_mod[magic_school.frost] = 
-                effects.by_school.spell_dmg_mod[magic_school.frost] + 0.01 * pts;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire])*(1.0 +  0.01 * pts) - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.01 * pts;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane])*(1.0 +  0.01 * pts) - 1.0;
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost])*(1.0 +  0.01 * pts) - 1.0;
         end
         -- critical mass
         local pts = talents:pts(2, 15);
@@ -436,7 +455,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(2, 18);
         if pts ~= 0 then
             effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.02 * pts;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire])*(1.0 +  0.02 * pts) - 1.0;
         end
         --pyromaniac
         local pts = talents:pts(2, 19);
@@ -455,6 +474,7 @@ local function apply_talents_glyphs(loadout, effects)
             ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Fireball"], pts * 0.05, 0);
             ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Frostfire Bolt"], pts * 0.05, 0);
             ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Pyroblast"], pts * 0.05, 0);
+            ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Pyroblast"], pts, 0);
             -- TODO: refund on ignite, tricky and assumptions must be made
         end
 
@@ -475,10 +495,10 @@ local function apply_talents_glyphs(loadout, effects)
             ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Frostbolt"], pts * 0.1, 0.0);
         end
         -- ice shards
-        local pts = talents:pts(3, 3);
+        local pts = talents:pts(3, 4);
         if pts ~= 0 then
             effects.by_school.spell_crit_mod[magic_school.frost] = 
-                effects.by_school.spell_crit_mod[magic_school.frost] + pts*0.1;
+                effects.by_school.spell_crit_mod[magic_school.frost] + pts*0.5/3;
         end
         -- precision
         local pts = talents:pts(3, 6);

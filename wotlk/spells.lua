@@ -1915,7 +1915,7 @@ local function create_spells()
                 cost_base_percent   = 0.22,
                 flags               = spell_flags.cd,
                 school              = magic_school.fire,
-                coef                = 0.4286,
+                coef                = 0.4,
                 over_time_coef      = 0.2,
 				lvl_scaling			= 0.0,
             },
