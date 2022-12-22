@@ -30,6 +30,7 @@ local ensure_exists_and_add             = addonTable.ensure_exists_and_add;
 local ensure_exists_and_mul             = addonTable.ensure_exists_and_mul;
 local deep_table_copy                   = addonTable.deep_table_copy;
 local stat                              = addonTable.stat;
+local loadout_flags                     = addonTable.loadout_flags;
 
 local spells                            = addonTable.spells;
 local spell_name_to_id                  = addonTable.spell_name_to_id;
@@ -160,16 +161,6 @@ local function get_combat_rating_effect(rating_id, level)
 
     return rating_per_percentage;
 end
-
-local loadout_flags = {
-    is_dynamic_loadout                  = bit.lshift(1, 1),
-    always_assume_buffs                 = bit.lshift(1, 2),
-    use_dynamic_target_lvl              = bit.lshift(1, 3),
-    has_target                          = bit.lshift(1, 4),
-    target_snared                       = bit.lshift(1, 5),
-    target_frozen                       = bit.lshift(1, 6),
-    target_friendly                     = bit.lshift(1, 7),
-};
 
 local function empty_loadout()
 
@@ -542,7 +533,10 @@ local function dynamic_loadout(loadout)
                                          bit.bnot(loadout_flags.target_snared),
                                          bit.bnot(loadout_flags.target_frozen),
                                          bit.bnot(loadout_flags.target_friendly)));
+    loadout.enemy_hp_perc = nil;
+    loadout.friendly_hp_perc = nil
     if UnitExists("target") then
+
         loadout.flags = bit.bor(loadout.flags, loadout_flags.has_target);
         loadout.hostile_towards = "target";
         loadout.friendly_towards = "target";
@@ -561,14 +555,15 @@ local function dynamic_loadout(loadout)
                 loadout.target_lvl = target_lvl;
             end
         end
+        loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     else
         loadout.target_lvl = loadout.lvl + 3;
     end
 
     if UnitExists("mouseover") and UnitName("mouseover") ~= UnitName("target") then
         loadout.friendly_towards = "mouseover";
+        loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     end
-    loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     loadout.player_hp_perc = UnitHealth("player")/UnitHealthMax("player")
     if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
         loadout.enemy_hp_perc = UnitHealth("target")/UnitHealthMax("target");
@@ -726,7 +721,11 @@ local special_abilities = nil;
 if class == "SHAMAN" then
     special_abilities = {
         [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
-            info.expectation = (1 + 0.6 + 0.6*0.6) * info.expectation_st;
+            if loadout.glyphs[55437] then
+                info.expectation = (1 + 0.6 + 0.6*0.6 + 0.6*0.6*0.6) * info.expectation_st;
+            else
+                info.expectation = (1 + 0.6 + 0.6*0.6) * info.expectation_st;
+            end
         end,
         [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
             info.expectation = 6 * info.expectation_st;
@@ -736,7 +735,11 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
             -- TODO glyph
-            info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
+            if loadout.glyphs[55449] then
+                info.expectation = (1 + 0.7 + 0.7*0.7 + 0.7*0.7*0.7) * info.expectation_st;
+            else
+                info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
+            end
 
             local pts = loadout.talents_table:pts(1, 20);
             -- lightning overload
@@ -836,6 +839,15 @@ elseif class == "WARLOCK" then
             info.expectation = 3 * info.expectation_st;
         end,
     };
+elseif class == "PALADIN" then
+    special_abilities = {
+        [spell_name_to_id["Holy Light"]] = function(spell, info, loadout)
+            if loadout.glyphs[54937] then
+                -- splash for 10% of heal to 5 targets
+                info.expectation = 1.5 * info.expectation_st;
+            end
+        end,
+    };
 else
     special_abilities = {};
 end
@@ -896,6 +908,11 @@ local function spell_info(info, spell, stats, loadout, effects)
                 base_min = base_min + math.floor((base_min-0.001) * 0.25);
                 base_max = base_max + math.floor(base_max * 0.25);
             end
+        end
+        -- glyph of quick decay
+        if loadout.glyphs[70947] and spell.base_id == spell_name_to_id["Corruption"] then
+            ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            ot_dur = ot_dur/stats.haste_mod;
         end
     elseif class == "MAGE" then
         -- glyph of fireball
@@ -1015,7 +1032,8 @@ local function spell_info(info, spell, stats, loadout, effects)
     end
 
     if loadout.beacon then
-        info.expectation = inof.expectation * 2;
+        -- holy light glyph may have been been applied to expectation
+        info.expectation = info.expectation + info.expectation_st;
     end
 
     info.effect_per_sec = info.expectation/stats.cast_time;
@@ -1144,7 +1162,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     elseif class == "DRUID" then
 
         local pts = loadout.talents_table:pts(3, 25);
-        if pts ~= 0 then
+        if pts ~= 0 and spell_name_to_id["Lifebloom"] then
             stats.gcd = stats.gcd - pts * 0.02;
         end
 
@@ -1186,7 +1204,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
         end
 
-        if loadout.glyph[54754] and  spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
+        if loadout.glyphs[54754] and spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
             target_vuln_ot_mod = target_vuln_ot_mod + 0.5;
         end
         
@@ -1251,6 +1269,14 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
             stats.crit_mod = stats.crit_mod * (1.0 + pts * 0.1);
         end
+
+        if loadout.glyphs[55442] ~= 0 and
+            (spell.base_id == spell_name_to_id["Flame Shock"] or
+             spell.base_id == spell_name_to_id["Frost Shock"] or
+             spell.base_id == spell_name_to_id["Earth Shock"]) then
+
+            stats.gcd = stats.gcd - 0.5;
+        end
         
     elseif class == "MAGE" then
 
@@ -1296,6 +1322,21 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
         end
 
+        if bit.band(loadout.flags, loadout_flags.target_frozen) ~= 0 then
+
+            local pts = loadout.talents_table:pts(3, 13);
+            stats.crit = stats.crit + pts*0.5/3;
+            stats.ot_crit = stats.ot_crit + pts*0.5/3;
+
+            if spell.base_id == spell_name_to_id["Ice Lance"] then
+                if loadout.glyphs[56377] and loadout.lvl < loadout.target_lvl then
+                    target_vuln_mod = target_vuln_mod * 4;
+                else
+                    target_vuln_mod = target_vuln_mod * 3;
+                end
+            end
+        end
+
     elseif class == "WARLOCK" then
         if loadout.talents_table:pts(1, 10) ~= 0 and bit.band(spell.flags, spell_flags.curse) ~= 0 then
             stats.gcd = stats.gcd - 0.5;
@@ -1306,7 +1347,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if pts ~= 0 then
             if spell.base_id == spell_name_to_id["Drain Life"] and
                 loadout.player_hp_perc and loadout.player_hp_perc < 0.2 then
-                vuln_ot_mod = vuln_ot_mod + pts*0.1;
+                target_vuln_ot_mod = target_vuln_ot_mod + pts*0.1;
             end
             if spell.school == magic_school.shadow and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
                 target_vuln_mod = target_vuln_mod + pts * 0.04;
@@ -1329,6 +1370,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if pts ~= 0 and spell.base_id == spell_name_to_id["Soul Fire"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
             cast_mod_mul = (1.0 + cast_mod_mul) * (1.0 + 0.2 * pts) - 1.0;
         end
+
+        if loadout.glyphs[56229] and spell.base_id == spell_name_to_id["Shadowburn"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
+            stats.crit = stats.crit + 0.2;
+        end
+
     end
 
     --if spell.base_id == spell_name_to_id["Healing Touch"] and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
@@ -1755,7 +1801,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end 
 
     local loadout_type = "";
-    if bit.band(loadout.flags, loadout.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
         loadout_type = "dynamic";
     else
         loadout_type = "static";
@@ -2410,7 +2456,7 @@ local function active_loadout_and_effects()
     --    return nil, nil;
     --end
     local loadout_entry = active_loadout_entry();
-    if bit.band(loadout_entry.loadout.flags, loaodut_flags.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
         dynamic_loadout(loadout_entry.loadout);
     end
         
@@ -2421,7 +2467,7 @@ local function active_loadout_and_effects()
     end
 
     if talents_update_needed then
-        if bit.band(loadout_entry.loadout.flags, loaodut_flags.is_dynamic_loadout) ~= 0 then
+        if bit.band(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
             loadout_entry.loadout.talents_code = wowhead_talent_code();
         end
         zero_effects(loadout_entry.talented);
@@ -2728,7 +2774,7 @@ local function update_loadouts_rhs()
         sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(false);
     end
 
-    if bit.band(loadout.flags, loaodut_flags.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
             wowhead_talent_link(wowhead_talent_code())
@@ -5675,5 +5721,5 @@ SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-__sw__debug__ = 1;
+--__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;

@@ -25,10 +25,12 @@ local ensure_exists_and_add         = addonTable.ensure_exists_and_add;
 local ensure_exists_and_mul         = addonTable.ensure_exists_and_mul;
 local class                         = addonTable.class;
 local race                          = addonTable.race;
+local loadout_flags                 = addonTable.loadout_flags;
 
 local magic_school                  = addonTable.magic_school;
 local spell_name_to_id              = addonTable.spell_name_to_id;
 local spell_names_to_id             = addonTable.spell_names_to_id;
+
 
 local buff_filters = {
     caster      = bit.lshift(1,1),
@@ -670,6 +672,43 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "Frozen effect",
     },
+    -- seal of light
+    [20165] = {
+        apply = function(loadout, effects, buff)
+            if loadout.glyphs[54943] then
+                effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + 0.05;
+            end
+        end,
+        filter = buff_filters.paladin,
+        category = buff_category.class,
+        tooltip = "5% heal if glyphed",
+    },
+    -- seal of wisdom
+    [20166] = {
+        apply = function(loadout, effects, buff)
+            if loadout.glyphs[54943] then
+                for k, v in pairs(spell_names_to_id({"Holy Light", "Flash of Heal", "Holy Shock"})) do
+                    ensure_exists_and_add(effects.ability.cost_mod, v, 0.05, 0.0); 
+                end
+            end
+
+        end,
+        filter = buff_filters.paladin,
+        category = buff_category.class,
+        tooltip = "-5% cost of healing spells if glyphed",
+    },
+    -- life tap (glyph)
+    [63321] = {
+        apply = function(loadout, effects, buff)
+            if loadout.glyphs[63320] then
+
+                -- TODO:
+            end
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "20% of spirit into spellpower if glyphed",
+    },
 };
 -- identical implementations
 buffs_predefined[31583] = buffs_predefined[31869];-- arcane_empowerment
@@ -758,7 +797,7 @@ local target_buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
         category = buff_category.class,
-        tooltip = "Beacon is assumed to be up for 60s after each Beacon cast",
+        tooltip = "Beacon is assumed to be up for the entire duration after each Beacon cast",
     },
     --tree of life
     [34123] = {
@@ -956,8 +995,12 @@ local target_buffs_predefined = {
             if buff.src and buff.src ~= "player" then
                 return;
             end
+            local amount = 0.2;
+            if loadout.glyphs[63302] then
+                amount = 0.23;
+            end
             for k, v in pairs(spell_names_to_id({"Unstable Affliction", "Curse of Agony", "Curse of Doom", "Seed of Corruption", "Corruption"})) do
-                ensure_exists_and_add(effects.ability.vuln_ot_mod, v, 0.2, 0.0);
+                ensure_exists_and_add(effects.ability.vuln_ot_mod, v, amount, 0.0);
             end
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.hostile),
@@ -971,7 +1014,7 @@ local target_buffs_predefined = {
             if buff.src and buff.src ~= "player" then
                 return;
             end
-            local pts = talents:pts(3, 25);
+            local pts  = loadout.talents_table:pts(3, 25);
             ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Incinerate"], pts * 0.02, 0.0);
             ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Chaos Bolt"], pts * 0.02, 0.0);
 
@@ -1011,6 +1054,15 @@ local target_buffs_predefined = {
         category = buff_category.raid,
         tooltip = "Snared effect",
     },
+    -- frost nova 
+    [42917] = {
+        apply = function(loadout, effects, buff)
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_frozen, loadout_flags.target_snared);
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "Frozen effect",
+    },
 };
 
 -- identical implementations
@@ -1023,10 +1075,11 @@ target_buffs_predefined[246] = target_buffs_predefined[23931]; -- snared
 target_buffs_predefined[67719] = target_buffs_predefined[23931]; -- snared
 target_buffs_predefined[53696] = target_buffs_predefined[23931]; -- snared
 target_buffs_predefined[48485] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[120] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[11113] = target_buffs_predefined[23931]; -- snared
 
-target_buffs_predefined[65792] = buffs_predefined[74396]; -- frozen
-target_buffs_predefined[33395] = buffs_predefined[74396]; -- frozen
-target_buffs_predefined[44572] = buffs_predefined[74396]; -- frozen
+target_buffs_predefined[33395] = target_buffs_predefined[42917]; -- frozen
+target_buffs_predefined[44572] = target_buffs_predefined[42917]; -- frozen
 
 
 target_buffs_predefined[22959] = target_buffs_predefined[17800]; -- improved scorch 5% crit
@@ -1110,7 +1163,7 @@ local function apply_buffs(loadout, effects)
         for k, v in pairs(loadout.target_buffs) do
             target_buffs[k].apply(loadout, effects, target_buffs[k]);
         end
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) ~= 0 and loadout.target_buffs[spell_name_to_id["Beacon of Light"]] then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) ~= 0 and loadout.target_buffs["Beacon of Light"] then
             loadout.beacon = true;
         else
             loadout.beacon = nil
@@ -1134,7 +1187,12 @@ local function apply_buffs(loadout, effects)
             end
         end
 
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and (loadout.target_buffs[spell_name_to_id["Beacon of Light"]] or bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) and addonTable.beacon_snapshot_time + 60 >= addonTable.addon_running_time then
+        local beacon_duration = 60;
+        if loadout.glyphs[63218] then
+            beacon_duration = 90;
+        end
+ 
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and (loadout.target_buffs["Beacon of Light"] or bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) and addonTable.beacon_snapshot_time + beacon_duration >= addonTable.addon_running_time then
             loadout.beacon = true;
         else
             loadout.beacon = nil

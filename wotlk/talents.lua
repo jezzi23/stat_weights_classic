@@ -203,9 +203,222 @@ local function create_glyphs()
             },
         };
     elseif class == "PALADIN" then
-        return {};
+        return {
+            -- glyph of beacon of light
+            [63218] = {
+                apply = function(loadout, effects)
+                    -- TODO: 60 to 90
+                end,
+                wowhead_id = "xqj"
+            },
+            -- glyph of flash of light
+            [54936] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.05, 0.0);
+                end,
+                wowhead_id = "nmr"
+            },
+            -- glyph of holy light
+            [54937] = {
+                apply = function(loadout, effects)
+                    -- Implemented in later stage
+                end,
+                wowhead_id = "nms"
+            },
+            -- glyph of seal of light
+            [54943] = {
+                apply = function(loadout, effects)
+                    -- Implemented in buffs
+                end,
+                wowhead_id = "nmz"
+            },
+            -- glyph of seal of wisdom
+            [54940] = {
+                apply = function(loadout, effects)
+                    -- Implemented in buffs
+                end,
+                wowhead_id = "nmw"
+            },
+        };
+    elseif class == "SHAMAN" then
+        return {
+            -- glyph of chain heal
+            [55437] = {
+                apply = function(loadout, effects)
+                    -- Impemented in later stage
+                end,
+                wowhead_id = "p4d"
+            },
+            -- glyph of chain lightning
+            [55449] = {
+                apply = function(loadout, effects)
+                    -- Impemented in later stage
+                end,
+                wowhead_id = "p4s"
+            },
+            -- glyph of earth shield
+            [63279] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Earth Shield"], 0.2, 0.0);
+                end,
+                wowhead_id = "xsf"
+            },
+            -- glyph of earthliving weapon
+            [55439] = {
+                apply = function(loadout, effects)
+                    -- TODO
+                end,
+                wowhead_id = "p4f"
+            },
+            -- glyph of flametongue weapon
+            [55451] = {
+                apply = function(loadout, effects)
+                    -- TODO
+                end,
+                wowhead_id = "p4v"
+            },
+            -- glyph of flame shock
+            [55447] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Flame Shock"], 0.3, 0.0);
+                end,
+                wowhead_id = "p4q"
+            },
+            -- glyph of healing stream totem
+            [55456] = {
+                apply = function(loadout, effects)
+                    -- wording is interesting, could be a multiplier
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Healing Stream Totem"], 0.2, 0.0);
+                end,
+                wowhead_id = "p50"
+            },
+            -- glyph of lava
+            [55454] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Lava Burst"], 0.1, 0.0);
+                end,
+                wowhead_id = "p4y"
+            },
+            -- glyph of lightning bolt
+            [55453] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Bolt"], 0.04, 0.0);
+                end,
+                wowhead_id = "p4x"
+            },
+            -- glyph of lightning shield
+            [55448] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], 0.2, 0.0);
+                end,
+                wowhead_id = "p4r"
+            },
+            -- glyph of shocking
+            [55442] = {
+                apply = function(loadout, effects)
+                    local shocks = spell_names_to_id({"Flame Shock", "Earth Shock", "Frost Shock"});
+                    for _, v in pairs(shocks) do
+                        ensure_exists_and_add(effects.ability.cast_mod, v, 0.5, 0.0);
+                    end
+                end,
+                wowhead_id = "p4j"
+            },
+            -- glyph of totem of wrath
+            [63280] = {
+                apply = function(loadout, effects)
+                    -- TODO: see if this is a separate buff or baked into the main one
+                end,
+                wowhead_id = "xsg"
+            },
+            -- glyph of water mastery
+            [55436] = {
+                apply = function(loadout, effects)
+                    -- TODO: 
+                end,
+                wowhead_id = "p4c"
+            },
+
+        };
     elseif class == "MAGE" then
         return {
+            -- glyph of arcane barrage
+            [63092] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Arcane Barrage"], 0.2, 0.0);
+                end,
+                wowhead_id = "xkm"
+            },
+            -- glyph of arcane blast
+            [62210] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Arcane Blast"], 0.03, 0.0);
+                end,
+                wowhead_id = "wr2"
+            },
+            -- glyph of arcane exposion
+            [56360] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Arcane Explosion"], 0.1, 0.0);
+                end,
+                wowhead_id = "q18"
+            },
+            -- glyph of arcane missiles
+            [56363] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Arcane Missiles"], 0.125, 0.0);
+                end,
+                wowhead_id = "q1b"
+            },
+            -- glyph of frostbolt
+            [56370] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Frostbolt"], 0.05, 0.0);
+                end,
+                wowhead_id = "q1j"
+            },
+            -- glyph of frostfire
+            [61205] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Frostfire Bolt"], 0.02, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostfire Bolt"], 0.02, 0.0);
+                end,
+                wowhead_id = "vrn"
+            },
+            -- glyph of ice barrier
+            [63095] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Ice Barrier"], 0.3, 0.0);
+                end,
+                wowhead_id = "xkq"
+            },
+            -- glyph of ice lance
+            [56377] = {
+                apply = function(loadout, effects)
+                    -- Implemented in a later stage
+                end,
+                wowhead_id = "q1s"
+            },
+            -- glyph of mage armor
+            [56383] = {
+                apply = function(loadout, effects)
+                    effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.2;
+                end,
+                wowhead_id = "q1z"
+            },
+            -- glyph of molten armor
+            [56382] = {
+                apply = function(loadout, effects)
+                    -- TODO:
+                end,
+                wowhead_id = "q1y"
+            },
+            -- glyph of scorch
+            [56371] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Scorch"], 0.2, 0.0);
+                end,
+                wowhead_id = "q1k"
+            },
             -- glyph of fireball
             [56368] = {
                 apply = function(loadout, effects)
@@ -220,6 +433,74 @@ local function create_glyphs()
                 end,
                 wowhead_id = "xkk"
             }
+        };
+
+    elseif class == "WARLOCK" then
+        return {
+            -- glyph of haunt
+            [63302] = {
+                apply = function(loadout, effects)
+                    -- Implemented in buffs
+                end,
+                wowhead_id = "xt6"
+            },
+            -- glyph of immolate
+            [56228] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                end,
+                wowhead_id = "px4"
+            },
+            -- glyph of incinerate
+            [56242] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Incinerate"], 0.05, 0.0);
+                end,
+                wowhead_id = "pxj"
+            },
+            -- glyph of life tap
+            [63320] = {
+                apply = function(loadout, effects)
+                    -- TODO: to be implemented in buffs
+                end,
+                wowhead_id = "xtr"
+            },
+            -- glyph of quick decay
+            [70947] = {
+                apply = function(loadout, effects)
+                    -- Implemented in later stage
+                end,
+                -- TODO: _002 prefix instead of _001, won't work atm via import
+                wowhead_id = "593"
+            },
+            -- glyph of searing pain
+            [56226] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Searing Pain"], 0.1, 0.0);
+                end,
+                wowhead_id = "px2"
+            },
+            -- glyph of shadow bolt
+            [56240] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Shadow Bolt"], 0.1, 0.0);
+                end,
+                wowhead_id = "pxg"
+            },
+            -- glyph of shadow burn
+            [56229] = {
+                apply = function(loadout, effects)
+                    -- Implemented in later stage
+                end,
+                wowhead_id = "px5"
+            },
+            -- glyph of unstable affliction
+            [56233] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Unstable Affliction"], 0.2, 0.0);
+                end,
+                wowhead_id = "px9"
+            },
         };
     else
         return {};
@@ -604,13 +885,22 @@ local function apply_talents_glyphs(loadout, effects)
         -- improved cone of cold
         local pts = talents:pts(3, 15);
         if pts ~= 0 then
-            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Cone of Cold"], pts * 0.15, 0.0);
+            local by_pts = {0.15, 0.25, 0.35};
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Cone of Cold"], by_pts[pts], 0.0);
         end
 
         -- winters chill
         local pts = talents:pts(3, 18);
         if pts ~= 0 then
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostbolt"], pts * 0.01, 0.0);
+        end
+
+        -- arctic winds
+        local pts = talents:pts(3, 21);
+        if pts ~= 0 then
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost])*(1.0 + 0.01 * pts) - 1.0;
+
         end
 
         -- empowered frostbolt
@@ -934,6 +1224,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 25);
         if pts ~= 0 then
             effects.haste_mod = (1.0 + effects.haste_mod) * (1.0 + pts * 0.02) - 1.0;
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lifebloom"], pts * 0.02, 0.0);
         end
 
     elseif class == "PRIEST" then

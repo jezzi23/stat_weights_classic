@@ -126,14 +126,6 @@ local function spell_name_to_ids()
             ["Flash of Light"]          = 19750,
             ["Holy Light"]              = 635,
             ["Holy Shock"]              = 20473,
-            ["Hammer of Wrath"]         = 24275,
-            ["Consecration"]            = 26573,
-            ["Exorcism"]                = 879,
-            ["Holy Wrath"]              = 2812,
-            ["Blessing of Light"]       = 19977,
-            ["Vengeance"]               = 20049,
-            ["Blessing of Wisdom"]      = 19742,
-            ["Beacon of Light"]         = 53563,
         };
     elseif class == "WARLOCK" then
         return {
@@ -9353,9 +9345,6 @@ for k, v in pairs(spells) do
     -- rank1 contains some general fields that we write to all ranks
     local rank1_of_spell = localized_spell_names_to_id[name]
     local spell_data = spells[rank1_of_spell];
-    if not spell_data then
-        print(k, name,  rank1_of_spell);
-    end
 
     v.over_time_tick_freq = spell_data.over_time_tick_freq;
     v.over_time_duration  = spell_data.over_time_duration;

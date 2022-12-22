@@ -63,6 +63,16 @@ local beacon_snapshot_time = -1000;
 local sequence_counter = 0;
 local addon_running_time = 0;
 
+local loadout_flags = {
+    is_dynamic_loadout                  = bit.lshift(1, 1),
+    always_assume_buffs                 = bit.lshift(1, 2),
+    use_dynamic_target_lvl              = bit.lshift(1, 3),
+    has_target                          = bit.lshift(1, 4),
+    target_snared                       = bit.lshift(1, 5),
+    target_frozen                       = bit.lshift(1, 6),
+    target_friendly                     = bit.lshift(1, 7),
+};
+
 local addonName, addonTable = ...;
 addonTable.ensure_exists_and_mul = ensure_exists_and_mul;
 addonTable.ensure_exists_and_add = ensure_exists_and_add;
@@ -73,4 +83,5 @@ addonTable.race = race;
 addonTable.faction = faction;
 addonTable.deep_table_copy = deep_table_copy;
 addonTable.stat = stat;
+addonTable.loadout_flags = loadout_flags;
 
