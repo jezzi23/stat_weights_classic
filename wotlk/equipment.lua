@@ -34,6 +34,9 @@ local set_tiers = {
     pve_t7_1         = 1,
     pve_t7_2         = 2,
     pve_t7_3         = 3,
+    pve_t8_1         = 4,
+    pve_t8_2         = 5,
+    pve_t8_3         = 6,
 };
 
 local function create_sets()
@@ -60,6 +63,27 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_t7_3;
         end
 
+        -- t8 healing 
+        for i = 45386, 45390 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
+        end
+        set_tier_ids[46188] = set_tiers.pve_t8_1;
+        set_tier_ids[46190] = set_tiers.pve_t8_1;
+        set_tier_ids[46193] = set_tiers.pve_t8_1;
+        set_tier_ids[46195] = set_tiers.pve_t8_1;
+        set_tier_ids[46197] = set_tiers.pve_t8_1;
+
+        -- t8 shadow
+        set_tier_ids[46163] = set_tiers.pve_t8_3;
+        set_tier_ids[46165] = set_tiers.pve_t8_3;
+        set_tier_ids[46168] = set_tiers.pve_t8_3;
+        set_tier_ids[46170] = set_tiers.pve_t8_3;
+        set_tier_ids[46172] = set_tiers.pve_t8_3;
+
+        for i = 45391, 45395 do
+            set_tier_ids[i] = set_tiers.pve_t8_3;
+        end
+
     elseif class == "DRUID" then
         -- t7 balance
         for i = 39544, 39548 do
@@ -79,6 +103,26 @@ local function create_sets()
         set_tier_ids[39539] = set_tiers.pve_t7_3;
         set_tier_ids[39542] = set_tiers.pve_t7_3;
         set_tier_ids[39543] = set_tiers.pve_t7_3;
+
+        -- t8 balance
+        set_tier_ids[46313] = set_tiers.pve_t8_1;
+        for i = 45351, 45354 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
+        end
+
+        set_tier_ids[46189] = set_tiers.pve_t8_1;
+        set_tier_ids[46191] = set_tiers.pve_t8_1;
+        set_tier_ids[46192] = set_tiers.pve_t8_1;
+        set_tier_ids[46194] = set_tiers.pve_t8_1;
+        set_tier_ids[46196] = set_tiers.pve_t8_1;
+
+        -- t8 resto
+        for i = 45345, 45349 do
+            set_tier_ids[i] = set_tiers.pve_t8_3;
+        end
+        for i = 46183, 46187 do
+            set_tier_ids[i] = set_tiers.pve_t8_3;
+        end
 
     elseif class == "SHAMAN" then
         -- t7 elemental
@@ -111,7 +155,36 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_t7_3;
         end
 
+        -- t8 elemental
+        set_tier_ids[46206] = set_tiers.pve_t8_1;
+        set_tier_ids[46207] = set_tiers.pve_t8_1;
+        set_tier_ids[46209] = set_tiers.pve_t8_1;
+        set_tier_ids[46210] = set_tiers.pve_t8_1;
+        set_tier_ids[46211] = set_tiers.pve_t8_1;
+
+        for i = 45406, 45411 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
+        end
+
+        -- t8 resto
+        set_tier_ids[46198] = set_tiers.pve_t8_3;
+        set_tier_ids[46199] = set_tiers.pve_t8_3;
+        set_tier_ids[46201] = set_tiers.pve_t8_3;
+        set_tier_ids[46202] = set_tiers.pve_t8_3;
+        set_tier_ids[46204] = set_tiers.pve_t8_3;
+
+        for i = 45401, 45405 do
+            set_tier_ids[i] = set_tiers.pve_t8_3;
+        end
+
     elseif class == "WARLOCK" then
+        -- t8
+        for i = 46242, 46246 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
+        end
+        for i = 46135, 46140 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
+        end
 
     elseif class == "MAGE" then
         -- t7
@@ -159,6 +232,16 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.crit, swd, 0.1, 0.0);
                 end
             end,
+            [set_tiers.pve_t8_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.1, 0.0);
+                end
+            end,
+            [set_tiers.pve_t8_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Devouring Plague"], 0.15, 0.0);
+                end
+            end,
         };
 
     elseif class == "DRUID" then
@@ -185,6 +268,19 @@ local function create_set_effects()
                     -- TODO: awkward to implement, could track hots on target and estimate
                 end
             end,
+            [set_tiers.pve_t8_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    -- done in later stage
+                end
+            end,
+            [set_tiers.pve_t8_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    -- TODO: Swift mend
+                end
+                if num_pieces >= 4 then
+                    -- TODO: figure out rejuv instant effect
+                end
+            end,
         };
 
     elseif class == "SHAMAN" then
@@ -199,7 +295,7 @@ local function create_set_effects()
             end,
             [set_tiers.pve_t7_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.effet_mod, spell_name_to_id["Lightning Bolt"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Bolt"], 0.1, 0.0);
                 end
             end,
             [set_tiers.pve_t7_3] = function(num_pieces, loadout, effects)
@@ -211,19 +307,47 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Healing Wave"], 0.05, 0.0);
                 end
             end,
+            [set_tiers.pve_t8_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Flame Shock"], 0.2, 0.0);
+                end
+                if num_pieces >= 4 then
+                    -- Done in later stage
+                end
+            end,
+            [set_tiers.pve_t8_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Chain Heal"], 0.2, 0.0);
+                end
+            end,
         };
 
     elseif class == "WARLOCK" then
+        return {
+            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Unstable Affliction"], 0.2, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Shadow Bolt"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Incinerate"], 0.05, 0.0);
+                end
+            end,
+        };
+
 
     elseif class == "MAGE" then
         return {
             [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
-                effects.by_school.spell_crit_mod[magic_school.fire] = 
-                    effects.by_school.spell_crit_mod[magic_school.fire] + 0.025;
-                effects.by_school.spell_crit_mod[magic_school.arcane] = 
-                    effects.by_school.spell_crit_mod[magic_school.arcane] + 0.025;
-                effects.by_school.spell_crit_mod[magic_school.frost] = 
-                    effects.by_school.spell_crit_mod[magic_school.frost] + 0.025;
+                if num_pieces >= 4 then
+                    effects.by_school.spell_crit_mod[magic_school.fire] = 
+                        effects.by_school.spell_crit_mod[magic_school.fire] + 0.025;
+                    effects.by_school.spell_crit_mod[magic_school.arcane] = 
+                        effects.by_school.spell_crit_mod[magic_school.arcane] + 0.025;
+                    effects.by_school.spell_crit_mod[magic_school.frost] = 
+                        effects.by_school.spell_crit_mod[magic_school.frost] + 0.025;
+                end
             end,
         };
 
@@ -245,14 +369,45 @@ local function create_set_effects()
 end 
 
 
+--local function create_set_idols() 
+--
+--    if class == "PRIEST" then
+--        return {};
+--
+--    elseif class == "DRUID" then
+--        return {
+--        };
+--
+--    elseif class == "SHAMAN" then
+--        return {
+--            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
+--            end,
+--        };
+--
+--    elseif class == "WARLOCK" then
+--        return {};
+--
+--
+--    elseif class == "MAGE" then
+--        return {};
+--
+--    elseif class == "PALADIN" then
+--        return {
+--            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
+--            end,
+--        };
+--    end
+--end 
+
 local set_items = create_sets();
+--local set_idols = create_idols();
 
 local set_bonus_effects = create_set_effects();
 
 local function detect_sets(loadout)
     -- go through equipment to find set pieces
-    for k, v in pairs(loadout.num_set_pieces) do
-        loadout.num_set_pieces[k] = 0;
+    for k, v in pairs(set_tiers) do
+        loadout.num_set_pieces[v] = 0;
     end
 
     for item = 1, 18 do
@@ -295,7 +450,11 @@ local function apply_equipment(loadout, effects)
     end
     -- TODO: idols
     for k, v in pairs(loadout.num_set_pieces) do
-        set_bonus_effects[k](v, loadout, effects);
+        if v >= 2 then
+            if set_bonus_effects[k] then
+                set_bonus_effects[k](v, loadout, effects);
+            end
+        end
     end
 end
 
