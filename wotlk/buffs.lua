@@ -717,6 +717,16 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "20% of spirit into spellpower if glyphed",
     },
+    -- rejuvenation (nourish bonus)
+    [774] = {
+        apply = function(loadout, effects, buff)
+            
+            ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+        end,
+        filter = buff_filters.druid,
+        category = buff_category.class,
+        tooltip = "",
+    },
 };
 -- identical implementations
 buffs_predefined[31583] = buffs_predefined[31869];-- arcane_empowerment

@@ -1610,6 +1610,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
 
     local spell_power_prev = stats.spell_power;
     stats.spell_power = stats.spell_power + 1;
+    stats.spell_power_ot = stats.spell_power_ot + 1;
     spell_info(spell_effect_extra_1sp, spell, stats, loadout, effects);
     stats.spell_power = spell_power_prev;
 
@@ -1645,6 +1646,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     stats.cast_time = cast_time_prev;
 
     local spell_effect_per_sec_1sp_delta = spell_effect_extra_1sp.effect_per_sec - spell_effect.effect_per_sec;
+
     local spell_effect_per_sec_1crit_delta = spell_effect_extra_1crit.effect_per_sec - spell_effect.effect_per_sec;
     local spell_effect_per_sec_1hit_delta = spell_effect_extra_1hit.effect_per_sec - spell_effect.effect_per_sec;
     local spell_effect_per_sec_1haste_delta = spell_effect_extra_1haste.effect_per_sec - spell_effect.effect_per_sec;
@@ -2028,7 +2030,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             if spell.base_id == spell_name_to_id["Curse of Agony"] then
                 local dmg_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                 local dmg_wo_sp = (eval.spell.ot_if_hit - dmg_from_sp);
-                tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %.2fs (%.0f-%.0f-%.0f for %d ticks)",
+                tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %.2fs (%.1f-%.1f-%.1f for %d ticks)",
                                               effect,
                                               stats.hit * 100,
                                               eval.spell.ot_if_hit, 
@@ -2061,35 +2063,35 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         else
             -- wild growth
             if spell.base_id == spell_name_to_id["Wild Growth"] then
-                tooltip:AddLine(string.format("%s: %d over %ds (%d, %d, %d, %d, %d, %d, %d ticks)",
+                tooltip:AddLine(string.format("%s: %d over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %d ticks)",
                                               effect,
                                               eval.spell.ot_if_hit, 
                                               eval.spell.ot_duration, 
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  3) + 0.5),
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  2) + 0.5),
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  1) + 0.5),
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  0) + 0.5),
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -1) + 0.5),
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -2) + 0.5),
-                                              math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -3) + 0.5)
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  3) + 0.5,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  2) + 0.5,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  1) + 0.5,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  0) + 0.5,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -1) + 0.5,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -2) + 0.5,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -3) + 0.5
                                               ), 
                                 232.0/255, 225.0/255, 32.0/255);
             elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                 tooltip:AddLine(string.format("%s: %d-%d over %.2fs (%.1f for %d ticks)",
+                 tooltip:AddLine(string.format("%s: %d-%d over %.2fs (%d-%d for %d ticks)",
                                                effect,
                                                eval.spell.ot_if_hit, 
                                                eval.spell.ot_if_hit_max, 
                                                eval.spell.ot_duration, 
-                                               eval.spell.ot_if_hit_max/eval.spell.ot_ticks,
+                                               math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks),
+                                               math.ceil(eval.spell.ot_if_hit_max/eval.spell.ot_ticks),
                                                eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
             else
-                 tooltip:AddLine(string.format("%s: %d over %.2fs (%d-%d for %d ticks)",
+                 tooltip:AddLine(string.format("%s: %d over %.2fs (%.1f for %d ticks)",
                                                effect,
                                                eval.spell.ot_if_hit, 
                                                eval.spell.ot_duration, 
-                                               math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks),
-                                               math.ceil(eval.spell.ot_if_hit/eval.spell.ot_ticks),
+                                               eval.spell.ot_if_hit_max/eval.spell.ot_ticks,
                                                eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
             end
@@ -2124,7 +2126,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                252.0/255, 69.0/255, 3.0/255);
                 else
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%.1f for %d ticks)",
-                                                  stats.crit*100, 
+                                                  stats.ot_crit*100, 
                                                   eval.spell.ot_if_crit, 
                                                   eval.spell.ot_duration, 
                                                   eval.spell.ot_if_crit/eval.spell.ot_ticks,
@@ -5790,5 +5792,5 @@ SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
---__sw__debug__ = 1;
+__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;

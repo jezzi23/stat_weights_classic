@@ -1185,10 +1185,12 @@ local function apply_talents_glyphs(loadout, effects)
         -- empowered rejuvenation
         local pts = talents:pts(3, 20);
         if pts ~= 0 then
-            local hots = spell_names_to_id({"Lifebloom", "Regrowth",  "Wild Growth", "Rejuvenation"});
+            local hots = spell_names_to_id({"Lifebloom", "Regrowth",  "Wild Growth", "Rejuvenation", "Tranquility"});
             for k, v in pairs(hots) do
                 ensure_exists_and_add(effects.ability.coef_ot_mod, v, pts * 0.04, 0);
             end
+
+            ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Lifebloom"], pts*0.02064, 0);
         end
 
         -- living seed
@@ -1215,15 +1217,15 @@ local function apply_talents_glyphs(loadout, effects)
         end
 
         -- improved tree of life
-        local pts = talents:pts(3, 23);
+        local pts = talents:pts(3, 24);
         if pts ~= 0 then
             -- TODO: spiritual guidance
         end
 
         -- gift of the earthmother
-        local pts = talents:pts(3, 25);
+        local pts = talents:pts(3, 26);
         if pts ~= 0 then
-            effects.haste_mod = (1.0 + effects.haste_mod) * (1.0 + pts * 0.02) - 1.0;
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + pts * 0.02) - 1.0;
             ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lifebloom"], pts * 0.02, 0.0);
         end
 

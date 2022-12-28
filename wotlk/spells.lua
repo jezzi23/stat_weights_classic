@@ -2419,7 +2419,7 @@ local function create_spells()
                 flags               = bit.bor(spell_flags.heal, spell_flags.aoe, spell_flags.cd),
                 school              = magic_school.nature,
                 coef                = 0.0,
-                over_time_coef      = 0.645,
+                over_time_coef      = 0.538,
 				lvl_scaling			= 2.2,
             },
             [8918] = {
@@ -3240,8 +3240,8 @@ local function create_spells()
                 cost_base_percent   = 0.28,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
-                coef                = 0.3857,
-                over_time_coef      = 0.0653,
+                coef                = 0.5160,
+                over_time_coef      = 0.0952,
 				lvl_scaling			= 0.0,
             },
             [48450] = {
@@ -3328,7 +3328,7 @@ local function create_spells()
                 cost_base_percent   = 0.18,
                 flags               = spell_flags.heal,
                 school              = magic_school.nature,
-                coef                = 0.8057,
+                coef                = 0.6731,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 9.7,
             },
@@ -7791,8 +7791,7 @@ local function create_spells()
                 flags               = 0,
                 school              = magic_school.shadow,
                 coef                = 0.0,
-                -- src site says 0.2 but 0.18 gives the correct result so far
-                over_time_coef      = 0.18,
+                over_time_coef      = 0.2,
 				lvl_scaling			= 0.0,
             },
             [6222] = {
