@@ -1,4 +1,4 @@
-cast_MIT License
+--MIT License
 --
 --Copyright (c) Stat Weights Classic
 --
