@@ -5,7 +5,7 @@
 ## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
 wotlk/utils.lua
 wotlk/spells.lua
-wotlk/buffs.lua
 wotlk/equipment.lua
+wotlk/buffs.lua
 wotlk/talents.lua
 wotlk/stat_weights_classic.lua
