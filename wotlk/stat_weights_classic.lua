@@ -1,4 +1,4 @@
---MIT License
+cast_MIT License
 --
 --Copyright (c) Stat Weights Classic
 --
@@ -60,7 +60,7 @@ local apply_talents_glyphs              = addonTable.apply_talents_glyphs;
 
 -------------------------------------------------------------------------
 local sw_addon_name = "Stat Weights Classic";
-local version =  "3.0.0";
+local version =  "3.0.1";
 
 local sw_addon_loaded = false;
 
@@ -484,7 +484,7 @@ end
 local function default_loadout(loadout)
 
     loadout.name = "Default";
-    loadout.flags = bit.bor(loadout.flags, loadout_flags.is_dynamic_loadout);
+    loadout.flags = bit.bor(loadout.flags, loadout_flags.is_dynamic_loadout, loadout_flags.use_dynamic_target_lvl);
 end
 
 --local function loadout_prepare_buffs(loadout)
@@ -559,16 +559,21 @@ local function dynamic_loadout(loadout)
         end
         loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     else
-        loadout.target_lvl = loadout.lvl + 3;
+
+        if bit.band(loadout.flags, loadout_flags.use_dynamic_target_lvl) ~= 0
+            and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
+
+            loadout.target_lvl = loadout.lvl + 3;
+        end
     end
 
     if UnitExists("mouseover") and UnitName("mouseover") ~= UnitName("target") then
         loadout.friendly_towards = "mouseover";
         loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     end
-    loadout.player_hp_perc = UnitHealth("player")/UnitHealthMax("player")
+    loadout.player_hp_perc = UnitHealth("player")/math.max(UnitHealthMax("player"), 1);
     if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
-        loadout.enemy_hp_perc = UnitHealth("target")/UnitHealthMax("target");
+        loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("player"), 1);
     end
 
     remove_dynamic_stats_from_talents(loadout);
@@ -1091,9 +1096,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.vuln_mod[spell.base_id] then
         target_vuln_mod = target_vuln_mod + effects.ability.vuln_mod[spell.base_id];
     end
+    
+    target_vuln_ot_mod = target_vuln_mod;
+
     if effects.ability.vuln_ot_mod[spell.base_id] then
-        target_vuln_ot_mod = target_vuln_mod + effects.ability.vuln_ot_mod[spell.base_id];
+        target_vuln_ot_mod =  target_vuln_ot_mod + effects.ability.vuln_ot_mod[spell.base_id];
     end
+
     local global_mod = 1.0;
     stats.spell_mod = 1.0;
     stats.spell_ot_mod = 1.0;
@@ -1226,6 +1235,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if loadout.glyphs[54754] and spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
             target_vuln_ot_mod = target_vuln_ot_mod + 0.5;
         end
+
+        -- clearcast (omen of clarity)
+        local pts = loadout.talents_table:pts(3, 8);
+        if pts ~= 0 then
+            cost_mod = cost_mod*0.9;
+        end
+
         
     elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
         -- illumination
@@ -1315,7 +1331,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         -- clearcast
         local pts = loadout.talents_table:pts(1, 6);
         if pts ~= 0 then
-            cost_mod = 1.0 - (1.0 - cost_mod)*(1.0 - 0.02 * pts);
+            cost_mod = cost_mod*(1.0 - 0.02 * pts);
         end
 
         local pts = loadout.talents_table:pts(2, 13);
@@ -1609,10 +1625,12 @@ local function evaluate_spell(spell, stats, loadout, effects)
     -- careful of reusing stats for each diff if stats is used further
 
     local spell_power_prev = stats.spell_power;
+    local spell_power_ot_prev = stats.spell_power_ot;
     stats.spell_power = stats.spell_power + 1;
     stats.spell_power_ot = stats.spell_power_ot + 1;
     spell_info(spell_effect_extra_1sp, spell, stats, loadout, effects);
     stats.spell_power = spell_power_prev;
+    stats.spell_power_ot = spell_power_ot_prev;
 
     local crit_prev = stats.crit;  
     local ot_crit_prev = stats.ot_crit; 
@@ -2118,7 +2136,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     local ignite_min = pts * 0.08 * min_crit_if_hit;
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%.1f for %d ticks + ignites %d)",
                                                   stats.crit*100, 
-                                                  eval.spell.ot_if_crit, 
+                                                  min_crit_if_hit * eval.spell.ot_ticks,
                                                   eval.spell.ot_duration, 
                                                   min_crit_if_hit,
                                                   eval.spell.ot_ticks,
@@ -2807,7 +2825,7 @@ local function update_loadouts_rhs()
         loadout.extra_mana
     );
 
-    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
+    if bit.band(loadout.flags, loadout_flags.use_dynamic_target_lvl) ~= 0 then
         sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(true);
     else
         sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetChecked(false);
@@ -3873,25 +3891,28 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.export_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.export_button:SetScript("OnClick", function()
 
-        local loadout = active_loadout_copy();
+        -- TODO:
 
-        local loadout_diff = create_loadout_from_ui_diff(sw_frame.stat_comparison_frame);
+        --local loadout = active_loadout_copy();
 
-        local new_loadout = loadout_add(loadout, loadout_diff);
+        --local loadout_diff = create_loadout_from_ui_diff(sw_frame.stat_comparison_frame);
 
-        new_loadout.flags = bit.band(new_loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
+        --local new_loadout = loadout_add(loadout, loadout_diff);
+
+        --new_loadout.flags = bit.band(new_loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
 
 
-        create_new_loadout_as_copy(new_loadout, active_loadout_base().name.." (modified)");
+        --create_new_loadout_as_copy(new_loadout, active_loadout_base().name.." (modified)");
 
-        sw_activate_tab(2);
+        --sw_activate_tab(2);
     end);
 
 
     sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -10, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.export_button:SetHeight(25);
     sw_frame.stat_comparison_frame.export_button:SetWidth(180);
-    sw_frame.stat_comparison_frame.export_button:SetText("New loadout with difference");
+    --sw_frame.stat_comparison_frame.export_button:SetText("New loadout with difference");
+    sw_frame.stat_comparison_frame.export_button:SetText("");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
@@ -4289,11 +4310,12 @@ local function create_sw_gui_loadout_frame()
 
     local editbox_lvl = function(self)
 
+
         local txt = self:GetText();
         
         local lvl = tonumber(txt);
         local loadout = active_loadout();
-        if lvl and lvl == math.floor(lvl) and lvl >= 1 and lvl <= 63 then
+        if lvl and lvl == math.floor(lvl) and lvl >= 1 and lvl <= 83 then
 
             loadout.target_lvl = lvl;
             
@@ -4301,7 +4323,8 @@ local function create_sw_gui_loadout_frame()
             self:SetText(""..loadout.target_lvl); 
         end
 
-    	self:ClearFocus();
+        self:ClearFocus();
+       
     end
 
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEnterPressed", editbox_lvl);
@@ -4315,14 +4338,16 @@ local function create_sw_gui_loadout_frame()
     getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:GetName()..'Text'):SetText("Use target's level");
     getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:GetName()).tooltip = 
         "Only works with dynamic loadouts. If level is unknown '?' 3 levels above yourself is assumed";
-
-    sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton :SetScript("OnClick", function(self)
+    sw_frame.loadouts_frame.rhs_list.dynamic_target_lvl_checkbutton:SetScript("OnClick", function(self)
         local loadout = active_loadout();
         if self:GetChecked() then
             loadout.flags = bit.bor(loadout.flags, loadout_flags.use_dynamic_target_lvl);
 
+            sw_frame.loadouts_frame.rhs_list.level_editbox:SetText("");
+
         else    
             loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.use_dynamic_target_lvl));
+            sw_frame.loadouts_frame.rhs_list.level_editbox:SetText(""..loadout.target_lvl);
         end
     end)
 
@@ -4361,7 +4386,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.static_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.static_button:GetName()..'Text'):SetText("Static loadout");
     getglobal(sw_frame.loadouts_frame.rhs_list.static_button:GetName()).tooltip =
-        "Static loadouts never change and can be used to create custom setups. When checked, a static loadout is a snapshot of a dynamic loadout or can be created with modified stats through the stat comparison tool. Max mana is always assumed before Cast until OOM type of fight starts."
+        "EXPERIMENTAL AND BUGGY!!!\n\nStatic loadouts never change and can be used to create custom setups. When checked, a static loadout is a snapshot of a dynamic loadout or can be created with modified stats through the stat comparison tool. Max mana is always assumed before Cast until OOM type of fight starts."
     sw_frame.loadouts_frame.rhs_list.static_button:SetScript("OnClick", function(self)
 
         local loadout = active_loadout();
@@ -5627,32 +5652,33 @@ local function update_spell_icons(loadout, effects)
 
     -- update spell book icons
     if SpellBookFrame:IsShown() then
+
         for k, v in pairs(__sw__icon_frames.book) do
+
+            for i = 1, 3 do
+                if v.overlay_frames[i] then
+                    v.overlay_frames[i]:Hide();
+                end
+            end
+        end
+        for k, v in pairs(__sw__icon_frames.book) do
+
             if v.frame then
                 local spell_name = v.frame.SpellName:GetText();
                 local spell_rank_name = v.frame.SpellSubName:GetText();
-
                 local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
-                if v.frame and v.frame:IsShown() then
-                    if spells[id] then
-                        local spell_name = GetSpellInfo(id);
-                        -- TODO: icon overlay not working for healing version checkbox
-                        if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                            update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);
-                        else
-                            update_spell_icon_frame(v, spells[id], id, loadout, effects);
-                        end
+
+                if v.frame:IsShown() and spells[id] then
+                    local spell_name = GetSpellInfo(id);
+                    -- TODO: icon overlay not working for healing version checkbox
+                    if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                        update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);
                     else
-                        for i = 1, 3 do
-                            if v.overlay_frames[i] then
-                                v.overlay_frames[i]:Hide();
-                            end
-                        end
+                        update_spell_icon_frame(v, spells[id], id, loadout, effects);
                     end
-                elseif v.frame and not v.frame:IsShown() then
                     for i = 1, 3 do
                         if v.overlay_frames[i] then
-                            v.overlay_frames[i]:Hide();
+                            v.overlay_frames[i]:Show();
                         end
                     end
                 end
@@ -5686,9 +5712,9 @@ if class_is_supported then
 
     UIParent:HookScript("OnUpdate", function(self, elapsed)
     
-        addonTable.addon_running_time = addonTable.addon_running_time + snapshot_time_since_last_update;
+        addonTable.addon_running_time = addonTable.addon_running_time + elapsed;
         snapshot_time_since_last_update = snapshot_time_since_last_update + elapsed;
-        
+
         if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq and 
                 sw_num_icon_overlay_fields_active > 0 then
 
@@ -5792,5 +5818,5 @@ SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-__sw__debug__ = 1;
+--__sw__debug__ = 1;
 --__sw__use_defaults__ = 1;

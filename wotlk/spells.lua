@@ -126,6 +126,7 @@ local function spell_name_to_ids()
             ["Flash of Light"]          = 19750,
             ["Holy Light"]              = 635,
             ["Holy Shock"]              = 20473,
+            ["Sacred Shield"]           = 53601,
         };
     elseif class == "WARLOCK" then
         return {
@@ -562,7 +563,7 @@ local function create_spells()
                 rank                = 3,
                 lvl_req             = 36,
                 lvl_max             = 41,
-                lvl_outdated        = 80,
+                lvl_outdated        = 43,
 				lvl_scaling			= 0.2,
             },
             [10185] = {
@@ -7223,7 +7224,7 @@ local function create_spells()
                 cost_base_percent   = 0.07,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy,
-                coef                = 1.0,
+                coef                = 1.009,
                 over_time_coef      = 0,
 				lvl_scaling			= 1,
             },
@@ -7322,7 +7323,7 @@ local function create_spells()
                 cost_base_percent   = 0.29,
                 flags               = spell_flags.heal,
                 school              = magic_school.holy,
-                coef                = 1.66,
+                coef                = 1.679,
                 over_time_coef      = 0,
 				lvl_scaling			= 0.8,
             },
@@ -7478,7 +7479,7 @@ local function create_spells()
                     cost_base_percent   = 0.18,
                     flags               = spell_flags.heal,
                     school              = magic_school.holy,
-                    coef                = 0.857,
+                    coef                = 0.807,
                     over_time_coef      = 0,
 				    lvl_scaling			= 0.0,
                 }
@@ -7603,6 +7604,25 @@ local function create_spells()
 				    lvl_scaling			= 0.0,
                 }
             }, 
+            -- sacred shield
+            [53601] = {
+                base_min            = 0,
+                base_max            = 0,
+                over_time           = 500,
+                over_time_tick_freq = 7.5,
+                over_time_duration  = 30.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 80,
+                lvl_max             = 80,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.12,
+                flags               = spell_flags.absorb,
+                school              = magic_school.holy,
+                coef                = 0.0,
+                over_time_coef      = 0.429,
+				lvl_scaling			= 0.0,
+            },
         };
 
     elseif class == "WARLOCK" then

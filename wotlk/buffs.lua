@@ -23,6 +23,7 @@
 local addonName, addonTable = ...;
 local ensure_exists_and_add         = addonTable.ensure_exists_and_add;
 local ensure_exists_and_mul         = addonTable.ensure_exists_and_mul;
+local deep_table_copy               = addonTable.deep_table_copy;
 local class                         = addonTable.class;
 local race                          = addonTable.race;
 local loadout_flags                 = addonTable.loadout_flags;
@@ -30,6 +31,8 @@ local loadout_flags                 = addonTable.loadout_flags;
 local magic_school                  = addonTable.magic_school;
 local spell_name_to_id              = addonTable.spell_name_to_id;
 local spell_names_to_id             = addonTable.spell_names_to_id;
+
+local set_tiers                     = addonTable.set_tiers;
 
 
 local buff_filters = {
@@ -85,6 +88,7 @@ local non_stackable_effects = {
     misery_hit                  = bit.lshift(1, 6),
     mage_crit_target            = bit.lshift(1, 7),
     water_shield                = bit.lshift(1, 9),
+    druid_nourish_bonus         = bit.lshift(1, 10),
 };
 
 
@@ -241,10 +245,11 @@ local buffs_predefined = {
             -- mana refund done in later stage
             -- master shapeshifter
             local pts = loadout.talents_table:pts(3, 9);
-            effects.by_school.spell_dmg_mod[magic_school.arcane] =
-                effects.by_school.spell_dmg_mod[magic_school.arcane] + pts * 0.02;
-            effects.by_school.spell_dmg_mod[magic_school.nature] =
-                effects.by_school.spell_dmg_mod[magic_school.nature] + pts * 0.02;
+
+            effects.by_school.spell_dmg_mod[magic_school.arcane] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + pts * 0.02) - 1.0;
+            effects.by_school.spell_dmg_mod[magic_school.nature] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.nature]) * (1.0 + pts * 0.02) - 1.0;
         end,
         filter = buff_filters.druid,
         category = buff_category.class,
@@ -717,20 +722,51 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "20% of spirit into spellpower if glyphed",
     },
-    -- rejuvenation (nourish bonus)
-    [774] = {
+    -- divine plea
+    [54428] = {
         apply = function(loadout, effects, buff)
             
-            ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+            effects.raw.spell_heal_mod = -0.5;
         end,
-        filter = buff_filters.druid,
+        filter = buff_filters.paladin,
         category = buff_category.class,
-        tooltip = "",
+        tooltip = "50% reduced healing",
+    },
+    -- divine illumination
+    [31842] = {
+        apply = function(loadout, effects, buff)
+            
+            effects.raw.cost_mod = 0.5;
+        end,
+        filter = buff_filters.paladin,
+        category = buff_category.class,
+        tooltip = "50% reduced healing",
+    },
+    -- judgement of the pure
+    [54153] = {
+        apply = function(loadout, effects, buff)
+            
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.15 - 1.0;
+        end,
+        filter = buff_filters.paladin,
+        category = buff_category.class,
+        tooltip = "15% haste after judgement",
+    },
+    -- hot streak
+    [48108] = {
+        apply = function(loadout, effects, buff)
+            
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Pyroblast"], 3.5, 0.0); 
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "Instant Pyroblast",
     },
 };
+
 -- identical implementations
-buffs_predefined[31583] = buffs_predefined[31869];-- arcane_empowerment
-buffs_predefined[34460] = buffs_predefined[31869];-- ferocious inspiration
+buffs_predefined[31583] = deep_table_copy(buffs_predefined[31869]);-- arcane_empowerment
+buffs_predefined[34460] = deep_table_copy(buffs_predefined[31869]);-- ferocious inspiration
 
 local target_buffs_predefined = {
     -- grace
@@ -1081,26 +1117,118 @@ local target_buffs_predefined = {
         category = buff_category.class,
         tooltip = "Frozen effect",
     },
+    -- sacred shield flash of light crit
+    [58597] = {
+        apply = function(loadout, effects, buff)
+            if not buff.src or buff.src == "player" then
+                ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.5, 0.0);
+            end
+        end,
+        filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "Flash of light 50% crit",
+    },
+    -- regrowth
+    [8936] = {
+        apply = function(loadout, effects, buff)
+
+            if not buff.src or buff.src == "player" then
+
+                if loadout.glyphs[54743] then
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Regrowth"], 0.2, 0.0);
+                end
+
+                if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus) == 0 then
+
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+
+                    effects.raw.non_stackable_effect_flags =
+                        bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
+                end
+            end
+
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "",
+    },
+    -- rejuvenation (nourish bonus)
+    [774] = {
+        apply = function(loadout, effects, buff)
+            
+            if not buff.src or buff.src == "player" then
+
+                if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus) == 0 then
+
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+
+                    effects.raw.non_stackable_effect_flags =
+                        bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
+                end
+            end
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "",
+    },
+    -- lifebloom (nourish bonus)
+    [33763] = {
+        apply = function(loadout, effects, buff)
+            
+            if not buff.src or buff.src == "player" then
+
+                if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus) == 0 then
+
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+
+                    effects.raw.non_stackable_effect_flags =
+                        bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
+                end
+            end
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "",
+    },
+    -- lifebloom (nourish bonus)
+    [48438] = {
+        apply = function(loadout, effects, buff)
+            
+            if not buff.src or buff.src == "player" then
+
+                if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus) == 0 then
+
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+
+                    effects.raw.non_stackable_effect_flags =
+                        bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
+                end
+            end
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "",
+    },
 };
 
 -- identical implementations
 -- is master poisoner baked into the poison debuff??
 --target_buffs_predefined[45176] = target_buffs_predefined[54499]; -- master poisoner 3% crit
-target_buffs_predefined[30708] = target_buffs_predefined[54499]; -- totem of wrath 3% crit
+target_buffs_predefined[30708]  = deep_table_copy(target_buffs_predefined[54499]); -- totem of wrath 3% crit
 
-target_buffs_predefined[116] = target_buffs_predefined[23931]; -- snared
-target_buffs_predefined[246] = target_buffs_predefined[23931]; -- snared
-target_buffs_predefined[67719] = target_buffs_predefined[23931]; -- snared
-target_buffs_predefined[53696] = target_buffs_predefined[23931]; -- snared
-target_buffs_predefined[48485] = target_buffs_predefined[23931]; -- snared
-target_buffs_predefined[120] = target_buffs_predefined[23931]; -- snared
-target_buffs_predefined[11113] = target_buffs_predefined[23931]; -- snared
+target_buffs_predefined[116]    = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[246]    = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[67719]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[53696]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[48485]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[120]    = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[11113]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
 
-target_buffs_predefined[33395] = target_buffs_predefined[42917]; -- frozen
-target_buffs_predefined[44572] = target_buffs_predefined[42917]; -- frozen
+target_buffs_predefined[33395]  = deep_table_copy(target_buffs_predefined[42917]); -- frozen
+target_buffs_predefined[44572]  = deep_table_copy(target_buffs_predefined[42917]); -- frozen
 
 
-target_buffs_predefined[22959] = target_buffs_predefined[17800]; -- improved scorch 5% crit
+target_buffs_predefined[22959]  = deep_table_copy(target_buffs_predefined[17800]); -- improved scorch 5% crit
 
 local buffs = {};
 for k, v in pairs(buffs_predefined) do
@@ -1210,7 +1338,7 @@ local function apply_buffs(loadout, effects)
             beacon_duration = 90;
         end
  
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and (loadout.target_buffs["Beacon of Light"] or bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) and addonTable.beacon_snapshot_time + beacon_duration >= addonTable.addon_running_time then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and addonTable.beacon_snapshot_time + beacon_duration >= addonTable.addon_running_time then
             loadout.beacon = true;
         else
             loadout.beacon = nil

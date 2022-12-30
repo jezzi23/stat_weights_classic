@@ -179,7 +179,8 @@ local function create_glyphs()
                 apply = function(loadout, effects)
                     -- implementeed in later stage
                 end,
-                wowhead_id = "5b5"
+                wowhead_id = "5b5",
+                special = true
             },
             -- glyph of regrowth
             [54743] = {
@@ -471,7 +472,8 @@ local function create_glyphs()
                     -- Implemented in later stage
                 end,
                 -- TODO: _002 prefix instead of _001, won't work atm via import
-                wowhead_id = "593"
+                wowhead_id = "593",
+                special = true
             },
             -- glyph of searing pain
             [56226] = {
@@ -585,11 +587,16 @@ local function wowhead_talent_code()
     local glyphs_code = "";
 
     local primary_glyph_prefixes = {"001", "11", "21"};
+    local special_prefixes = {"002", "12", "22"};
     local j = 1;
     for i = 1, GetNumGlyphSockets() do
         local _, quality, id, _ = GetGlyphSocketInfo(i);
         if id and glyphs[id] then
-            glyphs_code = glyphs_code..primary_glyph_prefixes[j]..glyphs[id].wowhead_id;
+            if glyphs[id].special then
+                glyphs_code = glyphs_code..special_prefixes[j]..glyphs[id].wowhead_id;
+            else
+                glyphs_code = glyphs_code..primary_glyph_prefixes[j]..glyphs[id].wowhead_id;
+            end
             j = j + 1;
         end
     end
@@ -627,7 +634,7 @@ local function talent_glyphs_table(wowhead_code)
     local glyphs_table = {};
     while wowhead_code:sub(i, i) ~= "" do
 
-        if string.match(wowhead_code:sub(i, i), "[a-z]") ~= nil then
+        if string.match(wowhead_code:sub(i, i), "[3-9a-z]") ~= nil then
             local glyph_code = wowhead_code:sub(i, i + 2);
             local glyph_id = wowhead_glyph_code_to_id[glyph_code];
             if glyph_id then
