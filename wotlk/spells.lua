@@ -1906,7 +1906,7 @@ local function create_spells()
                 lvl_max             = 66,
                 lvl_outdated        = 69,
                 cost_base_percent   = 0.22,
-                flags               = spell_flags.cd,
+                flags               = 0,
                 school              = magic_school.fire,
                 coef                = 0.4,
                 over_time_coef      = 0.2,
@@ -5846,6 +5846,16 @@ local function create_spells()
                 lvl_outdated        = 80,
 				lvl_scaling			= 5,
             },
+            [49276] = {
+                base_min            = 1606,
+                base_max            = 1834,
+                over_time           = 0,
+                rank                = 9,
+                lvl_req             = 77,
+                lvl_max             = 80,
+                lvl_outdated        = 81,
+				lvl_scaling			= 6,
+            },
             -- healing wave
             [331] = {
                 base_min            = 34,
@@ -7039,7 +7049,7 @@ local function create_spells()
             [60043] = {
                 base_min            = 1192,
                 base_max            = 1518,
-                over_time_tick_freq = 0,
+                over_time           = 0,
                 rank                = 2,
                 lvl_req             = 80,
                 lvl_max             = 84,

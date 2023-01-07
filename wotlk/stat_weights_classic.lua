@@ -48,7 +48,6 @@ local apply_buffs                       = addonTable.apply_buffs;
 local non_stackable_effects             = addonTable.non_stackable_effects;
 
 local set_tiers                         = addonTable.set_tiers;
-local detect_sets                       = addonTable.detect_sets;
 local apply_equipment                   = addonTable.apply_equipment;
 
 local glyphs                            = addonTable.glyphs;
@@ -60,7 +59,7 @@ local apply_talents_glyphs              = addonTable.apply_talents_glyphs;
 
 -------------------------------------------------------------------------
 local sw_addon_name = "Stat Weights Classic";
-local version =  "3.0.1";
+local version =  "3.0.2";
 
 local sw_addon_loaded = false;
 
@@ -208,7 +207,11 @@ local function empty_effects(effects)
     effects.by_school.target_mod_res= {0, 0, 0, 0, 0, 0, 0};
 
     effects.by_attribute =  {};
+    effects.by_attribute.stats = {0, 0, 0, 0, 0};
     effects.by_attribute.stat_mod = {0, 0, 0, 0, 0};
+    effects.by_attribute.sp_from_stat_mod = {0, 0, 0, 0, 0};
+    effects.by_attribute.hp_from_stat_mod = {0, 0, 0, 0, 0};
+    effects.by_attribute.crit_from_stat_mod = {0, 0, 0, 0, 0};
 
     effects.raw = {};
 
@@ -216,9 +219,12 @@ local function empty_effects(effects)
     effects.raw.spell_heal_mod_mul = 0;
     effects.raw.target_healing_taken = 0;
     effects.raw.mana_mod = 0;
+    effects.raw.mana = 0;
+    effects.raw.mp5_from_int_mod = 0;
     effects.raw.mp5 = 0;
     effects.raw.regen_while_casting = 0;
     effects.raw.spell_power = 0;
+    effects.raw.healing_power = 0;
 
     effects.raw.ot_mod = 0;
 
@@ -227,6 +233,7 @@ local function empty_effects(effects)
 
     effects.raw.haste_rating = 0;
     effects.raw.crit_rating = 0;
+    effects.raw.hit_rating = 0;
 
     effects.raw.special_crit_mod = 0;
     effects.raw.non_stackable_effect_flags = 0;
@@ -254,13 +261,6 @@ local function empty_effects(effects)
     effects.ability.vuln_mod = {};
     effects.ability.vuln_ot_mod = {};
 
-    -- DELETE
-    effects.raw.ignite = 0;
-    effects.raw.spiritual_guidance = 0;
-    effects.raw.lunar_guidance = 0;
-    effects.raw.master_of_elements  = 0;
-    effects.raw.improved_immolate = 0;
-    effects.raw.improved_shadowbolt = 0;
 end
 
 local function zero_effects(effects)
@@ -281,66 +281,11 @@ local function zero_effects(effects)
             e[i] = 0.0;
         end
     end
-    for i = 1,5 do
-        effects.by_attribute.stat_mod[i] = 0.0;
+    for _, e in pairs(effects.by_attribute) do
+        for i = 1,5 do
+            e[i] = 0.0;
+        end
     end
-end
-
--- DELETE THIS
-local function negate_loadout(loadout)
-
-    local negated = loadout;
-
-    for i = 1, 5 do
-        negated.stats[i] = -loadout.negated.stats[i];
-    end
-    negated.mp5 = -loadout.negated.mp5;
-    negated.mana = -loadout.negated.mana;
-
-    for i = 1, 7 do
-        negated.spell_dmg_by_school[i] = -loadout.spell_dmg_by_school[i];
-    end
-    negated.spell_power = -loadout.spell_power;
-
-    for i = 1, 7 do
-        negated.spell_crit_by_school[i] = -loadout.spell_crit_by_school[i];
-    end
-
-    for i = 1, 7 do
-        negated.spell_dmg_hit_by_school[i] = -loadout.spell_dmg_hit_by_school[i];
-    end
-
-    for i = 1, 7 do
-        negated.spell_dmg_mod_by_school[i] = -loadout.spell_dmg_mod_by_school[i];
-    end
-
-    for i = 1, 7 do
-        negated.spell_crit_mod_by_school[i] = -loadout.spell_crit_mod_by_school[i];
-    end
-
-    for i = 1, 7 do
-        negated.target_spell_dmg_taken[i] = -loadout.target_spell_dmg_taken[i];
-    end
-
-    for i = 1, 7 do
-        negated.target_mod_res_by_school[i] = -loadout.target_mod_res_by_school[i];
-    end
-    for i = 1, 7 do
-        negated.target_res_by_school[i] = -loadout.target_res_by_school[i];
-    end
-
-    negated.spell_heal_mod = -negated.spell_heal_mod;
-    negated.target_healing_taken = -negated.target_healing_taken;
-
-    negated.dmg_mod = -negated.dmg_mod;
-
-    negated.haste_rating = -negated.haste_rating;
-    negated.crit_rating = -negated.crit_rating;
-    negated.hit_rating = -negated.hit_rating;
-
-    negated.cost_mod = -negated.cost_mod;
-
-    return negated;
 end
 
 -- deep copy to avoid reference entanglement
@@ -377,37 +322,63 @@ local function effects_add(dst, src)
     end
 end
 
-local function loadout_add(primary, diff, effects, effects_diff)
+local function effects_zero_diff()
+    return {
+        stats = {0, 0, 0, 0, 0},
+        mp5 = 0,
+        sp = 0,
+        hit_rating = 0,
+        haste_rating = 0,
+        crit_rating = 0,
+    };
+end
 
-    for i = 1, 5 do
-            primary.stats[i] = primary.stats[i] + diff.stats[i] * (1 + effects.by_attribute.stat_mod[i]);
-    end
+local function effects_diff(loadout, effects, diff)
+    -- TODO: mp5 from int scaling too
+
+    --for i = 1, 5 do
+    --    effects.stats[i] = loadout.stats[i] + diff.stats[i] * (1 + effects.by_attribute.stat_mod[i]);
+    --end
     -- TODO: outdated stuff here, mana and int crit formula need figuring out
 
-    primary.mana = primary.mana + 
-                 (diff.mana * (1 + effects.raw.mana_mod)) + 
-                 (15*diff.stats[stat.int]*(1 + effects.by_attribute.stat_mod[stat.int]*effects.raw.mana_mod));
+    --loadout.mana = loadout.mana + 
+    --             (15*diff.stats[stat.int]*(1 + effects.by_attribute.stat_mod[stat.int]*effects.raw.mana_mod));
 
-    local sp_gained_from_spirit = diff.stats[stat.spirit] * (1 + effects.by_attribute.stat_mod[stat.spirit]) * effects.raw.spiritual_guidance * 0.01;
-    local sp_gained_from_int = diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.raw.lunar_guidance * 0.01;
-    sp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
-    for i = 1, 7 do
-        primary.spell_dmg_by_school[i] = primary.spell_dmg_by_school[i] + diff.spell_dmg_by_school[i] + sp_gained_from_stat;
+    local sp_gained_from_spirit = diff.stats[stat.spirit] * (1 + effects.by_attribute.stat_mod[stat.spirit]) * effects.by_attribute.sp_from_stat_mod[stat.spirit];
+    local sp_gained_from_int = diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.by_attribute.sp_from_stat_mod[stat.int];
+    local sp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
+
+    local hp_gained_from_spirit = diff.stats[stat.spirit] * (1 + effects.by_attribute.stat_mod[stat.spirit]) * effects.by_attribute.hp_from_stat_mod[stat.spirit];
+    local hp_gained_from_int = diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.by_attribute.hp_from_stat_mod[stat.int];
+    local hp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
+
+    effects.raw.spell_power = effects.raw.spell_power + diff.sp + sp_gained_from_stat;
+    effects.raw.healing_power = effects.raw.healing_power + hp_gained_from_stat;
+
+    effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
+    effects.raw.mp5 = effects.raw.mp5 + diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.raw.mp5_from_int_mod;
+
+    -- TODO: crit and mana yields from intellect
+    --       Missing formulas, seems to depend on lvl and class/race?
+    --       It looks like in many cases 166.67 int is needed per 1% crit at many lvl 80 caster classes
+    --
+    --       Only contribute mana and crit IF we are level 80 since the generalized case is unknown atm
+    local lvl_80_int_to_crit_ratio = 166.66638409698;
+    local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/get_combat_rating_effect(CR_CRIT_SPELL, 80);
+    
+    local crit_rating_from_int = 0;
+    if loadout.lvl == 80 then
+        crit_rating_from_int = diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int])/lvl_80_int_per_crit_rating;
     end
-    primary.spell_power = primary.spell_power + diff.spell_power + sp_gained_from_stat;
+    effects.raw.mana = effects.raw.mana + (diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]) * 15)*(1.0 + effects.raw.mana_mod);
 
-    -- introduce crit by intellect here
-    crit_diff_normalized_to_primary = diff.stats[stat.int] * ((1 + effects.by_attribute.stat_mod[stat.int])/60)/100; -- assume diff has no stat mod
-    for i = 1, 7 do
-        primary.spell_crit_by_school[i] = primary.spell_crit_by_school[i] + diff.spell_crit_by_school[i] + 
-            crit_diff_normalized_to_primary;
+    effects.raw.haste_rating = effects.raw.haste_rating + diff.haste_rating;
+    effects.raw.crit_rating = effects.raw.crit_rating + diff.crit_rating + diff.stats[stat.spirit]*effects.by_attribute.crit_from_stat_mod[stat.spirit] + crit_rating_from_int;
+    effects.raw.hit_rating = effects.raw.hit_rating + diff.hit_rating;
+
+    for i = 1, 5 do
+        effects.by_attribute.stats[i] = effects.by_attribute.stats[i] + diff.stats[i];
     end
-
-    primary.haste_rating = primary.haste_rating + diff.haste_rating;
-    primary.crit_rating = primary.crit_rating + diff.crit_rating;
-    primary.hit_rating = primary.hit_rating + diff.hit_rating;
-
-    return primary;
 end
 
 local active_loadout_base = nil;
@@ -573,13 +544,12 @@ local function dynamic_loadout(loadout)
     end
     loadout.player_hp_perc = UnitHealth("player")/math.max(UnitHealthMax("player"), 1);
     if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
-        loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("player"), 1);
+        loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("target"), 1);
     end
 
     remove_dynamic_stats_from_talents(loadout);
 
     detect_buffs(loadout);
-    detect_sets(loadout);
 end
 
 local function static_loadout_from_dynamic(loadout)
@@ -720,7 +690,7 @@ local function mana_regen_per_5(int, spirit, level)
     if not base_regen then
         base_regen = lvl_to_base_regen[80];
     end
-    local mana_regen = math.ceil(5 * (0.001 + math.sqrt(int) * spirit * lvl_to_base_regen[level]) * 0.6);
+    local mana_regen = 5 * (0.001 + math.sqrt(int) * spirit * lvl_to_base_regen[level]) * 0.6;
     return mana_regen;
 end
 
@@ -980,6 +950,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.ot_ticks = 0;
     if base_ot_tick > 0 then
 
+
         local base_ot_num_ticks = (ot_dur/ot_freq);
         local ot_coef_per_tick = stats.ot_coef
         --#local base_ot_tick = base_ot / base_ot_num_ticks;
@@ -1069,6 +1040,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     local crit_rating_per_perc = get_combat_rating_effect(CR_CRIT_SPELL, loadout.lvl);
     local crit_from_rating = 0.01 * (loadout.crit_rating + effects.raw.crit_rating)/crit_rating_per_perc;
     stats.crit = math.max(0.0, math.min(1.0, stats.crit + crit_from_rating));
+
 
     if bit.band(spell.flags, spell_flags.over_time_crit) ~= 0 then
         if effects.ability.crit_ot[spell.base_id] then
@@ -1258,6 +1230,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.crit_mod = stats.crit_mod * 1.15;
         end
 
+        local pts = loadout.talents_table:pts(2, 1);
+        if pts ~= 0 and UnitName(loadout.friendly_towards) == UnitName("player") then
+            target_vuln_mod = target_vuln_mod + pts * 0.01;
+            target_vuln_ot_mod = target_vuln_ot_mod + pts * 0.01;
+        end
+
+
     elseif class == "SHAMAN" then
         -- shaman clearcast
         -- elemental focus
@@ -1268,6 +1247,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             cost_mod = cost_mod - 0.4*probability_of_critting_at_least_once_in_two;
             
         end
+
 
         -- improved water shield
         local pts = loadout.talents_table:pts(3, 6);
@@ -1298,6 +1278,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 water_shield_proc_gain = 97;
             elseif loadout.lvl >= 28 then
                 water_shield_proc_gain = 81;
+            end
+            if loadout.num_set_pieces[set_tiers.pve_t7_3] >= 2 then
+                water_shield_proc_gain = water_shield_proc_gain * 1.1;
             end
             resource_refund = stats.crit * mana_proc_chance * water_shield_proc_gain;
         end
@@ -1532,7 +1515,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     local hit_rating_per_perc = get_combat_rating_effect(CR_HIT_SPELL, loadout.lvl);
-    local hit_from_rating = 0.01 * loadout.hit_rating/hit_rating_per_perc
+    local hit_from_rating = 0.01 * (loadout.hit_rating + effects.raw.hit_rating)/hit_rating_per_perc
     stats.extra_hit = stats.extra_hit + hit_from_rating;
 
     stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit);
@@ -1548,7 +1531,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-        stats.spell_power = loadout.spell_power;
+        stats.spell_power = loadout.spell_power + effects.raw.healing_power;
     else
         stats.spell_power = loadout.spell_power + loadout.spell_dmg_by_school[spell.school];
     end
@@ -1572,6 +1555,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
 
     stats.cost = stats.cost * cost_mod;
+    -- is this rounding correct?
+    stats.cost = math.floor(stats.cost + 0.5);
     stats.cost = stats.cost - resource_refund;
 
     if effects.ability.refund[spell.base_id] and effects.ability.refund[spell.base_id] ~= 0 then
@@ -1588,9 +1573,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         stats.cost = stats.cost - refund*coef_estimate;
     end
-
-    -- cost rounding?
-    stats.cost = tonumber(string.format("%.0f", stats.cost));
 
     local lvl_scaling = level_scaling(spell.lvl_req);
     stats.coef = spell.coef * lvl_scaling;
@@ -1612,98 +1594,37 @@ local function spell_info_from_stats(spell_info, stats, spell, loadout, effects)
     spell_info(spell_info, spell, stats, loadout, effects);
 end
 
-local function evaluate_spell(spell, stats, loadout, effects)
+local function cast_until_oom(spell_effect, stats, loadout, effects, calculating_weights)
 
-    local spell_effect = {};
-    local spell_effect_extra_1sp = {};
-    local spell_effect_extra_1crit = {};
-    local spell_effect_extra_1hit = {};
-    local spell_effect_extra_1haste = {};
-
-    spell_info(spell_effect, spell, stats, loadout, effects);
-
-    -- careful of reusing stats for each diff if stats is used further
-
-    local spell_power_prev = stats.spell_power;
-    local spell_power_ot_prev = stats.spell_power_ot;
-    stats.spell_power = stats.spell_power + 1;
-    stats.spell_power_ot = stats.spell_power_ot + 1;
-    spell_info(spell_effect_extra_1sp, spell, stats, loadout, effects);
-    stats.spell_power = spell_power_prev;
-    stats.spell_power_ot = spell_power_ot_prev;
-
-    local crit_prev = stats.crit;  
-    local ot_crit_prev = stats.ot_crit; 
-
-    local crit_rating_per_perc = get_combat_rating_effect(CR_CRIT_SPELL, loadout.lvl);
-    if stats.crit ~= 0.0 then
-        stats.crit = math.min(1.0, stats.crit + 0.01/crit_rating_per_perc);
-    end
-    if stats.ot_crit ~= 0.0 then
-        stats.ot_crit = math.min(1.0, stats.ot_crit + 0.01/crit_rating_per_perc);
-    end
-    spell_info(spell_effect_extra_1crit, spell, stats, loadout, effects);
-    stats.crit = crit_prev;
-    stats.ot_crit = ot_crit_prev;
-
-    local hit_prev = stats.hit;
-    local hit_rating_per_perc = get_combat_rating_effect(CR_HIT_SPELL, loadout.lvl);
-    if bit.band(spell.flags, spell_flags.heal) == 0 and bit.band(spell.flags, spell_flags.absorb) == 0 then
-        stats.hit = math.min(1.0, stats.hit + 0.01/hit_rating_per_perc);
-    end
-    spell_info(spell_effect_extra_1hit, spell, stats, loadout, effects);
-    stats.hit = hit_prev;
-
-    local cast_time_prev = stats.cast_time;
-    local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
-    local haste_from_rating = 0.01 * math.max(0.0, loadout.haste_rating) / haste_rating_per_perc;
-    local cast_time_wo_haste = cast_time_prev * (1.0 + haste_from_rating);
-    stats.cast_time = math.max(cast_time_wo_haste/(1.0 + haste_from_rating + 0.01/haste_rating_per_perc), stats.gcd);
-
-    spell_info(spell_effect_extra_1haste, spell, stats, loadout, effects);
-    stats.cast_time = cast_time_prev;
-
-    local spell_effect_per_sec_1sp_delta = spell_effect_extra_1sp.effect_per_sec - spell_effect.effect_per_sec;
-
-    local spell_effect_per_sec_1crit_delta = spell_effect_extra_1crit.effect_per_sec - spell_effect.effect_per_sec;
-    local spell_effect_per_sec_1hit_delta = spell_effect_extra_1hit.effect_per_sec - spell_effect.effect_per_sec;
-    local spell_effect_per_sec_1haste_delta = spell_effect_extra_1haste.effect_per_sec - spell_effect.effect_per_sec;
-
-    local sp_per_crit = spell_effect_per_sec_1crit_delta/(spell_effect_per_sec_1sp_delta);
-    local sp_per_hit = spell_effect_per_sec_1hit_delta/(spell_effect_per_sec_1sp_delta);
-    local sp_per_haste = spell_effect_per_sec_1haste_delta/(spell_effect_per_sec_1sp_delta);
-
-    return {
-        effect_per_sec_per_sp = spell_effect_per_sec_1sp_delta,
-        sp_per_crit = sp_per_crit,
-        sp_per_hit = sp_per_hit,
-        sp_per_haste = sp_per_haste,
-
-        spell = spell_effect,
-        spell_1_sp = spell_effect_extra_1sp,
-        spell_1_crit = spell_effect_extra_1crit,
-        spell_1_hit = spell_effect_extra_1hit,
-        spell_1_haste = spell_effect_extra_1haste,
-    };
-end
-
-local function cast_until_oom_sim(spell_effect, stats, loadout, effects)
+    calculating_weights = calculating_weights or false;
 
     local num_casts = 0;
     local effect = 0;
 
-    local mana = loadout.mana + loadout.extra_mana;
+    local mana = loadout.mana + loadout.extra_mana + effects.raw.mana;
 
     -- src: https://wowwiki-archive.fandom.com/wiki/Spirit
-    local mp1_not_casting = 0.2 * mana_regen_per_5(loadout.stats[stat.int], loadout.stats[stat.spirit], loadout.lvl);
-    -- Note: Don't see 5% of base mana as regen while casting being a thing
+    -- without mp5
+    local intellect = loadout.stats[stat.int] + effects.by_attribute.stats[stat.int];
+    local spirit = loadout.stats[stat.spirit] + effects.by_attribute.stats[stat.spirit];
+    local mp5_not_casting = mana_regen_per_5(intellect, spirit, loadout.lvl);
+    if not calculating_weights then
+        mp5_not_casting = math.ceil(mp5_not_casting);
+    end
+    local mp1_not_casting = 0.2 * mp5_not_casting;
+    -- Note: Can't see 5% of base mana as regen while casting being a thing
     --local mp1_casting = 0.2 * (0.05 * base_mana_pool() + effects.raw.mp5) + mp1_not_casting * effects.raw.regen_while_casting;
-    local mp1_casting = 0.2 * effects.raw.mp5 + mp1_not_casting * effects.raw.regen_while_casting;
+    local mp1_casting = 0.2 * (effects.raw.mp5 + effects.raw.mp5_from_int_mod * loadout.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]))
+        + mp1_not_casting * effects.raw.regen_while_casting;
 
-    local resource_loss_per_sec = stats.cost/stats.cast_time - mp1_casting;
-    local a, b = GetManaRegen()
+    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 and not calculating_weights then
+        -- the mana regen calculation is correct, but use GetManaRegen() to detect
+        -- niche MP5 sources dynamically
+        local _, x = GetManaRegen()
+        mp1_casting = x;
+    end
 
-    --print(mp1_not_casting, mp1_casting, " but really", a, b);
+    local resource_loss_per_sec = spell_effect.cost_per_sec - mp1_casting;
 
     if resource_loss_per_sec <= 0 then
         -- divide by 0 party!
@@ -1719,76 +1640,133 @@ local function cast_until_oom_sim(spell_effect, stats, loadout, effects)
     end
 end
 
-local function cast_until_oom_sim_default(spell_effect, stats, loadout, effects)
 
-    cast_until_oom_sim(spell_effect, stats, loadout, effects);
-end
+local function evaluate_spell(spell, stats, loadout, effects)
 
-local function cast_until_oom_stat_weights(
-        spell, stats,
-        spell_effect_normal, spell_effect_1_sp, spell_effect_1_crit, spell_effect_1_hit, spell_effect_1_haste, loadout, effects)
+    local spell_effect = {};
+    local spell_effect_extra_1sp = {};
+    local spell_effect_extra_1crit = {};
+    local spell_effect_extra_1hit = {};
+    local spell_effect_extra_1haste = {};
+    local spell_effect_extra_1int = {};
+    local spell_effect_extra_1spirit = {};
+    local spell_effect_extra_1mp5 = {};
 
-    -- TODO: stats must be tied to effect
-    cast_until_oom_sim(spell_effect_normal, stats, loadout, effects);
-    cast_until_oom_sim(spell_effect_1_sp, stats, loadout, effects);
-    cast_until_oom_sim(spell_effect_1_crit, stats, loadout, effects);
-    cast_until_oom_sim(spell_effect_1_hit, stats, loadout, effects);
-    cast_until_oom_sim(spell_effect_1_haste, stats, loadout, effects);
+    spell_info(spell_effect, spell, stats, loadout, effects);
+    cast_until_oom(spell_effect, stats, loadout, effects, true);
 
-    local loadout_1_mp5 = empty_loadout();
-    --loadout_1_mp5.mp5  = loadout_1_mp5.mp5 + 1;
-    local loadout_added_1_mp5 = loadout_add(loadout, loadout_1_mp5, effects);
-    local stats_1_mp5_added = {};
-    stats_for_spell(stats_1_mp5_added, spell, loadout_added_1_mp5, effects);
-    local spell_effect_1_mp5 = {};
-    spell_info(spell_effect_1_mp5, spell, stats_1_mp5_added, loadout_added_1_mp5, effects);
-    cast_until_oom_sim(spell_effect_1_mp5, stats, loadout_added_1_mp5, effects);
+    local effects_diffed = deep_table_copy(effects);
+    local diff = effects_zero_diff();
+    local spell_stats_diffed = {};
 
-    local loadout_1_spirit = empty_loadout();
-    loadout_1_spirit.stats[stat.spirit] = 1;
-    local loadout_added_1_spirit = loadout_add(loadout, loadout_1_spirit, effects);
-    local stats_1_spirit_added = {};
-    stats_for_spell(stats_1_spirit_added, spell, loadout_added_1_spirit, effects);
-    local added_1_spirit_effect = {};
-    spell_info(added_1_spirit_effect, spell, stats_1_spirit_added, loadout_added_1_spirit, effects);
-    cast_until_oom_sim(added_1_spirit_effect, stats_1_spirit_added, loadout_added_1_spirit, effects);
+    diff.sp = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1sp, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1sp, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.sp = 0;
 
-    local loadout_1_int = empty_loadout();
-    loadout_1_int.stats[stat.int] = 1;
-    local loadout_added_1_int = loadout_add(loadout, loadout_1_int, effects);
-    local stats_1_int_added = {};
-    stats_for_spell(stats_1_int_added, spell, loadout_added_1_int, effects);
-    local added_1_int_effect = {};
-    spell_info(added_1_int_effect, spell, stats_1_int_added, loadout_added_1_int, effects);
-    cast_until_oom_sim(added_1_int_effect, stats_1_int_added, loadout_added_1_int, effects);
+    diff.crit_rating = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1crit, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1crit, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.crit_rating = 0;
 
-    local diff_1_sp = spell_effect_1_sp.effect_until_oom - spell_effect_normal.effect_until_oom;
-    local diff_1_crit = spell_effect_1_crit.effect_until_oom - spell_effect_normal.effect_until_oom;
-    local diff_1_hit = spell_effect_1_hit.effect_until_oom - spell_effect_normal.effect_until_oom;
-    local diff_1_haste = spell_effect_1_haste.effect_until_oom - spell_effect_normal.effect_until_oom;
-    local diff_1_mp5 = spell_effect_1_mp5.effect_until_oom - spell_effect_normal.effect_until_oom;
-    local diff_1_spirit = added_1_spirit_effect.effect_until_oom - spell_effect_normal.effect_until_oom;
-    local diff_1_int = added_1_int_effect.effect_until_oom - spell_effect_normal.effect_until_oom;
+    diff.hit_rating = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1hit, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1hit, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.hit_rating = 0;
 
-    local sp_per_crit = diff_1_crit/diff_1_sp;
-    local sp_per_hit = diff_1_hit/diff_1_sp;
-    local sp_per_haste = diff_1_haste/diff_1_sp;
-    local sp_per_mp5 = diff_1_mp5/diff_1_sp;
-    local sp_per_spirit = diff_1_spirit/diff_1_sp;
-    local sp_per_int = diff_1_int/diff_1_sp;
+    diff.haste_rating = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1haste, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1haste, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.haste_rating = 0;
+
+    diff.stats[stat.int] = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1int, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1int, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.stats[stat.int] = 0;
+
+    diff.stats[stat.spirit] = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1spirit, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1spirit, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.stats[stat.spirit] = 0;
+
+    diff.mp5 = 1;
+    effects_diff(loadout, effects_diffed, diff);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1mp5, spell, spell_stats_diffed, loadout, effects_diffed);
+    cast_until_oom(spell_effect_extra_1mp5, spell_stats_diffed, loadout, effects_diffed, true);
+    effects_diffed = deep_table_copy(effects);
+    diff.mp5 = 0;
+
+    -- infinite cast
+    local spell_effect_per_sec_1sp_delta = spell_effect_extra_1sp.effect_per_sec - spell_effect.effect_per_sec;
+
+    local spell_effect_per_sec_1crit_delta = spell_effect_extra_1crit.effect_per_sec - spell_effect.effect_per_sec;
+    local spell_effect_per_sec_1hit_delta = spell_effect_extra_1hit.effect_per_sec - spell_effect.effect_per_sec;
+    local spell_effect_per_sec_1haste_delta = spell_effect_extra_1haste.effect_per_sec - spell_effect.effect_per_sec;
+    local spell_effect_per_sec_1int_delta = spell_effect_extra_1int.effect_per_sec - spell_effect.effect_per_sec;
+    local spell_effect_per_sec_1spirit_delta = spell_effect_extra_1spirit.effect_per_sec - spell_effect.effect_per_sec;
+
+    -- cast until oom
+    local spell_effect_until_oom_1sp_delta = spell_effect_extra_1sp.effect_until_oom - spell_effect.effect_until_oom;
+
+    local spell_effect_until_oom_1crit_delta = spell_effect_extra_1crit.effect_until_oom - spell_effect.effect_until_oom;
+    local spell_effect_until_oom_1hit_delta = spell_effect_extra_1hit.effect_until_oom - spell_effect.effect_until_oom;
+    local spell_effect_until_oom_1haste_delta = spell_effect_extra_1haste.effect_until_oom - spell_effect.effect_until_oom;
+    local spell_effect_until_oom_1int_delta = spell_effect_extra_1int.effect_until_oom - spell_effect.effect_until_oom;
+    local spell_effect_until_oom_1spirit_delta = spell_effect_extra_1spirit.effect_until_oom - spell_effect.effect_until_oom;
+    local spell_effect_until_oom_1mp5_delta = spell_effect_extra_1mp5.effect_until_oom - spell_effect.effect_until_oom;
 
     return {
-        effect_per_1_sp = diff_1_sp,
+        infinite_cast = {
+            effect_per_sec_per_sp = spell_effect_per_sec_1sp_delta,
+            sp_per_crit   = spell_effect_per_sec_1crit_delta/(spell_effect_per_sec_1sp_delta),
+            sp_per_hit    = spell_effect_per_sec_1hit_delta/(spell_effect_per_sec_1sp_delta),
+            sp_per_haste  = spell_effect_per_sec_1haste_delta/(spell_effect_per_sec_1sp_delta),
+            sp_per_int    = spell_effect_per_sec_1int_delta/(spell_effect_per_sec_1sp_delta),
+            sp_per_spirit = spell_effect_per_sec_1spirit_delta/(spell_effect_per_sec_1sp_delta),
 
-        sp_per_crit = sp_per_crit,
-        sp_per_hit = sp_per_hit,
-        sp_per_haste = sp_per_haste,
-        sp_per_mp5 = sp_per_mp5,
-        sp_per_spirit = sp_per_spirit,
-        sp_per_int = sp_per_int,
-
-        normal = spell_effect_normal,
+            --spell_1_sp = spell_effect_extra_1sp,
+            --spell_1_crit = spell_effect_extra_1crit,
+            --spell_1_hit = spell_effect_extra_1hit,
+            --spell_1_haste = spell_effect_extra_1haste,
+            --spell_1_int = spell_effect_extra_1int,
+            --spell_1_spirit = spell_effect_extra_1spirit,
+            --spell_1_mp5 = spell_effect_extra_1mp5,
+        },
+        cast_until_oom = {
+            effect_until_oom_per_sp = spell_effect_until_oom_1sp_delta,
+            sp_per_crit     = spell_effect_until_oom_1crit_delta/(spell_effect_until_oom_1sp_delta),
+            sp_per_hit      = spell_effect_until_oom_1hit_delta/(spell_effect_until_oom_1sp_delta),
+            sp_per_haste    = spell_effect_until_oom_1haste_delta/(spell_effect_until_oom_1sp_delta),
+            sp_per_int      = spell_effect_until_oom_1int_delta/(spell_effect_until_oom_1sp_delta),
+            sp_per_spirit   = spell_effect_until_oom_1spirit_delta/(spell_effect_until_oom_1sp_delta),
+            sp_per_mp5      = spell_effect_until_oom_1mp5_delta/(spell_effect_until_oom_1sp_delta),
+        },
+        spell = spell_effect,
     };
+end
+
+local function cast_until_oom_default(spell_effect, stats, loadout, effects)
+
+    cast_until_oom(spell_effect, stats, loadout, effects);
 end
 
 local spell_cache = {};    
@@ -1817,11 +1795,11 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     stats_for_spell(stats, spell, loadout, effects); 
     local eval = evaluate_spell(spell, stats, loadout, effects);
 
-    local cast_til_oom = cast_until_oom_stat_weights(
-      spell, stats,
-      eval.spell, eval.spell_1_sp, eval.spell_1_crit, eval.spell_1_hit, eval.spell_1_haste, 
-      loadout, effects
-    );
+    --local cast_til_oom = cast_until_oom_stat_weights(
+    --  spell, stats,
+    --  eval.spell, eval.spell_1_sp, eval.spell_1_crit, eval.spell_1_hit, eval.spell_1_haste, eval.spell_1_int, eval.spell_1_spirit, eval.spell_1_mp5,
+    --  loadout, effects
+    --);
 
     local effect = "";
     local effect_per_sec = "";
@@ -1834,7 +1812,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         effect = "Heal";
         effect_per_sec = "HPS (by execution time)";
         effect_per_cost = "Heal per Mana";
-        cost_per_sec = "Mana per sec";
+        cost_per_sec = "Mana per sec IN/OUT";
         effect_per_sec_per_sp = "HPS per spell power";
         sp_name = "Spell power";
     else
@@ -2191,7 +2169,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
 
-        tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 0.0, 1.0, 1.0);
+        tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
     end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
@@ -2209,21 +2187,28 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         tooltip:AddLine(effect_per_cost..": "..string.format("%.1f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
     end
     if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
-        tooltip:AddLine(cost_per_sec.." burn: "..string.format("%.1f",eval.spell.cost_per_sec), 0.0, 1.0, 1.0);
-        tooltip:AddLine(cost_per_sec.." gain: "..string.format("%.1f",cast_til_oom.normal.mp1), 0.0, 1.0, 1.0);
+        tooltip:AddLine(cost_per_sec..": "..string.format("+ %.1f / - %.1f", eval.spell.mp1, eval.spell.cost_per_sec), 0.0, 1.0, 1.0);
     end
 
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
-        tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
+        tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
         local stat_weights = {};
         stat_weights[1] = {weight = 1.0, str = "SP"};
-        stat_weights[2] = {weight = eval.sp_per_crit, str = "Crit"};
-        stat_weights[3] = {weight = eval.sp_per_haste, str = "Haste"};
+        stat_weights[2] = {weight = eval.infinite_cast.sp_per_crit, str = "Crit"};
+        stat_weights[3] = {weight = eval.infinite_cast.sp_per_haste, str = "Haste"};
         local num_weights = 3;
+        --if eval.sp_per_int ~= 0 then
+        num_weights = num_weights + 1;
+        stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_int, str = "Int"};
+        --end
+        --if eval.sp_per_spirit ~= 0 then
+        num_weights = num_weights + 1;
+        stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_spirit, str = "Spirit"};
+        --end
 
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-            num_weights = 4;
-            stat_weights[4] = {weight = eval.sp_per_hit, str = "Hit"};
+            num_weights = num_weights + 1;
+            stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_hit, str = "Hit"};
         --    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
             --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
         else
@@ -2232,46 +2217,62 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         local stat_weights_str = "";
         sort_stat_weights(stat_weights, num_weights);
         for i = 1, num_weights-1 do
-            stat_weights_str = stat_weights_str..string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str);
+            if stat_weights[i].weight ~= 0 then
+                stat_weights_str = stat_weights_str..string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str);
+            else
+                stat_weights_str = stat_weights_str..string.format("%d %s | ", 0, stat_weights[i].str);
+            end
         end
-        stat_weights_str = stat_weights_str..string.format("%.3f %s", stat_weights[num_weights].weight, stat_weights[num_weights].str);
+        if stat_weights[num_weights].weight ~= 0 then
+            stat_weights_str = stat_weights_str..string.format("%.3f %s", stat_weights[num_weights].weight, stat_weights[num_weights].str);
+        else
+            stat_weights_str = stat_weights_str..string.format("%d %s", 0, stat_weights[num_weights].str);
+        end
         tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
     end
 
     if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and
         bit.band(spell.flags, spell_flags.cd) == 0 then
 
-        tooltip:AddLine("Scenario: Cast until OOM", 1, 1, 1);
-        tooltip:AddLine("   Coming in a future update", 1, 1, 1);
+        tooltip:AddLine("Scenario: Cast Until OOM", 1, 1, 1);
 
+        tooltip:AddLine(string.format("%s until OOM : %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
+        tooltip:AddLine("Effect per 1 SP: "..string.format("%.3f",eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
 
-        --tooltip:AddLine(string.format("%s until OOM : %.1f (%.1f casts, %.1f sec)", effect, cast_til_oom.normal.effect_until_oom, cast_til_oom.normal.num_casts_until_oom, cast_til_oom.normal.time_until_oom));
-        --tooltip:AddLine("Effect per 1 SP: "..string.format("%.3f",cast_til_oom.effect_per_1_sp), 0.0, 1.0, 0.0);
+        local stat_weights = {};
+        stat_weights[1] = {weight = 1.0, str = "SP"};
+        stat_weights[2] = {weight = eval.cast_until_oom.sp_per_crit, str = "Crit"};
+        stat_weights[3] = {weight = eval.cast_until_oom.sp_per_haste, str = "Haste"};
+        stat_weights[4] = {weight = eval.cast_until_oom.sp_per_int, str = "Int"};
+        stat_weights[5] = {weight = eval.cast_until_oom.sp_per_spirit, str = "Spirit"};
+        stat_weights[6] = {weight = eval.cast_until_oom.sp_per_mp5, str = "MP5"};
+        local num_weights = 6;
 
-        --local stat_weights = {};
-        --stat_weights[1] = {weight = 1.0, str = "SP"};
-        --stat_weights[2] = {weight = cast_til_oom.sp_per_crit, str = "Crit"};
-        --stat_weights[3] = {weight = cast_til_oom.sp_per_haste, str = "Haste"};
-        --stat_weights[4] = {weight = cast_til_oom.sp_per_int, str = "Int"};
-        --stat_weights[5] = {weight = cast_til_oom.sp_per_spirit, str = "Spirit"};
-        --stat_weights[6] = {weight = cast_til_oom.sp_per_mp5, str = "MP5"};
-        --local num_weights = 6;
-
-        --if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-        --    num_weights = 7;
-        --    stat_weights[7] = {weight = eval.sp_per_hit, str = "Hit"};
-        ----    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
-        --    --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
-        --else
-        --    --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste",eval.sp_per_crit, eval.sp_per_haste), 0.0, 1.0, 0.0);
-        --end
-        --local stat_weights_str = "";
-        --sort_stat_weights(stat_weights, num_weights);
-        --for i = 1, num_weights-1 do
-        --    stat_weights_str = stat_weights_str..string.format("%.3f %s | spell_flags.over_time_range), ", stat_weights[i].weight, stat_weights[i].str);
-        --end
-        --stat_weights_str = stat_weights_str..string.format("%.3f %s", stat_weights[num_weights].weight, stat_weights[num_weights].str);
-        --tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
+        if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
+            num_weights = 7;
+            stat_weights[7] = {weight = eval.cast_until_oom.sp_per_hit, str = "Hit"};
+        --    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+            --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
+        else
+            --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste",eval.sp_per_crit, eval.sp_per_haste), 0.0, 1.0, 0.0);
+        end
+        local stat_weights_str = "";
+        sort_stat_weights(stat_weights, num_weights);
+        local stat_weights_str = "";
+        sort_stat_weights(stat_weights, num_weights);
+        for i = 1, num_weights-1 do
+            if stat_weights[i].weight ~= 0 then
+                stat_weights_str = stat_weights_str..string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str);
+            else
+                stat_weights_str = stat_weights_str..string.format("%d %s | ", 0, stat_weights[i].str);
+            end
+        end
+        if stat_weights[num_weights].weight ~= 0 then
+            stat_weights_str = stat_weights_str..string.format("%.3f %s", stat_weights[num_weights].weight, stat_weights[num_weights].str);
+        else
+            stat_weights_str = stat_weights_str..string.format("%d %s", 0, stat_weights[num_weights].str);
+        end
+        tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
     end
 
     if sw_frame.settings_frame.tooltip_coef:GetChecked() then
@@ -2455,9 +2456,9 @@ local function spell_diff(spell, loadout, diff, sim_type)
     elseif sim_type == simulation_type.cast_until_oom then
         
         local race_for_loadout = {};
-        cast_until_oom_sim_default(race_for_loadout, expectation_loadout, loadout);
+        cast_until_oom_default(race_for_loadout, expectation_loadout, loadout);
         local race_for_loadout_diffed = {};
-        cast_until_oom_sim_default(race_for_loadout_diffed, expectation_loadout_diffed, loadout_diffed);
+        cast_until_oom_default(race_for_loadout_diffed, expectation_loadout_diffed, loadout_diffed);
         -- Misleading! effect_per_sec used here to use previous code but doesnt mean efect_per_sec here
         return {
             diff_ratio = 100 * 
@@ -4415,7 +4416,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs ALWAYS");
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName()).tooltip = 
-        "The selected buffs always be applied, but only if not already active";
+        "The selected buffs will be forcibly applied, but the highest rank is used (level 80) in any case";
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetScript("OnClick", function(self)
         -- TODO; are buffs being set correctly here?
 
@@ -5447,7 +5448,7 @@ function update_icon_overlay_settings()
     if sw_frame.settings_frame.icon_avg_cast:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.avg_cast,
-            color = {0.0, 1.0, 0.0}
+            color = {215/256, 83/256, 234/256}
         };
         index = index + 1;
     end
@@ -5568,7 +5569,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         spell_cache[spell_id].seq = sequence_counter;
         stats_for_spell(stats, spell, loadout, effects);
         spell_info(spell_effect, spell, stats, loadout, effects);
-        cast_until_oom_sim(spell_effect, stats, loadout, effects);
+        cast_until_oom(spell_effect, stats, loadout, effects);
     end
 
     for i = 1, 3 do

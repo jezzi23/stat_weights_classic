@@ -24,6 +24,7 @@ local addonName, addonTable = ...;
 local ensure_exists_and_add         = addonTable.ensure_exists_and_add;
 local ensure_exists_and_mul         = addonTable.ensure_exists_and_mul;
 local deep_table_copy               = addonTable.deep_table_copy;
+local stat                              = addonTable.stat;
 local class                         = addonTable.class;
 local race                          = addonTable.race;
 local loadout_flags                 = addonTable.loadout_flags;
@@ -78,6 +79,11 @@ elseif class == "PALADIN" then
     filter_flags_active = bit.bor(filter_flags_active, buff_filters.paladin);
 end
 
+if race == "Troll" then
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.troll);
+end
+
+
 local non_stackable_effects = {
     moonkin_crit                = bit.lshift(1, 0),
     arcane_empowerment          = bit.lshift(1, 1),
@@ -89,6 +95,7 @@ local non_stackable_effects = {
     mage_crit_target            = bit.lshift(1, 7),
     water_shield                = bit.lshift(1, 9),
     druid_nourish_bonus         = bit.lshift(1, 10),
+    bow_mp5                     = bit.lshift(1, 11),
 };
 
 
@@ -217,7 +224,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.moonkin_haste) == 0 then
                 local haste = 0.03;
-                if buff.src == "player" then
+                if buff.src and buff.src == "player" then
                     haste = 0.01 * loadout.talents_table:pts(1, 19); -- improved boomkin
                 end
                 effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + haste) - 1.0;
@@ -250,10 +257,14 @@ local buffs_predefined = {
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + pts * 0.02) - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.nature] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.nature]) * (1.0 + pts * 0.02) - 1.0;
+            local pts = loadout.talents_table:pts(1, 19);
+            effects.by_attribute.sp_from_stat_mod[stat.spirit] = 
+                effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.1 * pts;
+            
         end,
         filter = buff_filters.druid,
         category = buff_category.class,
-        tooltip = "Mana refund on crit and spell damage",
+        tooltip = "Mana refund on crit, spell damage and SP from spirit",
     },
     --tree of life form
     [33891] = {
@@ -262,9 +273,14 @@ local buffs_predefined = {
             -- master shapeshifter
             local pts = loadout.talents_table:pts(3, 9);
             effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + pts * 0.02;
+            local pts = loadout.talents_table:pts(3, 24);
+            effects.by_attribute.hp_from_stat_mod[stat.spirit] =
+                effects.by_attribute.hp_from_stat_mod[stat.spirit] + pts * 0.05;
+           
         end,
         filter = buff_filters.druid,
         category = buff_category.class,
+        tooltip = "Healing % and Healing power from spirit",
     },
     -- bloodlust
     [2825] = {
@@ -521,6 +537,37 @@ local buffs_predefined = {
             --trickery to flag that healing crits restore mana
            effects.raw.non_stackable_effect_flags =
                bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.water_shield);
+
+           -- baseline mp5 effect
+           local id_to_mp5 = {
+               [52127] = 10,
+               [52129] = 15,
+               [52131] = 21,
+               [52134] = 26,
+               [52136] = 33,
+               [52138] = 38,
+               [24398] = 43,
+               [33736] = 50,
+               [57960] = 100,
+           };
+           local id = 57960; -- default
+
+           if buff.id and id_to_mp5[buff.id] then
+               id = buff.id;
+           end
+           local water_shield_mod = 0.0;
+           if loadout.glyphs[55436] then
+               water_shield_mod = water_shield_mod + 0.3;
+           end
+
+           if loadout.num_set_pieces[set_tiers.pve_t7_3] >= 2 then
+               water_shield_mod = water_shield_mod + 0.1;
+           end
+
+           local mp5 = id_to_mp5[id] * (1.0 + water_shield_mod);
+
+           effects.raw.mp5 = effects.raw.mp5 + mp5;
+
         end,
         filter = buff_filters.shaman,
         category = buff_category.class,
@@ -761,6 +808,164 @@ local buffs_predefined = {
         filter = buff_filters.mage,
         category = buff_category.class,
         tooltip = "Instant Pyroblast",
+    },
+    -- blessing of wisdom
+    [19742] = {
+        apply = function(loadout, effects, buff)
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5) == 0 then
+
+                local id_to_mp5 = {
+                    [19742] = 10,
+                    [19850] = 15,
+                    [19852] = 20,
+                    [19853] = 25,
+                    [19854] = 30,
+                    [25290] = 33,
+                    [27142] = 41,
+                    [48935] = 73,
+                    [48936] = 92,
+                };
+                local id = 48936; -- default
+                local mp5 = 0;
+
+                if buff.id and id_to_mp5[buff.id] then
+                    id = buff.id;
+                end
+                if buff.src and buff.src == "player" then
+                    mp5 = id_to_mp5[id] * (1.0 + loadout.talents_table:pts(1, 10) * 0.1);
+                else
+                    mp5 = id_to_mp5[id] * 1.2;
+                end
+                effects.raw.mp5 = effects.raw.mp5 + mp5;
+
+
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5);
+            end
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "MP5",
+    },
+    -- greater blessing of wisdom
+    [25894] = {
+        apply = function(loadout, effects, buff)
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5) == 0 then
+
+                local id_to_mp5 = {
+                    [25894] = 30,
+                    [25918] = 33,
+                    [27143] = 41,
+                    [48937] = 73,
+                    [48938] = 92,
+                };
+                local id = 48938; -- default
+                local mp5 = 0;
+
+                if buff.id and id_to_mp5[buff.id] then
+                    id = buff.id;
+                end
+                if buff.src and buff.src == "player" then
+                    mp5 = id_to_mp5[id] * (1.0 + loadout.talents_table:pts(1, 10) * 0.1);
+                else
+                    mp5 = id_to_mp5[id] * 1.2;
+                end
+                effects.raw.mp5 = effects.raw.mp5 + mp5;
+
+
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5);
+            end
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "MP5",
+    },
+    -- mana spring totem
+    [5677] = {
+        apply = function(loadout, effects, buff)
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5) == 0 then
+
+                local id_to_mp5 = {
+                    [5677]  = 16,
+                    [10491] = 21,
+                    [10493] = 26,
+                    [10494] = 31,
+                    [25569] = 41,
+                    [58775] = 73,
+                    [58776] = 82,
+                    [58777] = 91,
+                };
+                local id = 58777; -- default
+                local mp5 = 0;
+
+                if buff.id and id_to_mp5[buff.id] then
+                    id = buff.id;
+                end
+                if buff.src and buff.src == "player" then
+
+                    mp5 = id_to_mp5[id] * (1.0 + loadout.talents_table:pts(3, 10) * 0.2/3);
+                else
+                    mp5 = id_to_mp5[id] * 1.2;
+                end
+                effects.raw.mp5 = effects.raw.mp5 + mp5;
+
+
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5);
+            end
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "MP5",
+    },
+    -- shadowy insight
+    [61792] = {
+        apply = function(loadout, effects, buff)
+
+            local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
+            if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+                (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
+
+                effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.3;
+            end
+        end,
+        filter = buff_filters.priest,
+        category = buff_category.class,
+        tooltip = "30% of spirit into SP (glyph proc)",
+    },
+    -- molten amror
+    [30482] = {
+        apply = function(loadout, effects, buff)
+            local spirit_to_sp_mod = 0.35;
+            if loadout.glyphs[56382] then
+                spirit_to_sp_mod = spirit_to_sp_mod + 0.20;
+            end
+            effects.by_attribute.crit_from_stat_mod[stat.spirit] =
+                effects.by_attribute.crit_from_stat_mod[stat.spirit] + spirit_to_sp_mod;
+
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "% spirit into SP",
+    },
+    -- mage armor
+    [6117] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.5;
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "50% mana regen while casting",
+    },
+    -- berserking (troll)
+    [26297] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.2 - 1.0;
+        end,
+        filter = buff_filters.troll,
+        category = buff_category.class,
+        tooltip = "20% haste (troll)",
     },
 };
 

@@ -419,27 +419,12 @@ local function detect_sets(loadout)
             end
             loadout.num_set_pieces[set_id] = loadout.num_set_pieces[set_id] + 1;
         end
-        --local item_link = GetInventoryItemLink("player", item);
-        --if item_link then
-        --    local item_stats = GetItemStats(item_link);
-        --    if item_stats then
-
-        --        if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
-        --            loadout.mp5 = loadout.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
-        --        end
-
-        --        if item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] then
-        --            for i = 2,7 do
-        --                loadout.target_res_by_school[i] = 
-        --                    loadout.target_res_by_school[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
-        --            end
-        --        end
-        --    end
-        --end
     end
 end
 
 local function apply_equipment(loadout, effects)
+
+    detect_sets(loadout);
 
     -- head slot gems
     for _, v in pairs({GetInventoryItemGems(1)}) do
@@ -453,6 +438,26 @@ local function apply_equipment(loadout, effects)
         if v >= 2 then
             if set_bonus_effects[k] then
                 set_bonus_effects[k](v, loadout, effects);
+            end
+        end
+    end
+
+    for item = 1, 18 do
+        local item_link = GetInventoryItemLink("player", item);
+        if item_link then
+            local item_stats = GetItemStats(item_link);
+            if item_stats then
+
+                if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
+                    effects.raw.mp5 = effects.raw.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
+                end
+
+                --if item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] then
+                --    for i = 2,7 do
+                --        loadout.target_res_by_school[i] = 
+                --            loadout.target_res_by_school[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
+                --    end
+                --end
             end
         end
     end

@@ -825,6 +825,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(2, 19);
         if pts ~= 0 then
             -- TODO: dynamic crit
+            effects.raw.regen_while_casting = effects.raw.regen_while_casting + pts*0.5/3;
         end
         --molten fury
         local pts = talents:pts(2, 21);
@@ -1013,7 +1014,7 @@ local function apply_talents_glyphs(loadout, effects)
         -- lunar guidance
         local pts = talents:pts(1, 12);
         if pts ~= 0 then
-           effects.raw.lunar_guidance = pts * 0.04; 
+            effects.by_attribute.sp_from_stat_mod[stat.int] = effects.by_attribute.sp_from_stat_mod[stat.int]+ pts * 0.04;
         end
 
         -- improved insect swarm
@@ -1025,7 +1026,7 @@ local function apply_talents_glyphs(loadout, effects)
         -- dreamstate
         local pts = talents:pts(1, 15);
         if pts ~= 0 then
-            -- TODO: mana regen based on int
+            effects.raw.mp5_from_int_mod = effects.raw.mp5_from_int_mod + 0.04 * pts;
         end
 
         -- moonfury
@@ -1381,7 +1382,8 @@ local function apply_talents_glyphs(loadout, effects)
         -- spiritual guidance 
         local pts = talents:pts(2, 14);
         if pts ~= 0 then
-           effects.raw.spiritual_guidance = pts * 0.05; 
+            effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + pts * 0.05;
+
         end
         -- surge of light
         -- TODO: refund flash heal mana cost off crit chance, similarly as with holy palas in vanilla?
@@ -1517,7 +1519,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(3, 26);
         if pts ~= 0 then
              
-           effects.raw.spiritual_guidance = pts * 0.04; 
+            effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + pts * 0.04;
         end
         
     elseif class == "SHAMAN" then
@@ -1575,7 +1577,10 @@ local function apply_talents_glyphs(loadout, effects)
 
         -- unrlenting storm
         -- TODO: mana regen off % intellect, same as boomies
-        
+        local pts = talents:pts(1, 13);
+        if pts ~= 0 then
+            effects.raw.mp5_from_int_mod = effects.raw.mp5_from_int_mod + 0.04 * pts;
+        end
         -- elemental precision
         local pts = talents:pts(1, 14);
         if pts ~= 0 then
@@ -1729,8 +1734,10 @@ local function apply_talents_glyphs(loadout, effects)
         end
 
         -- nature's blessing
-        -- TODO; figure out
-        --local pts = talents:pts(3, 21);
+        local pts = talents:pts(3, 21);
+        if pts ~= 0 then
+            effects.by_attribute.hp_from_stat_mod[stat.int] = effects.by_attribute.hp_from_stat_mod[stat.int] + pts * 0.05;
+        end
 
         -- ancestral awakening
         -- done in later stage
@@ -1801,7 +1808,7 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(1, 21);
         if pts ~= 0 then
 
-            -- TODO: sp based on int
+            effects.by_attribute.sp_from_stat_mod[stat.int] = effects.by_attribute.sp_from_stat_mod[stat.int]+ pts * 0.04;
         end
         -- divine illumination
         local pts = talents:pts(1, 23);
@@ -1825,8 +1832,7 @@ local function apply_talents_glyphs(loadout, effects)
         -- divinity
         local pts = talents:pts(2, 1);
         if pts ~= 0 then
-            effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + pts * 0.02;
-            effects.raw.target_healing_taken = effects.raw.target_healing_taken + pts * 0.02;
+            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + pts * 0.01;
         end
         -- benediction
         local pts = talents:pts(3, 2);
@@ -1948,6 +1954,12 @@ local function apply_talents_glyphs(loadout, effects)
 
         -- master demonoligist
         -- TODO: buff tracking
+        --
+        -- demonic aegis
+        -- TODO: buff tracking
+        -- spirit from SP 
+        
+        --
         local pts = talents:pts(2, 16);
 
         -- molten core
