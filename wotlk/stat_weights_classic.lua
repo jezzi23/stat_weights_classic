@@ -1810,17 +1810,17 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     -- TODO: might want to separate dps and dmg per execution time for clarity
     if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
         effect = "Heal";
-        effect_per_sec = "HPS (by execution time)";
+        effect_per_sec = "HPS (by cast time)";
         effect_per_cost = "Heal per Mana";
-        cost_per_sec = "Mana per sec IN/OUT";
-        effect_per_sec_per_sp = "HPS per spell power";
+        cost_per_sec = "Mana per sec";
+        effect_per_sec_per_sp = "HPS per SP";
         sp_name = "Spell power";
     else
         effect = "Damage";
-        effect_per_sec = "DPS (by execution time)";
+        effect_per_sec = "DPS (by cast time)";
         effect_per_cost = "Damage per Mana";
         cost_per_sec = "Mana per sec";
-        effect_per_sec_per_sp = "DPS per spell power";
+        effect_per_sec_per_sp = "DPS per SP";
         sp_name = "Spell power";
     end
 
@@ -2166,6 +2166,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell.expectation)..effect_extra_str,
                         255.0/256, 128.0/256, 0);
 
+
+    end
+
+    if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
+        tooltip:AddLine(string.format("%s: %.1f", 
+                                      effect_per_sec,
+                                      eval.spell.effect_per_sec),
+                        255.0/256, 128.0/256, 0);
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
 
@@ -2174,22 +2182,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
     end
-
-
-    tooltip:AddLine("Scenario: Repeated casts", 1, 1, 1);
-    if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
-        tooltip:AddLine(string.format("%s: %.1f", 
-                                      effect_per_sec,
-                                      eval.spell.effect_per_sec),
-                        255.0/256, 128.0/256, 0);
-    end
     if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
         tooltip:AddLine(effect_per_cost..": "..string.format("%.1f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
     end
     if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
-        tooltip:AddLine(cost_per_sec..": "..string.format("+ %.1f / - %.1f", eval.spell.mp1, eval.spell.cost_per_sec), 0.0, 1.0, 1.0);
+        tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
     end
 
+    tooltip:AddLine("Scenario: Repeated casts", 1, 1, 1);
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
         tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
         local stat_weights = {};
@@ -2214,19 +2214,18 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         else
             --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste",eval.sp_per_crit, eval.sp_per_haste), 0.0, 1.0, 0.0);
         end
-        local stat_weights_str = "";
+        local stat_weights_str = "|";
+        local max_weights_per_line = 4;
         sort_stat_weights(stat_weights, num_weights);
-        for i = 1, num_weights-1 do
+        for i = 1, num_weights do
             if stat_weights[i].weight ~= 0 then
-                stat_weights_str = stat_weights_str..string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str);
+                stat_weights_str = stat_weights_str..string.format(" %.3f %s |", stat_weights[i].weight, stat_weights[i].str);
             else
-                stat_weights_str = stat_weights_str..string.format("%d %s | ", 0, stat_weights[i].str);
+                stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
             end
-        end
-        if stat_weights[num_weights].weight ~= 0 then
-            stat_weights_str = stat_weights_str..string.format("%.3f %s", stat_weights[num_weights].weight, stat_weights[num_weights].str);
-        else
-            stat_weights_str = stat_weights_str..string.format("%d %s", 0, stat_weights[num_weights].str);
+            if i == max_weights_per_line then
+                stat_weights_str = stat_weights_str.."\n|";
+            end
         end
         tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
     end
@@ -2237,7 +2236,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         tooltip:AddLine("Scenario: Cast Until OOM", 1, 1, 1);
 
         tooltip:AddLine(string.format("%s until OOM : %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
-        tooltip:AddLine("Effect per 1 SP: "..string.format("%.3f",eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
+        tooltip:AddLine(string.format("%s per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
 
         local stat_weights = {};
         stat_weights[1] = {weight = 1.0, str = "SP"};
@@ -2251,26 +2250,22 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             num_weights = 7;
             stat_weights[7] = {weight = eval.cast_until_oom.sp_per_hit, str = "Hit"};
-        --    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
-            --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
-        else
-            --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste",eval.sp_per_crit, eval.sp_per_haste), 0.0, 1.0, 0.0);
         end
-        local stat_weights_str = "";
+
+        local stat_weights_str = "|";
+        local max_weights_per_line = 4;
         sort_stat_weights(stat_weights, num_weights);
-        local stat_weights_str = "";
-        sort_stat_weights(stat_weights, num_weights);
-        for i = 1, num_weights-1 do
+        for i = 1, num_weights do
             if stat_weights[i].weight ~= 0 then
-                stat_weights_str = stat_weights_str..string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str);
+                --print(string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str))
+                stat_weights_str = stat_weights_str..string.format(" %.3f %s |", stat_weights[i].weight, stat_weights[i].str);
             else
-                stat_weights_str = stat_weights_str..string.format("%d %s | ", 0, stat_weights[i].str);
+                --print(string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str))
+                stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
             end
-        end
-        if stat_weights[num_weights].weight ~= 0 then
-            stat_weights_str = stat_weights_str..string.format("%.3f %s", stat_weights[num_weights].weight, stat_weights[num_weights].str);
-        else
-            stat_weights_str = stat_weights_str..string.format("%d %s", 0, stat_weights[num_weights].str);
+            if i == max_weights_per_line then
+                stat_weights_str = stat_weights_str.."\n|";
+            end
         end
         tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
     end
