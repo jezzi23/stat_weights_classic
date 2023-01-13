@@ -202,6 +202,13 @@ local function create_glyphs()
                 end,
                 wowhead_id = "xft"
             },
+            -- glyph of innervate
+            [54832] = {
+                apply = function(loadout, effects)
+                    -- implemented in later stage
+                end,
+                wowhead_id = "nhg"
+            },
         };
     elseif class == "PALADIN" then
         return {
@@ -539,6 +546,7 @@ local function wowhead_talent_code()
 
     local talent_code = {};
 
+    
     local sub_codes = {"", "", ""};
     for i = 1, 3 do
 
@@ -546,6 +554,8 @@ local function wowhead_talent_code()
         for row = 1, 11 do
             talent_table[row] = {}
         end
+        -- NOTE: GetNumTalents(i) will return 0 on early calls after logging in,
+        --       but works fine after reload
         for j = 1, GetNumTalents(i) do
             -- talent indices are not in left-right, top-to-bottom order
             -- but rather seemingly random...

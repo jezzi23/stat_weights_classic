@@ -369,40 +369,297 @@ local function create_set_effects()
 end 
 
 
---local function create_set_idols() 
---
---    if class == "PRIEST" then
---        return {};
---
---    elseif class == "DRUID" then
---        return {
---        };
---
---    elseif class == "SHAMAN" then
---        return {
---            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
---            end,
---        };
---
---    elseif class == "WARLOCK" then
---        return {};
---
---
---    elseif class == "MAGE" then
---        return {};
---
---    elseif class == "PALADIN" then
---        return {
---            [set_tiers.pve_t7_1] = function(num_pieces, loadout, effects)
---            end,
---        };
---    end
---end 
+local function create_relics()
+    if class == "PALADIN" then
+        return {
+            [40705] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Holy Light"], 113, 0.0);
+            end,
+            [40268] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Holy Light"], 141, 0.0);
+            end,
+            [42614] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 331, 0.0);
+            end,
+            [42612] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 204, 0.0);
+            end,
+            [42613] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 293, 0.0);
+            end,
+            [45436] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Holy Light"], 169, 0.0);
+            end,
+            [28592] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 89, 0.0);
+            end,
+            [42615] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 375, 0.0);
+            end,
+            [38364] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Holy Shock"], 69, 0.0);
+            end,
+            [23006] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 43, 0.0);
+            end,
+            [23201] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 28, 0.0);
+            end,
+            [199635] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 47, 0.0);
+            end,
+            [30063] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Holy Light"], 34, 0.0);
+            end,
+            [25644] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 79, 0.0);
+            end,
+            [28296] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Holy Light"], 47, 0.0);
+            end,
+            [51472] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 510, 0.0);
+            end,
+            [186065] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Flash of Light"], 10, 0.0);
+            end,
+            [42616] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 436, 0.0);
+            end,
+
+        };
+    elseif class == "SHAMAN" then
+        return {
+            [40267] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 165, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lightning Bolt"], 165, 0.0);
+            end,
+            [45114] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Chain Heal"], 257, 0.0);
+            end,
+            [40709] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Chain Heal"], 78, 0.0);
+            end,
+            [45255] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Lava Burst"], 227, 0.0);
+            end,
+            [38368] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Chain Heal"], 102, 0.0);
+            end,
+            [39728] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Healing Wave"], 79, 0.0);
+            end,
+            [38361] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Lava Burst"], 121, 0.0);
+            end,
+            [42597] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 267, 0.0);
+            end,
+            [25645] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 79, 0.0);
+            end,
+            [42596] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 236, 0.0);
+            end,
+            [23199] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 33, 0.0);
+            end,
+            [27544] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Healing Wave"], 88, 0.0);
+            end,
+            [32330] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 85, 0.0);
+            end,
+            [22395] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Earth Shock"], 30, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flame Shock"], 30, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Frost Shock"], 30, 0.0);
+            end,
+            [33505] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Chain Heal"], 20, 0.0);
+            end,
+            [186072] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 10, 0.0);
+            end,
+            [28066] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Lightning Bolt"], 15, 0.0);
+            end,
+            [27947] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Earth Shock"], 46, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flame Shock"], 46, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Frost Shock"], 46, 0.0);
+            end,
+            [28248] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 55, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lightning Bolt"], 55, 0.0);
+            end,
+            [42595] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 204, 0.0);
+            end,
+            [22396] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 80, 0.0);
+            end,
+            [23200] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 53, 0.0);
+            end,
+            [27984] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Earth Shock"], 46, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flame Shock"], 46, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Frost Shock"], 46, 0.0);
+            end,
+            [28523] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Chain Heal"], 87, 0.0);
+            end,
+            [51501] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 459, 0.0);
+            end,
+            [199643] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 88, 0.0);
+            end,
+            [42598] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 338, 0.0);
+            end,
+            [23005] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Lesser Healing Wave"], 10, 0.0);
+            end,
+            [29389] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Lightning Bolt"], 27, 0.0);
+            end,
+            [30023] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Healing Wave"], 24, 0.0);
+            end,
+            [42599] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 404, 0.0);
+            end,
+            [199642] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 55, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lightning Bolt"], 55, 0.0);
+            end,
+            [186071] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 10, 0.0);
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lightning Bolt"], 10, 0.0);
+            end,
+        };
+    elseif class == "DRUID" then
+        return {
+            [40321] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Starfire"], 165, 0.0);
+            end,
+            [40342] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Rejuvenation"], 106, 0.0);
+            end,
+            [33508] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Rejuvenation"], 36, 0.0);
+            end,
+            [40712] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Wrath"], 70, 0.0);
+            end,
+            [40711] = function(effects)
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], 125, 0.0);
+            end,
+            [38366] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add_ot, spell_name_to_id["Rejuvenation"], 33, 0.0);
+            end,
+            [45270] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Insect Swarm"], 396, 0.0);
+            end,
+            [25643] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Rejuvenation"], 86, 0.0);
+            end,
+            [46138] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Nourish"], 198, 0.0);
+            end,
+            [42578] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 246, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -246, 0.0);
+            end,
+            [23197] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Moonfire"], 33, 0.0);
+            end,
+            [42577] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 217, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -217, 0.0);
+            end,
+            [22398] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Rejuvenation"], 50, 0.0);
+            end,
+            [31025] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Wrath"], 25, 0.0);
+            end,
+            [42576] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 188, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -188, 0.0);
+            end,
+            [27518] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Starfire"], 55, 0.0);
+            end,
+            [35021] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 131, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -131, 0.0);
+            end,
+            [186054] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Rejuvenation"], 15, 0.0);
+            end,
+            [199640] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Rejuvenation"], 90, 0.0);
+            end,
+            [33076] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 105, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -105, 0.0);
+            end,
+            [199638] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Moonfire"], 55, 0.0);
+            end,
+            [27886] = function(effects)
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], 47, 0.0);
+            end,
+            [23004] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Healing Touch"], 25, 0.0);
+            end,
+            [51423] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 448, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -448, 0.0);
+            end,
+            [42579] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 311, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -311, 0.0);
+            end,
+            [28568] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Healing Touch"], 136, 0.0);
+            end,
+            [30051] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Regrowth"], 65, 0.0);
+            end,
+            [28355] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 87, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -87, 0.0);
+            end,
+            [33841] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 116, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -116, 0.0);
+            end,
+            [186052] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Moonfire"], 10, 0.0);
+            end,
+            [22399] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Healing Touch"], 100, 0.0);
+            end,
+            [42580] = function(effects)
+                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lifebloom"], 376, 0.0);
+                ensure_exists_and_add(effects.ability.sp_ot, spell_name_to_id["Lifebloom"], -376, 0.0);
+            end,
+        };
+    else 
+        return {};
+    end
+    
+end 
 
 local set_items = create_sets();
---local set_idols = create_idols();
 
 local set_bonus_effects = create_set_effects();
+
+local relics = create_relics();
 
 local function detect_sets(loadout)
     -- go through equipment to find set pieces
@@ -426,6 +683,7 @@ local function apply_equipment(loadout, effects)
 
     detect_sets(loadout);
 
+    local found_anything = false;
     -- head slot gems
     for _, v in pairs({GetInventoryItemGems(1)}) do
         -- chaotic skyflare diamond 3% crit dmg, totally janky behaviour
@@ -433,7 +691,12 @@ local function apply_equipment(loadout, effects)
             effects.raw.special_crit_mod = effects.raw.special_crit_mod + 0.03;
         end
     end
-    -- TODO: idols
+
+    local relic_id = GetInventoryItemID("player", 18);
+    if relic_id and relics[relic_id] then
+        relics[relic_id](effects);
+    end
+    
     for k, v in pairs(loadout.num_set_pieces) do
         if v >= 2 then
             if set_bonus_effects[k] then
@@ -442,9 +705,13 @@ local function apply_equipment(loadout, effects)
         end
     end
 
+    -- NOTE: shortly after logging in, the equipment querying API won't work
+    --       (but does for /reload). Track if we get nothing so we can signal
+    --       that equipment scanning needs to be done again on next update
     for item = 1, 18 do
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
+            found_anything = true;
             local item_stats = GetItemStats(item_link);
             if item_stats then
 
@@ -461,6 +728,8 @@ local function apply_equipment(loadout, effects)
             end
         end
     end
+
+    return found_anything;
 end
 
 addonTable.set_tiers = set_tiers;

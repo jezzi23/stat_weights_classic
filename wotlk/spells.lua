@@ -47,6 +47,7 @@ local function spell_name_to_ids()
             ["Ice Barrier"]             = 11426,
             ["Ice Lance"]               = 30455,
             ["Deep Freeze"]             = 44572,
+            ["Evocation"]               = 12051,
         };
     elseif class == "DRUID" then
         return {
@@ -69,6 +70,7 @@ local function spell_name_to_ids()
             ["Typhoon"]                 = 50516,
             ["Starfall"]                = 48505,
             ["Force of Nature"]         = 33831,
+            ["Innervate"]               = 29166,
         };
     elseif class == "PRIEST" then
         return {
@@ -100,6 +102,7 @@ local function spell_name_to_ids()
             ["Desperate Prayer"]        = 19236,
             ["Shadowform"]              = 15473,
             ["Divine Hymn"]             = 64843,
+            ["Hymn of Hope"]            = 64901,
         };
     elseif class == "SHAMAN" then
         return {
@@ -120,6 +123,7 @@ local function spell_name_to_ids()
             ["Riptide"]                 = 61295,
             ["Earth Shield"]            = 974,
             ["Thunderstorm"]            = 51490,
+            ["Mana Tide"]               = 16191,
         };
     elseif class == "PALADIN" then
         return {
@@ -127,6 +131,7 @@ local function spell_name_to_ids()
             ["Holy Light"]              = 635,
             ["Holy Shock"]              = 20473,
             ["Sacred Shield"]           = 53601,
+            ["Divine Plea"]             = 54428,
         };
     elseif class == "WARLOCK" then
         return {
@@ -155,6 +160,7 @@ local function spell_name_to_ids()
             ["Shadow Ward"]             = 6229,
             ["Immolation Aura"]         = 50589,
             ["Shadow Cleave"]           = 50581,
+            ["Life Tap"]                = 1454,
         };
     else
         return {};
@@ -162,6 +168,9 @@ local function spell_name_to_ids()
 end
 
 local spell_name_to_id = spell_name_to_ids();
+if race == "BloodElf" then
+    spell_name_to_id["Arcane Torrent"] = 28730;
+end
 
 local localized_spell_names_to_id = {};
 for _, v in pairs(spell_name_to_id) do
@@ -169,7 +178,6 @@ for _, v in pairs(spell_name_to_id) do
 
     localized_spell_names_to_id[lname] = v;
 end
-
 
 local magic_school = {
      physical = 1,
@@ -192,8 +200,9 @@ local spell_flags = {
     channel_missable        = bit.lshift(1,8), -- e.g. missing mid flay only loses you one gcd instead of the whole cast
     curse                   = bit.lshift(1,9),
     over_time_lvl_scaling   = bit.lshift(1,10),
+    mana_regen              = bit.lshift(1,11),
+    pet                     = bit.lshift(1,12),
 };
-
 
 local function create_spells()
     
@@ -2081,6 +2090,25 @@ local function create_spells()
                 over_time_coef      = 0.0,
                 lvl_scaling         = 45.0,
             },
+            -- evocation (dummy values to comply with template)
+            [12051] = {
+                base_min            = 0.6,
+                base_max            = 0.6,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 8.0,
+                rank                = 1,
+                lvl_req             = 20,
+                lvl_max             = 20,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.01,
+                flags               = spell_flags.mana_regen,
+                school              = magic_school.arcane,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
         };
 
     elseif class == "DRUID" then
@@ -3349,7 +3377,7 @@ local function create_spells()
                 cost_base_percent   = 0.12,
                 -- TODO: crit?
                 -- TODO: shouldn't scale with nature spell dmg mods
-                flags               = spell_flags.cd,
+                flags               = bit.bor(spell_flags.cd, spell_flags.pet),
                 school              = magic_school.nature,
                 coef                = 0.0,
                 over_time_coef      = 0.065,
@@ -3462,6 +3490,25 @@ local function create_spells()
                 lvl_req             = 80,
                 lvl_max             = 84,
                 lvl_outdated        = 80,
+				lvl_scaling			= 0.0,
+            },
+            -- innervate (dummy values to comply with template)
+            [29166] = {
+                base_min            = 2.25,
+                base_max            = 2.25,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 10.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 40,
+                lvl_max             = 40,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.01,
+                flags               = spell_flags.mana_regen,
+                school              = magic_school.arcane,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
             },
         };
@@ -5569,7 +5616,7 @@ local function create_spells()
                 lvl_max             = 0,
                 lvl_outdated        = 80,
                 cost_base_percent   = 0.0001,
-                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_range),
+                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_range, spell_flags.pet),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0.3568,
@@ -5652,6 +5699,25 @@ local function create_spells()
                 school              = magic_school.holy,
                 coef                = 0.0,
                 over_time_coef      = 0.564,
+				lvl_scaling			= 0.0,
+            },
+            -- hymn of hope (dummy values to comply with template)
+            [64901] = {
+                base_min            = 0.03*4,
+                base_max            = 0.03*4,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 8.0,
+                rank                = 1,
+                lvl_req             = 80,
+                lvl_max             = 80,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.01,
+                flags               = spell_flags.mana_regen,
+                school              = magic_school.holy,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
             },
         }; 
@@ -7215,6 +7281,25 @@ local function create_spells()
                 lvl_outdated        = 80,
 				lvl_scaling			= 3,
             },
+            -- mana tide (dummy values to comply with template)
+            [16191] = {
+                base_min            = 0.06*4,
+                base_max            = 0.06*4,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 12.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 40,
+                lvl_max             = 40,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.01,
+                flags               = spell_flags.mana_regen,
+                school              = magic_school.nature,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
 
         };
     elseif class == "PALADIN" then
@@ -7631,6 +7716,25 @@ local function create_spells()
                 school              = magic_school.holy,
                 coef                = 0.0,
                 over_time_coef      = 0.429,
+				lvl_scaling			= 0.0,
+            },
+            -- divine plea (dummy values to comply with template)
+            [54428] = {
+                base_min            = 0.25,
+                base_max            = 0.25,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 15.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 71,
+                lvl_max             = 71,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.01,
+                flags               = spell_flags.mana_regen,
+                school              = magic_school.holy,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
             },
         };
@@ -9363,12 +9467,123 @@ local function create_spells()
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
             },
+            -- life tap (dummy values to comply with template)
+            [1454] = {
+                base_min            = 41,
+                base_max            = 41,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 6,
+                lvl_max             = 6,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.01,
+                flags               = spell_flags.mana_regen,
+                school              = magic_school.shadow,
+                coef                = 0.5,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
+            [1455] = {
+                base_min            = 86,
+                base_max            = 86,
+                over_time           = 0.0,
+                rank                = 2,
+                lvl_req             = 16,
+                lvl_max             = 16,
+                lvl_outdated        = 25,
+				lvl_scaling			= 0.0,
+            },
+            [1456] = {
+                base_min            = 159,
+                base_max            = 159,
+                over_time           = 0.0,
+                rank                = 3,
+                lvl_req             = 26,
+                lvl_max             = 26,
+                lvl_outdated        = 35,
+				lvl_scaling			= 0.0,
+            },
+            [11687] = {
+                base_min            = 249,
+                base_max            = 249,
+                over_time           = 0.0,
+                rank                = 4,
+                lvl_req             = 36,
+                lvl_max             = 36,
+                lvl_outdated        = 47,
+				lvl_scaling			= 0.0,
+            },
+            [11688] = {
+                base_min            = 346,
+                base_max            = 346,
+                over_time           = 0.0,
+                rank                = 5,
+                lvl_req             = 46,
+                lvl_max             = 46,
+                lvl_outdated        = 55,
+				lvl_scaling			= 0.0,
+            },
+            [11689] = {
+                base_min            = 867,
+                base_max            = 867,
+                over_time           = 0.0,
+                rank                = 6,
+                lvl_req             = 56,
+                lvl_max             = 56,
+                lvl_outdated        = 67,
+				lvl_scaling			= 0.0,
+            },
+            [27222] = {
+                base_min            = 1164,
+                base_max            = 1164,
+                over_time           = 0.0,
+                rank                = 7,
+                lvl_req             = 68,
+                lvl_max             = 68,
+                lvl_outdated        = 79,
+				lvl_scaling			= 0.0,
+            },
+            [57946] = {
+                base_min            = 2000,
+                base_max            = 2000,
+                over_time           = 0.0,
+                rank                = 8,
+                lvl_req             = 80,
+                lvl_max             = 80,
+                lvl_outdated        = 80,
+				lvl_scaling			= 0.0,
+            },
         };
     end
     return {};
 end
 
 local spells = create_spells();
+if race == "BloodElf" then
+    -- arcane torrent (dummy values to comply with template)
+    spells[28730] = {
+        base_min            = 0.06,
+        base_max            = 0.06,
+        over_time           = 0.0,
+        over_time_tick_freq = 0,
+        over_time_duration  = 0.0,
+        cast_time           = 1.5,
+        rank                = 1,
+        lvl_req             = 1,
+        lvl_max             = 1,
+        lvl_outdated        = 80,
+        cost_base_percent   = 0.01,
+        flags               = spell_flags.mana_regen,
+        school              = magic_school.arcane,
+        coef                = 0.0,
+        over_time_coef      = 0.0,
+		lvl_scaling			= 0.0,
+    };
+end
+
 for k, v in pairs(spells) do
     local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
     -- rank1 contains some general fields that we write to all ranks

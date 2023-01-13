@@ -99,20 +99,20 @@ local stat_ids_in_ui = {
 };
 
 local icon_stat_display = {
-    normal              = bit.lshift(1,1),
-    crit                = bit.lshift(1,2),
-    expected            = bit.lshift(1,3),
-    effect_per_sec      = bit.lshift(1,4),
-    effect_per_cost     = bit.lshift(1,5),
-    avg_cost            = bit.lshift(1,6),
-    avg_cast            = bit.lshift(1,7),
-    hit                 = bit.lshift(1,8),
-    crit_chance         = bit.lshift(1,9),
-    casts_until_oom     = bit.lshift(1,10),
-    effect_until_oom    = bit.lshift(1,11),
-    time_until_oom      = bit.lshift(1,12),
+    normal                  = bit.lshift(1,1),
+    crit                    = bit.lshift(1,2),
+    expected                = bit.lshift(1,3),
+    effect_per_sec          = bit.lshift(1,4),
+    effect_per_cost         = bit.lshift(1,5),
+    avg_cost                = bit.lshift(1,6),
+    avg_cast                = bit.lshift(1,7),
+    hit                     = bit.lshift(1,8),
+    crit_chance             = bit.lshift(1,9),
+    casts_until_oom         = bit.lshift(1,10),
+    effect_until_oom        = bit.lshift(1,11),
+    time_until_oom          = bit.lshift(1,12),
 
-    show_heal_variant = bit.lshift(1,20)
+    show_heal_variant       = bit.lshift(1,20),
 };
 
 local tooltip_stat_display = {
@@ -1024,6 +1024,23 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.cost_per_sec = stats.cost/stats.cast_time;
     info.ot_duration = ot_dur + stats.ot_extra_ticks * ot_freq;
 
+    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
+        if spell.base_id == spell_name_to_id["Innervate"] then
+            if loadout.glyphs[54832] then
+                info.mana_restored = base_mana_pool()*2.70;
+            else
+                info.mana_restored = base_mana_pool()*2.25;
+            end
+        elseif spell.base_id == spell_name_to_id["Life Tap"] then
+            info.mana_restored = spell.base_min + stats.spell_power*spell.coef;
+
+            local pts = loadout.talents_table:pts(1, 6);
+            info.mana_restored = info.mana_restored * (1.0 + pts*0.1);
+        else
+            -- evocate, mana tide, divine plea of % max mana
+            info.mana_restored = spell.base_min * loadout.max_mana;
+        end
+    end
 end
 
 local function stats_for_spell(stats, spell, loadout, effects)
@@ -1535,11 +1552,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
     stats.spell_power = stats.spell_power + effects.raw.spell_power;
 
-    stats.spell_power_ot = stats.spell_power;
 
     if effects.ability.sp[spell.base_id] then
         stats.spell_power = stats.spell_power + effects.ability.sp[spell.base_id];
     end
+    stats.spell_power_ot = stats.spell_power;
     if effects.ability.sp_ot[spell.base_id] then
         stats.spell_power_ot = stats.spell_power_ot + effects.ability.sp_ot[spell.base_id];
     end
@@ -1838,11 +1855,22 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     else
         loadout_type = "static";
     end
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+    if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
         tooltip:AddLine(string.format("Active Loadout (%s): %s", loadout_type, loadout.name), 1, 1,1);
     else
         tooltip:AddLine(string.format("Active Loadout (%s): %s - Target lvl %d", loadout_type, loadout.name, loadout.target_lvl), 1, 1, 1);
     end
+    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
+        tooltip:AddLine(string.format("Restores %d mana over %.2f sec for yourself",
+                                      math.ceil(eval.spell.mana_restored),
+                                      math.max(stats.cast_time, spell.over_time_duration)
+                                      ),
+                        0, 1, 1);
+
+        end_tooltip_section(tooltip);
+        return;
+    end
+
     if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
         if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
             if eval.spell.min_noncrit_if_hit ~= eval.spell.max_noncrit_if_hit then
@@ -2272,12 +2300,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 
     if sw_frame.settings_frame.tooltip_more_details:GetChecked() then
-        tooltip:AddLine(string.format("Spell power: %d", stats.spell_power));
+        tooltip:AddLine(string.format("Spell power: %d direct / %d periodic", stats.spell_power, stats.spell_power_ot));
         tooltip:AddLine(string.format("Critical modifier %.5f", stats.crit_mod));
         tooltip:AddLine(string.format("Coefficient: %.3f direct / %.3f periodic", stats.coef, stats.ot_coef));
         tooltip:AddLine(string.format("Effect modifier: %.3f direct / %.3f periodic", stats.spell_mod, stats.spell_ot_mod));
         tooltip:AddLine(string.format("Effective coefficient: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod, stats.ot_coef*stats.spell_ot_mod));
-        tooltip:AddLine(string.format("Spell power effect: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod*stats.spell_power, stats.ot_coef*stats.spell_ot_mod*stats.spell_power));
+        tooltip:AddLine(string.format("Spell power effect: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod*stats.spell_power, stats.ot_coef*stats.spell_ot_mod*stats.spell_power_ot));
     end
     -- debug tooltip stuff
     if __sw__debug__ then
@@ -2491,7 +2519,9 @@ local function active_loadout_and_effects()
         
     if equipment_update_needed then
         zero_effects(loadout_entry.equipped);
-        apply_equipment(loadout_entry.loadout, loadout_entry.equipped);
+        local equipment_api_worked = apply_equipment(loadout_entry.loadout, loadout_entry.equipped);
+        -- need eq update again next because api failed
+        equipment_update_needed = not equipment_api_worked;
         talents_update_needed = true;
     end
 
@@ -2505,14 +2535,14 @@ local function active_loadout_and_effects()
         zero_effects(loadout_entry.talented);
         effects_add(loadout_entry.talented, loadout_entry.equipped);
         apply_talents_glyphs(loadout_entry.loadout, loadout_entry.talented);
+
+        talents_update_needed = false;
     end
 
     zero_effects(loadout_entry.final_effects);
     effects_add(loadout_entry.final_effects, loadout_entry.talented);
     apply_buffs(loadout_entry.loadout, loadout_entry.final_effects);
 
-    talents_update_needed = false;
-    equipment_update_needed = false;
 
     return loadout_entry.loadout, loadout_entry.final_effects;
 end
@@ -2760,7 +2790,7 @@ update_and_display_spell_diffs = function(frame)
         -- try to find something relevant to display
         for i = 1, 120 do
             local action_type, id, _ = GetActionInfo(i);
-            if action_type == "spell" and spells[id] then
+            if action_type == "spell" and spells[id] and bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
 
                 num_spells = num_spells + 1;
 
@@ -3147,7 +3177,8 @@ local function default_sw_settings()
         bit.bor(icon_stat_display.normal, 
                 icon_stat_display.crit, 
                 icon_stat_display.effect_per_sec,
-                icon_stat_display.show_heal_variant);
+                icon_stat_display.show_heal_variant
+                );
 
     settings.ability_tooltip = 
         bit.bor(tooltip_stat_display.normal, 
@@ -3165,6 +3196,8 @@ local function default_sw_settings()
 
     settings.icon_overlay_update_freq = 3;
     settings.icon_overlay_font_size = 8;
+    settings.icon_overlay_mana_abilities = true;
+    settings.icon_overlay_old_rank = true;
     settings.show_tooltip_only_when_shift = false;
     settings.libstub_minimap_icon = { hide = false };
 
@@ -3215,7 +3248,6 @@ local function save_sw_settings()
     if sw_frame.settings_frame.icon_heal_variant:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.show_heal_variant);
     end
-
     if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.normal);
     end
@@ -3255,11 +3287,9 @@ local function save_sw_settings()
     if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cast_until_oom);
     end
-    --if class == "WARLOCK" then
-    --    if sw_frame.settings_frame.tooltip_cast_and_tap:GetChecked() then
-    --        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cast_and_tap);
-    --    end
-    --end
+
+    __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities = sw_frame.settings_frame.icon_mana_overlay:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_overlay_old_rank = sw_frame.settings_frame.icon_old_rank_warning:GetChecked();
 
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
@@ -3276,7 +3306,9 @@ local function create_sw_checkbox(name, parent, line_pos_index, y_offset, text, 
     local x_pad = 10;
     checkbox_frame:SetPoint("TOPLEFT", x_pad + (line_pos_index - 1) * x_spacing, y_offset);
     getglobal(checkbox_frame:GetName() .. 'Text'):SetText(text);
-    checkbox_frame:SetScript("OnClick", check_func);
+    if check_func then
+        checkbox_frame:SetScript("OnClick", check_func);
+    end
 
     return checkbox_frame;
 end
@@ -3286,14 +3318,6 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame:SetWidth(370);
     sw_frame.settings_frame:SetHeight(600);
     sw_frame.settings_frame:SetPoint("TOP", sw_frame, 0, -20);
-
-    if not __sw__persistent_data_per_char then
-        __sw__persistent_data_per_char = {};
-    end
-
-    if not __sw__persistent_data_per_char.settings then
-        __sw__persistent_data_per_char.settings = default_sw_settings();
-    end
 
     -- content frame for settings
     sw_frame.settings_frame.y_offset = -35;
@@ -3368,7 +3392,7 @@ local function create_sw_gui_settings_frame()
                            "Time until OOM", icon_checkbox_func);  
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 10;
 
     sw_frame.settings_frame.icon_settings_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.icon_settings_label:SetFontObject(font);
@@ -3377,10 +3401,28 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
+    sw_frame.settings_frame.icon_mana_overlay = 
+        create_sw_checkbox("sw_icon_mana_overlay", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Show mana restoration", nil);
+
     sw_frame.settings_frame.icon_heal_variant = 
-        CreateFrame("CheckButton", "sw_icon_heal_variant", sw_frame.settings_frame, "ChatConfigCheckButtonTemplate"); 
-    sw_frame.settings_frame.icon_heal_variant:SetPoint("TOPLEFT", 10, sw_frame.settings_frame.y_offset);   
-    getglobal(sw_frame.settings_frame.icon_heal_variant:GetName() .. 'Text'):SetText("Show healing for hybrid spells");
+        create_sw_checkbox("sw_icon_heal_variant", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Show healing for hybrids", nil);  
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
+    sw_frame.settings_frame.icon_old_rank_warning = 
+        create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Old rank warning", nil);  
+
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
+
+    --sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    --sw_frame.settings_frame.icon_heal_variant = 
+    --    CreateFrame("CheckButton", "sw_icon_heal_variant", sw_frame.settings_frame, "ChatConfigCheckButtonTemplate"); 
+    --sw_frame.settings_frame.icon_heal_variant:SetPoint("TOPLEFT", 10, sw_frame.settings_frame.y_offset);   
+    --getglobal(sw_frame.settings_frame.icon_heal_variant:GetName() .. 'Text'):SetText("Show healing for hybrids");
     --sw_frame.settings_frame.icon_heal_variant:SetScript("OnClick", function(self)
     --end);
 
@@ -3546,8 +3588,17 @@ local function create_sw_gui_settings_frame()
         end
     end
     sw_frame.settings_frame.icons_num_checked = num_icon_overlay_checks;
+
     if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.show_heal_variant) ~= 0 then
         sw_frame.settings_frame.icon_heal_variant:SetChecked(true);
+    end
+
+    if __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities then
+        sw_frame.settings_frame.icon_mana_overlay:SetChecked(true);
+    end
+
+    if __sw__persistent_data_per_char.settings.icon_overlay_old_rank then
+        sw_frame.settings_frame.icon_old_rank_warning:SetChecked(true);
     end
 
     sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
@@ -3972,63 +4023,6 @@ local function create_sw_gui_stat_comparison_frame()
     -- always have at least one
     sw_frame.stat_comparison_frame.spells = {};
     sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
-
-    -- TODO: wotlk stuff
-    --if UnitLevel("player") == 60 then
-
-    --    if class == "MAGE" then
-    --        sw_frame.stat_comparison_frame.spells[25304] = {
-    --            name = localized_spell_name("Frostbolt")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[25306] = {
-    --            name = localized_spell_name("Fireball")
-    --        };
-    --    elseif class == "DRUID" then
-
-    --        sw_frame.stat_comparison_frame.spells[25297] = {
-    --            name = localized_spell_name("Healing Touch")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[25298] = {
-    --            name = localized_spell_name("Starfire")
-    --        };
-
-    --    elseif class == "PALADIN" then
-
-    --        sw_frame.stat_comparison_frame.spells[19943] = {
-    --            name = localized_spell_name("Flash of Light")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[25292] = {
-    --            name = localized_spell_name("Holy Light")
-    --        };
-    --    elseif class == "SHAMAN" then
-
-    --        sw_frame.stat_comparison_frame.spells[25357] = {
-    --            name = localized_spell_name("Healing Wave")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[15208] = {
-    --            name = localized_spell_name("Lightning Bolt")
-    --        };
-    --    elseif class == "PRIEST" then
-
-    --        sw_frame.stat_comparison_frame.spells[25314] = {
-    --            name = localized_spell_name("Greater Heal")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[25315] = {
-    --            name = localized_spell_name("Renew")
-    --        };
-    --    elseif class == "WARLOCK" then
-
-    --        sw_frame.stat_comparison_frame.spells[25307] = {
-    --            name = localized_spell_name("Shadow Bolt")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[25311] = {
-    --            name = localized_spell_name("Corruption")
-    --        };
-    --        sw_frame.stat_comparison_frame.spells[11713] = {
-    --            name = localized_spell_name("Curse of Agony")
-    --        };
-    --    end
-    --end
 
 end
 
@@ -5081,8 +5075,18 @@ local event_dispatch = {
                 __sw__persistent_data_per_char.loadouts = nil;
             end
 
+            local default_settings = default_sw_settings();
             if not __sw__persistent_data_per_char.settings then
-                __sw__persistent_data_per_char.settings = default_sw_settings();
+                __sw__persistent_data_per_char.settings = default_settings;
+            else
+                -- allows old clients with old settings to pick up on settings in newer versions
+                for k, v in pairs(default_settings) do
+                    -- DELETE ME
+                    if __sw__persistent_data_per_char.settings[k] == nil then
+                        print("added setting, ", k, v);
+                        __sw__persistent_data_per_char.settings[k] = v;
+                    end
+                end
             end
 
             create_sw_gui_settings_frame();
@@ -5413,8 +5417,9 @@ local function append_tooltip_spell_info(is_fake)
 
     tooltip_spell_info(GameTooltip, spell, loadout, effects);
 
-    if IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
-            not sw_frame.stat_comparison_frame.spells[spell_id] then
+    if IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown()
+            and not sw_frame.stat_comparison_frame.spells[spell_id] 
+            and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
         sw_frame.stat_comparison_frame.spells[spell_id] = {
             name = spell_name
         };
@@ -5553,7 +5558,7 @@ end
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects)
 
     if loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
-        -- low spell rank
+       -- low spell rank
 
         for i = 1, 3 do
             if not frame_info.overlay_frames[i] then
@@ -5567,9 +5572,15 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         frame_info.overlay_frames[2]:SetPoint("CENTER", 1, -1.5);
         frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
 
-        frame_info.overlay_frames[1]:SetText("OLD");
-        frame_info.overlay_frames[2]:SetText("RANK");
-        frame_info.overlay_frames[3]:SetText("!!!");
+        if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() then
+            frame_info.overlay_frames[1]:SetText("OLD");
+            frame_info.overlay_frames[2]:SetText("RANK");
+            frame_info.overlay_frames[3]:SetText("!!!");
+        else
+            frame_info.overlay_frames[1]:SetText("");
+            frame_info.overlay_frames[2]:SetText("");
+            frame_info.overlay_frames[3]:SetText("");
+        end
 
         for i = 1, 3 do
             frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255); 
@@ -5604,67 +5615,85 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         cast_until_oom(spell_effect, stats, loadout, effects);
     end
 
-    for i = 1, 3 do
-        
-        if sw_frame.settings_frame.icon_overlay[i] then
-            if not frame_info.overlay_frames[i] then
-                frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
 
-                frame_info.overlay_frames[i]:SetFont(
-                    icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
+        if not frame_info.overlay_frames[3] then
+            frame_info.overlay_frames[3] = frame_info.frame:CreateFontString(nil, "OVERLAY");
 
-                if i == 1 then
-                    frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
-                elseif i == 2 then
-                    frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
-                elseif i == 3 then 
-                    frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
+            frame_info.overlay_frames[3]:SetFont(
+                icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+
+            frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
+        end
+
+        frame_info.overlay_frames[3]:SetText(string.format("%d", spell_effect.mana_restored));
+        frame_info.overlay_frames[3]:SetTextColor(0.0, 1.0, 1.0);
+
+        frame_info.overlay_frames[3]:Show();
+
+    else
+        for i = 1, 3 do
+            
+            if sw_frame.settings_frame.icon_overlay[i] then
+                if not frame_info.overlay_frames[i] then
+                    frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
+
+                    frame_info.overlay_frames[i]:SetFont(
+                        icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+
+                    if i == 1 then
+                        frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
+                    elseif i == 2 then
+                        frame_info.overlay_frames[i]:SetPoint("CENTER", 1, -1.5);
+                    elseif i == 3 then 
+                        frame_info.overlay_frames[i]:SetPoint("BOTTOM", 1, 0);
+                    end
                 end
-            end
-            if sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.normal then
-                frame_info.overlay_frames[i]:SetText(string.format("%d",
-                    (spell_effect.min_noncrit_if_hit + spell_effect.max_noncrit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit  then
-                if spell_effect.ot_if_crit > 0  then
+                if sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.normal then
                     frame_info.overlay_frames[i]:SetText(string.format("%d",
-                        (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_crit + spell_effect.absorb));
-                elseif spell_effect.min_crit_if_hit ~= 0.0 then
-                    frame_info.overlay_frames[i]:SetText(string.format("%d", 
-                        (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
-                else
-                    frame_info.overlay_frames[i]:SetText("");
+                        (spell_effect.min_noncrit_if_hit + spell_effect.max_noncrit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit  then
+                    if spell_effect.ot_if_crit > 0  then
+                        frame_info.overlay_frames[i]:SetText(string.format("%d",
+                            (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_crit + spell_effect.absorb));
+                    elseif spell_effect.min_crit_if_hit ~= 0.0 then
+                        frame_info.overlay_frames[i]:SetText(string.format("%d", 
+                            (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
+                    else
+                        frame_info.overlay_frames[i]:SetText("");
+                    end
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.expected then
+                    frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.expectation));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_sec then
+                    frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.effect_per_sec));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_cost then
+                    frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.effect_per_cost));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cost then
+                    frame_info.overlay_frames[i]:SetText(string.format("%d", stats.cost));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
+                    frame_info.overlay_frames[i]:SetText(string.format("%.2f", stats.cast_time));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit and 
+                     bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
+                        frame_info.overlay_frames[i]:SetText(string.format("%d%%", 100*stats.hit));
+
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance and
+                        stats.crit ~= 0 then
+
+                    frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
+                    ---
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.casts_until_oom then
+                    frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_until_oom then
+                    frame_info.overlay_frames[i]:SetText(string.format("%.0f", spell_effect.effect_until_oom));
+                elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.time_until_oom then
+                    frame_info.overlay_frames[i]:SetText(string.format("%.1fs", spell_effect.time_until_oom));
                 end
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.expected then
-                frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.expectation));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_sec then
-                frame_info.overlay_frames[i]:SetText(string.format("%d", spell_effect.effect_per_sec));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_per_cost then
-                frame_info.overlay_frames[i]:SetText(string.format("%.2f", spell_effect.effect_per_cost));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cost then
-                frame_info.overlay_frames[i]:SetText(string.format("%d", stats.cost));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.avg_cast then
-                frame_info.overlay_frames[i]:SetText(string.format("%.2f", stats.cast_time));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.hit and 
-                 bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-                    frame_info.overlay_frames[i]:SetText(string.format("%d%%", 100*stats.hit));
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
+                                                          sw_frame.settings_frame.icon_overlay[i].color[2], 
+                                                          sw_frame.settings_frame.icon_overlay[i].color[3]);
 
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.crit_chance and
-                    stats.crit ~= 0 then
-
-                frame_info.overlay_frames[i]:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
-                ---
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.casts_until_oom then
-                frame_info.overlay_frames[i]:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.effect_until_oom then
-                frame_info.overlay_frames[i]:SetText(string.format("%.0f", spell_effect.effect_until_oom));
-            elseif sw_frame.settings_frame.icon_overlay[i].label_type == icon_stat_display.time_until_oom then
-                frame_info.overlay_frames[i]:SetText(string.format("%.1fs", spell_effect.time_until_oom));
+                frame_info.overlay_frames[i]:Show();
             end
-            frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
-                                                      sw_frame.settings_frame.icon_overlay[i].color[2], 
-                                                      sw_frame.settings_frame.icon_overlay[i].color[3]);
-
-            frame_info.overlay_frames[i]:Show();
         end
     end
 end
@@ -5701,7 +5730,9 @@ local function update_spell_icons(loadout, effects)
                 local spell_rank_name = v.frame.SpellSubName:GetText();
                 local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
 
-                if v.frame:IsShown() and spells[id] then
+                if v.frame:IsShown() and spells[id]
+                    and ((sw_num_icon_overlay_fields_active > 0 and bit.band(spells[id].flags, spell_flags.mana_regen) == 0)
+                        or (sw_frame.settings_frame.icon_mana_overlay:GetChecked() and bit.band(spells[id].flags, spell_flags.mana_regen) ~= 0)) then
                     local spell_name = GetSpellInfo(id);
                     -- TODO: icon overlay not working for healing version checkbox
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
@@ -5722,9 +5753,11 @@ local function update_spell_icons(loadout, effects)
     -- update action bar icons
     for k, v in pairs(__sw__icon_frames.bars) do
 
-        if v.frame and v.frame:IsShown() then
+        local id = v.spell_id;
+        if v.frame and v.frame:IsShown()
+            and ((sw_num_icon_overlay_fields_active > 0 and bit.band(spells[id].flags, spell_flags.mana_regen) == 0)
+                or (sw_frame.settings_frame.icon_mana_overlay:GetChecked() and bit.band(spells[id].flags, spell_flags.mana_regen) ~= 0))then
 
-            local id = v.spell_id;
             if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
                 update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);
             else
@@ -5759,7 +5792,7 @@ if class_is_supported then
                 end
             end
 
-            if sw_num_icon_overlay_fields_active > 0 then
+            if sw_num_icon_overlay_fields_active > 0 or sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
                 update_spell_icons(active_loadout_and_effects());
             end
             sequence_counter = sequence_counter + 1;
