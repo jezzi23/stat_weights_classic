@@ -892,6 +892,8 @@ local function spell_info(info, spell, stats, loadout, effects)
         -- glyph of fireball
         if loadout.glyphs[56368] and spell.base_id == spell_name_to_id["Fireball"] then
             base_ot_tick = 0.0;
+            ot_freq = 0;
+            ot_dur = 0;
         end
         -- glyph of living bomb
         if loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"] then
@@ -1023,6 +1025,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.effect_per_cost = info.expectation/stats.cost;
     info.cost_per_sec = stats.cost/stats.cast_time;
     info.ot_duration = ot_dur + stats.ot_extra_ticks * ot_freq;
+    info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
         if spell.base_id == spell_name_to_id["Innervate"] then
@@ -1036,6 +1039,8 @@ local function spell_info(info, spell, stats, loadout, effects)
 
             local pts = loadout.talents_table:pts(1, 6);
             info.mana_restored = info.mana_restored * (1.0 + pts*0.1);
+        elseif spell.base_id == spell_name_to_id["Shadowfiend"] then
+            info.mana_restored = 0.05*loadout.max_mana*10;
         else
             -- evocate, mana tide, divine plea of % max mana
             info.mana_restored = spell.base_min * loadout.max_mana;
@@ -1825,17 +1830,17 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     -- TODO: might want to separate dps and dmg per execution time for clarity
     if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
         effect = "Heal";
-        effect_per_sec = "HPS (by cast time)";
+        effect_per_sec = "HPS";
         effect_per_cost = "Heal per Mana";
         cost_per_sec = "Mana per sec";
-        effect_per_sec_per_sp = "HPS per SP";
+        effect_per_sec_per_sp = "HPS (by cast time) per SP";
         sp_name = "Spell power";
     else
         effect = "Damage";
-        effect_per_sec = "DPS (by cast time)";
+        effect_per_sec = "DPS";
         effect_per_cost = "Damage per Mana";
         cost_per_sec = "Mana per sec";
-        effect_per_sec_per_sp = "DPS per SP";
+        effect_per_sec_per_sp = "DPS (by cast time) per SP";
         sp_name = "Spell power";
     end
 
@@ -1867,8 +1872,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                       ),
                         0, 1, 1);
 
-        end_tooltip_section(tooltip);
-        return;
+        if spell.base_id ~= spell_name_to_id["Shadowfiend"] then
+            end_tooltip_section(tooltip);
+            return;
+        end
     end
 
     if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
@@ -2196,10 +2203,21 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 
     if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
-        tooltip:AddLine(string.format("%s: %.1f", 
-                                      effect_per_sec,
-                                      eval.spell.effect_per_sec),
-                        255.0/256, 128.0/256, 0);
+        if eval.spell.effect_per_sec ~= eval.spell.effect_per_dur then
+            tooltip:AddLine(string.format("%s: %.1f", 
+                                          effect_per_sec.." (cast time)",
+                                          eval.spell.effect_per_sec),
+                            255.0/256, 128.0/256, 0);
+            tooltip:AddLine(string.format("%s: %.1f", 
+                                          effect_per_sec.." (duration)",
+                                          eval.spell.effect_per_dur),
+                            255.0/256, 128.0/256, 0);
+            else
+            tooltip:AddLine(string.format("%s: %.1f", 
+                                          effect_per_sec,
+                                          eval.spell.effect_per_sec),
+                            255.0/256, 128.0/256, 0);
+        end
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
 
@@ -4620,101 +4638,103 @@ local function create_sw_gui_loadout_frame()
     end);
 
 
-    sw_frame.loadouts_frame.rhs_list.target_resi_editbox = {};
+    -- Note: enemy resistance config since vanilla
+    -- doesn't seem too relevant in wotlk
+    --sw_frame.loadouts_frame.rhs_list.target_resi_editbox = {};
 
-    local num_target_resi_labels = 6;
-    local target_resi_labels = {
-        [2] = {
-            label = "Holy",
-            color = {255/255, 255/255, 153/255}
-        },
-        [3] = {
-            label = "Fire",
-            color = {255/255, 0, 0}
-        },
-        [4] = {
-            label = "Nature",
-            color = {0, 153/255, 51/255}
-        },
-        [5] = {
-            label = "Frost",
-            color = {51/255, 102/255, 255/255}
-        },
-        [6] = {
-            label = "Shadow",
-            color = {102/255, 0, 102/255}
-        },
-        [7] = {
-            label = "Arcane",
-            color = {102/255, 0, 204/255}
-        }
-    };
+    --local num_target_resi_labels = 6;
+    --local target_resi_labels = {
+    --    [2] = {
+    --        label = "Holy",
+    --        color = {255/255, 255/255, 153/255}
+    --    },
+    --    [3] = {
+    --        label = "Fire",
+    --        color = {255/255, 0, 0}
+    --    },
+    --    [4] = {
+    --        label = "Nature",
+    --        color = {0, 153/255, 51/255}
+    --    },
+    --    [5] = {
+    --        label = "Frost",
+    --        color = {51/255, 102/255, 255/255}
+    --    },
+    --    [6] = {
+    --        label = "Shadow",
+    --        color = {102/255, 0, 102/255}
+    --    },
+    --    [7] = {
+    --        label = "Arcane",
+    --        color = {102/255, 0, 204/255}
+    --    }
+    --};
 
-    local target_resi_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
+    --local target_resi_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
 
-    target_resi_label:SetFontObject(font);
-    target_resi_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
-    target_resi_label:SetText("Presumed enemy resistances");
+    --target_resi_label:SetFontObject(font);
+    --target_resi_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
+    --target_resi_label:SetText("Presumed enemy resistances");
 
-    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
+    --y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
 
-    for i = 2, 7 do
+    --for i = 2, 7 do
 
-        local resi_school_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
+    --    local resi_school_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
 
-        resi_school_label:SetFontObject(font);
-        resi_school_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
-        resi_school_label:SetText(target_resi_labels[i].label);
-        resi_school_label:SetTextColor(
-            target_resi_labels[i].color[1], target_resi_labels[i].color[2], target_resi_labels[i].color[3]
-        );
-
-
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i] = 
-            CreateFrame("EditBox", "sw_"..target_resi_labels[i].label.."editbox", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "InputBoxTemplate");
-
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i].school_type = i;
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetPoint("TOPLEFT", 130, y_offset_rhs_target_buffs);
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetAutoFocus(false);
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetSize(60, 10);
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTextChanged", function(self)
-
-            -- TODO: refactoring
-            --if self:GetText() == "" then
-            --    sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = 0;
-
-            --elseif not string.match(self:GetText(), "[^0123456789]") then
-            --    sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = tonumber(self:GetText());
-            --else 
-            --    self:ClearFocus();
-            --    self:SetText(tostring(sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type]));
-            --end
-        end);
-
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEnterPressed", function(self)
-        	self:ClearFocus()
-        end);
-        
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEscapePressed", function(self)
-        	self:ClearFocus()
-        end);
-
-        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTabPressed", function(self)
-
-            local next_index = 0;
-            if IsShiftKeyDown() then
-                next_index = 1 + ((i-3) %num_target_resi_labels);
-            else
-                next_index = 1 + ((i-1) %num_target_resi_labels);
-
-            end
-        	self:ClearFocus()
-            sw_frame.loadouts_frame.rhs_list.target_resi_editbox[next_index + 1]:SetFocus();
-        end);
+    --    resi_school_label:SetFontObject(font);
+    --    resi_school_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
+    --    resi_school_label:SetText(target_resi_labels[i].label);
+    --    resi_school_label:SetTextColor(
+    --        target_resi_labels[i].color[1], target_resi_labels[i].color[2], target_resi_labels[i].color[3]
+    --    );
 
 
-        y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
-    end
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i] = 
+    --        CreateFrame("EditBox", "sw_"..target_resi_labels[i].label.."editbox", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "InputBoxTemplate");
+
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i].school_type = i;
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetPoint("TOPLEFT", 130, y_offset_rhs_target_buffs);
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetAutoFocus(false);
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetSize(60, 10);
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTextChanged", function(self)
+
+    --        -- TODO: refactoring
+    --        --if self:GetText() == "" then
+    --        --    sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = 0;
+
+    --        --elseif not string.match(self:GetText(), "[^0123456789]") then
+    --        --    sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = tonumber(self:GetText());
+    --        --else 
+    --        --    self:ClearFocus();
+    --        --    self:SetText(tostring(sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type]));
+    --        --end
+    --    end);
+
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEnterPressed", function(self)
+    --    	self:ClearFocus()
+    --    end);
+    --    
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEscapePressed", function(self)
+    --    	self:ClearFocus()
+    --    end);
+
+    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTabPressed", function(self)
+
+    --        local next_index = 0;
+    --        if IsShiftKeyDown() then
+    --            next_index = 1 + ((i-3) %num_target_resi_labels);
+    --        else
+    --            next_index = 1 + ((i-1) %num_target_resi_labels);
+
+    --        end
+    --    	self:ClearFocus()
+    --        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[next_index + 1]:SetFocus();
+    --    end);
+
+
+    --    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
+    --end
 
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton = 
         CreateFrame("CheckButton", "sw_loadout_select_all_target_buffs", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "ChatConfigCheckButtonTemplate");
@@ -4746,21 +4766,37 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.self_buffs_y_offset_start = y_offset_rhs_buffs;
     sw_frame.loadouts_frame.rhs_list.target_buffs_y_offset_start = y_offset_rhs_target_buffs;
 
+    -- buffs
+    local sorted_buffs_by_name = {};
     for k, v in pairs(buffs) do
         if bit.band(filter_flags_active, v.filter) ~= 0 then
-            create_loadout_buff_checkbutton(
-                sw_frame.loadouts_frame.rhs_list.buffs, k, v, "self", 
-                sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func
-            );
+            table.insert(sorted_buffs_by_name, k);
         end
     end
+    table.sort(sorted_buffs_by_name);
+    for _, k in ipairs(sorted_buffs_by_name) do
+        local v = buffs[k];
+        create_loadout_buff_checkbutton(
+            sw_frame.loadouts_frame.rhs_list.buffs, k, v, "self", 
+            sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func
+        );
+    
+    end
+
+    -- debuffs
+    sorted_buffs_by_name = {};
     for k, v in pairs(target_buffs) do
         if bit.band(filter_flags_active, v.filter) ~= 0 then
-            create_loadout_buff_checkbutton(
-                sw_frame.loadouts_frame.rhs_list.target_buffs, k, v, "target_buffs", 
-                sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func
-            );
+            table.insert(sorted_buffs_by_name, k);
         end
+    end
+    table.sort(sorted_buffs_by_name);
+    for _, k in ipairs(sorted_buffs_by_name) do
+        local v = target_buffs[k];
+        create_loadout_buff_checkbutton(
+            sw_frame.loadouts_frame.rhs_list.target_buffs, k, v, "target_buffs", 
+            sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func
+        );
     end
 
     sw_frame.loadouts_frame.self_buffs_slider =
@@ -4796,8 +4832,8 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.target_buffs_slider =
         CreateFrame("Slider", "sw_target_buffs_slider", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "OptionsSliderTemplate");
     sw_frame.loadouts_frame.target_buffs_slider:SetOrientation('VERTICAL');
-    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -147);
-    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 400);
+    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -42);
+    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 505);
     sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit = 
         math.floor(sw_frame.loadouts_frame.target_buffs_slider:GetHeight()/20);
     sw_frame.loadouts_frame.target_buffs_slider:SetMinMaxValues(
@@ -5616,7 +5652,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     end
 
 
-    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
+    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 and sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
         if not frame_info.overlay_frames[3] then
             frame_info.overlay_frames[3] = frame_info.frame:CreateFontString(nil, "OVERLAY");
 

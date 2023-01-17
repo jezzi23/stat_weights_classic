@@ -5616,7 +5616,7 @@ local function create_spells()
                 lvl_max             = 0,
                 lvl_outdated        = 80,
                 cost_base_percent   = 0.0001,
-                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_range, spell_flags.pet),
+                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_range, spell_flags.pet, spell_flags.mana_regen),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0.3568,

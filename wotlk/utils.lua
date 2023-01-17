@@ -58,7 +58,6 @@ local stat = {
     spirit = 5
 };
 
-
 local beacon_snapshot_time = -1000;
 local sequence_counter = 0;
 local addon_running_time = 0;

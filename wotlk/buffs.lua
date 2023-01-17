@@ -27,6 +27,7 @@ local deep_table_copy               = addonTable.deep_table_copy;
 local stat                              = addonTable.stat;
 local class                         = addonTable.class;
 local race                          = addonTable.race;
+local faction                       = addonTable.faction;
 local loadout_flags                 = addonTable.loadout_flags;
 
 local magic_school                  = addonTable.magic_school;
@@ -79,10 +80,15 @@ elseif class == "PALADIN" then
     filter_flags_active = bit.bor(filter_flags_active, buff_filters.paladin);
 end
 
+if faction == "Horde" then
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.horde);
+else
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.alliance);
+end
+
 if race == "Troll" then
     filter_flags_active = bit.bor(filter_flags_active, buff_filters.troll);
 end
-
 
 local non_stackable_effects = {
     moonkin_crit                = bit.lshift(1, 0),
