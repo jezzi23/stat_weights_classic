@@ -202,6 +202,7 @@ local spell_flags = {
     over_time_lvl_scaling   = bit.lshift(1,10),
     mana_regen              = bit.lshift(1,11),
     pet                     = bit.lshift(1,12),
+    duration_haste_scaling  = bit.lshift(1,13),
 };
 
 local function create_spells()
@@ -552,7 +553,7 @@ local function create_spells()
                 flags               = bit.bor(spell_flags.aoe, spell_flags.over_time_crit, spell_flags.over_time_lvl_scaling),
                 school              = magic_school.frost,
                 coef                = 0.0,
-                over_time_coef      = 0.1429,
+                over_time_coef      = 0.143,
 				lvl_scaling			= 0.1,
             },
             [6141] = {
@@ -1632,7 +1633,7 @@ local function create_spells()
                 cost_base_percent   = 0.07,
                 flags               = 0,
                 school              = magic_school.arcane,
-                coef                = 0.7143,
+                coef                = 0.714,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 5,
             },
@@ -4410,8 +4411,8 @@ local function create_spells()
                 cost_base_percent   = 0.11,
                 flags               = spell_flags.cd,
                 school              = magic_school.holy,
-                coef                = 0.575,
-                over_time_coef      = 0.0529,
+                coef                = 0.571,
+                over_time_coef      = 0.024,
 				lvl_scaling			= 1.5,
             },
             [15262] = {
@@ -6695,7 +6696,6 @@ local function create_spells()
                 lvl_outdated        = 80,
 				lvl_scaling			= 0.0,
             },
-            -- TODO: dot haste flag?
             -- flame shock
             [8050] = {
                 base_min            = 21,
@@ -6709,7 +6709,7 @@ local function create_spells()
                 lvl_max             = 15,
                 lvl_outdated        = 17,
                 cost_base_percent   = 0.17,
-                flags               = bit.bor(spell_flags.over_time_crit, spell_flags.cd),
+                flags               = bit.bor(spell_flags.over_time_crit, spell_flags.cd, spell_flags.duration_haste_scaling),
                 school              = magic_school.fire,
                 coef                = 0.2143,
                 over_time_coef      = 0.1,
@@ -6891,8 +6891,8 @@ local function create_spells()
                 cost_base_percent   = 0.07,
                 flags               = bit.bor(spell_flags.over_time_crit, spell_flags.over_time_range),
                 school              = magic_school.fire,
-                coef                = 0.1667,
-                over_time_coef      = 0.0,
+                coef                = 0.0,
+                over_time_coef      = 0.1667,
 				lvl_scaling			= 0.0,
             },
             [6363] = {

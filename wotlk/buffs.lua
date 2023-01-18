@@ -55,6 +55,9 @@ local buff_filters = {
     hostile     = bit.lshift(1,12),
     horde       = bit.lshift(1,13),
     alliance    = bit.lshift(1,14),
+
+    -- hidden buffs to deal with, not toggled
+    hidden        = bit.lshift(1,15),
 };
 
 local buff_category = {
@@ -439,10 +442,9 @@ local buffs_predefined = {
             -- dynamically scales with the warlock owner's sp but still needs tracking
             -- assume same effect as totem if applied statically
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.arcane_empowerment) == 0 then
-                for i = 2, 7 do
-                    effects.by_school.spell_dmg_mod[i] = 
-                        (1.0 + effects.by_school.spell_dmg_mod[i]) * 1.03 - 1.0;
-                end
+                effects.raw.spell_dmg_mod_mul = 
+                    (1.0 + effects.raw.spell_dmg_mod_mul) * 1.03 - 1.0;
+
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.arcane_empowerment);
             end
@@ -616,14 +618,14 @@ local buffs_predefined = {
     --arcane power
     [12042] = {
         apply = function(loadout, effects, buff)
-            effects.by_school.spell_dmg_mod[magic_school.fire] =
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.2 - 1.0;
-            effects.by_school.spell_dmg_mod[magic_school.arcane] =
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * 1.2 - 1.0;
-            effects.by_school.spell_dmg_mod[magic_school.frost] =
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost]) * 1.2 - 1.0;
+            effects.by_school.spell_dmg_mod_add[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod_add[magic_school.fire] + 0.2;
+            effects.by_school.spell_dmg_mod_add[magic_school.arcane] = 
+                effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.2;
+            effects.by_school.spell_dmg_mod_add[magic_school.frost] = 
+                effects.by_school.spell_dmg_mod_add[magic_school.frost] + 0.2;
 
-            effects.raw.cost_mod = effects.raw.cost_mod - 0.2;
+            effects.raw.cost_mod_base = effects.raw.cost_mod_base - 0.2;
         end,
         filter = buff_filters.mage,
         category = buff_category.class,
@@ -701,8 +703,9 @@ local buffs_predefined = {
                 stacks = buff.count;
             end
             effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + 0.15 * stacks) - 1.0;
-            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Arcane Blast"], -stacks * 1.75, 0.0); 
+                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.15 * stacks;
+
+            ensure_exists_and_add(effects.ability.cost_mod_base, spell_name_to_id["Arcane Blast"], -stacks * 1.75, 0.0); 
 
         end,
         filter = buff_filters.mage,
@@ -973,6 +976,28 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "20% haste (troll)",
     },
+    -- arcane potency
+    [57531] = {
+        apply = function(loadout, effects, buff, inactive)
+            if not inactive then
+                -- NOTE: won't get called when always assuming buffs and dynamically active
+                local pts = loadout.talents_table:pts(1, 20);
+                local overdue_crit = pts * 0.15;
+                -- we already add arcane potency expected crit for an ability
+                -- remove the full amount when dynamically present
+                effects.by_school.spell_crit[magic_school.fire] = 
+                    effects.by_school.spell_crit[magic_school.fire] - overdue_crit;
+                effects.by_school.spell_crit[magic_school.arcane] = 
+                    effects.by_school.spell_crit[magic_school.arcane] - overdue_crit;
+                effects.by_school.spell_crit[magic_school.frost] = 
+                    effects.by_school.spell_crit[magic_school.frost] - overdue_crit;
+            end
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.hidden),
+        category = buff_category.class,
+        tooltip = "",
+    },
+
 };
 
 -- identical implementations
@@ -1558,7 +1583,6 @@ local function apply_buffs(loadout, effects)
 
     --loadout_add(loadout, stats_diff_loadout, effects);
 end
-
 
 addonTable.buff_filters = buff_filters;
 addonTable.filter_flags_active = filter_flags_active;

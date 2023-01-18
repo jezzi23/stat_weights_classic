@@ -59,7 +59,7 @@ local apply_talents_glyphs              = addonTable.apply_talents_glyphs;
 
 -------------------------------------------------------------------------
 local sw_addon_name = "Stat Weights Classic";
-local version =  "3.0.3";
+local version =  "3.0.5";
 
 local sw_addon_loaded = false;
 
@@ -215,6 +215,8 @@ local function empty_effects(effects)
 
     effects.raw.spell_heal_mod = 0;
     effects.raw.spell_heal_mod_mul = 0;
+    effects.raw.spell_dmg_mod = 0;
+    effects.raw.spell_dmg_mod_mul = 0;
     effects.raw.target_healing_taken = 0;
     effects.raw.mana_mod = 0;
     effects.raw.mana = 0;
@@ -228,6 +230,7 @@ local function empty_effects(effects)
 
     effects.raw.haste_mod = 0.0;
     effects.raw.cost_mod = 0;
+    effects.raw.cost_mod_base = 0;
 
     effects.raw.haste_rating = 0;
     effects.raw.crit_rating = 0;
@@ -244,8 +247,9 @@ local function empty_effects(effects)
     effects.ability.cast_mod = {}; -- flat before mul
     effects.ability.cast_mod_mul = {}; -- after flat
     effects.ability.extra_ticks = {};
-    effects.ability.cost_mod = {};
-    effects.ability.cost_flat = {};
+    effects.ability.cost_mod = {}; -- last, multiplied
+    effects.ability.cost_flat = {}; -- second, additive
+    effects.ability.cost_mod_base = {}; -- first, multiplied
     effects.ability.crit_mod = {};
     effects.ability.hit = {};
     effects.ability.sp = {};
@@ -730,7 +734,7 @@ elseif class == "PRIEST" then
     special_abilities = {
         [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout)
 
-            if loadout.glyphs[57195] then
+            if loadout.glyphs[55680] then
                 info.expectation_st = info.expectation_st * 1.2;
                 -- hot displayed specialized in tooltip section
             end
@@ -860,6 +864,10 @@ local function spell_info(info, spell, stats, loadout, effects)
     if spell.cast_time == spell.over_time_duration then
         ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
         ot_dur = stats.cast_time;
+    end
+    if bit.band(spell.flags, spell_flags.duration_haste_scaling) ~= 0 then
+        ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+        ot_dur = ot_dur/stats.haste_mod;
     end
 
     -- certain ticks may tick faster
@@ -1134,7 +1142,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     stats.gcd = 1.0;
 
-    stats.cost = spell.cost_base_percent * base_mana_pool();
+    local cost_mod_base = effects.raw.cost_mod_base;
+    if effects.ability.cost_mod_base[spell.base_id] then
+        cost_mod_base = cost_mod_base + effects.ability.cost_mod_base[spell.base_id];
+    end
+    stats.cost = math.floor(math.floor(spell.cost_base_percent * base_mana_pool()) * (1.0 - cost_mod_base));
+    
     if effects.ability.cost_flat[spell.base_id] then
         stats.cost = stats.cost - effects.ability.cost_flat[spell.base_id];
     end
@@ -1145,6 +1158,22 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     local cast_mod_mul = 0.0;
+
+    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
+    if effects.ability.hit[spell.base_id] then
+        stats.extra_hit = stats.extra_hit + effects.ability.hit[spell.base_id];
+    end
+
+    local hit_rating_per_perc = get_combat_rating_effect(CR_HIT_SPELL, loadout.lvl);
+    local hit_from_rating = 0.01 * (loadout.hit_rating + effects.raw.hit_rating)/hit_rating_per_perc
+    stats.extra_hit = stats.extra_hit + hit_from_rating;
+
+    stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit);
+    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
+        stats.hit = 1.0;
+    else
+        stats.hit = math.min(1.0, stats.hit);
+    end
 
     if class == "PRIEST" then
         if spell.base_id == spell_name_to_id["Flash Heal"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
@@ -1190,7 +1219,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local moonkin_form, _, _, _, _, _, _ = GetSpellInfo(24858);
         if (loadout.buffs[moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
             (loadout.dynamic_buffs["player"][moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
-            resource_refund = stats.crit * 0.02 * loadout.max_mana;
+            resource_refund = stats.hit*stats.crit * 0.02 * loadout.max_mana;
         end
 
         -- never mind ...this tick resource refund is only on target,... could apply if targeting self?
@@ -1218,7 +1247,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
         end
 
-        if bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 then
+        if bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
             -- living seed
             local pts = loadout.talents_table:pts(3, 21);
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
@@ -1262,10 +1291,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
         -- elemental focus
         local pts = loadout.talents_table:pts(1, 7);
         if pts ~= 0 and spell.base_min ~= 0 and bit.band(spell.flags, spell_flags.heal) == 0 then
-            local not_crit = 1.0 - stats.crit;
+            local not_crit = 1.0 - (stats.crit*stats.hit);
             local probability_of_critting_at_least_once_in_two = 1.0 - not_crit*not_crit;
             cost_mod = cost_mod - 0.4*probability_of_critting_at_least_once_in_two;
-            
         end
 
 
@@ -1341,7 +1369,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if pts ~= 0 then
             -- master of elements
             local mana_refund = pts * 0.1 * spell.cost_base_percent * base_mana_pool();
-            resource_refund = stats.crit * mana_refund;
+            resource_refund = stats.hit*stats.crit * mana_refund;
         end
 
         -- ignite
@@ -1428,21 +1456,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     end
 
-    --if spell.base_id == spell_name_to_id["Healing Touch"] and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
-
-    --    cost = cost - cost * crit * 0.3;
-    --end
-
-
-    --if loadout.master_of_elements ~= 0 and spell.base_min > 0 and
-    --   (spell.school == magic_school.fire or spell.school == magic_school.frost) then
-
-    --    cost = cost - cost * crit * (loadout.master_of_elements * 0.1);
-    --end
-
-
-    --TODO: wotlk haste, cast speed calculation is different
-    -- so far it seems like gcd cap is 1.0 instead of 1.5?
     stats.cast_time = spell.cast_time;
     if effects.ability.cast_mod[spell.base_id] then
         stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
@@ -1452,23 +1465,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
     stats.cast_time = stats.cast_time/(1.0 + cast_mod_mul);
 
-    -- nature's grace
-    -- TODO: revisit?
-    local pts = loadout.talents_table:pts(1, 7);
-    if class == "DRUID" and pts ~= 0 and spell.base_min ~= 0 then
-        stats.cast_time = stats.cast_time/(1.0 + pts * 0.2*stats.crit/3);
-    end
-
-    --if loadout.natures_grace and loadout.natures_grace ~= 0  and cast_time > 1.5 and 
-    --    spell.base_id ~= spell_name_to_id["Tranquility") and spell.base_id ~= localized_spell_name("Hurricane"] then
-    --    local cast_reduction = 0.5;
-    --    if cast_time - 1.5 < 0.5 then
-    --        --cast_time is between ]1.5:2]
-    --        -- partially account for natures grace as the cast is lower than 2 and natures grace doesnt ignore gcd
-    --        cast_reduction = cast_time - 1.5; -- i.e. between [0:0.5]
-    --    end
-    --    cast_time = cast_time - cast_reduction * crit;
-    --end
 
     -- apply global haste which has been multiplied at each step
     local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
@@ -1478,18 +1474,22 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     stats.cast_time = math.max(stats.cast_time/stats.haste_mod, stats.gcd);
 
+    -- nature's grace
+    local pts = loadout.talents_table:pts(1, 7);
+    if class == "DRUID" and pts ~= 0 and spell.base_min ~= 0 then
 
-    -- delete this?
-    --if spell.base_id == spell_name_to_id["Shadow Bolt"] and 
-    --    bit.band(target_debuffs1.improved_shadow_bolt.flag, loadout.target_debuffs1) ~= 0 and 
-    --    ((not loadout.target_friendly and loadout.has_target and loadout.target_debuffs[target_debuffs1.improved_shadow_bolt.id]) or 
-    --    loadout.always_assume_buffs) then
+        -- 
+        local casts_in_3_sec_wo_grace = math.floor(3/stats.cast_time);
+        local uptime_wo_grace = 1.0 - math.pow(1.0-stats.crit*pts/3, casts_in_3_sec_wo_grace);
+        local casts_in_3_sec = math.floor((1.0 + 0.2*uptime_wo_grace)*3/stats.cast_time);
+        local uptime = 1.0 - math.pow(1.0-stats.crit*pts/3, casts_in_3_sec);
 
+        local optimizable_cast_time = math.max(stats.cast_time - stats.gcd, 0);
+        local effective_haste = math.min(optimizable_cast_time, 0.2*stats.gcd); -- [0;0.2*gcd]%
+        
+        stats.cast_time = math.max(stats.cast_time/(1.0 + effective_haste*uptime), stats.gcd);
+    end
 
-    --    -- undo for shadow bolt in order to get real average stat weights for crit, which increases buff uptime
-    --    loadout.target_spell_dmg_taken[magic_school.shadow] = 
-    --        loadout.target_spell_dmg_taken[magic_school.shadow] - 0.2;
-    --end
     -- multiplicitive vs additive can become an error here 
     if bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
@@ -1520,29 +1520,21 @@ local function stats_for_spell(stats, spell, loadout, effects)
             *
             (1 + effects.by_school.spell_dmg_mod[spell.school])
             *
+            (1 + effects.raw.spell_dmg_mod_mul)
+            *
+            (1 + effects.raw.spell_dmg_mod)
+            *
             (1.0 + effects.ability.effect_mod[spell.base_id] + effects.by_school.spell_dmg_mod_add[spell.school]);
 
         stats.spell_ot_mod = target_vuln_ot_mod * global_mod
             *
             (1 + effects.by_school.spell_dmg_mod[spell.school])
             *
+            (1 + effects.raw.spell_dmg_mod_mul)
+            *
+            (1 + effects.raw.spell_dmg_mod)
+            *
             (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id] + effects.by_school.spell_dmg_mod_add[spell.school] + effects.raw.ot_mod);
-    end
-
-    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
-    if effects.ability.hit[spell.base_id] then
-        stats.extra_hit = stats.extra_hit + effects.ability.hit[spell.base_id];
-    end
-
-    local hit_rating_per_perc = get_combat_rating_effect(CR_HIT_SPELL, loadout.lvl);
-    local hit_from_rating = 0.01 * (loadout.hit_rating + effects.raw.hit_rating)/hit_rating_per_perc
-    stats.extra_hit = stats.extra_hit + hit_from_rating;
-
-    stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit);
-    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
-        stats.hit = 1.0;
-    else
-        stats.hit = math.min(1.0, stats.hit);
     end
 
     stats.ot_extra_ticks = effects.ability.extra_ticks[spell.base_id];
@@ -1577,6 +1569,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.cost = stats.cost * cost_mod;
     -- is this rounding correct?
     stats.cost = math.floor(stats.cost + 0.5);
+    --stats.cost = math.floor(stats.cost);
     stats.cost = stats.cost - resource_refund;
 
     if effects.ability.refund[spell.base_id] and effects.ability.refund[spell.base_id] ~= 0 then
@@ -1899,14 +1892,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.ceil(eval.spell.max_noncrit_if_hit)),
                                     232.0/255, 225.0/255, 32.0/255);
 
-                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[57195] then
+                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[55680] then
                         tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d for %d ticks)", 
                                                       math.floor(0.2*eval.spell.min_noncrit_if_hit),
                                                       math.ceil(0.2*eval.spell.max_noncrit_if_hit),
-                                                      6,
-                                                      math.floor(0.2*eval.spell.min_noncrit_if_hit/6),
-                                                      math.ceil(0.2*eval.spell.max_noncrit_if_hit/6),
-                                                      6),
+                                                      2,
+                                                      math.floor(0.2*eval.spell.min_noncrit_if_hit/2),
+                                                      math.ceil(0.2*eval.spell.max_noncrit_if_hit/2),
+                                                      2),
                                         232.0/255, 225.0/255, 32.0/255);
                     end
                 end
@@ -1960,9 +1953,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                         effect_type_str = "absorbs";
                         extra_crit_mod = pts * 0.1;
                     end
-                elseif class == "DRUID"   then
+                elseif class == "DRUID" then
                     pts = loadout.talents_table:pts(3, 21);
-                    if pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 then
+                    if pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
                         effect_type_str = "seeds";
                         extra_crit_mod = pts * 0.1;
                     end
@@ -2021,23 +2014,35 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
                     end
 
-                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[57195] then
+                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[55680] then
                         tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d for %d ticks)", 
                                                       math.floor(0.2*min_crit_if_hit), 
                                                       math.ceil(0.2*max_crit_if_hit),
-                                                      6,
-                                                      math.floor(0.2*min_crit_if_hit/6), 
-                                                      math.ceil(0.2*max_crit_if_hit/6),
-                                                      6),
+                                                      2,
+                                                      math.floor(0.2*min_crit_if_hit/2), 
+                                                      math.ceil(0.2*max_crit_if_hit/2),
+                                                      2),
                                        252.0/255, 69.0/255, 3.0/255);
                     end
                     
                 elseif eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
+
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d", 
                                                   stats.crit*100, 
                                                   math.floor(eval.spell.min_crit_if_hit), 
                                                   math.ceil(eval.spell.max_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
+                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[55680] then
+                        tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d for %d ticks)", 
+                                                      math.floor(0.2*eval.spell.min_crit_if_hit), 
+                                                      math.ceil(0.2*eval.spell.max_crit_if_hit),
+                                                      2,
+                                                      math.floor(0.2*eval.spell.min_crit_if_hit)/2, 
+                                                      math.ceil(0.2*eval.spell.max_crit_if_hit/2),
+                                                      2),
+                                       252.0/255, 69.0/255, 3.0/255);
+                    end
+
                 else 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
                                                   stats.crit*100, 
@@ -2070,12 +2075,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                               eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
             elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                tooltip:AddLine(string.format("%s (%.1f%% hit): %d-%d over %.2fs (%.1f for %d ticks)",
+                tooltip:AddLine(string.format("%s (%.1f%% hit): %d-%d over %.2fs (%d-%d for %d ticks)",
                                               effect,
                                               stats.hit * 100,
                                               eval.spell.ot_if_hit,
                                               eval.spell.ot_if_hit_max,
                                               eval.spell.ot_duration, 
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks,
                                               eval.spell.ot_if_hit_max/eval.spell.ot_ticks,
                                               eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
@@ -2092,17 +2098,19 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         else
             -- wild growth
             if spell.base_id == spell_name_to_id["Wild Growth"] then
+                local heal_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
+                local heal_wo_sp = (eval.spell.ot_if_hit - heal_from_sp);
                 tooltip:AddLine(string.format("%s: %d over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %d ticks)",
                                               effect,
                                               eval.spell.ot_if_hit, 
                                               eval.spell.ot_duration, 
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  3) + 0.5,
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  2) + 0.5,
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  1) + 0.5,
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 *  0) + 0.5,
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -1) + 0.5,
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -2) + 0.5,
-                                              eval.spell.ot_if_hit/eval.spell.ot_ticks * (1.0 + 0.09245475363 * -3) + 0.5
+                                              (( 3*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              (( 2*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              (( 1*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              (( 0*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((-1*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((-2*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((-3*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks
                                               ), 
                                 232.0/255, 225.0/255, 32.0/255);
             elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
@@ -2565,6 +2573,18 @@ local function active_loadout_and_effects()
     return loadout_entry.loadout, loadout_entry.final_effects;
 end
 
+local function active_loadout_and_effects_diffed_from_ui()
+
+    local loadout, effects = active_loadout_and_effects();
+
+    local diff = effects_from_ui_diff(sw_frame.stat_comparison_frame);
+
+    local effects_diffed = deep_table_copy(effects);
+    effects_diff(loadout, effects_diffed, diff);
+
+    return loadout, effects, effects_diffed;
+end
+
 -- non local functions intended to be usable by other addons
 --TODO: No good! Use cached spells
 --function __sw__spell_info_from_loadout(spell_id, loadout)
@@ -2770,7 +2790,7 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
                 frame.spells[spell_id].effect_per_sec:Hide();
 
                 frame.spells[spell_id] = nil;
-                update_and_display_spell_diffs(frame);
+                update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
     
             end);
     
@@ -2782,18 +2802,14 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
     end
 end
 
-update_and_display_spell_diffs = function(frame)
+update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
 
-    -- TODO: refactor
+    if not loadout then
+    end
+
+    local frame = sw_frame.stat_comparison_frame;
 
     frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
-
-    local loadout, effects = active_loadout_and_effects();
-
-    local diff = effects_from_ui_diff(frame);
-
-    local effects_diffed = deep_table_copy(effects);
-    effects_diff(loadout, effects_diffed, diff);
 
     local spell_stats_normal = {};
     local spell_stats_diffed = {};
@@ -3182,7 +3198,7 @@ local function sw_activate_tab(tab_index)
         sw_frame.tab2:SetButtonState("PUSHED");
     elseif tab_index == 3 then
 
-        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+        update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
         sw_frame.stat_comparison_frame:Show();
         sw_frame.tab3:LockHighlight();
         sw_frame.tab3:SetButtonState("PUSHED");
@@ -3796,14 +3812,8 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.instructions_label = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.instructions_label:SetFontObject(font);
     sw_frame.stat_comparison_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.instructions_label:SetText("See project page for an example use case of this tool:");
+    sw_frame.stat_comparison_frame.instructions_label:SetText("While this tab is open, ability overlay & tooltips reflect the change below");
 
-
-    sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.instructions_label1 = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.stat_comparison_frame.instructions_label1:SetFontObject(font);
-    sw_frame.stat_comparison_frame.instructions_label1:SetPoint("TOPLEFT", 15, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.instructions_label1:SetText("https://www.curseforge.com/wow/addons/stat-weights-classic");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 
@@ -3869,7 +3879,7 @@ local function create_sw_gui_stat_comparison_frame()
             sw_frame.stat_comparison_frame.stats[i].editbox:SetText("");
         end
 
-        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+        update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
     end);
 
     sw_frame.stat_comparison_frame.clear_button:SetPoint("TOPRIGHT", -30, sw_frame.stat_comparison_frame.line_y_offset + 3);
@@ -3905,7 +3915,7 @@ local function create_sw_gui_stat_comparison_frame()
                 self:SetText("");
                 self:SetFocus();
             else 
-                update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+                update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
             end
         end);
 
@@ -3959,7 +3969,7 @@ local function create_sw_gui_stat_comparison_frame()
                         UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Repeated casts");
                         sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Show();
                         sw_frame.stat_comparison_frame.spell_diff_header_right_cast_until_oom:Hide();
-                        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+                        update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
                     end
                 }
             );
@@ -3972,7 +3982,7 @@ local function create_sw_gui_stat_comparison_frame()
                         UIDropDownMenu_SetText(sw_frame.stat_comparison_frame.sim_type_button, "Cast until OOM");
                         sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:Hide();
                         sw_frame.stat_comparison_frame.spell_diff_header_right_cast_until_oom:Show();
-                        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+                        update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
                     end
                 }
             );
@@ -3981,32 +3991,32 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.sim_type_button:SetText("Simulation type");
 
-    -- header for spells
-    sw_frame.stat_comparison_frame.export_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
-    sw_frame.stat_comparison_frame.export_button:SetScript("OnClick", function()
+    ---- header for spells
+    --sw_frame.stat_comparison_frame.export_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
+    --sw_frame.stat_comparison_frame.export_button:SetScript("OnClick", function()
 
-        -- TODO:
+    --    -- TODO:
 
-        --local loadout = active_loadout_copy();
+    --    --local loadout = active_loadout_copy();
 
-        --local loadout_diff = create_loadout_from_ui_diff(sw_frame.stat_comparison_frame);
+    --    --local loadout_diff = create_loadout_from_ui_diff(sw_frame.stat_comparison_frame);
 
-        --local new_loadout = loadout_add(loadout, loadout_diff);
+    --    --local new_loadout = loadout_add(loadout, loadout_diff);
 
-        --new_loadout.flags = bit.band(new_loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
-
-
-        --create_new_loadout_as_copy(new_loadout, active_loadout_base().name.." (modified)");
-
-        --sw_activate_tab(2);
-    end);
+    --    --new_loadout.flags = bit.band(new_loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
 
 
-    sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -10, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.export_button:SetHeight(25);
-    sw_frame.stat_comparison_frame.export_button:SetWidth(180);
-    --sw_frame.stat_comparison_frame.export_button:SetText("New loadout with difference");
-    sw_frame.stat_comparison_frame.export_button:SetText("");
+    --    --create_new_loadout_as_copy(new_loadout, active_loadout_base().name.." (modified)");
+
+    --    --sw_activate_tab(2);
+    --end);
+
+
+    --sw_frame.stat_comparison_frame.export_button:SetPoint("TOPRIGHT", -10, sw_frame.stat_comparison_frame.line_y_offset);
+    --sw_frame.stat_comparison_frame.export_button:SetHeight(25);
+    --sw_frame.stat_comparison_frame.export_button:SetWidth(180);
+    ----sw_frame.stat_comparison_frame.export_button:SetText("New loadout with difference");
+    --sw_frame.stat_comparison_frame.export_button:SetText("");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
@@ -4769,7 +4779,7 @@ local function create_sw_gui_loadout_frame()
     -- buffs
     local sorted_buffs_by_name = {};
     for k, v in pairs(buffs) do
-        if bit.band(filter_flags_active, v.filter) ~= 0 then
+        if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
             table.insert(sorted_buffs_by_name, k);
         end
     end
@@ -4786,7 +4796,7 @@ local function create_sw_gui_loadout_frame()
     -- debuffs
     sorted_buffs_by_name = {};
     for k, v in pairs(target_buffs) do
-        if bit.band(filter_flags_active, v.filter) ~= 0 then
+        if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
             table.insert(sorted_buffs_by_name, k);
         end
     end
@@ -5117,9 +5127,7 @@ local event_dispatch = {
             else
                 -- allows old clients with old settings to pick up on settings in newer versions
                 for k, v in pairs(default_settings) do
-                    -- DELETE ME
                     if __sw__persistent_data_per_char.settings[k] == nil then
-                        print("added setting, ", k, v);
                         __sw__persistent_data_per_char.settings[k] = v;
                     end
                 end
@@ -5225,7 +5233,7 @@ local event_dispatch = {
 
                 sw_frame.stat_comparison_frame.spells = __sw__persistent_data_per_char.stat_comparison_spells;
 
-                update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+                update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
             end
 
             sw_activate_tab(1);
@@ -5379,7 +5387,7 @@ local function create_sw_base_gui()
     sw_frame.title:SetFontObject(font)
     sw_frame.title:SetText("Stat Weights Classic WOTLK");
     sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
-    counter = 2
+    --counter = 2
 
     sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
         event_dispatch[event](self, msg, msg2, msg3);
@@ -5449,19 +5457,26 @@ local function append_tooltip_spell_info(is_fake)
         return;
     end
 
-    local loadout, effects = active_loadout_and_effects();
 
-    tooltip_spell_info(GameTooltip, spell, loadout, effects);
+    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
 
-    if IsShiftKeyDown() and sw_frame.stat_comparison_frame:IsShown()
-            and not sw_frame.stat_comparison_frame.spells[spell_id] 
-            and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
-        sw_frame.stat_comparison_frame.spells[spell_id] = {
-            name = spell_name
-        };
+        local loadout, effects = active_loadout_and_effects();
+        tooltip_spell_info(GameTooltip, spell, loadout, effects);
+    else
 
-        update_and_display_spell_diffs(sw_frame.stat_comparison_frame);
+        local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
+        tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed);
+
+        if IsShiftKeyDown() and not sw_frame.stat_comparison_frame.spells[spell_id] 
+                and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
+            sw_frame.stat_comparison_frame.spells[spell_id] = {
+                name = spell_name
+            };
+
+            update_and_display_spell_diffs(loadout, effects, effects_diffed);
+        end
     end
+
 end
 
 if class_is_supported then
@@ -5662,7 +5677,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
             frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
         end
 
-        frame_info.overlay_frames[3]:SetText(string.format("%d", spell_effect.mana_restored));
+        frame_info.overlay_frames[3]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
         frame_info.overlay_frames[3]:SetTextColor(0.0, 1.0, 1.0);
 
         frame_info.overlay_frames[3]:Show();
@@ -5829,7 +5844,13 @@ if class_is_supported then
             end
 
             if sw_num_icon_overlay_fields_active > 0 or sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
-                update_spell_icons(active_loadout_and_effects());
+
+                if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
+                    update_spell_icons(active_loadout_and_effects());
+                else
+                    local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui()
+                    update_spell_icons(loadout, effects_diffed);
+                end
             end
             sequence_counter = sequence_counter + 1;
             snapshot_time_since_last_update = 0;
@@ -5921,6 +5942,23 @@ if InterfaceOptions_AddCategory then
     str:SetText("/sw stat");
     
 end
+
+---- DELETE ME
+---- tooltip test
+--CreateFrame( "GameTooltip", "TestTip", UIParent, "GameTooltipTemplate" ); -- Tooltip 
+----TestTip:SetOwner(WorldFrame, "ANCHOR_NONE")
+--TestTip:AddFontStrings(
+--    TestTip:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ),
+--    TestTip:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" ) );
+--
+--TestTip:SetPoint("TOPLEFT", 400, -30)
+--
+--TestTip:SetWidth(400);
+--TestTip:SetHeight(600);
+--TestTip:AddLine(string.format("Test"), 1, 1,1);
+--TestTip:Show();
+
+
 
 SLASH_STAT_WEIGHTS1 = "/sw"
 SLASH_STAT_WEIGHTS2 = "/stat-weights"

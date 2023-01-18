@@ -84,7 +84,7 @@ local function create_glyphs()
                 wowhead_id = "pc3"
             },
             -- glyph of prayer of healing
-            [57195] = {
+            [55680] = {
                 apply = function(loadout, effects)
                     local ph = spell_name_to_id["Prayer of Healing"];
                     --TODO
@@ -722,15 +722,10 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(1, 19);
         if pts ~= 0 then
             --TODO: dynamic crit
-            effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * (1.0 + 0.01 * pts) - 1.0;
-            effects.by_school.spell_dmg_mod[magic_school.frost] = 
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost]) * (1.0 + 0.01 * pts) - 1.0;
-            effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + 0.01 * pts) - 1.0;
-
-
+            effects.raw.spell_dmg_mod_mul = 
+                (1.0 + effects.raw.spell_dmg_mod_mul) * (1.0 + pts * 0.01) - 1.0;
         end
+
         -- arcane potency
         local pts = talents:pts(1, 20);
         if pts ~= 0 then
