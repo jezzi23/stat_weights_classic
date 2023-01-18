@@ -58,9 +58,16 @@ local stat = {
     spirit = 5
 };
 
-local beacon_snapshot_time = -1000;
-local sequence_counter = 0;
-local addon_running_time = 0;
+local stat_ids_in_ui = {
+    int                         = 1,
+    spirit                      = 2,
+    mp5                         = 3,
+    sp                          = 4,
+    spell_crit                  = 5,
+    spell_hit                   = 6,
+    spell_haste                 = 7,
+};
+
 
 local loadout_flags = {
     is_dynamic_loadout                  = bit.lshift(1, 1),
@@ -72,6 +79,11 @@ local loadout_flags = {
     target_friendly                     = bit.lshift(1, 7),
 };
 
+
+local beacon_snapshot_time = -1000;
+local sequence_counter = 0;
+local addon_running_time = 0;
+
 local addonName, addonTable = ...;
 addonTable.ensure_exists_and_mul = ensure_exists_and_mul;
 addonTable.ensure_exists_and_add = ensure_exists_and_add;
@@ -82,5 +94,6 @@ addonTable.race = race;
 addonTable.faction = faction;
 addonTable.deep_table_copy = deep_table_copy;
 addonTable.stat = stat;
+addonTable.stat_ids_in_ui = stat_ids_in_ui;
 addonTable.loadout_flags = loadout_flags;
 

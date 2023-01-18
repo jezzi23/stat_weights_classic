@@ -2080,8 +2080,6 @@ local function apply_talents_glyphs(loadout, effects)
             --ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Conflagrate"], pts * 0.05, 0.0); 
         end
 
-
-
     end
 end
 

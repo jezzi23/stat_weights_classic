@@ -8,4 +8,10 @@ wotlk/spells.lua
 wotlk/equipment.lua
 wotlk/buffs.lua
 wotlk/talents.lua
+wotlk/loadout.lua
+wotlk/calc.lua
+wotlk/tooltip.lua
+wotlk/overlay.lua
+wotlk/settings.lua
+wotlk/ui.lua
 wotlk/stat_weights_classic.lua

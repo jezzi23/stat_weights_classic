@@ -733,5 +733,4 @@ local function apply_equipment(loadout, effects)
 end
 
 addonTable.set_tiers = set_tiers;
-addonTable.detect_sets = detect_sets;
 addonTable.apply_equipment = apply_equipment;
