@@ -55,6 +55,7 @@ local function default_sw_settings()
     settings.icon_overlay_mana_abilities = true;
     settings.icon_overlay_old_rank = true;
     settings.show_tooltip_only_when_shift = false;
+    settings.clear_original_tooltip = false;
     settings.libstub_minimap_icon = { hide = false };
 
     return settings;
@@ -150,6 +151,7 @@ local function save_sw_settings()
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
     __sw__persistent_data_per_char.settings.show_tooltip_only_when_shift = sw_frame.settings_frame.show_tooltip_only_when_shift;
+    __sw__persistent_data_per_char.settings.clear_original_tooltip = sw_frame.settings_frame.clear_original_tooltip;
     __sw__persistent_data_per_char.settings.icon_overlay_update_freq = sw_snapshot_loadout_update_freq;
     __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.settings_frame.icon_overlay_font_size;
 end

@@ -1229,12 +1229,6 @@ local function apply_talents_glyphs(loadout, effects)
             end
         end
 
-        -- improved tree of life
-        local pts = talents:pts(3, 24);
-        if pts ~= 0 then
-            -- TODO: spiritual guidance
-        end
-
         -- gift of the earthmother
         local pts = talents:pts(3, 26);
         if pts ~= 0 then
@@ -1244,7 +1238,7 @@ local function apply_talents_glyphs(loadout, effects)
 
     elseif class == "PRIEST" then
 
-        local instants = spell_names_to_id({"Renew", "Holy Nova", "Circle of Healing", "Prayer of Mending", "Devouring Plague", "Shadow Word: Pain", "Shadow Word: Death", "Power Word: Shield", "Mind Flay", "Mind Sear", "Desperate Prayer"});
+        local instants = spell_names_to_id({"Renew", "Holy Nova", "Circle of Healing", "Prayer of Mending", "Devouring Plague", "Shadow Word: Pain", "Shadow Word: Death",  "Mind Flay", "Mind Sear", "Desperate Prayer"});
 
         -- twin disciplines
         local pts = talents:pts(1, 2);
@@ -1252,6 +1246,9 @@ local function apply_talents_glyphs(loadout, effects)
             for k, v in pairs(instants) do
                 ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
             end
+
+            -- super hack to get absorb glyph correct
+            ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Power Word: Shield"], pts * 0.01, 0.0);
         end
 
         -- meditation
@@ -1294,7 +1291,8 @@ local function apply_talents_glyphs(loadout, effects)
         -- focused power
         local pts = talents:pts(1, 16);
         if pts ~= 0 then
-            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + pts * 0.02;
+            effects.raw.spell_heal_mod_mul =
+                (1.0 + effects.raw.spell_heal_mod_mul)*(1.0 + pts * 0.02) - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.holy] =
                 effects.by_school.spell_dmg_mod[magic_school.holy] + pts * 0.02;
             effects.by_school.spell_dmg_mod[magic_school.shadow] =
@@ -1388,7 +1386,6 @@ local function apply_talents_glyphs(loadout, effects)
         local pts = talents:pts(2, 14);
         if pts ~= 0 then
             effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + pts * 0.05;
-
         end
         -- surge of light
         -- TODO: refund flash heal mana cost off crit chance, similarly as with holy palas in vanilla?
@@ -1399,13 +1396,12 @@ local function apply_talents_glyphs(loadout, effects)
             effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + pts * 0.02;
         end
 
-        -- holy concentration
-        -- TODO: need an expectation of this extra mana regen uptime based on spell cast time & crit
- 
         -- blessed resilience
         local pts = talents:pts(2, 19);
         if pts ~= 0 then
-            effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + pts * 0.01;
+            effects.raw.spell_heal_mod_mul =
+                (1.0 + effects.raw.spell_heal_mod_mul)*(1.0 + pts * 0.01) - 1.0;
+
         end
 
         -- empowered healing
@@ -1842,8 +1838,8 @@ local function apply_talents_glyphs(loadout, effects)
         -- benediction
         local pts = talents:pts(3, 2);
         if pts ~= 0 then
-            local hs = spell_name_to_id["Holy Shock"];
-            ensure_exists_and_add(effects.ability.cost_mod, hs, pts * 0.02, 0.0); 
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Holy Shock"], pts * 0.02, 0.0); 
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Sacred Shield"], pts * 0.02, 0.0); 
         end
 
     elseif class == "WARLOCK" then

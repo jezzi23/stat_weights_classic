@@ -998,6 +998,16 @@ local buffs_predefined = {
         tooltip = "",
     },
 
+    -- holy concentration
+    [63725] = {
+        apply = function(loadout, effects, buff)
+            local pts = loadout.talents_table:pts(2, 17);
+            effects.raw.regen_while_casting = effects.raw.regen_while_casting + pts * 0.5/3;
+        end,
+        filter = buff_filters.priest,
+        category = buff_category.class,
+        tooltip = "% mana regen while casting",
+    },
 };
 
 -- identical implementations

@@ -27,6 +27,9 @@ local spells                                    = addonTable.spells;
 local spell_flags                               = addonTable.spell_flags;
 
 local loadout_flags                             = addonTable.loadout_flags;
+local class                                     = addonTable.class;
+
+local set_tiers                                 = addonTable.set_tiers;
 
 local spell_name_to_id                          = addonTable.spell_name_to_id;
 local spell_names_to_id                         = addonTable.spell_names_to_id;
@@ -40,8 +43,6 @@ local evaluate_spell                            = addonTable.evaluate_spell;
 
 local active_loadout_and_effects                = addonTable.active_loadout_and_effects;
 local active_loadout_and_effects_diffed_from_ui = addonTable.active_loadout_and_effects_diffed_from_ui;
-
-
 
 local tooltip_stat_display = {
     normal              = bit.lshift(1,1),
@@ -74,8 +75,13 @@ local function sort_stat_weights(stat_weights, num_weights)
     end
 end
 
-local function begin_tooltip_section(tooltip)
-    tooltip:AddLine(" ");
+local function begin_tooltip_section(tooltip, spell_id)
+
+    if sw_frame.settings_frame.clear_original_tooltip then
+        tooltip:ClearLines();
+        local lname = GetSpellInfo(spell_id);
+        tooltip:AddLine(lname);
+    end
     --tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
 end
 local function end_tooltip_section(tooltip)
@@ -121,7 +127,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         sp_name = "Spell power";
     end
 
-    begin_tooltip_section(tooltip);
+    begin_tooltip_section(tooltip, spell.base_id);
 
     tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
 
@@ -175,17 +181,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.floor(eval.spell.min_noncrit_if_hit), 
                                                   math.ceil(eval.spell.max_noncrit_if_hit)),
                                     232.0/255, 225.0/255, 32.0/255);
-
-                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[55680] then
-                        tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d for %d ticks)", 
-                                                      math.floor(0.2*eval.spell.min_noncrit_if_hit),
-                                                      math.ceil(0.2*eval.spell.max_noncrit_if_hit),
-                                                      2,
-                                                      math.floor(0.2*eval.spell.min_noncrit_if_hit/2),
-                                                      math.ceil(0.2*eval.spell.max_noncrit_if_hit/2),
-                                                      2),
-                                        232.0/255, 225.0/255, 32.0/255);
-                    end
                 end
             else
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -219,7 +214,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                 local pts = 0;
                 if class == "PRIEST" then
                     pts = loadout.talents_table:pts(1, 24);
-                    if pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 then
+                    if pts ~= 0 and bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
                         effect_type_str = "absorbs";
                         extra_crit_mod = pts * 0.1;
                     end
@@ -284,17 +279,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
                     end
 
-                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[55680] then
-                        tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d for %d ticks)", 
-                                                      math.floor(0.2*min_crit_if_hit), 
-                                                      math.ceil(0.2*max_crit_if_hit),
-                                                      2,
-                                                      math.floor(0.2*min_crit_if_hit/2), 
-                                                      math.ceil(0.2*max_crit_if_hit/2),
-                                                      2),
-                                       252.0/255, 69.0/255, 3.0/255);
-                    end
-                    
                 elseif eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d", 
@@ -302,17 +286,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.floor(eval.spell.min_crit_if_hit), 
                                                   math.ceil(eval.spell.max_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
-                    if spell.base_id == spell_name_to_id["Prayer of Healing"] and loadout.glyphs[55680] then
-                        tooltip:AddLine(string.format("        and %d-%d over %d sec (%d-%d for %d ticks)", 
-                                                      math.floor(0.2*eval.spell.min_crit_if_hit), 
-                                                      math.ceil(0.2*eval.spell.max_crit_if_hit),
-                                                      2,
-                                                      math.floor(0.2*eval.spell.min_crit_if_hit)/2, 
-                                                      math.ceil(0.2*eval.spell.max_crit_if_hit/2),
-                                                      2),
-                                       252.0/255, 69.0/255, 3.0/255);
-                    end
-
                 else 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
                                                   stats.crit*100, 
@@ -407,7 +380,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         if eval.spell.ot_if_crit ~= 0.0 or (loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"]) and 
             sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
             if bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                tooltip:AddLine(string.format("Critical (%.2f%% crit): %d-%d over %.2fs (%d-%d for %d ticks)",
+                tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d over %.2fs (%d-%d for %d ticks)",
                                               stats.crit*100, 
                                               eval.spell.ot_if_crit, 
                                               eval.spell.ot_if_crit_max, 
@@ -456,18 +429,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         end
 
         local effect_extra_str = "";
-
-        --if spell.base_id == spell_name_to_id["Prayer of Healing"] or 
-        --   spell.base_id == spell_name_to_id["Chain Heal"] or 
-        --   spell.base_id == spell_name_to_id["Chain Heal"] or 
-        --   spell.base_id == spell_name_to_id["Tranquility"] then
-
-        --    effect_extra_str = "";
-        --elseif bit.band(spell.flags, spell_flags.aoe) ~= 0 and 
-        --        eval.spell.expectation == eval.spell.expectation_st then
-        --    effect_extra_str = "(single effect)";
-        --end
-
 
         if eval.spell.expectation ~=  eval.spell.expectation_st then
 
@@ -667,6 +628,19 @@ local function append_tooltip_spell_info(is_fake)
     end
 end
 
+local function update_tooltip(tooltip)
+
+    --tooltips update dynamically without debug setting
+    if not addonTable.__sw__debug__ and tooltip:IsShown() then
+        local _, id = tooltip:GetSpell();
+        if id and spells[id] then
+            tooltip:ClearLines();
+            tooltip:SetSpellByID(id);
+        end
+    end
+
+end
+
 ---- DELETE ME
 ---- tooltip test
 --CreateFrame( "GameTooltip", "TestTip", UIParent, "GameTooltipTemplate" ); -- Tooltip 
@@ -684,4 +658,5 @@ end
 
 addonTable.tooltip_stat_display             = tooltip_stat_display;
 addonTable.append_tooltip_spell_info        = append_tooltip_spell_info;
+addonTable.update_tooltip                   = update_tooltip;
 

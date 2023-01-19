@@ -23,6 +23,7 @@
 
 local addonName, addonTable = ...;
 
+
 local spells                            = addonTable.spells;
 local spell_name_to_id                  = addonTable.spell_name_to_id;
 local spell_names_to_id                 = addonTable.spell_names_to_id;
@@ -31,9 +32,12 @@ local spell_flags                       = addonTable.spell_flags;
 
 local stat                              = addonTable.stat;
 local loadout_flags                     = addonTable.loadout_flags;
+local class                             = addonTable.class;
 
 local effects_zero_diff                 = addonTable.effects_zero_diff;
 local effects_diff                      = addonTable.effects_diff;
+
+local set_tiers                         = addonTable.set_tiers;
 
 local deep_table_copy                   = addonTable.deep_table_copy;
 
@@ -229,10 +233,30 @@ if class == "SHAMAN" then
     };
 elseif class == "PRIEST" then
     special_abilities = {
-        [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout)
+        [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
 
             if loadout.glyphs[55680] then
-                info.expectation_st = info.expectation_st * 1.2;
+                
+                info.ot_duration = 6;
+                info.ot_freq = 3;
+                info.ot_ticks = 2;
+
+                -- some spell mods are applied again on the hot effect for some reason
+                local special_mods = 1.0 + effects.raw.spell_heal_mod_mul;
+                
+                info.ot_if_hit = 0.2 * info.min_noncrit_if_hit * special_mods
+                info.ot_if_hit_max = 0.2 * info.max_noncrit_if_hit * special_mods
+
+                -- aegis
+                local pts = loadout.talents_table:pts(1, 24);
+                local overdue = (1.0 + 0.1 * pts);
+
+                info.ot_if_crit = 0.2 * info.min_crit_if_hit * special_mods / overdue;
+                info.ot_if_crit_max = 0.2 * info.max_crit_if_hit * special_mods / overdue;
+
+                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+                info.expectation_st = info.expectation_st + expected_ot_if_hit;
                 -- hot displayed specialized in tooltip section
             end
             info.expectation = 5 * info.expectation_st;
@@ -254,15 +278,18 @@ elseif class == "PRIEST" then
         end,
         [spell_name_to_id["Power Word: Shield"]] = function(spell, info, loadout)
 
-           info.absorb = info.min_noncrit_if_hit;
+            info.absorb = info.min_noncrit_if_hit;
 
             if loadout.glyphs[55672] then
-                info.min_noncrit_if_hit = 0.2 * info.min_noncrit_if_hit;
-                info.max_noncrit_if_hit = 0.2 * info.max_noncrit_if_hit;
+                local mod = 0.2 * info.healing_mod_from_absorb_glyph;
+                info.healing_mod_from_absorb_glyph = nil;
 
-                info.min_crit_if_hit = 0.2 * info.min_crit_if_hit;
-                info.max_crit_if_hit = 0.2 * info.max_crit_if_hit;
-                info.expectation_st = info.expectation_st * 1.2;
+                info.min_noncrit_if_hit = mod * info.min_noncrit_if_hit;
+                info.max_noncrit_if_hit = mod * info.max_noncrit_if_hit;
+
+                info.min_crit_if_hit = mod * info.min_crit_if_hit;
+                info.max_crit_if_hit = mod * info.max_crit_if_hit;
+                info.expectation_st = info.expectation_st * (1.0 + mod);
                 info.expectation = info.expectation_st;
             else
 
@@ -355,16 +382,16 @@ local function spell_info(info, spell, stats, loadout, effects)
         base_ot_tick_max = math.ceil(base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable);
     end
 
-    local ot_freq = spell.over_time_tick_freq;
-    local ot_dur = spell.over_time_duration;
+    info.ot_freq = spell.over_time_tick_freq;
+    info.ot_duration = spell.over_time_duration;
 
     if spell.cast_time == spell.over_time_duration then
-        ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
-        ot_dur = stats.cast_time;
+        info.ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
+        info.ot_duration = stats.cast_time;
     end
     if bit.band(spell.flags, spell_flags.duration_haste_scaling) ~= 0 then
-        ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-        ot_dur = ot_dur/stats.haste_mod;
+        info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+        info.ot_duration = info.ot_duration/stats.haste_mod;
     end
 
     -- certain ticks may tick faster
@@ -373,9 +400,13 @@ local function spell_info(info, spell, stats, loadout, effects)
         if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
             (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
             if spell.base_id == spell_name_to_id["Devouring Plague"] or spell.base_id == spell_name_to_id["Vampiric Touch"] then
-                ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-                ot_dur = ot_dur/stats.haste_mod;
+                info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+                info.ot_duration = info.ot_duration/stats.haste_mod;
             end
+        end
+
+        if loadout.glyphs[55672] and spell.base_id == spell_name_to_id["Power Word: Shield"] then
+            info.healing_mod_from_absorb_glyph = stats.spell_heal_mod;
         end
     elseif class == "WARLOCK" then
         local immolate, _, _, _, _, _, _ = GetSpellInfo(348);
@@ -388,15 +419,15 @@ local function spell_info(info, spell, stats, loadout, effects)
         end
         -- glyph of quick decay
         if loadout.glyphs[70947] and spell.base_id == spell_name_to_id["Corruption"] then
-            ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-            ot_dur = ot_dur/stats.haste_mod;
+            info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            info.ot_duration = info.ot_duration/stats.haste_mod;
         end
     elseif class == "MAGE" then
         -- glyph of fireball
         if loadout.glyphs[56368] and spell.base_id == spell_name_to_id["Fireball"] then
             base_ot_tick = 0.0;
-            ot_freq = 0;
-            ot_dur = 0;
+            info.ot_freq = 0;
+            info.ot_duration = 0;
         end
         -- glyph of living bomb
         if loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"] then
@@ -406,8 +437,8 @@ local function spell_info(info, spell, stats, loadout, effects)
 
         -- rapid rejvenation
         if loadout.glyphs[71013] and spell.base_id == spell_name_to_id["Rejuvenation"] then
-            ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-            ot_dur = ot_dur/stats.haste_mod;
+            info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            info.ot_duration = info.ot_duration/stats.haste_mod;
         end
         -- t8 resto rejuv bonus
         if loadout.num_set_pieces[set_tiers.pve_t8_3] >= 4 and spell.base_id == spell_name_to_id["Rejuvenation"] then
@@ -454,7 +485,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     if base_ot_tick > 0 then
 
 
-        local base_ot_num_ticks = (ot_dur/ot_freq);
+        local base_ot_num_ticks = (info.ot_duration/info.ot_freq);
         local ot_coef_per_tick = stats.ot_coef
 
         info.ot_ticks = base_ot_num_ticks + stats.ot_extra_ticks;
@@ -476,7 +507,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     -- 1.5 sec gcd is always implied which is the only penalty for misses
     if bit.band(spell.flags, spell_flags.channel_missable) ~= 0 then
 
-        local channel_ratio_time_lost_to_miss = 1 - (ot_dur - 1.5/stats.haste_mod)/ot_dur;
+        local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - 1.5/stats.haste_mod)/info.ot_duration;
         info.expected_ot = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
     end
 
@@ -513,7 +544,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.expectation_st = info.expectation;
 
     if special_abilities[spell.base_id] then
-        special_abilities[spell.base_id](spell, info, loadout);
+        special_abilities[spell.base_id](spell, info, loadout, stats, effects);
     end
 
     if loadout.beacon then
@@ -525,8 +556,12 @@ local function spell_info(info, spell, stats, loadout, effects)
 
     info.effect_per_cost = info.expectation/stats.cost;
     info.cost_per_sec = stats.cost/stats.cast_time;
-    info.ot_duration = ot_dur + stats.ot_extra_ticks * ot_freq;
-    info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
+    info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
+    if bit.band(spell.flags, spell_flags.cast_with_ot_dur) ~= 0 then
+        info.effect_per_dur = info.expectation/math.max(info.ot_duration + stats.cast_time);
+    else
+        info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
+    end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
         if spell.base_id == spell_name_to_id["Innervate"] then
@@ -1000,11 +1035,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
 
-        -- TODO: looks like healing % from talents is added with twin disciples talent
-        -- then multiplied by effect mod...
-
         stats.spell_mod = target_vuln_mod * global_mod *
-            ((1.0 + effects.ability.effect_mod[spell.base_id]) * (1.0 + effects.raw.spell_heal_mod));
+            ((1.0 + effects.ability.effect_mod[spell.base_id]));
+        -- hacky special case for power word: shield glyph as it scales with healing
+        stats.spell_heal_mod = (1.0 + effects.raw.spell_heal_mod_mul)
+            *
+            (1.0 + effects.ability.effect_ot_mod[spell.base_id] +  effects.raw.spell_heal_mod);
     else 
         target_vuln_mod = target_vuln_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
         target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
@@ -1243,6 +1279,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     return {
         infinite_cast = {
             effect_per_sec_per_sp = spell_effect_per_sec_1sp_delta,
+
             sp_per_crit   = spell_effect_per_sec_1crit_delta/(spell_effect_per_sec_1sp_delta),
             sp_per_hit    = spell_effect_per_sec_1hit_delta/(spell_effect_per_sec_1sp_delta),
             sp_per_haste  = spell_effect_per_sec_1haste_delta/(spell_effect_per_sec_1sp_delta),
@@ -1251,6 +1288,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
         },
         cast_until_oom = {
             effect_until_oom_per_sp = spell_effect_until_oom_1sp_delta,
+
             sp_per_crit     = spell_effect_until_oom_1crit_delta/(spell_effect_until_oom_1sp_delta),
             sp_per_hit      = spell_effect_until_oom_1hit_delta/(spell_effect_until_oom_1sp_delta),
             sp_per_haste    = spell_effect_until_oom_1haste_delta/(spell_effect_until_oom_1sp_delta),
@@ -1267,15 +1305,15 @@ local function spell_diff(spell_normal, spell_diffed, sim_type)
     if sim_type == simulation_type.spam_cast then
         return {
             diff_ratio = 100 * (spell_diffed.effect_per_sec/spell_normal.effect_per_sec - 1),
-            expectation = spell_diffed.expectation - spell_normal.expectation,
-            effect_per_sec = spell_diffed.effect_per_sec - spell_normal.effect_per_sec
+            first = spell_diffed.effect_per_sec - spell_normal.effect_per_sec,
+            second = spell_diffed.expectation - spell_normal.expectation
         };
     elseif sim_type == simulation_type.cast_until_oom then
         
         return {
             diff_ratio = 100 * (spell_diffed.effect_until_oom/spell_normal.effect_until_oom - 1),
-            expectation = spell_diffed.effect_until_oom - spell_normal.effect_until_oom,
-            effect_per_sec = spell_diffed.time_until_oom - spell_normal.time_until_oom
+            first = spell_diffed.effect_until_oom - spell_normal.effect_until_oom,
+            second = spell_diffed.time_until_oom - spell_normal.time_until_oom
         };
     end
 end

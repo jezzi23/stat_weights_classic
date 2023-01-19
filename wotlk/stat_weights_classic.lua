@@ -40,7 +40,7 @@ local wowhead_talent_code                   = addonTable.wowhead_talent_code;
 local font                                  = addonTable.font;
 local load_sw_ui                            = addonTable.load_sw_ui;
 local create_sw_base_gui                    = addonTable.create_sw_base_gui;
-local activate_tab                          = addonTable.activate_tab;
+local sw_activate_tab                       = addonTable.sw_activate_tab;
 local update_loadouts_rhs                   = addonTable.update_loadouts_rhs;
 
 local save_sw_settings                      = addonTable.save_sw_settings;
@@ -48,6 +48,7 @@ local save_sw_settings                      = addonTable.save_sw_settings;
 local reassign_overlay_icon                 = addonTable.reassign_overlay_icon;
 local setup_action_bars                     = addonTable.setup_action_bars;
 local update_overlay                        = addonTable.update_overlay;
+local update_tooltip                        = addonTable.update_tooltip;
 
 local append_tooltip_spell_info             = addonTable.append_tooltip_spell_info;
 
@@ -219,6 +220,7 @@ if class_is_supported then
 
         if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq then
 
+            update_tooltip(GameTooltip);
             update_overlay();
 
             addonTable.sequence_counter = addonTable.sequence_counter + 1;

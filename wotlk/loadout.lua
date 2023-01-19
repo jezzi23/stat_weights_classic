@@ -196,8 +196,13 @@ local function effects_add(dst, src)
             end
         end
     end
-    for i = 1,5 do
-        dst.by_attribute.stat_mod[i] = dst.by_attribute.stat_mod[i] + src.by_attribute.stat_mod[i];
+    for k, v in pairs(src.by_attribute) do
+
+        if dst.by_attribute[k] then
+            for i = 1,5 do
+                dst.by_attribute[k][i] = dst.by_attribute[k][i] + v[i];
+            end
+        end
     end
 end
 
@@ -261,7 +266,6 @@ local function effects_from_ui_diff(frame)
     return diff;
 end
 
-
 local function effects_diff(loadout, effects, diff)
     -- TODO: mp5 from int scaling too
 
@@ -279,7 +283,7 @@ local function effects_diff(loadout, effects, diff)
 
     local hp_gained_from_spirit = diff.stats[stat.spirit] * (1 + effects.by_attribute.stat_mod[stat.spirit]) * effects.by_attribute.hp_from_stat_mod[stat.spirit];
     local hp_gained_from_int = diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.by_attribute.hp_from_stat_mod[stat.int];
-    local hp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
+    local hp_gained_from_stat = hp_gained_from_spirit + hp_gained_from_int;
 
     effects.raw.spell_power = effects.raw.spell_power + diff.sp + sp_gained_from_stat;
     effects.raw.healing_power = effects.raw.healing_power + hp_gained_from_stat;
@@ -537,13 +541,13 @@ local function active_loadout_and_effects()
         effects_add(loadout_entry.talented, loadout_entry.equipped);
         apply_talents_glyphs(loadout_entry.loadout, loadout_entry.talented);
 
+
         addonTable.talents_update_needed = false;
     end
 
     zero_effects(loadout_entry.final_effects);
     effects_add(loadout_entry.final_effects, loadout_entry.talented);
     apply_buffs(loadout_entry.loadout, loadout_entry.final_effects);
-
 
     return loadout_entry.loadout, loadout_entry.final_effects;
 end

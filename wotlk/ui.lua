@@ -41,6 +41,8 @@ local update_icon_overlay_settings              = addonTable.update_icon_overlay
 
 local loadout_flags                             = addonTable.loadout_flags;
 local stat_ids_in_ui                            = addonTable.stat_ids_in_ui;
+local class                                     = addonTable.class;
+local deep_table_copy                           = addonTable.deep_table_copy;
 
 local empty_loadout                             = addonTable.empty_loadout;
 local empty_effects                             = addonTable.empty_effects;
@@ -106,11 +108,11 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
         v.change = frame:CreateFontString(nil, "OVERLAY");
         v.change:SetFontObject(font);
     
-        v.expectation = frame:CreateFontString(nil, "OVERLAY");
-        v.expectation:SetFontObject(font);
+        v.first = frame:CreateFontString(nil, "OVERLAY");
+        v.first:SetFontObject(font);
     
-        v.effect_per_sec = frame:CreateFontString(nil, "OVERLAY");
-        v.effect_per_sec:SetFontObject(font);
+        v.second = frame:CreateFontString(nil, "OVERLAY");
+        v.second:SetFontObject(font);
     
 
         if not spell.healing_version then
@@ -141,52 +143,53 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
         v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
         v.change:SetText("NAN");
     
-        v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-        v.expectation:SetText("NAN");
+        v.first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
+        v.first:SetText("NAN");
     
-        v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
-        v.effect_per_sec:SetText("NAN");
+        v.second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
+        v.second:SetText("NAN");
         
     else
     
         v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
-        v.expectation:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-        v.effect_per_sec:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
+        v.first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
+        v.second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
     
-        if diff.expectation < 0 then
-    
-            v.expectation:SetText(string.format("%.2f", diff.expectation));
-            v.expectation:SetTextColor(195/255, 44/255, 11/255);
-    
-        elseif diff.expectation > 0 then
-    
-            v.expectation:SetText(string.format("+%.2f", diff.expectation));
-            v.expectation:SetTextColor(33/255, 185/255, 21/255);
-    
-        else
-    
-            v.expectation:SetText("0");
-            v.expectation:SetTextColor(1, 1, 1);
-        end
-
-        if diff.effect_per_sec < 0 then
+        if diff.first < 0 then
             v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
             v.change:SetTextColor(195/255, 44/255, 11/255);
     
-            v.effect_per_sec:SetText(string.format("%.2f", diff.effect_per_sec));
-            v.effect_per_sec:SetTextColor(195/255, 44/255, 11/255);
-        elseif diff.effect_per_sec > 0 then
+            v.first:SetText(string.format("%.2f", diff.first));
+            v.first:SetTextColor(195/255, 44/255, 11/255);
+    
+        elseif diff.first > 0 then
+
             v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
             v.change:SetTextColor(33/255, 185/255, 21/255);
     
-            v.effect_per_sec:SetText(string.format("+%.2f", diff.effect_per_sec));
-            v.effect_per_sec:SetTextColor(33/255, 185/255, 21/255);
+            v.first:SetText(string.format("+%.2f", diff.first));
+            v.first:SetTextColor(33/255, 185/255, 21/255);
+    
         else
             v.change:SetText("0 %");
             v.change:SetTextColor(1, 1, 1);
     
-            v.effect_per_sec:SetText("0");
-            v.effect_per_sec:SetTextColor(1, 1, 1);
+            v.first:SetText("0");
+            v.first:SetTextColor(1, 1, 1);
+        end
+
+        if diff.second < 0 then
+    
+            v.second:SetText(string.format("%.2f", diff.second));
+            v.second:SetTextColor(195/255, 44/255, 11/255);
+        elseif diff.second > 0 then
+    
+            v.second:SetText(string.format("+%.2f", diff.second));
+            v.second:SetTextColor(33/255, 185/255, 21/255);
+        else
+    
+            v.second:SetText("0");
+            v.second:SetTextColor(1, 1, 1);
         end
             
 
@@ -195,15 +198,15 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
     
                 v.change:Hide();
                 v.name_str:Hide();
-                v.expectation:Hide();
-                v.effect_per_sec:Hide();
+                v.first:Hide();
+                v.second:Hide();
                 v.cancel_button:Hide();
 
                 -- in case this was the duality spell, i.e. healing counterpart 
                 frame.spells[spell_id].change:Hide();
                 frame.spells[spell_id].name_str:Hide();
-                frame.spells[spell_id].expectation:Hide();
-                frame.spells[spell_id].effect_per_sec:Hide();
+                frame.spells[spell_id].first:Hide();
+                frame.spells[spell_id].second:Hide();
 
                 frame.spells[spell_id] = nil;
                 update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
@@ -1086,6 +1089,19 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.show_tooltip_only_when_shift_button:SetChecked(
         sw_frame.settings_frame.show_tooltip_only_when_shift
     );
+
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
+    sw_frame.settings_frame.clear_original_tooltip_button = 
+        create_sw_checkbox("sw_settings_clear_original_tooltip", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Clear original tooltip", function(self)
+        sw_frame.settings_frame.clear_original_tooltip = self:GetChecked();
+    end);
+    sw_frame.settings_frame.clear_original_tooltip = 
+        __sw__persistent_data_per_char.settings.clear_original_tooltip;
+    sw_frame.settings_frame.clear_original_tooltip_button:SetChecked(
+        sw_frame.settings_frame.clear_original_tooltip
+    );
 end
 
 local function create_sw_gui_stat_comparison_frame()
@@ -1323,13 +1339,13 @@ local function create_sw_gui_stat_comparison_frame()
 
     sw_frame.stat_comparison_frame.spell_diff_header_center = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -105, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_center:SetText("DMG/HEAL");
+    sw_frame.stat_comparison_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -110, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_center:SetText("DPS/HPS");
 
     sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetFontObject(font);
-    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetPoint("TOPRIGHT", -45, sw_frame.stat_comparison_frame.line_y_offset);
-    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetText("DPS/HPS");
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetPoint("TOPRIGHT", -30, sw_frame.stat_comparison_frame.line_y_offset);
+    sw_frame.stat_comparison_frame.spell_diff_header_right_spam_cast:SetText("DMG/HEAL");
 
     sw_frame.stat_comparison_frame.spell_diff_header_right_cast_until_oom = sw_frame.stat_comparison_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.stat_comparison_frame.spell_diff_header_right_cast_until_oom:SetFontObject(font);
@@ -2365,5 +2381,5 @@ addonTable.create_sw_base_gui                   = create_sw_base_gui;
 addonTable.effects_from_ui                      = effects_from_ui;
 addonTable.update_and_display_spell_diffs       = update_and_display_spell_diffs;
 addonTable.sw_activate_tab                      = sw_activate_tab;
-addonTable.update_loadouts_rhs                          = update_loadouts_rhs;
+addonTable.update_loadouts_rhs                  = update_loadouts_rhs;
 

@@ -625,15 +625,6 @@ end
 
 local function update_overlay()
 
-    --tooltips update dynamically without debug setting
-    if not addonTable.__sw__debug__ and GameTooltip:IsShown() then
-        local _, id = GameTooltip:GetSpell();
-        if id and spells[id] then
-            GameTooltip:ClearLines();
-            GameTooltip:SetSpellByID(id);
-        end
-    end
-
     if sw_num_icon_overlay_fields_active > 0 or sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
 
         if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
