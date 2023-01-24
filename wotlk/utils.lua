@@ -72,11 +72,12 @@ local stat_ids_in_ui = {
 local loadout_flags = {
     is_dynamic_loadout                  = bit.lshift(1, 1),
     always_assume_buffs                 = bit.lshift(1, 2),
-    use_dynamic_target_lvl              = bit.lshift(1, 3),
+    --use_dynamic_target_lvl              = bit.lshift(1, 3),
     has_target                          = bit.lshift(1, 4),
     target_snared                       = bit.lshift(1, 5),
     target_frozen                       = bit.lshift(1, 6),
     target_friendly                     = bit.lshift(1, 7),
+    always_max_mana                     = bit.lshift(1, 8),
 };
 
 

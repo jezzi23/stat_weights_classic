@@ -257,7 +257,7 @@ local buffs_predefined = {
     },
     --moonkin form
     [24858] = {
-        apply = function(loadout, effects, buff)
+        apply = function(loadout, effects, buff, inactive)
             -- mana refund done in later stage
             -- master shapeshifter
             local pts = loadout.talents_table:pts(3, 9);
@@ -266,10 +266,19 @@ local buffs_predefined = {
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + pts * 0.02) - 1.0;
             effects.by_school.spell_dmg_mod[magic_school.nature] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.nature]) * (1.0 + pts * 0.02) - 1.0;
-            local pts = loadout.talents_table:pts(1, 19);
+
+            local imp_moonkin_pts = loadout.talents_table:pts(1, 19);
+            local furor_pts = loadout.talents_table:pts(3, 3);
+
             effects.by_attribute.sp_from_stat_mod[stat.spirit] = 
-                effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.1 * pts;
-            
+                effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.1 * imp_moonkin_pts;
+            effects.by_attribute.stat_mod[stat.int] = 
+                effects.by_attribute.stat_mod[stat.int] + 0.02 * furor_pts;
+
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + loadout.stats[stat.spirit] * 0.1 * imp_moonkin_pts;
+                effects.raw.crit_rating = effects.raw.crit_rating + addonTable.crit_rating_from_int(loadout.stats[stat.int] * 0.02*furor_pts, loadout.lvl);
+            end
         end,
         filter = buff_filters.druid,
         category = buff_category.class,
@@ -277,7 +286,7 @@ local buffs_predefined = {
     },
     --tree of life form
     [33891] = {
-        apply = function(loadout, effects, buff)
+        apply = function(loadout, effects, buff, inactive)
             -- mana refund done in later stage
             -- master shapeshifter
             local pts = loadout.talents_table:pts(3, 9);
@@ -285,6 +294,10 @@ local buffs_predefined = {
             local pts = loadout.talents_table:pts(3, 24);
             effects.by_attribute.hp_from_stat_mod[stat.spirit] =
                 effects.by_attribute.hp_from_stat_mod[stat.spirit] + pts * 0.05;
+
+            if inactive then
+                effects.raw.healing_power = effects.raw.healing_power + loadout.stats[stat.spirit] * pts * 0.05;
+            end
            
         end,
         filter = buff_filters.druid,
@@ -606,10 +619,13 @@ local buffs_predefined = {
     --metamorphosis
     [47241] = {
         apply = function(loadout, effects, buff)
-            effects.by_school.spell_dmg_mod[magic_school.fire] =
-                effects.by_school.spell_dmg_mod[magic_school.fire] + 0.2;
-            effects.by_school.spell_dmg_mod[magic_school.shadow] =
-                effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.2;
+            --effects.by_school.spell_dmg_mod[magic_school.fire] =
+            --    effects.by_school.spell_dmg_mod[magic_school.fire] + 0.2;
+            --effects.by_school.spell_dmg_mod[magic_school.shadow] =
+            --    effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.2;
+
+            effects.raw.spell_dmg_mod_mul = 
+                (1.0 + effects.raw.spell_dmg_mod_mul) * 1.2 - 1.0;
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,
@@ -654,9 +670,9 @@ local buffs_predefined = {
     --molten core
     [47383] = {
         apply = function(loadout, effects, buff)
-            local pts = loadout.talents_table:pts(2, 16);
+            local pts = loadout.talents_table:pts(2, 17);
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Incinerate"], pts * 0.06, 0.0); 
-            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Incinerate"], pts * 0.1, 0.0); 
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Incinerate"], pts * 0.1 * 2.5, 0.0); 
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Soul Fire"], pts * 0.06, 0.0); 
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Soul Fire"], pts * 0.05, 0.0); 
         end,
@@ -768,10 +784,15 @@ local buffs_predefined = {
     },
     -- life tap (glyph)
     [63321] = {
-        apply = function(loadout, effects, buff)
+        apply = function(loadout, effects, buff, inactive)
             if loadout.glyphs[63320] then
 
-                -- TODO:
+                effects.by_attribute.sp_from_stat_mod[stat.spirit] = 
+                    effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.2;
+
+                if inactive then 
+                    effects.raw.spell_power = effects.raw.spell_power + loadout.stats[stat.spirit] * 0.2;
+                end
             end
         end,
         filter = buff_filters.warlock,
@@ -930,13 +951,17 @@ local buffs_predefined = {
     },
     -- shadowy insight
     [61792] = {
-        apply = function(loadout, effects, buff)
+        apply = function(loadout, effects, buff, inactive)
 
             local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
             if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
                 (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
 
                 effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.3;
+
+                if inactive then
+                    effects.raw.spell_power = effects.raw.spell_power + loadout.stats[stat.spirit] * 0.3;
+                end
             end
         end,
         filter = buff_filters.priest,
@@ -945,13 +970,17 @@ local buffs_predefined = {
     },
     -- molten amror
     [30482] = {
-        apply = function(loadout, effects, buff)
-            local spirit_to_sp_mod = 0.35;
+        apply = function(loadout, effects, buff, inactive)
+            local spirit_to_crit_mod = 0.35;
             if loadout.glyphs[56382] then
-                spirit_to_sp_mod = spirit_to_sp_mod + 0.20;
+                spirit_to_crit_mod = spirit_to_crit_mod + 0.20;
             end
             effects.by_attribute.crit_from_stat_mod[stat.spirit] =
-                effects.by_attribute.crit_from_stat_mod[stat.spirit] + spirit_to_sp_mod;
+                effects.by_attribute.crit_from_stat_mod[stat.spirit] + spirit_to_crit_mod;
+
+            if inactive then
+                effects.raw.crit_rating = effects.raw.crit_rating + loadout.stats[stat.spirit] * spirit_to_crit_mod;
+            end
 
         end,
         filter = buff_filters.mage,
@@ -1007,6 +1036,72 @@ local buffs_predefined = {
         filter = buff_filters.priest,
         category = buff_category.class,
         tooltip = "% mana regen while casting",
+    },
+    -- fel armor
+    [28176] = {
+        apply = function(loadout, effects, buff, inactive)
+            local pts = loadout.talents_table:pts(2, 11);
+
+            effects.by_attribute.sp_from_stat_mod[stat.spirit] = 
+                effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.3 * (1.0 + 0.1 * pts);
+
+            if inactive then
+
+                local sp = 180;
+                local id = 47893; -- default
+
+                effects.raw.spell_power = effects.raw.spell_power + sp * (1.0 + 0.1 * pts);
+
+                effects.raw.spell_power = effects.raw.spell_power + loadout.stats[stat.spirit] * 0.3 * (1.0 + 0.1 * pts);
+            end
+                
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "SP + % of spirit",
+    },
+    -- master demonologist (imp)
+    [23829] = {
+        apply = function(loadout, effects, buff)
+            local pts = loadout.talents_table:pts(2, 16);
+
+            if not buff.src or buff.id == 35706 then
+                effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                    effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.01 * pts;
+                effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                    effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
+            elseif buff.id == 23836 then
+                -- succubus
+                -- TODO: dynamic crit
+                effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                    effects.by_school.spell_dmg_mod[magic_school.shadow] + 0.01 * pts;
+            elseif buff.id == 23829 then -- imp
+                effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                    effects.by_school.spell_dmg_mod[magic_school.fire] + 0.01 * pts;
+                
+            end
+
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "Pet buff. When forcibly applied without active buff, 5% damage from Felguard is assumed",
+    },
+    -- demonic knowledge
+    [35696] = {
+        apply = function(loadout, effects, buff, inactive)
+            
+            local pts = loadout.talents_table:pts(2, 20);
+            if inactive then 
+                local felguard_stats = 
+                    -- coefs from a quick test estimate
+                    loadout.stats[stat.int] * 0.3226 + loadout.stats[stat.stam] * 0.889 + 328 + 150;
+
+                effects.raw.spell_power = effects.raw.spell_power + (0.04 * pts * felguard_stats);
+            end
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "SP scaling from pet stamina and intellect. Felguard assumed when forcibly applied",
     },
 };
 

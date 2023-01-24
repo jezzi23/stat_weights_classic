@@ -137,17 +137,23 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         return;
     end 
 
-    local loadout_type = "";
-    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
-        loadout_type = "dynamic";
-    else
-        loadout_type = "static";
-    end
     if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
-        tooltip:AddLine(string.format("Active Loadout (%s): %s", loadout_type, loadout.name), 1, 1,1);
+        tooltip:AddLine(string.format("Loadout: %s - Target %.1f%% HP",
+                                      loadout.name, loadout.friendly_hp_perc * 100
+                                      ),
+                        1, 1,1);
     else
-        tooltip:AddLine(string.format("Active Loadout (%s): %s - Target lvl %d", loadout_type, loadout.name, loadout.target_lvl), 1, 1, 1);
+        tooltip:AddLine(string.format("Loadout: %s - Target lvl %d, %.1f%% HP",
+                                      loadout.name, loadout.target_lvl, loadout.enemy_hp_perc * 100
+                                      ),
+                        1, 1, 1);
     end
+
+    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 or
+        bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
+        tooltip:AddLine("WARNING: using custom talents, glyphs or buffs!", 1, 0, 0);
+    end
+
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
         tooltip:AddLine(string.format("Restores %d mana over %.2f sec for yourself",
                                       math.ceil(eval.spell.mana_restored),
@@ -181,7 +187,16 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.floor(eval.spell.min_noncrit_if_hit), 
                                                   math.ceil(eval.spell.max_noncrit_if_hit)),
                                     232.0/255, 225.0/255, 32.0/255);
+
+                    -- holy light splash                
+                    if loadout.glyphs[54937] and spell.base_id == spell_name_to_id["Holy Light"] then
+                        tooltip:AddLine(string.format("     + splash %d-%d on 5 players each",
+                                                      math.floor(eval.spell.min_noncrit_if_hit*0.1), 
+                                                      math.ceil(eval.spell.max_noncrit_if_hit*0.1)),
+                                        232.0/255, 225.0/255, 32.0/255);
+                    end
                 end
+
             else
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
                     tooltip:AddLine(string.format("%s (%.1f%% hit): %d", 
@@ -286,6 +301,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.floor(eval.spell.min_crit_if_hit), 
                                                   math.ceil(eval.spell.max_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
+
+                    -- holy light splash                
+                    if loadout.glyphs[54937] and spell.base_id == spell_name_to_id["Holy Light"] then
+                        tooltip:AddLine(string.format("     + splash %d-%d on 5 players each",
+                                                      math.floor(eval.spell.min_crit_if_hit*0.1), 
+                                                      math.ceil(eval.spell.max_crit_if_hit*0.1)),
+                                        252.0/255, 69.0/255, 3.0/255);
+                    end
                 else 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
                                                   stats.crit*100, 
@@ -296,7 +319,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             end
         end
     end
-
 
     if eval.spell.ot_if_hit ~= 0 and sw_frame.settings_frame.tooltip_normal_ot:GetChecked() then
 

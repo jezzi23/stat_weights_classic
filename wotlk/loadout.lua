@@ -39,13 +39,16 @@ local effects_from_ui_diff              = addonTable.effects_from_ui_diff;
 local function empty_loadout()
 
     return {
-        flags = bit.bor(loadout_flags.is_dynamic_loadout, loadout_flags.use_dynamic_target_lvl);
+        flags = loadout_flags.is_dynamic_loadout;
         name = "Empty";
         talents_code = "",
+        custom_talents_code = "",
         --talents_table = talent_glyphs_table(""),
         talents_table = {},
         lvl = 1,
         target_lvl = 0,
+        default_target_lvl_diff = 3,
+        target_hp_perc_default = 1.0,
 
         buffs = {},
         target_buffs = {},
@@ -266,6 +269,17 @@ local function effects_from_ui_diff(frame)
     return diff;
 end
 
+local function int_to_crit_rating(int, lvl)
+    if lvl ~= 80 then
+        return 0;
+    end
+
+    local lvl_80_int_to_crit_ratio = 166.66638409698;
+    local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
+
+    return lvl_80_int_per_crit_rating;
+end
+
 local function effects_diff(loadout, effects, diff)
     -- TODO: mp5 from int scaling too
 
@@ -299,10 +313,8 @@ local function effects_diff(loadout, effects, diff)
     local lvl_80_int_to_crit_ratio = 166.66638409698;
     local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
     
-    local crit_rating_from_int = 0;
-    if loadout.lvl == 80 then
-        crit_rating_from_int = diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int])/lvl_80_int_per_crit_rating;
-    end
+    local crit_rating_from_int = int_to_crit_rating(diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]), loadout.lvl);
+
     effects.raw.mana = effects.raw.mana + (diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]) * 15)*(1.0 + effects.raw.mana_mod);
 
     effects.raw.haste_rating = effects.raw.haste_rating + diff.haste_rating;
@@ -316,34 +328,9 @@ end
 
 local active_loadout_base = nil;
 
-local function remove_dynamic_stats_from_talents(loadout)
-
-end
-
-local function static_rescale_from_talents_diff(loadout, old_loadout, effects)
-    -- TODO: refactor
-
-    local old_int = old_loadout.stats[stat.int];
-    local old_max_mana = old_loadout.mana;
-
-    local int_mod = (1 + loadout.by_attribute.stat_mod[stat.int])/(1 + old_loadout.stat_mod[stat.int]);
-    local mana_mod = (1 + loadout.mana_mod)/(1 + old_loadout.mana_mod);
-    local new_int = int_mod * old_int
-    local mana_gained_from_int =  (new_int - old_int)*15
-    local crit_from_int_diff = (new_int - old_int)/6000;
-    local new_max_mana = mana_mod * (old_max_mana + mana_gained_from_int);
-
-    loadout.mana = new_max_mana;
-    loadout.max_mana = new_max_mana;
-    loadout.stats[stat.int] = new_int;
-    for i = 2, 7 do
-        loadout.spell_crit_by_school[i] = loadout.spell_crit_by_school[i] + crit_from_int_diff;
-    end
-end
-
 local function print_loadout(loadout, effects)
 
-    print("Stat Weights Classic - Version: "..version);
+    print("Stat Weights Classic - Version: "..addonTable.version);
     for k, v in pairs(loadout) do
         print(k, v);
     end
@@ -388,17 +375,8 @@ end
 local function default_loadout(loadout)
 
     loadout.name = "Default";
-    loadout.flags = bit.bor(loadout.flags, loadout_flags.is_dynamic_loadout, loadout_flags.use_dynamic_target_lvl);
+    loadout.flags = bit.bor(loadout.flags, loadout_flags.is_dynamic_loadout);
 end
-
---local function loadout_prepare_buffs(loadout)
---
---    for k, v in pairs(target_buffs) do
---        if loadout.target_buffs[buff_lname] then
---            loadout.target_buffs[buff_lname] = v;
---        end
---    end
---end
 
 local function dynamic_loadout(loadout)
 
@@ -410,8 +388,12 @@ local function dynamic_loadout(loadout)
         loadout.stats[i] = stat;
     end
 
-    loadout.mana = UnitPower("player", 0);
     loadout.max_mana = UnitPowerMax("player", 0);
+    loadout.mana = loadout.max_mana;
+
+    if bit.band(loadout.flags, loadout_flags.always_max_mana) == 0 then
+        loadout.mana = UnitPower("player", 0);
+    end
 
     -- in wotlk, healing power will equate to spell power
     loadout.spell_power = GetSpellBonusHealing();
@@ -426,7 +408,6 @@ local function dynamic_loadout(loadout)
     loadout.haste_rating = GetCombatRating(CR_HASTE_SPELL);
     loadout.hit_rating = GetCombatRating(CR_HIT_SPELL);
 
-    -- CARE: duplicate old code for forgotten reason
     loadout.player_name = UnitName("player"); 
     loadout.target_name = UnitName("target"); 
     loadout.mouseover_name = UnitName("mouseover"); 
@@ -439,8 +420,11 @@ local function dynamic_loadout(loadout)
                                          bit.bnot(loadout_flags.target_snared),
                                          bit.bnot(loadout_flags.target_frozen),
                                          bit.bnot(loadout_flags.target_friendly)));
-    loadout.enemy_hp_perc = nil;
-    loadout.friendly_hp_perc = nil
+    loadout.enemy_hp_perc = loadout.target_hp_perc_default;
+    loadout.friendly_hp_perc = loadout.target_hp_perc_default;
+
+    loadout.target_lvl = loadout.default_target_lvl_diff + loadout.lvl;
+
     if UnitExists("target") then
 
         loadout.flags = bit.bor(loadout.flags, loadout_flags.has_target);
@@ -452,8 +436,7 @@ local function dynamic_loadout(loadout)
         end
 
         
-        if bit.band(loadout.flags, loadout_flags.use_dynamic_target_lvl) ~= 0
-            and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
+        if bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
             local target_lvl = UnitLevel("target");
             if target_lvl == -1 then
                 loadout.target_lvl = loadout.lvl + 3;
@@ -462,13 +445,6 @@ local function dynamic_loadout(loadout)
             end
         end
         loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
-    else
-
-        if bit.band(loadout.flags, loadout_flags.use_dynamic_target_lvl) ~= 0
-            and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
-
-            loadout.target_lvl = loadout.lvl + 3;
-        end
     end
 
     if UnitExists("mouseover") and UnitName("mouseover") ~= UnitName("target") then
@@ -480,21 +456,7 @@ local function dynamic_loadout(loadout)
         loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("target"), 1);
     end
 
-    remove_dynamic_stats_from_talents(loadout);
-
     detect_buffs(loadout);
-end
-
-local function static_loadout_from_dynamic(loadout)
-    
-   dynamic_loadout(loadout);
-
-   loadout.mana = loadout.max_mana;
-   loadout.talents_code = wowhead_talent_code();
-   loadout.extra_mana = loadout.extra_mana;
-   loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
-   --TODO:
-   --remove_dynamic_stats_from_talents(loadout);
 end
 
 local function active_loadout_entry()
@@ -514,13 +476,8 @@ end
 
 local function active_loadout_and_effects()
 
-    --if not sw_frame.loadouts_frame.lhs_list.loadouts or not sw_frame.loadouts_frame.lhs_list.active_loadout then
-    --    return nil, nil;
-    --end
     local loadout_entry = active_loadout_entry();
-    if bit.band(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
-        dynamic_loadout(loadout_entry.loadout);
-    end
+    dynamic_loadout(loadout_entry.loadout);
         
     if addonTable.equipment_update_needed then
         zero_effects(loadout_entry.equipped);
@@ -534,13 +491,11 @@ local function active_loadout_and_effects()
         or loadout_entry.loadout.talents_code == "_" -- workaround around edge case when the talents query won't work shortly after logging in
         then
 
-        if bit.band(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
-            loadout_entry.loadout.talents_code = wowhead_talent_code();
-        end
+        loadout_entry.loadout.talents_code = wowhead_talent_code();
+
         zero_effects(loadout_entry.talented);
         effects_add(loadout_entry.talented, loadout_entry.equipped);
         apply_talents_glyphs(loadout_entry.loadout, loadout_entry.talented);
-
 
         addonTable.talents_update_needed = false;
     end
@@ -565,6 +520,7 @@ local function active_loadout_and_effects_diffed_from_ui()
     return loadout, effects, effects_diffed;
 end
 
+addonTable.print_loadout                                = print_loadout;
 addonTable.empty_loadout                                = empty_loadout;
 addonTable.empty_effects                                = empty_effects;
 addonTable.effects_add                                  = effects_add;
@@ -576,5 +532,5 @@ addonTable.active_loadout_entry                         = active_loadout_entry;
 addonTable.active_loadout_and_effects                   = active_loadout_and_effects;
 addonTable.active_loadout_and_effects_diffed_from_ui    = active_loadout_and_effects_diffed_from_ui;
 addonTable.static_loadout_from_dynamic                  = static_loadout_from_dynamic;
-
+addonTable.int_to_crit_rating                           = int_to_crit_rating;
 

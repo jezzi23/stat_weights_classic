@@ -366,7 +366,6 @@ local function spell_info(info, spell, stats, loadout, effects)
     end
 
     -- level scaling
-    -- TODO: unclear how "exactly" spell scaling by lvl works
     local lvl_diff_applicable = 0;
     if spell.lvl_scaling > 0 then
         -- spell data is at spell base lvl
@@ -704,15 +703,15 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     if class == "PRIEST" then
-        if spell.base_id == spell_name_to_id["Flash Heal"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
+        if spell.base_id == spell_name_to_id["Flash Heal"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc <= 0.5  then
             local pts = loadout.talents_table:pts(1, 20);
             stats.crit = stats.crit + pts * 0.04;
         end
         -- test of faith
-        if loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5 then
+        if loadout.friendly_hp_perc and loadout.friendly_hp_perc <= 0.5 then
             effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + 0.04 * loadout.talents_table:pts(2, 25);
         end
-        if spell.base_id == spell_name_to_id["Shadow Word: Death"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
+        if spell.base_id == spell_name_to_id["Shadow Word: Death"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.35 then
             target_vuln_mod = target_vuln_mod + 0.1;
         end
         --shadow form
@@ -781,7 +780,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
         end
 
-        if loadout.glyphs[54754] and spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc < 0.5  then
+        if loadout.glyphs[54754] and spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc <= 0.5  then
             target_vuln_ot_mod = target_vuln_ot_mod + 0.5;
         end
 
@@ -908,7 +907,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         -- molten fury
         local pts = loadout.talents_table:pts(2, 21);
-        if loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
+        if loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.35 then
             target_vuln_mod = target_vuln_mod + 0.06 * pts;
             target_vuln_ot_mod = target_vuln_ot_mod + 0.06 * pts;
         end
@@ -953,10 +952,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local pts = loadout.talents_table:pts(1, 24);
         if pts ~= 0 then
             if spell.base_id == spell_name_to_id["Drain Life"] and
-                loadout.player_hp_perc and loadout.player_hp_perc < 0.2 then
+                loadout.player_hp_perc and loadout.player_hp_perc <= 0.2 then
                 target_vuln_ot_mod = target_vuln_ot_mod + pts*0.1;
             end
-            if spell.school == magic_school.shadow and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
+            if spell.school == magic_school.shadow and loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.35 then
                 target_vuln_mod = target_vuln_mod + pts * 0.04;
                 target_vuln_ot_mod = target_vuln_ot_mod + pts * 0.04;
             end
@@ -974,14 +973,19 @@ local function stats_for_spell(stats, spell, loadout, effects)
         end
         -- decimation
         local pts = loadout.talents_table:pts(2, 22);
-        if pts ~= 0 and spell.base_id == spell_name_to_id["Soul Fire"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
+        if pts ~= 0 and spell.base_id == spell_name_to_id["Soul Fire"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.35 then
             cast_mod_mul = (1.0 + cast_mod_mul) * (1.0 + 0.2 * pts) - 1.0;
         end
 
-        if loadout.glyphs[56229] and spell.base_id == spell_name_to_id["Shadowburn"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc < 0.35 then
+        if loadout.glyphs[56229] and spell.base_id == spell_name_to_id["Shadowburn"] and loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.35 then
             stats.crit = stats.crit + 0.2;
         end
 
+        -- drain soul execute
+        if loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.25 then
+            target_vuln_mod = target_vuln_mod + 3;
+            target_vuln_ot_mod = target_vuln_ot_mod + 3;
+        end
     end
 
     stats.cast_time = spell.cast_time;
