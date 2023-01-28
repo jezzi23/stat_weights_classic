@@ -114,6 +114,7 @@ local function empty_effects(effects)
     effects.raw.haste_mod = 0.0;
     effects.raw.cost_mod = 0;
     effects.raw.cost_mod_base = 0;
+    effects.raw.cost_flat = 0;
 
     effects.raw.haste_rating = 0;
     effects.raw.crit_rating = 0;

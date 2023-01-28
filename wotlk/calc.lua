@@ -531,7 +531,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.cost_mod_base[spell.base_id] then
         cost_mod_base = cost_mod_base + effects.ability.cost_mod_base[spell.base_id];
     end
-    stats.cost = math.floor(math.floor(original_base_cost * base_mana_pool()) * (1.0 - cost_mod_base));
+    stats.cost = math.floor(math.floor(original_base_cost * base_mana_pool()-effects.raw.cost_flat) * (1.0 - cost_mod_base));
     
     if effects.ability.cost_flat[spell.base_id] then
         stats.cost = stats.cost - effects.ability.cost_flat[spell.base_id];

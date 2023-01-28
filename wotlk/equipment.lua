@@ -275,10 +275,10 @@ local function create_set_effects()
             end,
             [set_tiers.pve_t8_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    -- TODO: Swift mend
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Swiftmend"], 0.1, 0.0);
                 end
                 if num_pieces >= 4 then
-                    -- TODO: figure out rejuv instant effect
+                    -- done in later stage
                 end
             end,
         };
@@ -661,6 +661,12 @@ local set_bonus_effects = create_set_effects();
 
 local relics = create_relics();
 
+local items = {
+    [45703] = function(effects)
+        effects.raw.cost_flat = effects.raw.cost_flat + 44;
+    end,
+};
+
 local function detect_sets(loadout)
     -- go through equipment to find set pieces
     for k, v in pairs(set_tiers) do
@@ -695,6 +701,15 @@ local function apply_equipment(loadout, effects)
     local relic_id = GetInventoryItemID("player", 18);
     if relic_id and relics[relic_id] then
         relics[relic_id](effects);
+    end
+
+    local trinket1 = GetInventoryItemID("player", 13);
+    local trinket2 = GetInventoryItemID("player", 14);
+    if trinket1 and items[trinket1] then
+        items[trinket1](effects);
+    end
+    if trinket2 and items[trinket2] then
+        items[trinket2](effects);
     end
     
     for k, v in pairs(loadout.num_set_pieces) do
