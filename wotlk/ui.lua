@@ -28,6 +28,7 @@ local spell_name_to_id                          = addonTable.spell_name_to_id;
 local spell_names_to_id                         = addonTable.spell_names_to_id;
 local magic_school                              = addonTable.magic_school;
 local spell_flags                               = addonTable.spell_flags;
+local best_rank_by_lvl                          = addonTable.best_rank_by_lvl;
 
 local wowhead_talent_link                       = addonTable.wowhead_talent_link;
 local wowhead_talent_code                       = addonTable.wowhead_talent_code;
@@ -225,9 +226,6 @@ end
 
 update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
 
-    if not loadout then
-    end
-
     local frame = sw_frame.stat_comparison_frame;
 
     frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
@@ -237,32 +235,35 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
     local spell_info_normal = {};
     local spell_info_diffed = {};
 
-    local num_spells = 0;
-    for k, v in pairs(frame.spells) do
-        num_spells = num_spells + 1;
-    end
-    if num_spells == 0 then
-        -- try to find something relevant to display
-        for i = 1, 120 do
-            local action_type, id, _ = GetActionInfo(i);
-            if action_type == "spell" and spells[id] and bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
+    --local num_spells = 0;
+    --for k, v in pairs(frame.spells) do
+    --    num_spells = num_spells + 1;
+    --end
+    --if num_spells == 0 then
+    --    -- try to find something relevant to display
+    --    for i = 1, 120 do
+    --        local action_type, id, _ = GetActionInfo(i);
+    --        if action_type == "spell" and spells[id] and bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
 
-                num_spells = num_spells + 1;
+    --            num_spells = num_spells + 1;
 
-                local lname = GetSpellInfo(id);
+    --            local lname = GetSpellInfo(id);
 
-                frame.spells[id] = {
-                    name = lname
-                };
+    --            frame.spells[id] = {
+    --                name = lname
+    --            };
 
-            end
-            if num_spells == 3 then
-                break;
-            end
-        end
-    end
+    --        end
+    --        if num_spells == 3 then
+    --            break;
+    --        end
+    --    end
+    --end
 
-    for k, v in pairs(frame.spells) do
+    for random_rank, v in pairs(frame.spells) do
+
+        -- best rank
+        local k = best_rank_by_lvl[spells[random_rank].base_id];
 
         stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
         stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
@@ -271,7 +272,7 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
         spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
         cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
 
-        display_spell_diff(k, spells[k], v, spell_info_normal, spell_info_diffed, frame, false, sw_frame.stat_comparison_frame.sim_type, loadout.lvl);
+        display_spell_diff(random_rank, spells[k], v, spell_info_normal, spell_info_diffed, frame, false, sw_frame.stat_comparison_frame.sim_type, loadout.lvl);
 
         -- for spells with both heal and dmg
         if spells[k].healing_version then
@@ -283,7 +284,7 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
             spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
             cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
 
-            display_spell_diff(k, spells[k].healing_version, v, spell_info_normal, spell_info_diffed, frame, true, sw_frame.stat_comparison_frame.sim_type, loadout.lvl);
+            display_spell_diff(random_rank, spells[k].healing_version, v, spell_info_normal, spell_info_diffed, frame, true, sw_frame.stat_comparison_frame.sim_type, loadout.lvl);
         end
     end
 
@@ -1320,6 +1321,27 @@ local function create_sw_gui_stat_comparison_frame()
     -- always have at least one
     sw_frame.stat_comparison_frame.spells = {};
     sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
+
+    if class == "DRUID" then
+        local lname = GetSpellInfo(5185);
+        sw_frame.stat_comparison_frame.spells[5185] = {name = lname};
+    elseif class == "MAGE" then
+        local lname = GetSpellInfo(133);
+        sw_frame.stat_comparison_frame.spells[133] = {name = lname};
+    elseif class == "WARLOCK" then
+        local lname = GetSpellInfo(686);
+        sw_frame.stat_comparison_frame.spells[686] = {name = lname};
+    elseif class == "PALADIN" then
+        local lname = GetSpellInfo(635);
+        sw_frame.stat_comparison_frame.spells[635] = {name = lname};
+    elseif class == "PRIEST" then
+        local lname = GetSpellInfo(585);
+        sw_frame.stat_comparison_frame.spells[585] = {name = lname};
+    elseif class == "SHAMAN" then
+        local lname = GetSpellInfo(403);
+        sw_frame.stat_comparison_frame.spells[403] = {name = lname};
+    end
+
 
 end
 

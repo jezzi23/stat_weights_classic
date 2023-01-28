@@ -709,9 +709,9 @@ local function append_tooltip_spell_info(is_fake)
         local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
         tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed);
 
-        if IsShiftKeyDown() and not sw_frame.stat_comparison_frame.spells[spell_id] 
-                and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
-            sw_frame.stat_comparison_frame.spells[spell_id] = {
+        if IsShiftKeyDown() and not sw_frame.stat_comparison_frame.spells[spell.base_id] 
+                and bit.band(spells[spell.base_id].flags, spell_flags.mana_regen) == 0 then
+            sw_frame.stat_comparison_frame.spells[spell.base_id] = {
                 name = spell_name
             };
 
