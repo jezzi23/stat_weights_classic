@@ -29,6 +29,7 @@ local spell_name_to_id                  = addonTable.spell_name_to_id;
 local spell_names_to_id                 = addonTable.spell_names_to_id;
 local magic_school                      = addonTable.magic_school;
 local spell_flags                       = addonTable.spell_flags;
+local best_rank_by_lvl                  = addonTable.best_rank_by_lvl;
 
 local stat                              = addonTable.stat;
 local loadout_flags                     = addonTable.loadout_flags;
@@ -334,11 +335,75 @@ elseif class == "DRUID" then
         [spell_name_to_id["Starfall"]] = function(spell, info, loadout)
             info.expectation = 20 * info.expectation_st;
         end,
+        [spell_name_to_id["Swiftmend"]] = function(spell, info, loadout, stats)
+
+            local num_ticks = 4;
+            if stats.alias and stats.alias == spell_name_to_id["Regrowth"] then
+                num_ticks = 6;
+            end
+            
+            local heal_amount = num_ticks * info.ot_if_hit/info.ot_ticks;
+            
+            info.min_noncrit_if_hit = heal_amount;
+            info.max_noncrit_if_hit = heal_amount;
+
+            info.min_crit_if_hit = stats.crit_mod*heal_amount;
+            info.max_crit_if_hit = stats.crit_mod*heal_amount;
+
+            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
+            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
+
+            info.expectation_st = 0.5 * (info.min + info.max);
+            info.expectation = info.expectation_st;
+
+            -- clear over time
+            info.ot_if_hit = 0.0;
+            info.ot_if_hit_max = 0.0;
+            info.ot_if_crit = 0.0;
+            info.ot_if_crit_max = 0.0;
+            info.ot_ticks = 0;
+            info.expected_ot_if_hit = 0.0;
+            info.ot_duration = 0.0;
+            info.ot_freq = 0.0;
+        end,
     };
 elseif class == "WARLOCK" then
     special_abilities = {
         [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout)
             info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Conflagrate"]] = function(spell, info, loadout, stats)
+
+            local immolate_effect = info.ot_if_hit;
+            local direct = 0.6 * immolate_effect;
+            
+            -- direct component
+            info.min_noncrit_if_hit = direct;
+            info.max_noncrit_if_hit = direct;
+
+            info.min_crit_if_hit = stats.crit_mod*direct;
+            info.max_crit_if_hit = stats.crit_mod*direct;
+
+            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
+            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
+
+
+            -- over time component
+            info.ot_ticks = 3;
+            info.ot_duration = 6.0;
+            info.ot_freq = 2.0;
+
+            info.ot_if_hit = 0.4 * immolate_effect;
+            info.ot_if_hit_max = info.ot_if_hit;
+            info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
+            info.ot_if_crit_max = info.ot_if_crit;
+
+            local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+            info.expected_ot = stats.hit * expected_ot_if_hit;
+
+            -- combined
+            info.expectation_st = 0.5 * (info.min + info.max) + info.expected_ot;
+            info.expectation = info.expectation_st + info.expected_ot;
         end,
     };
 elseif class == "PALADIN" then
@@ -354,236 +419,45 @@ else
     special_abilities = {};
 end
 
-local function spell_info(info, spell, stats, loadout, effects)
+local function set_alias_spell(spell, loadout)
 
-    local base_min = spell.base_min;
-    local base_max = spell.base_max;
-    local base_ot_tick = spell.over_time;
-    local base_ot_tick_max = spell.over_time;
-    if bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-        --
-        base_ot_tick_max = spell.over_time_max;
-    end
+    local alias_spell = spell;
 
-    -- level scaling
-    local lvl_diff_applicable = 0;
-    if spell.lvl_scaling > 0 then
-        -- spell data is at spell base lvl
-        lvl_diff_applicable = math.max(0,
-            math.min(loadout.lvl - spell.lvl_req, spell.lvl_max - spell.lvl_req));
-    end
-    if base_min > 0.0 then
-        base_min = math.ceil(base_min + spell.lvl_scaling * lvl_diff_applicable);
-        base_max = math.ceil(base_max + spell.lvl_scaling * lvl_diff_applicable);
-    end
-    if bit.band(spell.flags, spell_flags.over_time_lvl_scaling) ~= 0 then
-        base_ot_tick = math.ceil(base_ot_tick + spell.lvl_scaling * lvl_diff_applicable);
-        base_ot_tick_max = math.ceil(base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable);
-    end
-
-    info.ot_freq = spell.over_time_tick_freq;
-    info.ot_duration = spell.over_time_duration;
-
-    if spell.cast_time == spell.over_time_duration then
-        info.ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
-        info.ot_duration = stats.cast_time;
-    end
-    if bit.band(spell.flags, spell_flags.duration_haste_scaling) ~= 0 then
-        info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-        info.ot_duration = info.ot_duration/stats.haste_mod;
-    end
-
-    -- certain ticks may tick faster
-    if class == "PRIEST" then
-        local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
-        if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
-            (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
-            if spell.base_id == spell_name_to_id["Devouring Plague"] or spell.base_id == spell_name_to_id["Vampiric Touch"] then
-                info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-                info.ot_duration = info.ot_duration/stats.haste_mod;
+    local swiftmend = spell_name_to_id["Swiftmend"];
+    local conflagrate = spell_name_to_id["Conflagrate"];
+    if spell.base_id == swiftmend then
+        alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Rejuvenation"]]];
+        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+            local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
+            local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
+            if regrowth_buff then
+                if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
+                    alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Regrowth"]]];
+                end
             end
         end
+    elseif spell.base_id == conflagrate then
+        alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Immolate"]]];
+        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 and
+            loadout.hostile_towards == "target" and
+            loadout.dynamic_buffs["target"][GetSpellInfo(61291)] and
+            not loadout.dynamic_buffs["target"][GetSpellInfo(348)] then
 
-        if loadout.glyphs[55672] and spell.base_id == spell_name_to_id["Power Word: Shield"] then
-            info.healing_mod_from_absorb_glyph = stats.spell_heal_mod;
-        end
-    elseif class == "WARLOCK" then
-        local immolate, _, _, _, _, _, _ = GetSpellInfo(348);
-        if (loadout.target_buffs[immolate] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
-            (loadout.dynamic_buffs["target"][immolate] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
-            if spell.base_id == spell_name_to_id["Incinerate"] then
-                base_min = base_min + math.floor((base_min-0.001) * 0.25);
-                base_max = base_max + math.floor(base_max * 0.25);
-            end
-        end
-        -- glyph of quick decay
-        if loadout.glyphs[70947] and spell.base_id == spell_name_to_id["Corruption"] then
-            info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-            info.ot_duration = info.ot_duration/stats.haste_mod;
-        end
-    elseif class == "MAGE" then
-        -- glyph of fireball
-        if loadout.glyphs[56368] and spell.base_id == spell_name_to_id["Fireball"] then
-            base_ot_tick = 0.0;
-            info.ot_freq = 0;
-            info.ot_duration = 0;
-        end
-        -- glyph of living bomb
-        if loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"] then
-            stats.ot_crit = stats.crit;
-        end
-    elseif class == "DRUID" then
-
-        -- rapid rejvenation
-        if loadout.glyphs[71013] and spell.base_id == spell_name_to_id["Rejuvenation"] then
-            info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
-            info.ot_duration = info.ot_duration/stats.haste_mod;
-        end
-        -- t8 resto rejuv bonus
-        if loadout.num_set_pieces[set_tiers.pve_t8_3] >= 4 and spell.base_id == spell_name_to_id["Rejuvenation"] then
-
-            base_min = spell.over_time;
-            base_max = spell.over_time;
-            stats.coef = stats.ot_coef;
+            alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Shadowflame"]]];
         end
     end
 
-    info.min_noncrit_if_hit = 
-        (base_min + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
-    info.max_noncrit_if_hit = 
-        (base_max + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
-
-    info.min_crit_if_hit = info.min_noncrit_if_hit * stats.crit_mod;
-    info.max_crit_if_hit = info.max_noncrit_if_hit * stats.crit_mod;
-
-    -- TODO: Looks like min is ceiled and max is floored
-    --       do this until we know any better!
-
-    --min_noncrit_if_hit = math.ceil(min_noncrit_if_hit);
-    --max_noncrit_if_hit = math.ceil(max_noncrit_if_hit);
-
-    --min_crit_if_hit = math.ceil(min_crit_if_hit);
-    --max_crit_if_hit = math.ceil(max_crit_if_hit);
-    
-    local direct_crit = stats.crit;
-
-    if bit.band(spell_flags.absorb, spell.flags) ~= 0 then
-        direct_crit = 0.0;
-    end
-
-    info.min = stats.hit * ((1 - direct_crit) * info.min_noncrit_if_hit + (direct_crit * info.min_crit_if_hit));
-    info.max = stats.hit * ((1 - direct_crit) * info.max_noncrit_if_hit + (direct_crit * info.max_crit_if_hit));
-
-    info.absorb = 0.0;
-
-    info.ot_if_hit = 0.0;
-    info.ot_if_hit_max = 0.0;
-    info.ot_if_crit = 0;
-    info.ot_if_crit_max = 0;
-    info.ot_ticks = 0;
-    if base_ot_tick > 0 then
-
-
-        local base_ot_num_ticks = (info.ot_duration/info.ot_freq);
-        local ot_coef_per_tick = stats.ot_coef
-
-        info.ot_ticks = base_ot_num_ticks + stats.ot_extra_ticks;
-
-        info.ot_if_hit = (base_ot_tick + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
-        info.ot_if_hit_max = (base_ot_tick_max + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
-
-        if stats.ot_crit > 0 then
-            info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
-            info.ot_if_crit_max = info.ot_if_hit_max * stats.crit_mod;
-        else
-            info.ot_if_crit = 0;
-            info.ot_if_crit_max = 0;
-        end
-    end
-    local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
-    info.expected_ot = stats.hit * expected_ot_if_hit;
-    -- soul drain, life drain, mind flay are all directed casts that can only miss on the channel itself
-    -- 1.5 sec gcd is always implied which is the only penalty for misses
-    if bit.band(spell.flags, spell_flags.channel_missable) ~= 0 then
-
-        local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - 1.5/stats.haste_mod)/info.ot_duration;
-        info.expected_ot = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
-    end
-
-    if class == "PRIEST" then
-        local pts = 0;
-        if spell.base_id == spell_name_to_id["Renew"] then
-            pts = loadout.talents_table:pts(2, 23);
-        elseif spell.base_id == spell_name_to_id["Devouring Plague"] then
-            pts = 2 * loadout.talents_table:pts(3, 18);
-        end
-
-        if pts ~= 0 then
-            local direct = pts * 0.05 * info.ot_if_hit
-
-            info.min_noncrit_if_hit = direct;
-            info.max_noncrit_if_hit = direct;
-
-            -- crit mod does not benefit from spec here it seems
-            local crit_mod = max(1.5, 1.5 + effects.raw.special_crit_mod);
-            info.min_crit_if_hit = direct * crit_mod;
-            info.max_crit_if_hit = direct * crit_mod;
-
-            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
-            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
-        end
-    end
-
-    info.expectation_direct = 0.5 * (info.min + info.max);
-
-    info.expectation = info.expectation_direct + info.expected_ot;
-
-    info.expectation = info.expectation * (1 - stats.target_avg_resi);
-
-    info.expectation_st = info.expectation;
-
-    if special_abilities[spell.base_id] then
-        special_abilities[spell.base_id](spell, info, loadout, stats, effects);
-    end
-
-    if loadout.beacon then
-        -- holy light glyph may have been been applied to expectation
-        info.expectation = info.expectation + info.expectation_st;
-    end
-
-    info.effect_per_sec = info.expectation/stats.cast_time;
-
-    info.effect_per_cost = info.expectation/stats.cost;
-    info.cost_per_sec = stats.cost/stats.cast_time;
-    info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
-    if bit.band(spell.flags, spell_flags.cast_with_ot_dur) ~= 0 then
-        info.effect_per_dur = info.expectation/math.max(info.ot_duration + stats.cast_time);
-    else
-        info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
-    end
-
-    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
-        if spell.base_id == spell_name_to_id["Innervate"] then
-            if loadout.glyphs[54832] then
-                info.mana_restored = base_mana_pool()*2.70;
-            else
-                info.mana_restored = base_mana_pool()*2.25;
-            end
-        elseif spell.base_id == spell_name_to_id["Life Tap"] then
-            info.mana_restored = spell.base_min + stats.spell_power*spell.coef;
-
-            local pts = loadout.talents_table:pts(1, 6);
-            info.mana_restored = info.mana_restored * (1.0 + pts*0.1);
-        elseif spell.base_id == spell_name_to_id["Shadowfiend"] then
-            info.mana_restored = 0.05*loadout.max_mana*10;
-        else
-            -- evocate, mana tide, divine plea of % max mana
-            info.mana_restored = spell.base_min * loadout.max_mana;
-        end
-    end
+    return alias_spell;
 end
 
 local function stats_for_spell(stats, spell, loadout, effects)
+
+    local original_base_cost = spell.cost_base_percent;
+    local original_spell_id = spell.base_id;
+    -- deal with aliasing spells
+    if not stats.no_alias then
+        spell = set_alias_spell(spell, loadout);
+    end
 
     stats.crit = loadout.spell_crit_by_school[spell.school] +
         effects.by_school.spell_crit[spell.school];
@@ -651,29 +525,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.flat_addition_ot = stats.flat_addition_ot + effects.ability.flat_add_ot[spell.base_id];
     end
 
-    ---- regarding blessing of light effect
-    --if effects.ability.flat_add[spell.base_id] and class == "PALADIN" then
-
-    --    local scaling_coef_by_lvl = 1;
-    --    if spell.lvl_req == 1 then -- rank 1 holy light
-    --        scaling_coef_by_lvl = 0.2;
-    --    elseif spell.lvl_req == 6 then -- rank 2 holy light
-    --        scaling_coef_by_lvl = 0.4;
-    --    elseif spell.lvl_req == 14 then -- rank 3 holy light
-    --        scaling_coef_by_lvl = 0.7;
-    --    end
-    --    
-    --    stats.flat_addition = 
-    --        stats.flat_addition + effects.ability.flat_add[spell.base_id] * scaling_coef_by_lvl;
-    --end
-
     stats.gcd = 1.0;
 
     local cost_mod_base = effects.raw.cost_mod_base;
     if effects.ability.cost_mod_base[spell.base_id] then
         cost_mod_base = cost_mod_base + effects.ability.cost_mod_base[spell.base_id];
     end
-    stats.cost = math.floor(math.floor(spell.cost_base_percent * base_mana_pool()) * (1.0 - cost_mod_base));
+    stats.cost = math.floor(math.floor(original_base_cost * base_mana_pool()) * (1.0 - cost_mod_base));
     
     if effects.ability.cost_flat[spell.base_id] then
         stats.cost = stats.cost - effects.ability.cost_flat[spell.base_id];
@@ -749,24 +607,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
             resource_refund = stats.hit*stats.crit * 0.02 * loadout.max_mana;
         end
 
-        -- never mind ...this tick resource refund is only on target,... could apply if targeting self?
-        --local pts = loadout.talents_table:pts(3, 22);
-        --if (spell.base_id == spell_name_to_id["Wild Growth") or spell.base_id == localized_spell_name("Rejuvenation")]
-        --    and pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 then
-
-        --    local refund_amount = 0.15 * loadout.max_mana * 0.01 * ot_ticks;
-        --    if spell.base_id == spell_name_to_id["Wild Growth"] then
-        --        refund_amount = refund_amount * 5;
-        --    end
-        --    cost = cost - refund_amount;
-        --end
-        --
         --improved insect swarm talent
-
         local insect_swarm = spell_name_to_id["Insect Swarm"];
         if (loadout.target_buffs[insect_swarm] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
             (loadout.dynamic_buffs["target"][insect_swarm] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) then
-            -- TODO: is this correct? 
             if spell.base_id == spell_name_to_id["Wrath"] then
                 global_mod = global_mod + 0.01 * loadout.talents_table:pts(1, 14);
                 --target_vuln_mod = target_vuln_mod * (1.0 + 0.01 * loadout.talents_table:pts(1, 14));
@@ -774,7 +618,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
         end
 
-        if bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
+        if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"])
+            or spell.base_id == spell_name_to_id["Rejuvenation"] or spell.base_id == spell_name_to_id["Swiftmend"] then
             -- living seed
             local pts = loadout.talents_table:pts(3, 21);
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
@@ -795,7 +640,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         -- illumination
         local pts = loadout.talents_table:pts(1, 7);
         if pts ~= 0 then
-            local mana_refund = 0.3 * spell.cost_base_percent * base_mana_pool();
+            local mana_refund = 0.3 * original_base_cost * base_mana_pool();
             resource_refund = stats.crit * pts*0.2 * mana_refund;
         end
 
@@ -895,7 +740,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local pts = loadout.talents_table:pts(2, 13);
         if pts ~= 0 then
             -- master of elements
-            local mana_refund = pts * 0.1 * spell.cost_base_percent * base_mana_pool();
+            local mana_refund = pts * 0.1 * original_base_cost * base_mana_pool();
             resource_refund = stats.hit*stats.crit * mana_refund;
         end
 
@@ -1005,6 +850,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + haste_from_rating);
 
     stats.cast_time = math.max(stats.cast_time/stats.haste_mod, stats.gcd);
+
+    if effects.ability.cast_mod_reduce[spell.base_id] then
+        -- final vanilla style reduction but also reduces gcd (rare)
+        stats.cast_time = stats.cast_time * (1.0 - effects.ability.cast_mod_reduce[spell.base_id]);
+    end
 
     -- nature's grace
     local pts = loadout.talents_table:pts(1, 7);
@@ -1132,7 +982,255 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.cost_per_sec = stats.cost / stats.cast_time;
+
+    spell = spells[original_spell_id];
 end
+
+local function spell_info(info, spell, stats, loadout, effects)
+
+    -- deal with aliasing spells
+    local original_spell_id = spell.base_id;
+
+    spell = set_alias_spell(spell, loadout);
+
+    local base_min = spell.base_min;
+    local base_max = spell.base_max;
+    local base_ot_tick = spell.over_time;
+    local base_ot_tick_max = spell.over_time;
+    if bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
+        base_ot_tick_max = spell.over_time_max;
+    end
+
+    -- level scaling
+    local lvl_diff_applicable = 0;
+    if spell.lvl_scaling > 0 then
+        -- spell data is at spell base lvl
+        lvl_diff_applicable = math.max(0,
+            math.min(loadout.lvl - spell.lvl_req, spell.lvl_max - spell.lvl_req));
+    end
+    if base_min > 0.0 then
+        base_min = math.ceil(base_min + spell.lvl_scaling * lvl_diff_applicable);
+        base_max = math.ceil(base_max + spell.lvl_scaling * lvl_diff_applicable);
+    end
+    if bit.band(spell.flags, spell_flags.over_time_lvl_scaling) ~= 0 then
+        base_ot_tick = math.ceil(base_ot_tick + spell.lvl_scaling * lvl_diff_applicable);
+        base_ot_tick_max = math.ceil(base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable);
+    end
+
+    info.ot_freq = spell.over_time_tick_freq;
+    info.ot_duration = spell.over_time_duration;
+
+    if spell.cast_time == spell.over_time_duration then
+        info.ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
+        info.ot_duration = stats.cast_time;
+    end
+    if bit.band(spell.flags, spell_flags.duration_haste_scaling) ~= 0 then
+        info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+        info.ot_duration = info.ot_duration/stats.haste_mod;
+    end
+
+    -- certain ticks may tick faster
+    if class == "PRIEST" then
+        local shadow_form, _, _, _, _, _, _ = GetSpellInfo(15473);
+        if (loadout.buffs[shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["player"][shadow_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
+            if spell.base_id == spell_name_to_id["Devouring Plague"] or spell.base_id == spell_name_to_id["Vampiric Touch"] then
+                info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+                info.ot_duration = info.ot_duration/stats.haste_mod;
+            end
+        end
+
+        if loadout.glyphs[55672] and spell.base_id == spell_name_to_id["Power Word: Shield"] then
+            info.healing_mod_from_absorb_glyph = stats.spell_heal_mod;
+        end
+    elseif class == "WARLOCK" then
+        local immolate, _, _, _, _, _, _ = GetSpellInfo(348);
+        if (loadout.target_buffs[immolate] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs["target"][immolate] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
+            if spell.base_id == spell_name_to_id["Incinerate"] then
+                base_min = base_min + math.floor((base_min-0.001) * 0.25);
+                base_max = base_max + math.floor(base_max * 0.25);
+            end
+        end
+        -- glyph of quick decay
+        if loadout.glyphs[70947] and spell.base_id == spell_name_to_id["Corruption"] then
+            info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            info.ot_duration = info.ot_duration/stats.haste_mod;
+        end
+    elseif class == "MAGE" then
+        -- glyph of fireball
+        if loadout.glyphs[56368] and spell.base_id == spell_name_to_id["Fireball"] then
+            base_ot_tick = 0.0;
+            info.ot_freq = 0;
+            info.ot_duration = 0;
+        end
+        -- glyph of living bomb
+        if loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"] then
+            stats.ot_crit = stats.crit;
+        end
+    elseif class == "DRUID" then
+
+        -- rapid rejvenation
+        if loadout.glyphs[71013] and spell.base_id == spell_name_to_id["Rejuvenation"] then
+            info.ot_freq  = spell.over_time_tick_freq/stats.haste_mod;
+            info.ot_duration = info.ot_duration/stats.haste_mod;
+        end
+        -- t8 resto rejuv bonus
+        if loadout.num_set_pieces[set_tiers.pve_t8_3] >= 4 and spell.base_id == spell_name_to_id["Rejuvenation"] then
+
+            base_min = spell.over_time;
+            base_max = spell.over_time;
+            stats.coef = stats.ot_coef;
+        end
+    end
+
+    info.min_noncrit_if_hit = 
+        (base_min + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
+    info.max_noncrit_if_hit = 
+        (base_max + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
+
+    info.min_crit_if_hit = info.min_noncrit_if_hit * stats.crit_mod;
+    info.max_crit_if_hit = info.max_noncrit_if_hit * stats.crit_mod;
+
+    -- TODO: Looks like min is ceiled and max is floored
+    --       do this until we know any better!
+
+    --min_noncrit_if_hit = math.ceil(min_noncrit_if_hit);
+    --max_noncrit_if_hit = math.ceil(max_noncrit_if_hit);
+
+    --min_crit_if_hit = math.ceil(min_crit_if_hit);
+    --max_crit_if_hit = math.ceil(max_crit_if_hit);
+    
+    local direct_crit = stats.crit;
+
+    if bit.band(spell_flags.absorb, spell.flags) ~= 0 then
+        direct_crit = 0.0;
+    end
+
+    info.min = stats.hit * ((1 - direct_crit) * info.min_noncrit_if_hit + (direct_crit * info.min_crit_if_hit));
+    info.max = stats.hit * ((1 - direct_crit) * info.max_noncrit_if_hit + (direct_crit * info.max_crit_if_hit));
+
+    info.absorb = 0.0;
+
+    info.ot_if_hit = 0.0;
+    info.ot_if_hit_max = 0.0;
+    info.ot_if_crit = 0.0;
+    info.ot_if_crit_max = 0.0;
+    info.ot_ticks = 0;
+
+    if base_ot_tick > 0 then
+
+        local base_ot_num_ticks = (info.ot_duration/info.ot_freq);
+        local ot_coef_per_tick = stats.ot_coef
+
+        info.ot_ticks = base_ot_num_ticks + stats.ot_extra_ticks;
+
+        info.ot_if_hit = (base_ot_tick + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
+        info.ot_if_hit_max = (base_ot_tick_max + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
+
+        if stats.ot_crit > 0 then
+            info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
+            info.ot_if_crit_max = info.ot_if_hit_max * stats.crit_mod;
+        else
+            info.ot_if_crit = 0;
+            info.ot_if_crit_max = 0;
+        end
+    end
+    local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+    info.expected_ot = stats.hit * expected_ot_if_hit;
+    -- soul drain, life drain, mind flay are all directed casts that can only miss on the channel itself
+    -- 1.5 sec gcd is always implied which is the only penalty for misses
+    if bit.band(spell.flags, spell_flags.channel_missable) ~= 0 then
+
+        local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - 1.5/stats.haste_mod)/info.ot_duration;
+        info.expected_ot = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
+    end
+
+    if class == "PRIEST" then
+        local pts = 0;
+        if spell.base_id == spell_name_to_id["Renew"] then
+            pts = loadout.talents_table:pts(2, 23);
+        elseif spell.base_id == spell_name_to_id["Devouring Plague"] then
+            pts = 2 * loadout.talents_table:pts(3, 18);
+        end
+
+        if pts ~= 0 then
+            local direct = pts * 0.05 * info.ot_if_hit
+
+            info.min_noncrit_if_hit = direct;
+            info.max_noncrit_if_hit = direct;
+
+            -- crit mod does not benefit from spec here it seems
+            local crit_mod = max(1.5, 1.5 + effects.raw.special_crit_mod);
+            info.min_crit_if_hit = direct * crit_mod;
+            info.max_crit_if_hit = direct * crit_mod;
+
+            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
+            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
+        end
+    end
+
+    info.expectation_direct = 0.5 * (info.min + info.max);
+
+    info.expectation = info.expectation_direct + info.expected_ot;
+
+    info.expectation = info.expectation * (1 - stats.target_avg_resi);
+
+    info.expectation_st = info.expectation;
+
+    if original_spell_id ~= spell.base_id then
+        -- using alias for swiftmend/conflagrate
+        -- we have the context for the aliased spell but now
+        -- switch back to stats for the original spell,
+        stats.alias = spell.base_id;
+        spell = spells[original_spell_id];
+        stats.no_alias = true;
+        stats_for_spell(stats, spell, loadout, effects);
+        stats.no_alias = nil;
+    end
+
+    if special_abilities[original_spell_id] then
+        special_abilities[original_spell_id](spell, info, loadout, stats, effects);
+    end
+    stats.alias = nil;
+
+    if loadout.beacon then
+        -- holy light glyph may have been been applied to expectation
+        info.expectation = info.expectation + info.expectation_st;
+    end
+
+    info.effect_per_sec = info.expectation/stats.cast_time;
+
+    info.effect_per_cost = info.expectation/stats.cost;
+    info.cost_per_sec = stats.cost/stats.cast_time;
+    info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
+    if bit.band(spell.flags, spell_flags.cast_with_ot_dur) ~= 0 then
+        info.effect_per_dur = info.expectation/math.max(info.ot_duration + stats.cast_time);
+    else
+        info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
+    end
+
+    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
+        if spell.base_id == spell_name_to_id["Innervate"] then
+            if loadout.glyphs[54832] then
+                info.mana_restored = base_mana_pool()*2.70;
+            else
+                info.mana_restored = base_mana_pool()*2.25;
+            end
+        elseif spell.base_id == spell_name_to_id["Life Tap"] then
+            info.mana_restored = spell.base_min + stats.spell_power*spell.coef;
+
+            local pts = loadout.talents_table:pts(1, 6);
+            info.mana_restored = info.mana_restored * (1.0 + pts*0.1);
+        elseif spell.base_id == spell_name_to_id["Shadowfiend"] then
+            info.mana_restored = 0.05*loadout.max_mana*10;
+        else
+            -- evocate, mana tide, divine plea of % max mana
+            info.mana_restored = spell.base_min * loadout.max_mana;
+        end
+    end
+end
+
 
 local function spell_info_from_stats(spell_info, stats, spell, loadout, effects)
 

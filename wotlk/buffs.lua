@@ -702,9 +702,8 @@ local buffs_predefined = {
             local pts = loadout.talents_table:pts(3, 22);
 
             for k, v in pairs(spell_names_to_id({"Shadow Bolt", "Chaos Bolt", "Immolate", "Soul Fire", "Shadowburn", "Shadowfury", "Searing Pain", "Incinerate"})) do
-                ensure_exists_and_add(effects.ability.cast_mod_mul, v, pts * 0.1, 0.0); 
+                ensure_exists_and_add(effects.ability.cast_mod_reduce, v, pts * 0.1, 0.0); 
             end
-
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,
@@ -1550,6 +1549,15 @@ local target_buffs_predefined = {
         category = buff_category.class,
         tooltip = "",
     },
+    --shadowflame
+    [61291] = {
+        apply = function(loadout, effects, buff)
+            -- dummy to track for conflagrate
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.hostile, buff_filters.hidden),
+        category = buff_category.class,
+        tooltip = "",
+    },
 };
 
 -- identical implementations
@@ -1604,22 +1612,28 @@ local function detect_buffs(loadout)
     for k, v in pairs(loadout.dynamic_buffs) do
         local i = 1;
         while true do
-              local name, icon_tex, count, _, _, _, src, _, _, spell_id = UnitBuff(k, i);
+              local name, icon_tex, count, _, _, exp_time, src, _, _, spell_id = UnitBuff(k, i);
               if not name then
                   break;
               end
-              v[name] = {count = count, id = spell_id, src = src};
+              if not exp_time then
+                  exp_time = 0.0;
+              end
+              v[name] = {count = count, id = spell_id, src = src, dur = exp_time - GetTime()};
               i = i + 1;
         end
         local i = 1;
         while true do
-              local name, _, count, _, _, _, src, _, _, spell_id = UnitDebuff(k, i);
+              local name, _, count, _, _, exp_time, src, _, _, spell_id = UnitDebuff(k, i);
               if not name then
                   break;
               end
+              if not exp_time then
+                  exp_time = 0.0;
+              end
               -- if multiple buffs with same name, prioritize player applied
               if not v[name] or v[name].src ~= "player" then
-                v[name] = {count = count, id = spell_id, src = src};
+                v[name] = {count = count, id = spell_id, src = src, dur = exp_time - GetTime()};
               end
               i = i + 1;
         end

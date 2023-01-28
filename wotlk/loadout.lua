@@ -28,11 +28,14 @@ local deep_table_copy                   = addonTable.deep_table_copy;
 local loadout_flags                     = addonTable.loadout_flags;
 local stat_ids_in_ui                    = addonTable.stat_ids_in_ui;
 
+local best_rank_by_lvl_update           = addonTable.best_rank_by_lvl_update;
+
 local apply_buffs                       = addonTable.apply_buffs;
 local detect_buffs                      = addonTable.detect_buffs;
 local apply_equipment                   = addonTable.apply_equipment;
 local apply_talents_glyphs              = addonTable.apply_talents_glyphs;
 local wowhead_talent_code               = addonTable.wowhead_talent_code;
+local wowhead_talent_link               = addonTable.wowhead_talent_link;
 
 local effects_from_ui_diff              = addonTable.effects_from_ui_diff;
 
@@ -126,6 +129,8 @@ local function empty_effects(effects)
     effects.ability.effect_mod = {};
     effects.ability.cast_mod = {}; -- flat before mul
     effects.ability.cast_mod_mul = {}; -- after flat
+     -- works like wow classic cast time reductiond, also may reduce gcd (used for backdraft)
+    effects.ability.cast_mod_reduce = {};
     effects.ability.extra_ticks = {};
     effects.ability.cost_mod = {}; -- last, multiplied
     effects.ability.cost_flat = {}; -- second, additive
@@ -275,9 +280,10 @@ local function int_to_crit_rating(int, lvl)
     end
 
     local lvl_80_int_to_crit_ratio = 166.66638409698;
-    local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
+    --local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
+    local lvl_80_crit_rating_from_int = int*addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80)/lvl_80_int_to_crit_ratio;
 
-    return lvl_80_int_per_crit_rating;
+    return lvl_80_crit_rating_from_int;
 end
 
 local function effects_diff(loadout, effects, diff)
@@ -301,6 +307,7 @@ local function effects_diff(loadout, effects, diff)
 
     effects.raw.spell_power = effects.raw.spell_power + diff.sp + sp_gained_from_stat;
     effects.raw.healing_power = effects.raw.healing_power + hp_gained_from_stat;
+
 
     effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
     effects.raw.mp5 = effects.raw.mp5 + diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.raw.mp5_from_int_mod;
@@ -380,7 +387,11 @@ end
 
 local function dynamic_loadout(loadout)
 
-    loadout.lvl = UnitLevel("player");
+    local level = UnitLevel("player");
+    if loadout.lvl ~= level then
+        best_rank_by_lvl_update();
+    end
+    loadout.lvl = level;
 
     for i = 1, 5 do
         local _, stat, _, _ = UnitStat("player", i);
@@ -499,6 +510,8 @@ local function active_loadout_and_effects()
 
         addonTable.talents_update_needed = false;
     end
+
+    -- equipment and talents updates above are rare
 
     zero_effects(loadout_entry.final_effects);
     effects_add(loadout_entry.final_effects, loadout_entry.talented);

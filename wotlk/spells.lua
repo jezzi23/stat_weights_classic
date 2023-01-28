@@ -71,6 +71,7 @@ local function spell_name_to_ids()
             ["Starfall"]                = 48505,
             ["Force of Nature"]         = 33831,
             ["Innervate"]               = 29166,
+            ["Swiftmend"]               = 18562,
         };
     elseif class == "PRIEST" then
         return {
@@ -161,6 +162,7 @@ local function spell_name_to_ids()
             ["Immolation Aura"]         = 50589,
             ["Shadow Cleave"]           = 50581,
             ["Life Tap"]                = 1454,
+            ["Conflagrate"]             = 17962,
         };
     else
         return {};
@@ -3509,6 +3511,25 @@ local function create_spells()
                 cost_base_percent   = 0.01,
                 flags               = spell_flags.mana_regen,
                 school              = magic_school.arcane,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
+            -- swiftmend
+            [18562] = {
+                base_min            = 0.0,
+                base_max            = 0.0,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 40,
+                lvl_max             = 80,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.16,
+                flags               = bit.bor(spell_flags.cd, spell_flags.heal),
+                school              = magic_school.nature,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
@@ -8654,7 +8675,7 @@ local function create_spells()
                 lvl_max             = 5,
                 lvl_outdated        = 9,
                 cost_base_percent   = 0.17,
-                flags               = spell_flags.cast_with_ot_dur,
+                flags               = bit.bor(spell_flags.cast_with_ot_dur, spell_flags.over_time_crit),
                 school              = magic_school.fire,
                 coef                = 0.2,
                 over_time_coef      = 0.2,
@@ -9010,7 +9031,7 @@ local function create_spells()
             [47897] = {
                 base_min            = 520,
                 base_max            = 568,
-                over_time           = 544,
+                over_time           = 136,
                 over_time_tick_freq = 2,
                 over_time_duration  = 8.0,
                 cast_time           = 1.5,
@@ -9028,7 +9049,7 @@ local function create_spells()
             [61290] = {
                 base_min            = 615,
                 base_max            = 671,
-                over_time           = 644,
+                over_time           = 161,
                 rank                = 1,
                 lvl_req             = 80,
                 lvl_max             = 84,
@@ -9556,6 +9577,25 @@ local function create_spells()
                 lvl_outdated        = 80,
 				lvl_scaling			= 0.0,
             },
+            -- conflagrate
+            [17962] = {
+                base_min            = 0.0,
+                base_max            = 0.0,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 40,
+                lvl_max             = 80,
+                lvl_outdated        = 80,
+                cost_base_percent   = 0.16,
+                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_crit),
+                school              = magic_school.fire,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
         };
     end
     return {};
@@ -9611,6 +9651,26 @@ for k, v in pairs(spells) do
         v.healing_version.base_id             = rank1_of_spell;
     end
 end
+
+local best_rank_by_lvl = {};
+
+local function best_rank_by_lvl_update()
+
+    local lvl = UnitLevel("player");
+
+    for k, v in pairs(spells) do
+        if v.lvl_req <= lvl then
+            if best_rank_by_lvl[v.base_id] then
+                if spells[best_rank_by_lvl[v.base_id]].lvl_req <=  v.lvl_req then
+                    best_rank_by_lvl[v.base_id] = k;
+                end
+            else
+                best_rank_by_lvl[v.base_id] = v.base_id;
+            end
+        end
+    end
+end
+
 -- exceptions to various spell ranks
 if class == "DRUID" then
     -- healing touch
@@ -9757,10 +9817,14 @@ local function spell_names_to_id(english_names)
     return base_ids;
 end
 
+best_rank_by_lvl_update();
+
 local addonName, addonTable = ...;
 addonTable.spells = spells;
 addonTable.spell_name_to_id = spell_name_to_id;
 addonTable.spell_names_to_id = spell_names_to_id;
 addonTable.magic_school = magic_school;
 addonTable.spell_flags = spell_flags;
+addonTable.best_rank_by_lvl_update = best_rank_by_lvl_update;
+addonTable.best_rank_by_lvl = best_rank_by_lvl;
 

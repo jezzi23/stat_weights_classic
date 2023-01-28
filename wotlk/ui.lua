@@ -345,16 +345,14 @@ local function update_loadouts_rhs()
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
-            wowhead_talent_link(wowhead_talent_code())
+            wowhead_talent_link(loadout.talents_code)
         );
-
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
     else
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
             wowhead_talent_link(loadout.custom_talents_code)
         );
-
         sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
     end
 
@@ -754,7 +752,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.settings_frame.y_offset);
-    sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetText("Hz (less means lower CPU usage");
+    sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetText("Hz (less means lower CPU usage)");
 
     sw_frame.settings_frame.icon_settings_update_freq_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.settings_frame, "InputBoxTemplate");
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetPoint("TOPLEFT", 120, sw_frame.settings_frame.y_offset + 3);
@@ -1539,18 +1537,11 @@ local function create_sw_gui_loadout_frame()
 
         local txt = self:GetText();
 
-        if txt == wowhead_talent_link(loadout.talents_code) then
-            loadout.flags = bit.bor(loadout.flags, loadout_flags.is_dynamic_loadout);
-            return;
-        end
-
-        loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
-
         addonTable.talents_update_needed = true;
 
-        loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
-
-        sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
+        if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 then
+            loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
+        end
 
         update_loadouts_lhs();
     end
@@ -1566,7 +1557,7 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.rhs_list.talent_editbox:SetScript("OnTextChanged", function(self) 
         talent_editbox(self);
-        --self:ClearFocus();
+        self:ClearFocus();
     end);
 
 
@@ -1590,7 +1581,6 @@ local function create_sw_gui_loadout_frame()
 
             loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout);
         else
-            -- TODO: weird behaviour
             loadout_entry.loadout.flags = bit.band(loadout_entry.loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
         end
         update_loadouts_rhs();
@@ -2199,7 +2189,7 @@ local function load_sw_ui()
                 tooltip:AddLine(addonTable.sw_addon_name..": Version "..addonTable.version);
                 tooltip:AddLine("Left/Right click: Toggle addon frame");
                 tooltip:AddLine("This icon can be removed in the addon's settings tab");
-                tooltip:AddLine("If this addon confuses you, instructions and pointers at");
+                tooltip:AddLine("More info about this addon at:");
                 tooltip:AddLine("https://www.curseforge.com/wow/addons/stat-weights-classic");
             end,
         });

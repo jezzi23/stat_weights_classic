@@ -29,6 +29,7 @@ local race                          = addonTable.race;
 local magic_school                  = addonTable.magic_school;
 local spell_name_to_id              = addonTable.spell_name_to_id;
 local spell_names_to_id             = addonTable.spell_names_to_id;
+local spells                        = addonTable.spells;
 
 local stat                          = addonTable.stat;
 
@@ -836,10 +837,10 @@ local function create_talents()
                     local one_ticks = spell_names_to_id({"Moonfire", "Rejuvenation", "Insect Swarm"});
                     local two_ticks = spell_names_to_id({"Regrowth", "Lifebloom"});
                     for k, v in pairs(one_ticks) do
-                        ensure_exists_and_add(effects.ability.extra_ticks, v, 1, 0);
+                        ensure_exists_and_add(effects.ability.extra_ticks, v, 1 * pts, 0);
                     end
                     for k, v in pairs(two_ticks) do
-                        ensure_exists_and_add(effects.ability.extra_ticks, v, 2, 0);
+                        ensure_exists_and_add(effects.ability.extra_ticks, v, 2 * pts, 0);
                     end
                 end
             },
@@ -996,7 +997,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local abilities = spell_names_to_id({"Regrowth", "Rejuvenation", "Lifebloom", "Wild Growth"});
                     for k, v in pairs(abilities) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, 0.2, 0);
+                        ensure_exists_and_add(effects.ability.cost_mod, v, pts*0.2, 0);
                     end
                 end
             },
@@ -1148,9 +1149,11 @@ local function create_talents()
             },
             [123] = {
                 apply = function(loadout, effects, pts)
-                    local crit_mod = 0.03*bit.lshift(1, pts);
-                    -- 0.06, 0.12 or 0.24
-                    ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Lava Burst"], 0.5*crit_mod, 0.0);
+                    if pts ~= 0 then
+                        local crit_mod = 0.03*bit.lshift(1, pts);
+                        -- 0.06, 0.12 or 0.24
+                        ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Lava Burst"], 0.5*crit_mod, 0.0);
+                    end
                 end
             },
             [124] = {
@@ -1232,9 +1235,9 @@ local function create_talents()
                 end
             },
             [319] = {
-                apply = function(loadout, effects, pts)
+                apply = function(loadout, effects, pts, missing_pts)
                     for i = 2,7 do
-                        effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + pts * 0.02;
+                        effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + missing_pts * 0.02;
                     end
                 end
             },
@@ -1545,7 +1548,7 @@ local function create_talents()
             [110] = {
                 apply = function(loadout, effects, pts)
                     for k, v in pairs(spell_names_to_id({"Curse of Agony", "Curse of Doom"})) do
-                        ensure_exists_and_add(effects.ability.cast_mod, v, 0.5, 0.0); 
+                        ensure_exists_and_add(effects.ability.cast_mod, v, pts*0.5, 0.0); 
                     end
                 end
             },
@@ -1590,7 +1593,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local abilities = spell_names_to_id({"Corruption", "Unstable Affliction", "Haunt"});
                     for k, v in pairs(abilities) do
-                        ensure_exists_and_add(effects.ability.crit_mod, v, 0.5, 0);
+                        ensure_exists_and_add(effects.ability.crit_mod, v, pts*0.5, 0);
                     end
                 end
             },
@@ -1673,7 +1676,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local destr = spell_names_to_id({"Rain of Fire", "Hellfire", "Shadow Bolt", "Chaos Bolt", "Immolate", "Soul Fire", "Shadowburn", "Shadowfury", "Searing Pain", "Incinerate"});
                     for k, v in pairs(destr) do
-                        ensure_exists_and_add(effects.ability.crit, v, 0.05, 0.0); 
+                        ensure_exists_and_add(effects.ability.crit, v, pts*0.05, 0.0); 
                     end
                 end
             },
@@ -1686,15 +1689,16 @@ local function create_talents()
             },
             [320] = {
                 apply = function(loadout, effects, pts)
+                    -- Note: This mod is multiplied, not added for some reason... Inconsistenty keeps on giving
                     for k, v in pairs(spell_names_to_id({"Shadow Bolt", "Shadowburn", "Chaos Bolt", "Incinerate"})) do
-                        ensure_exists_and_add(effects.ability.coef_mod, v, pts * 0.04, 0.0); 
+                        --ensure_exists_and_add(effects.ability.coef_mod, v, pts * 0.04, 0.0); 
+                        ensure_exists_and_add(effects.ability.coef_mod, v, pts*spells[v].coef*0.04, 0.0); 
                     end
                 end
             },
             [325] = {
                 apply = function(loadout, effects, pts)
-                    -- TODO: when conflagrate is implemented uncomment this
-                    --ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Conflagrate"], pts * 0.05, 0.0); 
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Conflagrate"], pts * 0.05, 0.0); 
                 end
             },
         };

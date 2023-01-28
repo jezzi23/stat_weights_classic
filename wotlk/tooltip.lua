@@ -99,12 +99,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     stats_for_spell(stats, spell, loadout, effects); 
     local eval = evaluate_spell(spell, stats, loadout, effects);
 
-    --local cast_til_oom = cast_until_oom_stat_weights(
-    --  spell, stats,
-    --  eval.spell, eval.spell_1_sp, eval.spell_1_crit, eval.spell_1_hit, eval.spell_1_haste, eval.spell_1_int, eval.spell_1_spirit, eval.spell_1_mp5,
-    --  loadout, effects
-    --);
-
     local effect = "";
     local effect_per_sec = "";
     local effect_per_cost = "";
@@ -179,6 +173,25 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                    math.floor(eval.spell.min_noncrit_if_hit), 
                                                    math.ceil(eval.spell.max_noncrit_if_hit)),
                                      232.0/255, 225.0/255, 32.0/255);
+                    if spell.base_id == spell_name_to_id["Chain Lightning"] then
+                        local bounce_str = "     + ";
+                        local bounces = 2;
+                        if loadout.glyphs[55449] then
+                            bounces = 3;
+                        end
+                        local falloff = 0.7;
+                        for i = 1, bounces-1 do
+                            bounce_str = bounce_str..string.format(" %d-%d  + ",
+                                                                   falloff*math.floor(eval.spell.min_noncrit_if_hit), 
+                                                                   falloff*math.ceil(eval.spell.max_noncrit_if_hit));
+
+                            falloff = falloff * 0.7;
+                        end
+                        bounce_str = bounce_str..string.format(" %d-%d",
+                                                               falloff*math.floor(eval.spell.min_noncrit_if_hit), 
+                                                               falloff*math.ceil(eval.spell.max_noncrit_if_hit));
+                        tooltip:AddLine(bounce_str, 232.0/255, 225.0/255, 32.0/255);
+                    end
                     
                 -- heal spells with real direct range
                 else
@@ -194,6 +207,25 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                       math.floor(eval.spell.min_noncrit_if_hit*0.1), 
                                                       math.ceil(eval.spell.max_noncrit_if_hit*0.1)),
                                         232.0/255, 225.0/255, 32.0/255);
+
+                    elseif spell.base_id == spell_name_to_id["Chain Heal"] then
+                        local bounce_str = "     + ";
+                        local bounces = 2;
+                        if loadout.glyphs[55437] then
+                            bounces = 3;
+                        end
+                        local falloff = 0.6;
+                        for i = 1, bounces-1 do
+                            bounce_str = bounce_str..string.format(" %d-%d  + ",
+                                                                   falloff*math.floor(eval.spell.min_noncrit_if_hit), 
+                                                                   falloff*math.ceil(eval.spell.max_noncrit_if_hit));
+
+                            falloff = falloff * 0.6;
+                        end
+                        bounce_str = bounce_str..string.format(" %d-%d",
+                                                               falloff*math.floor(eval.spell.min_noncrit_if_hit), 
+                                                               falloff*math.ceil(eval.spell.max_noncrit_if_hit));
+                        tooltip:AddLine(bounce_str, 232.0/255, 225.0/255, 32.0/255);
                     end
                 end
 
@@ -308,6 +340,44 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                       math.floor(eval.spell.min_crit_if_hit*0.1), 
                                                       math.ceil(eval.spell.max_crit_if_hit*0.1)),
                                         252.0/255, 69.0/255, 3.0/255);
+
+                    elseif spell.base_id == spell_name_to_id["Chain Heal"] then
+                        local bounce_str = "     + ";
+                        local bounces = 2;
+                        if loadout.glyphs[55437] then
+                            bounces = 3;
+                        end
+                        local falloff = 0.6;
+                        for i = 1, bounces-1 do
+                            bounce_str = bounce_str..string.format(" %d-%d  + ",
+                                                                   falloff*math.floor(eval.spell.min_crit_if_hit), 
+                                                                   falloff*math.ceil(eval.spell.max_crit_if_hit));
+
+                            falloff = falloff * 0.6;
+                        end
+                        bounce_str = bounce_str..string.format(" %d-%d",
+                                                               falloff*math.floor(eval.spell.min_crit_if_hit), 
+                                                               falloff*math.ceil(eval.spell.max_crit_if_hit));
+                        tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
+
+                    elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
+                        local bounce_str = "     + ";
+                        local bounces = 2;
+                        if loadout.glyphs[55449] then
+                            bounces = 3;
+                        end
+                        local falloff = 0.7;
+                        for i = 1, bounces-1 do
+                            bounce_str = bounce_str..string.format(" %d-%d  + ",
+                                                                   falloff*math.floor(eval.spell.min_crit_if_hit), 
+                                                                   falloff*math.ceil(eval.spell.max_crit_if_hit));
+
+                            falloff = falloff * 0.7;
+                        end
+                        bounce_str = bounce_str..string.format(" %d-%d",
+                                                               falloff*math.floor(eval.spell.min_crit_if_hit), 
+                                                               falloff*math.ceil(eval.spell.max_crit_if_hit));
+                        tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
                     end
                 else 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
