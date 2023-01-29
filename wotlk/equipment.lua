@@ -29,6 +29,7 @@ local spell_name_to_id                  = addonTable.spell_name_to_id;
 local spell_names_to_id                 = addonTable.spell_names_to_id;
 
 local class                             = addonTable.class;
+local stat                              = addonTable.stat;
 
 local set_tiers = {
     pve_t7_1         = 1,
@@ -692,9 +693,17 @@ local function apply_equipment(loadout, effects)
     local found_anything = false;
     -- head slot gems
     for _, v in pairs({GetInventoryItemGems(1)}) do
-        -- chaotic skyflare diamond 3% crit dmg, totally janky behaviour
         if v == 41285 or v == 34220 then
             effects.raw.special_crit_mod = effects.raw.special_crit_mod + 0.03;
+        elseif v == 41333 then
+            effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + 0.02;
+        elseif v == 41389 then
+            effects.raw.mana_mod = effects.raw.mana_mod + 0.02;
+        elseif v == 41376 then
+            effects.raw.special_crit_heal_mod = effects.raw.special_crit_heal_mod + 0.03;
+            effects.raw.mp5 = effects.raw.mp5 + 11;
+        elseif v == 41401 then
+            effects.raw.resource_refund = effects.raw.resource_refund + 0.05 * 600;
         end
     end
 

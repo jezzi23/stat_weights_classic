@@ -115,12 +115,14 @@ local function empty_effects(effects)
     effects.raw.cost_mod = 0;
     effects.raw.cost_mod_base = 0;
     effects.raw.cost_flat = 0;
+    effects.raw.resource_refund = 0;
 
     effects.raw.haste_rating = 0;
     effects.raw.crit_rating = 0;
     effects.raw.hit_rating = 0;
 
     effects.raw.special_crit_mod = 0;
+    effects.raw.special_crit_heal_mod = 0;
     effects.raw.non_stackable_effect_flags = 0;
 
     -- indexable by ability base id

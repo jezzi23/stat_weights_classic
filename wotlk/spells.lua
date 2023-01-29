@@ -206,6 +206,7 @@ local spell_flags = {
     pet                     = bit.lshift(1,12),
     duration_haste_scaling  = bit.lshift(1,13),
     cast_with_ot_dur        = bit.lshift(1,14),
+    alias                   = bit.lshift(1,15),
 };
 
 local function create_spells()
@@ -3528,7 +3529,7 @@ local function create_spells()
                 lvl_max             = 80,
                 lvl_outdated        = 80,
                 cost_base_percent   = 0.16,
-                flags               = bit.bor(spell_flags.cd, spell_flags.heal),
+                flags               = bit.bor(spell_flags.cd, spell_flags.heal, spell_flags.alias),
                 school              = magic_school.nature,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
@@ -9590,7 +9591,7 @@ local function create_spells()
                 lvl_max             = 80,
                 lvl_outdated        = 80,
                 cost_base_percent   = 0.16,
-                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_crit),
+                flags               = bit.bor(spell_flags.cd, spell_flags.over_time_crit, spell_flags.alias),
                 school              = magic_school.fire,
                 coef                = 0.0,
                 over_time_coef      = 0.0,

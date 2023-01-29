@@ -342,7 +342,7 @@ elseif class == "DRUID" then
                 num_ticks = 6;
             end
             
-            local heal_amount = num_ticks * info.ot_if_hit/info.ot_ticks;
+            local heal_amount = stats.spell_mod * num_ticks * info.ot_if_hit/info.ot_ticks;
             
             info.min_noncrit_if_hit = heal_amount;
             info.max_noncrit_if_hit = heal_amount;
@@ -374,7 +374,7 @@ elseif class == "WARLOCK" then
         end,
         [spell_name_to_id["Conflagrate"]] = function(spell, info, loadout, stats)
 
-            local immolate_effect = info.ot_if_hit;
+            local immolate_effect = stats.spell_mod * info.ot_if_hit;
             local direct = 0.6 * immolate_effect;
             
             -- direct component
@@ -480,15 +480,17 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.crit_mod = 1.5;
-    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
 
-        local extra_crit_mod = effects.by_school.spell_crit_mod[spell.school]
-        if effects.ability.crit_mod[spell.base_id] then
-            extra_crit_mod = extra_crit_mod + effects.ability.crit_mod[spell.base_id];
-        end
+    local extra_crit_mod = effects.by_school.spell_crit_mod[spell.school]
+    if effects.ability.crit_mod[spell.base_id] then
+        extra_crit_mod = extra_crit_mod + effects.ability.crit_mod[spell.base_id];
+    end
+    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
 
         stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
         stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
+    else
+        stats.crit_mod = stats.crit_mod + 0.5*effects.raw.special_crit_heal_mod;
     end
 
     local target_vuln_mod = 1.0;
@@ -508,7 +510,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.spell_mod = 1.0;
     stats.spell_ot_mod = 1.0;
     stats.flat_addition = 0;
-    local resource_refund = 0;
+    local resource_refund = effects.raw.resource_refund;
 
     if not effects.ability.effect_mod[spell.base_id] then
         effects.ability.effect_mod[spell.base_id] = 0.0;
@@ -604,7 +606,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local moonkin_form, _, _, _, _, _, _ = GetSpellInfo(24858);
         if (loadout.buffs[moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
             (loadout.dynamic_buffs["player"][moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
-            resource_refund = stats.hit*stats.crit * 0.02 * loadout.max_mana;
+            resource_refund = resource_refund + stats.hit*stats.crit * 0.02 * loadout.max_mana;
         end
 
         --improved insect swarm talent
@@ -641,7 +643,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local pts = loadout.talents_table:pts(1, 7);
         if pts ~= 0 then
             local mana_refund = 0.3 * original_base_cost * base_mana_pool();
-            resource_refund = stats.crit * pts*0.2 * mana_refund;
+            resource_refund = resource_refund + stats.crit * pts*0.2 * mana_refund;
         end
 
         -- tier 8 p2 holy bonus
@@ -702,7 +704,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if loadout.num_set_pieces[set_tiers.pve_t7_3] >= 2 then
                 water_shield_proc_gain = water_shield_proc_gain * 1.1;
             end
-            resource_refund = stats.crit * mana_proc_chance * water_shield_proc_gain;
+            resource_refund = resource_refund + stats.crit * mana_proc_chance * water_shield_proc_gain;
         end
 
         local pts = loadout.talents_table:pts(3, 22);
@@ -741,7 +743,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if pts ~= 0 then
             -- master of elements
             local mana_refund = pts * 0.1 * original_base_cost * base_mana_pool();
-            resource_refund = stats.hit*stats.crit * mana_refund;
+            resource_refund = resource_refund + stats.hit*stats.crit * mana_refund;
         end
 
         -- ignite
@@ -886,6 +888,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             (1.0 + effects.raw.spell_heal_mod_mul)
             *
             (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id]+ effects.raw.spell_heal_mod + effects.raw.ot_mod);
+        
 
     elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
 
@@ -918,6 +921,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
             (1 + effects.raw.spell_dmg_mod)
             *
             (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id] + effects.by_school.spell_dmg_mod_add[spell.school] + effects.raw.ot_mod);
+    end
+
+    if bit.band(spell.flags, spell_flags.alias) ~= 0 then
+        stats.spell_mod = 1.0 + effects.ability.effect_mod[spell.base_id];
+        stats.spell_ot_mod = 1.0 + effects.ability.effect_mod[spell.base_id];
     end
 
     stats.ot_extra_ticks = effects.ability.extra_ticks[spell.base_id];

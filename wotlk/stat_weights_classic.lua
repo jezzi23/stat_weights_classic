@@ -190,6 +190,9 @@ local event_dispatch = {
     ["PLAYER_EQUIPMENT_CHANGED"] = function(self, msg, msg2, msg3)
         addonTable.equipment_update_needed = true;
     end,
+    ["SOCKET_INFO_UPDATE"] = function(self, msg, msg2, msg3)
+        addonTable.equipment_update_needed = true;
+    end,
     ["GLYPH_ADDED"] = function(self, msg, msg2, msg3)
 
         if bit.band(active_loadout_entry().loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
