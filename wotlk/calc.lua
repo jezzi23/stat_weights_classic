@@ -461,6 +461,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     stats.crit = loadout.spell_crit_by_school[spell.school] +
         effects.by_school.spell_crit[spell.school];
+    if spell.base_id == spell_name_to_id["Frostfire Bolt"] then
+        stats.crit = math.max(stats.crit, loadout.spell_crit_by_school[magic_school.frost] +
+            effects.by_school.spell_crit[magic_school.frost]);
+    end
     stats.ot_crit = 0.0;
     if effects.ability.crit[spell.base_id] then
         stats.crit = stats.crit + effects.ability.crit[spell.base_id];
@@ -482,6 +486,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.crit_mod = 1.5;
 
     local extra_crit_mod = effects.by_school.spell_crit_mod[spell.school]
+    if spell.base_id == spell_name_to_id["Frostfire Bolt"] then
+        extra_crit_mod = math.max(extra_crit_mod, effects.by_school.spell_crit_mod[magic_school.frost]);
+    end
     if effects.ability.crit_mod[spell.base_id] then
         extra_crit_mod = extra_crit_mod + effects.ability.crit_mod[spell.base_id];
     end
@@ -547,6 +554,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
     local cast_mod_mul = 0.0;
 
     stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
+    if spell.base_id == spell_name_to_id["Frostfire Bolt"] then
+        stats.extra_hit = math.max(stats.extra_hit, effects.by_school.spell_dmg_hit[magic_school.frost]);
+    end
     if effects.ability.hit[spell.base_id] then
         stats.extra_hit = stats.extra_hit + effects.ability.hit[spell.base_id];
     end
@@ -902,25 +912,33 @@ local function stats_for_spell(stats, spell, loadout, effects)
         target_vuln_mod = target_vuln_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
         target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
 
+        local spell_dmg_mod_school = effects.by_school.spell_dmg_mod[spell.school];
+        local spell_dmg_mod_school_add = effects.by_school.spell_dmg_mod_add[spell.school];
+
+        if spell.base_id == spell_name_to_id["Frostfire Bolt"] then
+            spell_dmg_mod_school = (1.0 + spell_dmg_mod_school) * (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost]) - 1.0;
+            spell_dmg_mod_school_add = (1.0 + spell_dmg_mod_school_add) * (1.0 + effects.by_school.spell_dmg_mod_add[magic_school.frost]) - 1.0;
+        end
+
         stats.spell_mod = target_vuln_mod * global_mod
             *
-            (1 + effects.by_school.spell_dmg_mod[spell.school])
+            (1.0 + spell_dmg_mod_school)
             *
-            (1 + effects.raw.spell_dmg_mod_mul)
+            (1.0 + effects.raw.spell_dmg_mod_mul)
             *
-            (1 + effects.raw.spell_dmg_mod)
+            (1.0 + effects.raw.spell_dmg_mod)
             *
-            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.by_school.spell_dmg_mod_add[spell.school]);
+            (1.0 + effects.ability.effect_mod[spell.base_id] + spell_dmg_mod_school_add);
 
         stats.spell_ot_mod = target_vuln_ot_mod * global_mod
             *
-            (1 + effects.by_school.spell_dmg_mod[spell.school])
+            (1.0 + spell_dmg_mod_school)
             *
-            (1 + effects.raw.spell_dmg_mod_mul)
+            (1.0 + effects.raw.spell_dmg_mod_mul)
             *
-            (1 + effects.raw.spell_dmg_mod)
+            (1.0 + effects.raw.spell_dmg_mod)
             *
-            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id] + effects.by_school.spell_dmg_mod_add[spell.school] + effects.raw.ot_mod);
+            (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id] + spell_dmg_mod_school_add + effects.raw.ot_mod);
     end
 
     if bit.band(spell.flags, spell_flags.alias) ~= 0 then

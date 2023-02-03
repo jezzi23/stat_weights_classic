@@ -1572,6 +1572,7 @@ target_buffs_predefined[53696]  = deep_table_copy(target_buffs_predefined[23931]
 target_buffs_predefined[48485]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
 target_buffs_predefined[120]    = deep_table_copy(target_buffs_predefined[23931]); -- snared
 target_buffs_predefined[11113]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
+target_buffs_predefined[44614]  = deep_table_copy(target_buffs_predefined[23931]); -- snared
 
 target_buffs_predefined[33395]  = deep_table_copy(target_buffs_predefined[42917]); -- frozen
 target_buffs_predefined[44572]  = deep_table_copy(target_buffs_predefined[42917]); -- frozen

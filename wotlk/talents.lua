@@ -1394,12 +1394,14 @@ local function create_talents()
             },
             [214] = {
                 apply = function(loadout, effects, pts)
-                    effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                        (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire])*(1.0 +  0.01 * pts) - 1.0;
-                    effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                        (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane])*(1.0 +  0.01 * pts) - 1.0;
-                    effects.by_school.spell_dmg_mod[magic_school.frost] = 
-                        (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost])*(1.0 +  0.01 * pts) - 1.0;
+                    --effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                    --    (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire])*(1.0 +  0.01 * pts) - 1.0;
+                    --effects.by_school.spell_dmg_mod[magic_school.arcane] = 
+                    --    (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane])*(1.0 +  0.01 * pts) - 1.0;
+                    --effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                    --    (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost])*(1.0 +  0.01 * pts) - 1.0;
+                    effects.raw.spell_dmg_mod_mul = 
+                        (1.0 + effects.raw.spell_dmg_mod_mul)*(1.0 +  0.01 * pts) - 1.0;
                 end
             },
             [215] = {
@@ -1410,8 +1412,10 @@ local function create_talents()
             },
             [218] = {
                 apply = function(loadout, effects, pts)
+                    --effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                    --    (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire])*(1.0 +  0.02 * pts) - 1.0;
                     effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                        (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire])*(1.0 +  0.02 * pts) - 1.0;
+                        effects.by_school.spell_dmg_mod[magic_school.fire] + 0.02 * pts;
                 end
             },
             [219] = {

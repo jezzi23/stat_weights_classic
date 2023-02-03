@@ -1892,7 +1892,7 @@ local function create_spells()
                 lvl_outdated        = 79,
                 cost_base_percent   = 0.14,
                 flags               = bit.bor(spell_flags.snare, spell_flags.cast_with_ot_dur),
-                school              = magic_school.frost,
+                school              = magic_school.fire,
                 coef                = 0.8571,
                 over_time_coef      = 0.0,
                 lvl_scaling         = 3.9,
