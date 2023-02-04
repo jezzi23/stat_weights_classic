@@ -838,6 +838,17 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "Instant Pyroblast",
     },
+    -- missile barrage
+    [44401] = {
+        apply = function(loadout, effects, buff)
+            
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Arcane Missiles"], 2.5, 0.0); 
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Arcane Missiles"], 0.999, 0.0); 
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "Arcane Missiles 2.5secs faster",
+    },
     -- blessing of wisdom
     [19742] = {
         apply = function(loadout, effects, buff)

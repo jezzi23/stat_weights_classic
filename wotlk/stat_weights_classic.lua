@@ -58,7 +58,7 @@ local active_loadout_and_effects            = addonTable.active_loadout_and_effe
 
 -------------------------------------------------------------------------
 addonTable.sw_addon_name = "Stat Weights Classic";
-addonTable.version =  "3.0.6";
+addonTable.version =  "3.0.7";
 
 addonTable.sw_addon_loaded = false;
 
@@ -148,6 +148,15 @@ local event_dispatch = {
         end
 
         addonTable.special_action_bar_changed = true;
+    end,
+    ["UNIT_EXITED_VEHICLE"] = function(self, msg, msg2, msg3)
+        if not addonTable.sw_addon_loaded then
+            return;
+        end
+
+        if msg == "player" then
+            addonTable.special_action_bar_changed = true;
+        end
     end,
     --["ACTIONBAR_UPDATE_STATE"] = function(self, msg, msg2, msg3)
     --    -- test
