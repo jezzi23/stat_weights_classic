@@ -1033,6 +1033,11 @@ local function create_talents()
                     end
                 end
             },
+            [115] = {
+                apply = function(loadout, effects, pts)
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Consecration"], pts * 0.05, 0);
+                end
+            },
             [116] = {
                 apply = function(loadout, effects, pts, missing_pts)
                     effects.by_school.spell_crit[magic_school.holy] = 
@@ -1051,15 +1056,36 @@ local function create_talents()
                     effects.by_attribute.sp_from_stat_mod[stat.int] = effects.by_attribute.sp_from_stat_mod[stat.int]+ pts * 0.04;
                 end
             },
+            [125] = {
+                apply = function(loadout, effects, pts)
+                    effects.by_school.spell_dmg_hit[magic_school.holy] = 
+                        effects.by_school.spell_dmg_hit[magic_school.holy] + pts * 0.02;
+                end
+            },
             [201] = {
                 apply = function(loadout, effects, pts)
                     effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + pts * 0.01;
                 end
             },
+            [209] = {
+                apply = function(loadout, effects, pts)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Sacred Shield"], pts * 0.1, 0);
+                end
+            },
+            [221] = {
+                apply = function(loadout, effects, pts)
+                    local abilities = spell_names_to_id({"Holy Light", "Flash of Light"});
+                    for k, v in pairs(abilities) do
+                        ensure_exists_and_add(effects.ability.crit_mod, v, pts * 0.05, 0.0); 
+                    end
+                end
+            },
             [302] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Holy Shock"], pts * 0.02, 0.0); 
-                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Sacred Shield"], pts * 0.02, 0.0); 
+                    local abilities = spell_names_to_id({"Holy Light", "Holy Shock", "Consecration", "Holy Wrath", "Hammer of Wrath", "Avenger's Shield"});
+                    for k, v in pairs(abilities) do
+                        ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0); 
+                    end
                 end
             },
         };

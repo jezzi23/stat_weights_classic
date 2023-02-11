@@ -417,6 +417,8 @@ local function dynamic_loadout(loadout)
     for i = 1, 7 do
         loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
     end
+    local ap_src1, ap_src2, ap_src3 = UnitAttackPower("player");
+    loadout.attack_power = ap_src1 + ap_src2 + ap_src3;
 
     -- crit and hit is already gathered indirectly from rating, but not haste
     loadout.haste_rating = GetCombatRating(CR_HASTE_SPELL);

@@ -414,6 +414,9 @@ elseif class == "PALADIN" then
                 info.expectation = 1.5 * info.expectation_st;
             end
         end,
+        [spell_name_to_id["Avenger's Shield"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
     };
 else
     special_abilities = {};
@@ -484,6 +487,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.crit_mod = 1.5;
+    if bit.band(spell.flags, spell_flags.double_crit) ~= 0 then
+        stats.crit_mod = 2.0;
+    end
 
     local extra_crit_mod = effects.by_school.spell_crit_mod[spell.school]
     if spell.base_id == spell_name_to_id["Frostfire Bolt"] then
@@ -497,7 +503,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
         stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
     else
-        stats.crit_mod = stats.crit_mod + 0.5*effects.raw.special_crit_heal_mod;
+        stats.crit_mod = stats.crit_mod + 0.5*effects.raw.special_crit_heal_mod + extra_crit_mod;
     end
 
     local target_vuln_mod = 1.0;
@@ -904,6 +910,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         stats.spell_mod = target_vuln_mod * global_mod *
             ((1.0 + effects.ability.effect_mod[spell.base_id]));
+
+        stats.spell_ot_mod = target_vuln_mod * global_mod *
+            ((1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id]));
         -- hacky special case for power word: shield glyph as it scales with healing
         stats.spell_heal_mod = (1.0 + effects.raw.spell_heal_mod_mul)
             *
@@ -958,6 +967,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
     stats.spell_power = stats.spell_power + effects.raw.spell_power;
 
+    if bit.band(spell.flags, spell_flags.hybrid_scaling) ~= 0 then
+        
+        stats.spell_power = stats.spell_power + loadout.attack_power;
+    end
 
     if effects.ability.sp[spell.base_id] then
         stats.spell_power = stats.spell_power + effects.ability.sp[spell.base_id];
