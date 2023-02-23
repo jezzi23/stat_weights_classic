@@ -503,7 +503,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
         stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
     else
-        stats.crit_mod = stats.crit_mod + 0.5*effects.raw.special_crit_heal_mod + extra_crit_mod;
+        stats.crit_mod = stats.crit_mod + 0.5*effects.raw.special_crit_heal_mod;
+        if effects.ability.crit_mod[spell.base_id] then
+            stats.crit_mod = stats.crit_mod + effects.ability.crit_mod[spell.base_id];
+        end
+
     end
 
     local target_vuln_mod = 1.0;
