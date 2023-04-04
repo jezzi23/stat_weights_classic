@@ -742,6 +742,9 @@ local buffs_predefined = {
             effects.by_school.spell_crit[magic_school.fire] = 
                 effects.by_school.spell_crit[magic_school.fire] + 0.1 * stacks;
 
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Frostfire Bolt"], 0.25, 0.0); 
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostfire Bolt"], 0.1 * stacks, 0.0); 
+
         end,
         filter = buff_filters.mage,
         category = buff_category.class,
