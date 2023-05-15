@@ -38,6 +38,9 @@ local set_tiers = {
     pve_t8_1         = 4,
     pve_t8_2         = 5,
     pve_t8_3         = 6,
+    pve_t9_1         = 7,
+    pve_t9_2         = 8,
+    pve_t9_3         = 9,
 };
 
 local function create_sets()
@@ -83,6 +86,33 @@ local function create_sets()
 
         for i = 45391, 45395 do
             set_tier_ids[i] = set_tiers.pve_t8_3;
+        end
+
+        -- t9 healing
+        for i = 48062, 48066 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48067, 48071 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48750, 48754 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48057, 48061 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        -- t9 shadow
+        for i = 48087, 48091 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48760, 48764 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48097, 48101 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48092, 48096 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
         end
 
     elseif class == "DRUID" then
@@ -186,6 +216,19 @@ local function create_sets()
         for i = 46135, 46140 do
             set_tier_ids[i] = set_tiers.pve_t8_1;
         end
+        -- t9
+        for i = 47798, 47802 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48735, 48739 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 47803, 47807 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 47793, 47797 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
 
     elseif class == "MAGE" then
         -- t7
@@ -194,6 +237,19 @@ local function create_sets()
         end
         for i = 40415, 40419 do
             set_tier_ids[i] = set_tiers.pve_t7_1;
+        end
+        -- t9
+        for i = 47773, 47777 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48730, 48734 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 47768, 47772 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 47763, 47767 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
         end
 
 
@@ -204,6 +260,13 @@ local function create_sets()
         end
         for i = 40569, 40573 do
             set_tier_ids[i] = set_tiers.pve_t7_1;
+        end
+        -- t8 holy
+        for i = 46178, 46182 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
+        end
+        for i = 45370, 45374 do
+            set_tier_ids[i] = set_tiers.pve_t8_1;
         end
     end
 

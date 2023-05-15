@@ -58,7 +58,7 @@ local active_loadout_and_effects            = addonTable.active_loadout_and_effe
 
 -------------------------------------------------------------------------
 addonTable.sw_addon_name = "Stat Weights Classic";
-addonTable.version =  "3.0.10";
+addonTable.version =  "3.0.11";
 
 addonTable.sw_addon_loaded = false;
 

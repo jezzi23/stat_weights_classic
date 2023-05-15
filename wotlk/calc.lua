@@ -417,6 +417,18 @@ elseif class == "PALADIN" then
         [spell_name_to_id["Avenger's Shield"]] = function(spell, info, loadout)
             info.expectation = 3 * info.expectation_st;
         end,
+        [spell_name_to_id["Sacred Shield"]] = function(spell, info, loadout)
+
+            if loadout.num_set_pieces[set_tiers.pve_t8_1] >= 4 then
+                info.expectation_st = info.expectation_st * 6/4;
+                info.expectation = info.expectation_st;
+                info.ot_ticks = info.ot_ticks * 6/4;
+                info.ot_freq = 4.0;
+
+                info.ot_if_hit = info.ot_if_hit * 6/4;
+                info.ot_if_hit_max = info.ot_if_hit;
+            end
+        end,
     };
 else
     special_abilities = {};
@@ -1245,6 +1257,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.effect_per_sec = info.expectation/stats.cast_time;
 
     info.effect_per_cost = info.expectation/stats.cost;
+
     info.cost_per_sec = stats.cost/stats.cast_time;
     info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
     if bit.band(spell.flags, spell_flags.cast_with_ot_dur) ~= 0 then
@@ -1314,10 +1327,9 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     local resource_loss_per_sec = spell_effect.cost_per_sec - mp1_casting;
 
     if resource_loss_per_sec <= 0 then
-        -- divide by 0 party!
-        spell_effect.num_casts_until_oom = 1/0;
-        spell_effect.effect_until_oom = 1/0;
-        spell_effect.time_until_oom = 1/0;
+        spell_effect.num_casts_until_oom = math.huge;
+        spell_effect.effect_until_oom = math.huge;
+        spell_effect.time_until_oom = math.huge;
         spell_effect.mp1 = mp1_casting;
     else
         spell_effect.time_until_oom = mana/resource_loss_per_sec;

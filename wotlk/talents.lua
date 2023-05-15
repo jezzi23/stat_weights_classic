@@ -1070,6 +1070,7 @@ local function create_talents()
             [209] = {
                 apply = function(loadout, effects, pts)
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Sacred Shield"], pts * 0.1, 0);
+                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Sacred Shield"], (pts*15)/6, 0);
                 end
             },
             [221] = {

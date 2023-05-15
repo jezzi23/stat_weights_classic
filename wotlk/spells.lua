@@ -7733,7 +7733,7 @@ local function create_spells()
                 base_min            = 0,
                 base_max            = 0,
                 over_time           = 500,
-                over_time_tick_freq = 7.5,
+                over_time_tick_freq = 6.0,
                 over_time_duration  = 30.0,
                 cast_time           = 1.5,
                 rank                = 1,
