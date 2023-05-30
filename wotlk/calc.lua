@@ -231,7 +231,7 @@ if class == "SHAMAN" then
             info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
         end,
 
-        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout)
+        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats)
 
             if loadout.num_set_pieces[set_tiers.pve_t9_3] >= 4 then
                 
@@ -662,7 +662,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local moonkin_form, _, _, _, _, _, _ = GetSpellInfo(24858);
         if (loadout.buffs[moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
             (loadout.dynamic_buffs["player"][moonkin_form] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0) then
-            resource_refund = resource_refund + stats.hit*stats.crit * 0.02 * loadout.max_mana;
+            if bit.band(spell.flags, bit.bor(spell_flags.mana_regen, spell_flags.heal)) == 0 then
+                resource_refund = resource_refund + stats.hit*stats.crit * 0.02 * loadout.max_mana;
+            end
         end
 
         --improved insect swarm talent
@@ -1327,7 +1329,11 @@ local function spell_info(info, spell, stats, loadout, effects)
 
     info.effect_per_sec = info.expectation/stats.cast_time;
 
-    info.effect_per_cost = info.expectation/stats.cost;
+    if stats.cost == 0 then
+        info.effect_per_cost = math.huge;
+    else
+        info.effect_per_cost = info.expectation/stats.cost;
+    end
 
     info.cost_per_sec = stats.cost/stats.cast_time;
     info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
@@ -1355,6 +1361,7 @@ local function spell_info(info, spell, stats, loadout, effects)
             -- evocate, mana tide, divine plea of % max mana
             info.mana_restored = spell.base_min * loadout.max_mana;
         end
+        info.effect_per_cost = math.huge;
     end
 end
 
@@ -1504,8 +1511,11 @@ local function evaluate_spell(spell, stats, loadout, effects)
     local spell_effect_until_oom_1spirit_delta = spell_effect_extra_1spirit.effect_until_oom - spell_effect.effect_until_oom;
     local spell_effect_until_oom_1mp5_delta = spell_effect_extra_1mp5.effect_until_oom - spell_effect.effect_until_oom;
 
-    return {
-        infinite_cast = {
+    local result = {
+        spell = spell_effect,
+    };
+    if bit.band(spell.flags, spell_flags.mana_regen) == 0 then
+        result.infinite_cast = {
             effect_per_sec_per_sp = spell_effect_per_sec_1sp_delta,
 
             sp_per_crit   = spell_effect_per_sec_1crit_delta/(spell_effect_per_sec_1sp_delta),
@@ -1513,8 +1523,10 @@ local function evaluate_spell(spell, stats, loadout, effects)
             sp_per_haste  = spell_effect_per_sec_1haste_delta/(spell_effect_per_sec_1sp_delta),
             sp_per_int    = spell_effect_per_sec_1int_delta/(spell_effect_per_sec_1sp_delta),
             sp_per_spirit = spell_effect_per_sec_1spirit_delta/(spell_effect_per_sec_1sp_delta),
-        },
-        cast_until_oom = {
+        };
+    end
+    if stats.cost ~= 0 then
+        result.cast_until_oom = {
             effect_until_oom_per_sp = spell_effect_until_oom_1sp_delta,
 
             sp_per_crit     = spell_effect_until_oom_1crit_delta/(spell_effect_until_oom_1sp_delta),
@@ -1523,9 +1535,10 @@ local function evaluate_spell(spell, stats, loadout, effects)
             sp_per_int      = spell_effect_until_oom_1int_delta/(spell_effect_until_oom_1sp_delta),
             sp_per_spirit   = spell_effect_until_oom_1spirit_delta/(spell_effect_until_oom_1sp_delta),
             sp_per_mp5      = spell_effect_until_oom_1mp5_delta/(spell_effect_until_oom_1sp_delta),
-        },
-        spell = spell_effect,
-    };
+        };
+    end
+
+    return result;
 end
 
 local function spell_diff(spell_normal, spell_diffed, sim_type)

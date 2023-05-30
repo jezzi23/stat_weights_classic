@@ -1492,18 +1492,18 @@ local target_buffs_predefined = {
         category = buff_category.class,
         tooltip = "Flash of Light 50% crit proc",
     },
-    -- sacred shield flash of light hot
-    [58597] = {
-        -- TODO:
-        apply = function(loadout, effects, buff)
-            if not buff.src or buff.src == loadout.friendly_towards then
-                ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.5, 0.0);
-            end
-        end,
-        filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
-        category = buff_category.class,
-        tooltip = "Flash of Light HOT",
-    },
+    ---- sacred shield flash of light hot
+    --[58597] = {
+    --    -- TODO:
+    --    apply = function(loadout, effects, buff)
+    --        if not buff.src or buff.src == loadout.friendly_towards then
+    --            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.5, 0.0);
+    --        end
+    --    end,
+    --    filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
+    --    category = buff_category.class,
+    --    tooltip = "Flash of Light HOT",
+    --},
     -- regrowth
     [8936] = {
         apply = function(loadout, effects, buff)
