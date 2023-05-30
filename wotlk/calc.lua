@@ -1,4 +1,3 @@
-
 --MIT License
 --
 --Copyright (c) Stat Weights Classic
@@ -230,7 +229,29 @@ if class == "SHAMAN" then
             local pts = loadout.talents_table:pts(1, 20);
             -- lightning overload
             info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
-        end
+        end,
+
+        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout)
+
+            if loadout.num_set_pieces[set_tiers.pve_t9_3] >= 4 then
+                
+                info.ot_duration = 6;
+                info.ot_freq = 3;
+                info.ot_ticks = 2;
+
+                -- TODO: unclear if the lava burst dot benefits from "twice" or not
+                
+                info.ot_if_hit = 0.1 * info.min_noncrit_if_hit;
+                info.ot_if_hit_max = 0.1 * info.max_noncrit_if_hit;
+
+                info.ot_if_crit = 0.1 * info.min_crit_if_hit;
+                info.ot_if_crit_max = 0.1 * info.max_crit_if_hit;
+
+                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+                info.expectation_st = info.expectation_st + expected_ot_if_hit;
+            end
+        end,
     };
 elseif class == "PRIEST" then
     special_abilities = {
@@ -624,6 +645,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 then
             -- divine aegis
             local pts = loadout.talents_table:pts(1, 24);
+            if pts > 0 and loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                pts = pts + 1;
+            end
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
         end
 
@@ -659,8 +683,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.crit_mod = stats.crit_mod * (1 + 0.1 * pts);
         end
 
-        if loadout.glyphs[54754] and spell.base_id == spell_name_to_id["Rejuvenation"] and loadout.friendly_hp_perc and loadout.friendly_hp_perc <= 0.5  then
-            target_vuln_ot_mod = target_vuln_ot_mod + 0.5;
+        if spell.base_id == spell_name_to_id["Rejuvenation"] then
+            if loadout.glyphs[54754] and loadout.friendly_hp_perc and loadout.friendly_hp_perc <= 0.5 then
+                target_vuln_ot_mod = target_vuln_ot_mod + 0.5;
+            end
+            if loadout.num_set_pieces[set_tiers.pve_t9_3] >= 4 then
+                stats.ot_crit = stats.crit;
+            end
         end
 
         -- clearcast (omen of clarity)
@@ -669,6 +698,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
             cost_mod = cost_mod*0.9;
         end
 
+        if spell.base_id == spell_name_to_id["Moonfire"] and loadout.num_set_pieces[set_tiers.pve_t9_1] >= 2 then
+            if effects.ability.crit_ot[spell.base_id] then
+                stats.ot_crit = stats.crit + effects.ability.crit_ot[spell.base_id];
+            else
+                stats.ot_crit = stats.crit;
+            end
+        end
         
     elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
         -- illumination
@@ -689,6 +725,37 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if pts ~= 0 and UnitName(loadout.friendly_towards) == UnitName("player") then
             target_vuln_mod = target_vuln_mod + pts * 0.01;
             target_vuln_ot_mod = target_vuln_ot_mod + pts * 0.01;
+        end
+
+        local sacred_shield = spell_name_to_id["Sacred Shield"];
+        if (loadout.target_buffs[sacred_shield] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) or
+            (loadout.dynamic_buffs[loadout.friendly_towards][sacred_shield] and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0) then
+            if spell.base_id == spell_name_to_id["Flash of Light"] then
+
+                local hot_ratio = 0.5;
+
+                if loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                    hot_ratio = hot_ratio * 2;
+                end
+
+                info.ot_duration = 12;
+                info.ot_freq = 3;
+                info.ot_ticks = 4;
+
+                -- some spell mods are applied again on the hot effect for some reason
+                local special_mods = 1.0 + effects.raw.spell_heal_mod_mul;
+                
+                info.ot_if_hit = hot_ratio * info.min_noncrit_if_hit * special_mods
+                info.ot_if_hit_max = hot_ratio * info.max_noncrit_if_hit * special_mods
+
+                info.ot_if_crit = hot_ratio * info.min_crit_if_hit * special_mods;
+                info.ot_if_crit_max = hot_ratio * info.max_crit_if_hit * special_mods;
+
+                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+                info.expectation_st = info.expectation_st + expected_ot_if_hit;
+                -- hot displayed specialized in tooltip section
+            end
         end
 
 
@@ -1205,6 +1272,10 @@ local function spell_info(info, spell, stats, loadout, effects)
         local pts = 0;
         if spell.base_id == spell_name_to_id["Renew"] then
             pts = loadout.talents_table:pts(2, 23);
+            if pts ~= 0 and loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                pts = pts + 2;
+            end
+                
         elseif spell.base_id == spell_name_to_id["Devouring Plague"] then
             pts = 2 * loadout.talents_table:pts(3, 18);
         end

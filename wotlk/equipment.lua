@@ -155,6 +155,35 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_t8_3;
         end
 
+        -- t9 balance
+        for i = 48781, 48785 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48178, 48182 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48183, 48187 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48173, 48177 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+
+        -- t9 resto
+        for i = 48148, 48152 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48769, 48773 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48153, 48157 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48143, 48147 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+
+
     elseif class == "SHAMAN" then
         -- t7 elemental
         for i = 39592, 39596 do
@@ -206,6 +235,48 @@ local function create_sets()
 
         for i = 45401, 45405 do
             set_tier_ids[i] = set_tiers.pve_t8_3;
+        end
+
+        -- t9 resto
+        for i = 48295, 48299 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48829, 48833 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48305, 48309 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+        for i = 48300, 48304 do
+            set_tier_ids[i] = set_tiers.pve_t9_3;
+        end
+
+        --t9 enhance
+        for i = 48366, 48370 do
+            set_tier_ids[i] = set_tiers.pve_t9_2;
+        end
+        for i = 48851, 48855 do
+            set_tier_ids[i] = set_tiers.pve_t9_2;
+        end
+        for i = 48361, 48365 do
+            set_tier_ids[i] = set_tiers.pve_t9_2;
+        end
+        for i = 48356, 48360 do
+            set_tier_ids[i] = set_tiers.pve_t9_2;
+        end
+
+        --t9 elemental
+        for i = 48841, 48845 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48836, 48840 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48331, 48335 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48326, 48330 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
         end
 
     elseif class == "WARLOCK" then
@@ -268,6 +339,17 @@ local function create_sets()
         for i = 45370, 45374 do
             set_tier_ids[i] = set_tiers.pve_t8_1;
         end
+
+        --t9 holy
+        for i = 48595, 48599 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48905, 48909 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        for i = 48585, 48589 do
+            set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
     end
 
     return set_tier_ids;
@@ -304,6 +386,19 @@ local function create_set_effects()
             [set_tiers.pve_t8_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Devouring Plague"], 0.15, 0.0);
+                end
+            end,
+            [set_tiers.pve_t9_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Prayer of Mending"], 0.2, 0.0);
+                end
+            end,
+            [set_tiers.pve_t9_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Vampiric Touch"], 2, 0.0);
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Mind Flay"], 0.05, 0.0);
                 end
             end,
         };
@@ -345,6 +440,17 @@ local function create_set_effects()
                     -- done in later stage
                 end
             end,
+            [set_tiers.pve_t9_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfire"], 0.04, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.04, 0.0);
+                end
+            end,
+            [set_tiers.pve_t9_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Nourish"], 0.05, 0.0);
+                end
+            end,
         };
 
     elseif class == "SHAMAN" then
@@ -384,6 +490,27 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Chain Heal"], 0.2, 0.0);
                 end
             end,
+            [set_tiers.pve_t9_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Flame Shock"], 3, 0.0);
+                end
+                -- 4 set done in later stage
+            end,
+            [set_tiers.pve_t9_2] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Flame Shock"], 0.25, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Earth Shock"], 0.25, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Frost Shock"], 0.25, 0.0);
+                end
+            end,
+            [set_tiers.pve_t9_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Riptide"], 0.2, 0.0);
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Chain Heal"], 0.05, 0.0);
+                end
+            end,
         };
 
     elseif class == "WARLOCK" then
@@ -396,6 +523,13 @@ local function create_set_effects()
                 if num_pieces >= 4 then
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Shadow Bolt"], 0.05, 0.0);
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Incinerate"], 0.05, 0.0);
+                end
+            end,
+            [set_tiers.pve_t9_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Unstable Affliction"], 0.1, 0.0);
                 end
             end,
         };
@@ -411,6 +545,15 @@ local function create_set_effects()
                         effects.by_school.spell_crit_mod[magic_school.arcane] + 0.025;
                     effects.by_school.spell_crit_mod[magic_school.frost] = 
                         effects.by_school.spell_crit_mod[magic_school.frost] + 0.025;
+                end
+            end,
+            [set_tiers.pve_t9_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Fireball"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostbolt"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostfire Bolt"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Arcane Blast"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Arcane Missiles"], 0.05, 0.0);
                 end
             end,
         };

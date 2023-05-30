@@ -988,6 +988,10 @@ local buffs_predefined = {
             if loadout.glyphs[56382] then
                 spirit_to_crit_mod = spirit_to_crit_mod + 0.20;
             end
+            if loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                spirit_to_crit_mod = spirit_to_crit_mod + 0.15;
+
+            end
             effects.by_attribute.crit_from_stat_mod[stat.spirit] =
                 effects.by_attribute.crit_from_stat_mod[stat.spirit] + spirit_to_crit_mod;
 
@@ -1004,6 +1008,11 @@ local buffs_predefined = {
     [6117] = {
         apply = function(loadout, effects, buff)
             effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.5;
+
+            if loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.1;
+
+            end
         end,
         filter = buff_filters.mage,
         category = buff_category.class,
@@ -1471,7 +1480,8 @@ local target_buffs_predefined = {
         category = buff_category.class,
         tooltip = "Frozen effect",
     },
-    -- sacred shield flash of light crit
+    -- TODO: scared shield
+    -- sacred shield flash of light crit proc
     [58597] = {
         apply = function(loadout, effects, buff)
             if not buff.src or buff.src == "player" then
@@ -1480,7 +1490,19 @@ local target_buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
         category = buff_category.class,
-        tooltip = "Flash of light 50% crit",
+        tooltip = "Flash of Light 50% crit proc",
+    },
+    -- sacred shield flash of light hot
+    [58597] = {
+        -- TODO:
+        apply = function(loadout, effects, buff)
+            if not buff.src or buff.src == loadout.friendly_towards then
+                ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.5, 0.0);
+            end
+        end,
+        filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
+        category = buff_category.class,
+        tooltip = "Flash of Light HOT",
     },
     -- regrowth
     [8936] = {

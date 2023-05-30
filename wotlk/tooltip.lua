@@ -262,6 +262,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                 if class == "PRIEST" then
                     pts = loadout.talents_table:pts(1, 24);
                     if pts ~= 0 and bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
+                        if loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                            pts = pts + 1;
+                        end
                         effect_type_str = "absorbs";
                         extra_crit_mod = pts * 0.1;
                     end
