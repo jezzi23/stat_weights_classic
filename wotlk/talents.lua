@@ -1493,6 +1493,8 @@ local function create_talents()
                         effects.by_school.spell_dmg_hit[magic_school.arcane] + pts * 0.01;
                     effects.by_school.spell_dmg_hit[magic_school.fire] = 
                         effects.by_school.spell_dmg_hit[magic_school.fire] + pts * 0.01;
+                    -- ffb double dips 
+                    ensure_exists_and_add(effects.ability.hit, spell_name_to_id["Frostfire Bolt"], pts * 0.01, 0.0);
                     effects.raw.cost_mod = effects.raw.cost_mod + pts* 0.01;
                 end
             },

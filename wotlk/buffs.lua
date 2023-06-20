@@ -1354,6 +1354,10 @@ local target_buffs_predefined = {
                 for i = 2, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.03;
                 end
+                if class == "MAGE" then
+                    -- ffb double dips
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostfire Bolt"], 0.03, 0.0);
+                end
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.totem_of_wrath_crit_target);
             end
@@ -1366,8 +1370,13 @@ local target_buffs_predefined = {
     [17800] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.mage_crit_target) == 0 then
+
                 for i = 2, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.05;
+                end
+                if class == "MAGE" then
+                    -- ffb double dips
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostfire Bolt"], 0.05, 0.0);
                 end
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.mage_crit_target);

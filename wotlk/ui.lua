@@ -485,7 +485,6 @@ end
 
 local loadout_checkbutton_id_counter = 1;
 
--- TODO: localize
 function update_loadouts_lhs()
 
     local y_offset = -13;
@@ -523,6 +522,7 @@ function update_loadouts_lhs()
                 self:SetChecked(true);
 
                 addonTable.talents_update_needed = true;
+                addonTable.equipment_update_needed = true;
 
                 sw_frame.loadouts_frame.lhs_list.active_loadout = self.target_index;
 
