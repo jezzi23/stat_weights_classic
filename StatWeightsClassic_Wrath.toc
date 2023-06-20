@@ -1,4 +1,4 @@
-## Interface: 30401
+## Interface: 30402
 ## Title: Stat Weights Classic WOTLK
 ## Notes: Advanced caster ability information, icon overlays and more
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char
