@@ -48,7 +48,8 @@ local function default_sw_settings()
                 tooltip_stat_display.effect_per_cost,
                 tooltip_stat_display.cost_per_sec,
                 tooltip_stat_display.stat_weights,
-                tooltip_stat_display.cast_until_oom);
+                tooltip_stat_display.cast_until_oom,
+                tooltip_stat_display.spell_rank);
 
     settings.icon_overlay_update_freq = 3;
     settings.icon_overlay_font_size = 8;

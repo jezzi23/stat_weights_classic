@@ -59,7 +59,7 @@ local tooltip_stat_display = {
     avg_cast            = bit.lshift(1,12),
     cast_until_oom      = bit.lshift(1,13),
     cast_and_tap        = bit.lshift(1,14),
-    spell_rank          = bit.lshift(1,15)
+    spell_rank          = bit.lshift(1,15),
 };
 
 
@@ -126,12 +126,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
 
-    if loadout.lvl > spell.lvl_outdated and not addonTable.__sw__debug__ then
-        tooltip:AddLine("Ability downranking is not optimal in WOTLK! A new rank is available at your level.", 252.0/255, 69.0/255, 3.0/255);
-        end_tooltip_section(tooltip);
-        return;
-    end 
-
     if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
         tooltip:AddLine(string.format("Loadout: %s - Target %.1f%% HP",
                                       loadout.name, loadout.friendly_hp_perc * 100
@@ -143,7 +137,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                       ),
                         138/256, 134/256, 125/256);
     end
-
     if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
         tooltip:AddLine("Spell Rank: "..spell.rank, 138/256, 134/256, 125/256);
     end
@@ -181,9 +174,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     if spell.base_id == spell_name_to_id["Chain Lightning"] then
                         local bounce_str = "     + ";
                         local bounces = 2;
-                        if loadout.glyphs[55449] then
-                            bounces = 3;
-                        end
                         local falloff = 0.7;
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
@@ -206,20 +196,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.ceil(eval.spell.max_noncrit_if_hit)),
                                     232.0/255, 225.0/255, 32.0/255);
 
-                    -- holy light splash                
-                    if loadout.glyphs[54937] and spell.base_id == spell_name_to_id["Holy Light"] then
-                        tooltip:AddLine(string.format("     + splash %d-%d on 5 players each",
-                                                      math.floor(eval.spell.min_noncrit_if_hit*0.1), 
-                                                      math.ceil(eval.spell.max_noncrit_if_hit*0.1)),
-                                        232.0/255, 225.0/255, 32.0/255);
-
-                    elseif spell.base_id == spell_name_to_id["Chain Heal"] then
+                    if spell.base_id == spell_name_to_id["Chain Heal"] then
                         local bounce_str = "     + ";
                         local bounces = 2;
-                        if loadout.glyphs[55437] then
-                            bounces = 3;
-                        end
-                        local falloff = 0.6;
+                        local falloff = 0.5;
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                    falloff*math.floor(eval.spell.min_noncrit_if_hit), 
@@ -264,48 +244,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                 local effect_type_str = nil;
                 local extra_crit_mod = 0;
                 local pts = 0;
-                if class == "PRIEST" then
-                    pts = loadout.talents_table:pts(1, 24);
-                    if pts ~= 0 and bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
-                        if loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
-                            pts = pts + 1;
-                        end
-                        effect_type_str = "absorbs";
-                        extra_crit_mod = pts * 0.1;
-                    end
-                elseif class == "DRUID" then
-                    pts = loadout.talents_table:pts(3, 21);
-                    if pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
-                        effect_type_str = "seeds";
-                        extra_crit_mod = pts * 0.1;
-                    end
-                elseif class == "SHAMAN" then
-                    pts = loadout.talents_table:pts(3, 22);
-                    if pts ~= 0 and
-                        (spell.base_id == spell_name_to_id["Healing Wave"] or
-                         spell.base_id == spell_name_to_id["Lesser Healing Wave"] or
-                         spell.base_id == spell_name_to_id["Riptide"]) then
-
-                        effect_type_str = "awakens";
-                        extra_crit_mod = pts * 0.1;
-                    elseif loadout.num_set_pieces[set_tiers.pve_t8_1] >= 4 and
-                        spell.base_id == spell_name_to_id["Lightning Bolt"] then
-
-                        effect_type_str = "worldbreaks"
-                        extra_crit_mod = 0.08;
-                    end
-                elseif class == "PALADIN" then
-                    -- tier 8 p2 holy bonus
-                    if loadout.num_set_pieces[set_tiers.pve_t8_1] >= 2 and bit.band(spell.flags, spell_flags.heal) ~= 0 and
-                        spell.base_id == spell_name_to_id["Holy Shock"] then
-
-                        effect_type_str = "aegis"
-                        extra_crit_mod = 0.15;
-                    end
-
-                elseif class == "MAGE" and spell.school == magic_school.fire and loadout.talents_table:pts(2, 4) ~= 0 then
-
-                    pts = loadout.talents_table:pts(2, 4);
+                if class == "MAGE" and spell.school == magic_school.fire and loadout.talents_table:pts(2, 4) ~= 0 then
+                    pts = loadout.talents_table:pts(2, 3);
                     effect_type_str = "ignites"
                     extra_crit_mod = 0.08 * pts;
 
@@ -324,7 +264,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                       math.floor(effect_min), 
                                                       math.ceil(effect_max)),
                                        252.0/255, 69.0/255, 3.0/255);
-                    else
+                    elseif eval.spell.min_crit_if_hit ~= 0 then
+
                         tooltip:AddLine(string.format("Critical (%.2f%%): %d + %s %d", 
                                                       stats.crit*100, 
                                                       math.floor(min_crit_if_hit), 
@@ -342,19 +283,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                   math.ceil(eval.spell.max_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
 
-                    -- holy light splash                
-                    if loadout.glyphs[54937] and spell.base_id == spell_name_to_id["Holy Light"] then
-                        tooltip:AddLine(string.format("     + splash %d-%d on 5 players each",
-                                                      math.floor(eval.spell.min_crit_if_hit*0.1), 
-                                                      math.ceil(eval.spell.max_crit_if_hit*0.1)),
-                                        252.0/255, 69.0/255, 3.0/255);
-
-                    elseif spell.base_id == spell_name_to_id["Chain Heal"] then
+                    if spell.base_id == spell_name_to_id["Chain Heal"] then
                         local bounce_str = "     + ";
                         local bounces = 2;
-                        if loadout.glyphs[55437] then
-                            bounces = 3;
-                        end
                         local falloff = 0.6;
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
@@ -371,9 +302,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
                         local bounce_str = "     + ";
                         local bounces = 2;
-                        if loadout.glyphs[55449] then
-                            bounces = 3;
-                        end
                         local falloff = 0.7;
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
@@ -388,6 +316,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                         tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
                     end
                 elseif eval.spell.min_crit_if_hit ~= 0 then
+
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
                                                   stats.crit*100, 
                                                   math.floor(eval.spell.min_crit_if_hit)),
@@ -477,8 +406,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             end
         end
 
-        if eval.spell.ot_if_crit ~= 0.0 or (loadout.glyphs[63091] and spell.base_id == spell_name_to_id["Living Bomb"]) and 
-            sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
+        if eval.spell.ot_if_crit ~= 0.0 and sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
             if bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
                 tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d over %.2fs (%d-%d for %d ticks)",
                                               stats.crit*100, 
@@ -491,29 +419,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                            252.0/255, 69.0/255, 3.0/255);
                 
             else
-
-                if class == "MAGE" and loadout.talents_table:pts(2, 4) ~= 0 and spell.base_id == spell_name_to_id["Living Bomb"] then
-                    local pts = loadout.talents_table:pts(2, 4) 
-                    local min_crit_if_hit = (eval.spell.ot_if_crit/eval.spell.ot_ticks)/(1 + pts * 0.08);
-                    local ignite_min = pts * 0.08 * min_crit_if_hit;
-                    tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%.1f for %d ticks + ignites %d)",
-                                                  stats.crit*100, 
-                                                  min_crit_if_hit * eval.spell.ot_ticks,
-                                                  eval.spell.ot_duration, 
-                                                  min_crit_if_hit,
-                                                  eval.spell.ot_ticks,
-                                                  ignite_min), 
-                               252.0/255, 69.0/255, 3.0/255);
-                else
-                    tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%.1f for %d ticks)",
-                                                  stats.ot_crit*100, 
-                                                  eval.spell.ot_if_crit, 
-                                                  eval.spell.ot_duration, 
-                                                  eval.spell.ot_if_crit/eval.spell.ot_ticks,
-                                                  eval.spell.ot_ticks), 
-                               252.0/255, 69.0/255, 3.0/255);
-                end
+                tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%.1f for %d ticks)",
+                                              stats.ot_crit*100, 
+                                              eval.spell.ot_if_crit, 
+                                              eval.spell.ot_duration, 
+                                              eval.spell.ot_if_crit/eval.spell.ot_ticks,
+                                              eval.spell.ot_ticks), 
+                           252.0/255, 69.0/255, 3.0/255);
             end
+            
         end
     end
 

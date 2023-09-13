@@ -124,10 +124,7 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
     end
     
     v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    local rank_str = "(OLD RANK!!!)";
-    if lvl <= spell.lvl_outdated then
-        rank_str = "(Rank "..spell.rank..")";
-    end
+    local rank_str = "(Rank "..spell.rank..")";
     if is_duality_spell and 
         bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
@@ -729,13 +726,6 @@ local function create_sw_gui_settings_frame()
                            "Show healing for hybrids", nil);  
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
-    sw_frame.settings_frame.icon_old_rank_warning = 
-        create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Old rank warning", nil);  
-
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
-
-
     --sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
     --sw_frame.settings_frame.icon_heal_variant = 
     --    CreateFrame("CheckButton", "sw_icon_heal_variant", sw_frame.settings_frame, "ChatConfigCheckButtonTemplate"); 
@@ -915,10 +905,6 @@ local function create_sw_gui_settings_frame()
         sw_frame.settings_frame.icon_mana_overlay:SetChecked(true);
     end
 
-    if __sw__persistent_data_per_char.settings.icon_overlay_old_rank then
-        sw_frame.settings_frame.icon_old_rank_warning:SetChecked(true);
-    end
-
     sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetText(""..sw_snapshot_loadout_update_freq);
 
@@ -1034,9 +1020,6 @@ local function create_sw_gui_settings_frame()
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.more_details) ~= 0 then
         sw_frame.settings_frame.tooltip_more_details:SetChecked(true);
     end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.spell_rank) ~= 0 then
-        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(true);
-    end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cost) ~= 0 then
         sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);
     end
@@ -1045,6 +1028,9 @@ local function create_sw_gui_settings_frame()
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_until_oom) ~= 0 then
         sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(true);
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.spell_rank) ~= 0 then
+        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(true);
     end
     --if class == "WARLOCK" then
         --if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_and_tap) ~= 0 then
@@ -1160,13 +1146,13 @@ local function create_sw_gui_stat_comparison_frame()
             label_str = "Spell power"
         },
         [5] = {
-            label_str = "Critical rating"
+            label_str = "Critical %"
         },
         [6] = {
-            label_str = "Hit rating"
+            label_str = "Hit %"
         },
         [7] = {
-            label_str = "Haste rating"
+            label_str = "Counter resistance"
         },
     };
 
@@ -1738,7 +1724,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetPoint("TOPLEFT", sw_frame.loadouts_frame.rhs_list, 0, y_offset_rhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs even when inactive");
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName()).tooltip = 
-        "The selected buffs will be forcibly applied, but the highest rank is used (level 80) in any case";
+        "The selected buffs will be forcibly applied, but the highest rank is used (level 60) in any case";
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetScript("OnClick", function(self)
 
         local loadout = active_loadout();
