@@ -199,269 +199,11 @@ local function mana_regen_per_5(int, spirit, level)
 end
 
 local special_abilities = nil;
-if class == "SHAMAN" then
-    special_abilities = {
-        [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
-            if loadout.glyphs[55437] then
-                info.expectation = (1 + 0.6 + 0.6*0.6 + 0.6*0.6*0.6) * info.expectation_st;
-            else
-                info.expectation = (1 + 0.6 + 0.6*0.6) * info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
-            info.expectation = 6 * info.expectation_st;
-        end,
-        [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
-        end,
-        [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
-            if loadout.glyphs[55449] then
-                info.expectation = (1 + 0.7 + 0.7*0.7 + 0.7*0.7*0.7) * info.expectation_st;
-            else
-                info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
-            end
-
-            local pts = loadout.talents_table:pts(1, 20);
-            -- lightning overload
-            info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
-        end,
-        [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout)
-            local pts = loadout.talents_table:pts(1, 20);
-            -- lightning overload
-            info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
-        end,
-
-        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats)
-
-            if loadout.num_set_pieces[set_tiers.pve_t9_3] >= 4 then
-                
-                info.ot_duration = 6;
-                info.ot_freq = 3;
-                info.ot_ticks = 2;
-
-                -- TODO: unclear if the lava burst dot benefits from "twice" or not
-                
-                info.ot_if_hit = 0.1 * info.min_noncrit_if_hit;
-                info.ot_if_hit_max = 0.1 * info.max_noncrit_if_hit;
-
-                info.ot_if_crit = 0.1 * info.min_crit_if_hit;
-                info.ot_if_crit_max = 0.1 * info.max_crit_if_hit;
-
-                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
-
-                info.expectation_st = info.expectation_st + expected_ot_if_hit;
-            end
-        end,
-    };
-elseif class == "PRIEST" then
-    special_abilities = {
-        [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
-
-            if loadout.glyphs[55680] then
-                
-                info.ot_duration = 6;
-                info.ot_freq = 3;
-                info.ot_ticks = 2;
-
-                -- some spell mods are applied again on the hot effect for some reason
-                local special_mods = 1.0 + effects.raw.spell_heal_mod_mul;
-                
-                info.ot_if_hit = 0.2 * info.min_noncrit_if_hit * special_mods
-                info.ot_if_hit_max = 0.2 * info.max_noncrit_if_hit * special_mods
-
-                -- aegis
-                local pts = loadout.talents_table:pts(1, 24);
-                local overdue = (1.0 + 0.1 * pts);
-
-                info.ot_if_crit = 0.2 * info.min_crit_if_hit * special_mods / overdue;
-                info.ot_if_crit_max = 0.2 * info.max_crit_if_hit * special_mods / overdue;
-
-                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
-
-                info.expectation_st = info.expectation_st + expected_ot_if_hit;
-                -- hot displayed specialized in tooltip section
-            end
-            info.expectation = 5 * info.expectation_st;
-        end,
-        [spell_name_to_id["Circle of Healing"]] = function(spell, info, loadout)
-
-            if loadout.glyphs[55675] then
-                info.expectation = 6 * info.expectation_st;
-            else
-                info.expectation = 5 * info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout)
-            if loadout.num_set_pieces[set_tiers.pve_t7_1] >= 2 then
-                info.expectation = 6 * info.expectation_st;
-            else
-                info.expectation = 5 * info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Power Word: Shield"]] = function(spell, info, loadout)
-
-            info.absorb = info.min_noncrit_if_hit;
-
-            if loadout.glyphs[55672] then
-                local mod = 0.2 * info.healing_mod_from_absorb_glyph;
-                info.healing_mod_from_absorb_glyph = nil;
-
-                info.min_noncrit_if_hit = mod * info.min_noncrit_if_hit;
-                info.max_noncrit_if_hit = mod * info.max_noncrit_if_hit;
-
-                info.min_crit_if_hit = mod * info.min_crit_if_hit;
-                info.max_crit_if_hit = mod * info.max_crit_if_hit;
-                info.expectation_st = info.expectation_st * (1.0 + mod);
-                info.expectation = info.expectation_st;
-            else
-
-                info.min_noncrit_if_hit = 0.0;
-                info.max_noncrit_if_hit = 0.0;
-
-                info.min_crit_if_hit = 0.0;
-                info.max_crit_if_hit = 0.0;
-            end
-        end,
-        [spell_name_to_id["Holy Nova"]] = function(spell, info, loadout)
-            if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                info.expectation = 5 * info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Binding Heal"]] = function(spell, info, loadout)
-            info.expectation = 2 * info.expectation_st;
-        end,
-        [spell_name_to_id["Penance"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
-        end,
-        [spell_name_to_id["Lightwell"]] = function(spell, info, loadout)
-            info.expectation = 10 * info.expectation_st;
-        end,
-        [spell_name_to_id["Divine Hymn"]] = function(spell, info, loadout)
-
-            info.expectation = 3 * info.expectation_st;
-        end,
-    };
-elseif class == "DRUID" then
-    special_abilities = {
-        [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
-            if loadout.glyphs[62970] then
-                info.expectation = 6 * info.expectation_st;
-            else
-                info.expectation = 5 * info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Tranquility"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
-        end,
-        [spell_name_to_id["Starfall"]] = function(spell, info, loadout)
-            info.expectation = 20 * info.expectation_st;
-        end,
-        [spell_name_to_id["Swiftmend"]] = function(spell, info, loadout, stats)
-
-            local num_ticks = 4;
-            if stats.alias and stats.alias == spell_name_to_id["Regrowth"] then
-                num_ticks = 6;
-            end
-            
-            local heal_amount = stats.spell_mod * num_ticks * info.ot_if_hit/info.ot_ticks;
-            
-            info.min_noncrit_if_hit = heal_amount;
-            info.max_noncrit_if_hit = heal_amount;
-
-            info.min_crit_if_hit = stats.crit_mod*heal_amount;
-            info.max_crit_if_hit = stats.crit_mod*heal_amount;
-
-            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
-            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
-
-            info.expectation_st = 0.5 * (info.min + info.max);
-            info.expectation = info.expectation_st;
-
-            -- clear over time
-            info.ot_if_hit = 0.0;
-            info.ot_if_hit_max = 0.0;
-            info.ot_if_crit = 0.0;
-            info.ot_if_crit_max = 0.0;
-            info.ot_ticks = 0;
-            info.expected_ot_if_hit = 0.0;
-            info.ot_duration = 0.0;
-            info.ot_freq = 0.0;
-        end,
-    };
-elseif class == "WARLOCK" then
-    special_abilities = {
-        [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
-        end,
-        [spell_name_to_id["Conflagrate"]] = function(spell, info, loadout, stats)
-
-            local immolate_effect = stats.spell_mod * info.ot_if_hit;
-            local direct = 0.6 * immolate_effect;
-            
-            -- direct component
-            info.min_noncrit_if_hit = direct;
-            info.max_noncrit_if_hit = direct;
-
-            info.min_crit_if_hit = stats.crit_mod*direct;
-            info.max_crit_if_hit = stats.crit_mod*direct;
-
-            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
-            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
-
-
-            -- over time component
-            info.ot_ticks = 3;
-            info.ot_duration = 6.0;
-            info.ot_freq = 2.0;
-
-            info.ot_if_hit = 0.4 * immolate_effect;
-            info.ot_if_hit_max = info.ot_if_hit;
-            info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
-            info.ot_if_crit_max = info.ot_if_crit;
-
-            local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
-            info.expected_ot = stats.hit * expected_ot_if_hit;
-
-            -- combined
-            info.expectation_st = 0.5 * (info.min + info.max) + info.expected_ot;
-            info.expectation = info.expectation_st + info.expected_ot;
-        end,
-    };
-elseif class == "PALADIN" then
-    special_abilities = {
-        [spell_name_to_id["Holy Light"]] = function(spell, info, loadout)
-            if loadout.glyphs[54937] then
-                -- splash for 10% of heal to 5 targets
-                info.expectation = 1.5 * info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Avenger's Shield"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
-        end,
-        [spell_name_to_id["Sacred Shield"]] = function(spell, info, loadout)
-
-            if loadout.num_set_pieces[set_tiers.pve_t8_1] >= 4 then
-                info.expectation_st = info.expectation_st * 6/4;
-                info.expectation = info.expectation_st;
-                info.ot_ticks = info.ot_ticks * 6/4;
-                info.ot_freq = 4.0;
-
-                info.ot_if_hit = info.ot_if_hit * 6/4;
-                info.ot_if_hit_max = info.ot_if_hit;
-            end
-        end,
-    };
-else
-    special_abilities = {};
-end
-
 local function set_alias_spell(spell, loadout)
 
     local alias_spell = spell;
 
-    local swiftmend = spell_name_to_id["Swiftmend"];
-    local conflagrate = spell_name_to_id["Conflagrate"];
-    if spell.base_id == swiftmend then
+    if spell.base_id == spell_name_to_id["Swiftmend"] then
         alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Rejuvenation"]]];
         if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
@@ -472,7 +214,7 @@ local function set_alias_spell(spell, loadout)
                 end
             end
         end
-    elseif spell.base_id == conflagrate then
+    elseif spell.base_id == spell_name_to_id["Conflagrate"] then
         alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Immolate"]]];
         if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 and
             loadout.hostile_towards == "target" and
@@ -707,6 +449,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 stats.ot_crit = stats.crit;
             end
         end
+
+        -- t10:4piece languish
+        if loadout.num_set_pieces[set_tiers.pve_t10_1] >= 4 and
+            (spell.base_id == spell_name_to_id["Wrath"] or spell.base_id == spell_name_to_id["Starfire"]) then
+
+            stats.crit_mod = stats.crit_mod * 1.07;
+        end
         
     elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
         -- illumination
@@ -830,6 +579,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
             spell.base_id == spell_name_to_id["Lightning Bolt"] then
 
             stats.crit_mod = stats.crit_mod * 1.08;
+        end
+
+        -- tier 10 resto bonus
+        if loadout.num_set_pieces[set_tiers.pve_t10_3] >= 4 and
+            spell.base_id == spell_name_to_id["Chain Heal"] then
+
+            stats.crit_mod = stats.crit_mod * 1.25;
         end
         
     elseif class == "MAGE" then
@@ -1371,6 +1127,325 @@ local function spell_info_from_stats(spell_info, stats, spell, loadout, effects)
     stats_for_spell(stats, spell, loadout, effects);
     spell_info(spell_info, spell, stats, loadout, effects);
 end
+
+if class == "SHAMAN" then
+    special_abilities = {
+        [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
+            if loadout.glyphs[55437] then
+                info.expectation = (1 + 0.6 + 0.6*0.6 + 0.6*0.6*0.6) * info.expectation_st;
+            else
+                info.expectation = (1 + 0.6 + 0.6*0.6) * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
+            info.expectation = 6 * info.expectation_st;
+        end,
+        [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
+            if loadout.glyphs[55449] then
+                info.expectation = (1 + 0.7 + 0.7*0.7 + 0.7*0.7*0.7) * info.expectation_st;
+            else
+                info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
+            end
+
+            local pts = loadout.talents_table:pts(1, 20);
+            -- lightning overload
+            info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
+        end,
+        [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout)
+            local pts = loadout.talents_table:pts(1, 20);
+            -- lightning overload
+            info.expectation = info.expectation * (1.0 + 0.5 * pts * 0.11);
+        end,
+
+        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats, effects)
+
+            if loadout.num_set_pieces[set_tiers.pve_t9_1] >= 4 then
+                
+                info.ot_duration = 6;
+                info.ot_freq = 3;
+                info.ot_ticks = 2;
+
+                -- TODO: unclear if the lava burst dot benefits from "twice" or not
+                
+                info.ot_if_hit = 0.1 * info.min_noncrit_if_hit;
+                info.ot_if_hit_max = 0.1 * info.max_noncrit_if_hit;
+
+                info.ot_if_crit = 0.1 * info.min_crit_if_hit;
+                info.ot_if_crit_max = 0.1 * info.max_crit_if_hit;
+
+                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+                info.expectation_st = info.expectation_st + expected_ot_if_hit;
+            end
+            if loadout.num_set_pieces[set_tiers.pve_t10_1] >= 4 and
+                        ((loadout.dynamic_buffs["target"][GetSpellInfo(8050)] and loadout.hostile_towards == "target") or
+                        loadout.target_buffs[GetSpellInfo(8050)]) then
+                if not info.involved_spell then
+                    info.involved_spell = {info = {}, stats = {}, spell = {}};
+                end
+                info.involved_spell.spell = spells[49233];
+                stats_for_spell(info.involved_spell.stats, info.involved_spell.spell, loadout, effects);
+                spell_info(info.involved_spell.info, info.involved_spell.spell, info.involved_spell.stats, loadout, effects);
+
+                local flame_shock_tick = info.involved_spell.info.expected_ot / info.involved_spell.info.ot_ticks;
+                info.expectation_st = info.expectation_st + flame_shock_tick * 2;
+                info.expectation = info.expectation_st;
+            end
+        end,
+    };
+elseif class == "PRIEST" then
+    special_abilities = {
+        [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
+
+            if loadout.glyphs[55680] then
+                
+                info.ot_duration = 6;
+                info.ot_freq = 3;
+                info.ot_ticks = 2;
+
+                -- some spell mods are applied again on the hot effect for some reason
+                local special_mods = 1.0 + effects.raw.spell_heal_mod_mul;
+                
+                info.ot_if_hit = 0.2 * info.min_noncrit_if_hit * special_mods
+                info.ot_if_hit_max = 0.2 * info.max_noncrit_if_hit * special_mods
+
+                -- aegis
+                local pts = loadout.talents_table:pts(1, 24);
+                local overdue = (1.0 + 0.1 * pts);
+
+                info.ot_if_crit = 0.2 * info.min_crit_if_hit * special_mods / overdue;
+                info.ot_if_crit_max = 0.2 * info.max_crit_if_hit * special_mods / overdue;
+
+                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+                info.expectation_st = info.expectation_st + expected_ot_if_hit;
+                -- hot displayed specialized in tooltip section
+            end
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Circle of Healing"]] = function(spell, info, loadout)
+
+            if loadout.glyphs[55675] then
+                info.expectation = 6 * info.expectation_st;
+            else
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout)
+            if loadout.num_set_pieces[set_tiers.pve_t7_1] >= 2 then
+                info.expectation = 6 * info.expectation_st;
+            else
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Power Word: Shield"]] = function(spell, info, loadout)
+
+            info.absorb = info.min_noncrit_if_hit;
+
+            if loadout.glyphs[55672] then
+                local mod = 0.2 * info.healing_mod_from_absorb_glyph;
+                info.healing_mod_from_absorb_glyph = nil;
+
+                info.min_noncrit_if_hit = mod * info.min_noncrit_if_hit;
+                info.max_noncrit_if_hit = mod * info.max_noncrit_if_hit;
+
+                info.min_crit_if_hit = mod * info.min_crit_if_hit;
+                info.max_crit_if_hit = mod * info.max_crit_if_hit;
+                info.expectation_st = info.expectation_st * (1.0 + mod);
+                info.expectation = info.expectation_st;
+            else
+
+                info.min_noncrit_if_hit = 0.0;
+                info.max_noncrit_if_hit = 0.0;
+
+                info.min_crit_if_hit = 0.0;
+                info.max_crit_if_hit = 0.0;
+            end
+        end,
+        [spell_name_to_id["Holy Nova"]] = function(spell, info, loadout)
+            if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Binding Heal"]] = function(spell, info, loadout)
+            info.expectation = 2 * info.expectation_st;
+        end,
+        [spell_name_to_id["Penance"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Lightwell"]] = function(spell, info, loadout)
+            info.expectation = 10 * info.expectation_st;
+        end,
+        [spell_name_to_id["Divine Hymn"]] = function(spell, info, loadout)
+
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Flash Heal"]] = function(spell, info, loadout, stats, effects)
+
+            if loadout.num_set_pieces[set_tiers.pve_t10_1] >= 2 then
+
+                info.ot_duration = 9;
+                info.ot_freq = 3;
+                info.ot_ticks = 3;
+
+                -- some spell mods are applied again on the hot effect for some reason
+                local special_mods = 1.0 + effects.raw.spell_heal_mod_mul;
+                
+                info.ot_if_hit = info.min_noncrit_if_hit * special_mods / 3;
+                info.ot_if_hit_max = info.max_noncrit_if_hit * special_mods / 3;
+
+                -- aegis
+                local pts = loadout.talents_table:pts(1, 24);
+                local overdue = (1.0 + 0.1 * pts);
+
+                info.ot_if_crit = info.min_crit_if_hit * special_mods / (overdue*3);
+                info.ot_if_crit_max = info.max_crit_if_hit * special_mods / (overdue*3);
+
+                local expected_ot_if_hit = (1.0 - stats.crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+                info.expectation_st = info.expectation_st + expected_ot_if_hit/3;
+                info.expectation = info.expectation_st;
+                -- hot displayed specialized in tooltip section
+            end
+
+        end
+
+    };
+elseif class == "DRUID" then
+    special_abilities = {
+        [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout, stats)
+
+            if loadout.num_set_pieces[set_tiers.pve_t10_3] >= 2 then
+                local heal_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*info.ot_ticks;
+                local heal_wo_sp = (info.ot_if_hit - heal_from_sp);
+                local heal_wo_sp_tick = heal_wo_sp/info.ot_ticks;
+                local tick_drop_ratio = 0.1425;
+                local gained_heal_with_reduced_drop = tick_drop_ratio * 0.3 * (info.ot_ticks - 1) * heal_wo_sp_tick;
+
+                info.expectation_st = info.expectation_st + gained_heal_with_reduced_drop;
+            end
+
+
+            if loadout.glyphs[62970] then
+                info.expectation = 6 * info.expectation_st;
+            else
+                info.expectation = 5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Tranquility"]] = function(spell, info, loadout)
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Starfall"]] = function(spell, info, loadout)
+            info.expectation = 20 * info.expectation_st;
+        end,
+        [spell_name_to_id["Swiftmend"]] = function(spell, info, loadout, stats)
+
+            local num_ticks = 4;
+            if stats.alias and stats.alias == spell_name_to_id["Regrowth"] then
+                num_ticks = 6;
+            end
+            
+            local heal_amount = stats.spell_mod * num_ticks * info.ot_if_hit/info.ot_ticks;
+            
+            info.min_noncrit_if_hit = heal_amount;
+            info.max_noncrit_if_hit = heal_amount;
+
+            info.min_crit_if_hit = stats.crit_mod*heal_amount;
+            info.max_crit_if_hit = stats.crit_mod*heal_amount;
+
+            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
+            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
+
+            info.expectation_st = 0.5 * (info.min + info.max);
+            info.expectation = info.expectation_st;
+
+            -- clear over time
+            info.ot_if_hit = 0.0;
+            info.ot_if_hit_max = 0.0;
+            info.ot_if_crit = 0.0;
+            info.ot_if_crit_max = 0.0;
+            info.ot_ticks = 0;
+            info.expected_ot_if_hit = 0.0;
+            info.ot_duration = 0.0;
+            info.ot_freq = 0.0;
+        end,
+        [spell_name_to_id["Rejuvenation"]] = function(spell, info, loadout)
+
+            if loadout.num_set_pieces[set_tiers.pve_t10_3] >= 4 then
+                info.expectation = info.ot_ticks * 1.02 * info.expectation_st;
+            end
+        end,
+    };
+elseif class == "WARLOCK" then
+    special_abilities = {
+        [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Conflagrate"]] = function(spell, info, loadout, stats)
+
+            local immolate_effect = stats.spell_mod * info.ot_if_hit;
+            local direct = 0.6 * immolate_effect;
+            
+            -- direct component
+            info.min_noncrit_if_hit = direct;
+            info.max_noncrit_if_hit = direct;
+
+            info.min_crit_if_hit = stats.crit_mod*direct;
+            info.max_crit_if_hit = stats.crit_mod*direct;
+
+            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
+            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
+
+
+            -- over time component
+            info.ot_ticks = 3;
+            info.ot_duration = 6.0;
+            info.ot_freq = 2.0;
+
+            info.ot_if_hit = 0.4 * immolate_effect;
+            info.ot_if_hit_max = info.ot_if_hit;
+            info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
+            info.ot_if_crit_max = info.ot_if_crit;
+
+            local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+            info.expected_ot = stats.hit * expected_ot_if_hit;
+
+            -- combined
+            info.expectation_st = 0.5 * (info.min + info.max) + info.expected_ot;
+            info.expectation = info.expectation_st + info.expected_ot;
+        end,
+    };
+elseif class == "PALADIN" then
+    special_abilities = {
+        [spell_name_to_id["Holy Light"]] = function(spell, info, loadout)
+            if loadout.glyphs[54937] then
+                -- splash for 10% of heal to 5 targets
+                info.expectation = 1.5 * info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Avenger's Shield"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Sacred Shield"]] = function(spell, info, loadout)
+
+            if loadout.num_set_pieces[set_tiers.pve_t8_1] >= 4 then
+                info.expectation_st = info.expectation_st * 6/4;
+                info.expectation = info.expectation_st;
+                info.ot_ticks = info.ot_ticks * 6/4;
+                info.ot_freq = 4.0;
+
+                info.ot_if_hit = info.ot_if_hit * 6/4;
+                info.ot_if_hit_max = info.ot_if_hit;
+            end
+        end,
+    };
+else
+    special_abilities = {};
+end
+
 
 local function cast_until_oom(spell_effect, stats, loadout, effects, calculating_weights)
 

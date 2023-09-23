@@ -228,6 +228,18 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "40% wrath damage",
     },
+    --omen of doom
+    [70721] = {
+        apply = function(loadout, effects, buff)
+
+            effects.raw.spell_dmg_mod_mul = 
+                (1.0 + effects.raw.spell_dmg_mod_mul) * 1.15 - 1.0;
+
+        end,
+        filter = buff_filters.druid,
+        category = buff_category.class,
+        tooltip = "T10:2P set bonus effect",
+    },
     --moonkin aura
     [24907] = {
         apply = function(loadout, effects, buff, inactive)
@@ -277,7 +289,7 @@ local buffs_predefined = {
 
             if inactive then
                 effects.raw.spell_power = effects.raw.spell_power + loadout.stats[stat.spirit] * 0.1 * imp_moonkin_pts;
-                effects.raw.crit_rating = effects.raw.crit_rating + addonTable.crit_rating_from_int(loadout.stats[stat.int] * 0.02*furor_pts, loadout.lvl);
+                effects.raw.crit_rating = effects.raw.crit_rating + addonTable.int_to_crit_rating(loadout.stats[stat.int] * 0.02*furor_pts, loadout.lvl);
             end
         end,
         filter = buff_filters.druid,
@@ -452,8 +464,7 @@ local buffs_predefined = {
     --sanctified retribution
     [31869] = {
         apply = function(loadout, effects, buff, inactive)
-            -- dynamically scales with the warlock owner's sp but still needs tracking
-            -- assume same effect as totem if applied statically
+
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.arcane_empowerment) == 0 then
                 effects.raw.spell_dmg_mod_mul = 
                     (1.0 + effects.raw.spell_dmg_mod_mul) * 1.03 - 1.0;
@@ -506,6 +517,15 @@ local buffs_predefined = {
         filter = buff_filters.shaman,
         category = buff_category.class,
         tooltip = "Chain Heal 25% more healing with riptide on",
+    },
+    --rapid currents
+    [70806] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.2 - 1.0;
+        end,
+        filter = buff_filters.shaman,
+        category = buff_category.class,
+        tooltip = "T10:2P set bonus proc",
     },
     --elemental mastery
     [64701] = {
@@ -631,6 +651,18 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "20% spell dmg",
     },
+    --devious minds
+    [70840] = {
+        apply = function(loadout, effects, buff)
+            for i = 2,7 do
+                effects.by_school.spell_dmg_mod[i] =
+                    effects.by_school.spell_dmg_mod[i] + 0.1;
+            end
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+        tooltip = "T10:4P set bonus proc",
+    },
     --arcane power
     [12042] = {
         apply = function(loadout, effects, buff)
@@ -656,12 +688,36 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "20% haste",
     },
+    --pushing the limit
+    [70753] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * 1.12 - 1.0;
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "T10:2P set bonus effect",
+    },
+    --quad core
+    [70747] = {
+        apply = function(loadout, effects, buff)
+
+            for i = 2, 7 do
+                effects.by_school.spell_dmg_mod[i] = 
+                    effects.by_school.spell_dmg_mod[i] + 0.18;
+            end
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "T10:4P set bonus effect",
+    },
     --eradication
     [64371] = {
         apply = function(loadout, effects, buff)
             local pts = loadout.talents_table:pts(1, 19);
             local by_pts = {0.06, 0.12, 0.2};
-            effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + by_pts[pts]) - 1.0;
+            if pts ~= 0 then
+                effects.raw.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + by_pts[pts]) - 1.0;
+            end
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,
@@ -816,10 +872,27 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             
             effects.raw.cost_mod = 0.5;
+
+            if loadout.num_set_pieces[set_tiers.pve_t10_1] >= 2 then
+                -- unclear how this is applied
+                effects.raw.spell_heal_mod_mul =
+                    (1.0 + effects.raw.spell_heal_mod_mul)*(1.0 + 0.35) - 1.0;
+            end
+
         end,
         filter = buff_filters.paladin,
         category = buff_category.class,
-        tooltip = "50% reduced healing",
+        tooltip = "50% reduced healing costs",
+    },
+    -- holiness
+    [70757] = {
+        apply = function(loadout, effects, buff)
+            
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.3, 0.0); 
+        end,
+        filter = buff_filters.paladin,
+        category = buff_category.class,
+        tooltip = "T10:P4 set bonus proc",
     },
     -- judgement of the pure
     [54153] = {

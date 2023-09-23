@@ -273,6 +273,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     if pts ~= 0 and bit.band(spell.flags, spell_flags.heal) ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
                         effect_type_str = "seeds";
                         extra_crit_mod = pts * 0.1;
+                    elseif loadout.num_set_pieces[set_tiers.pve_t10_1] >= 4 and
+                        (spell.base_id == spell_name_to_id["Wrath"] or spell.base_id == spell_name_to_id["Starfire"]) then
+                        effect_type_str = "languish";
+                        extra_crit_mod = 0.07;
                     end
                 elseif class == "SHAMAN" then
                     pts = loadout.talents_table:pts(3, 22);
@@ -329,6 +333,64 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
                     end
 
+                elseif spell.base_id == spell_name_to_id["Chain Heal"] then
+
+                    local extra_crit_mod = 0.0;
+                    if loadout.num_set_pieces[set_tiers.pve_t10_3] >= 4 then
+                        extra_crit_mod = 0.25
+                    end
+                    local min_crit_if_hit = eval.spell.min_crit_if_hit/(1 + extra_crit_mod);
+                    local max_crit_if_hit = eval.spell.max_crit_if_hit/(1 + extra_crit_mod);
+                    local effect_min = extra_crit_mod * min_crit_if_hit;
+                    local effect_max = extra_crit_mod * max_crit_if_hit;
+
+                    tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d", 
+                                                  stats.crit*100, 
+                                                  math.floor(min_crit_if_hit), 
+                                                  math.ceil(max_crit_if_hit)),
+                                   252.0/255, 69.0/255, 3.0/255);
+
+                    local bounces = 2;
+                    if loadout.glyphs[55437] then
+                        bounces = 3;
+                    end
+                    local falloff = 0.6;
+
+
+                    local bounce_str = "     + ";
+                    for i = 1, bounces-1 do
+                        bounce_str = bounce_str..string.format(" %d-%d  + ",
+                                                               falloff*math.floor(min_crit_if_hit), 
+                                                               falloff*math.ceil(max_crit_if_hit));
+
+                        falloff = falloff * 0.6;
+                    end
+                    bounce_str = bounce_str..string.format(" %d-%d",
+                                                           falloff*math.floor(min_crit_if_hit), 
+                                                           falloff*math.ceil(max_crit_if_hit));
+                    tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
+
+
+                    if loadout.num_set_pieces[set_tiers.pve_t10_3] >= 4 then
+                        tooltip:AddLine("And heals over 9 seconds", 252.0/255, 69.0/255, 3.0/255);
+                        bounce_str = " ";         
+                        falloff = 1.0;
+
+                        for i = 1, bounces do
+                            bounce_str = bounce_str..string.format(" %d-%d  + ",
+                                                                   falloff*math.floor(effect_min), 
+                                                                   falloff*math.ceil(effect_max));
+
+                            falloff = falloff * 0.6;
+                        end
+                        bounce_str = bounce_str..string.format(" %d-%d",
+                                                               falloff*math.floor(effect_min), 
+                                                               falloff*math.ceil(effect_max));
+                        tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
+                    end
+
+
+                    
                 elseif eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d", 
@@ -343,25 +405,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                       math.floor(eval.spell.min_crit_if_hit*0.1), 
                                                       math.ceil(eval.spell.max_crit_if_hit*0.1)),
                                         252.0/255, 69.0/255, 3.0/255);
-
-                    elseif spell.base_id == spell_name_to_id["Chain Heal"] then
-                        local bounce_str = "     + ";
-                        local bounces = 2;
-                        if loadout.glyphs[55437] then
-                            bounces = 3;
-                        end
-                        local falloff = 0.6;
-                        for i = 1, bounces-1 do
-                            bounce_str = bounce_str..string.format(" %d-%d  + ",
-                                                                   falloff*math.floor(eval.spell.min_crit_if_hit), 
-                                                                   falloff*math.ceil(eval.spell.max_crit_if_hit));
-
-                            falloff = falloff * 0.6;
-                        end
-                        bounce_str = bounce_str..string.format(" %d-%d",
-                                                               falloff*math.floor(eval.spell.min_crit_if_hit), 
-                                                               falloff*math.ceil(eval.spell.max_crit_if_hit));
-                        tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
 
                     elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
                         local bounce_str = "     + ";
@@ -381,6 +424,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                                                falloff*math.floor(eval.spell.min_crit_if_hit), 
                                                                falloff*math.ceil(eval.spell.max_crit_if_hit));
                         tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
+                    elseif spell.base_id == spell_name_to_id["Lava Burst"] and loadout.num_set_pieces[set_tiers.pve_t10_1] >= 4 and
+                        ((loadout.dynamic_buffs["target"][GetSpellInfo(8050)] and loadout.hostile_towards == "target") or
+                        loadout.target_buffs[GetSpellInfo(8050)]) then
+                    --elseif spell.base_id == spell_name_to_id["Lava Burst"] and loadout.num_set_pieces[set_tiers.pve_t10_1] >= 4 then
+                        --for k, v in pairs(loadout.dynamic_buffs["target"]) do
+                        --    print(k, v)
+                        --end
+                        tooltip:AddLine("       + 2 ticks of flameshock", 252.0/255, 69.0/255, 3.0/255);
+
                     end
                 else 
                     tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
@@ -438,17 +490,23 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             if spell.base_id == spell_name_to_id["Wild Growth"] then
                 local heal_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                 local heal_wo_sp = (eval.spell.ot_if_hit - heal_from_sp);
-                tooltip:AddLine(string.format("%s: %d over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %d ticks)",
+                local tick_drop_ratio = 0.1425;
+                local first_tick_weight = 3*0.1425;
+                if loadout.num_set_pieces[set_tiers.pve_t10_3] >= 2 then
+                    tick_drop_ratio = 0.1425*0.7;
+                end
+
+                tooltip:AddLine(string.format("%s: %d over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f ticks)",
                                               effect,
                                               eval.spell.ot_if_hit, 
                                               eval.spell.ot_duration, 
-                                              (( 3*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                              (( 2*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                              (( 1*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                              (( 0*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                              ((-1*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                              ((-2*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                              ((-3*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks
+                                              ((first_tick_weight - 0*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((first_tick_weight - 1*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((first_tick_weight - 2*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((first_tick_weight - 3*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((first_tick_weight - 4*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((first_tick_weight - 5*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                              ((first_tick_weight - 6*tick_drop_ratio + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks
                                               ), 
                                 232.0/255, 225.0/255, 32.0/255);
             elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then

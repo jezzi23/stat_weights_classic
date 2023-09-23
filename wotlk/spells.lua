@@ -3746,7 +3746,7 @@ local function create_spells()
                 lvl_max             = 25,
                 lvl_outdated        = 25,
                 cost_base_percent   = 0.18,
-                flags               = spell_flags.heal,
+                flags               = bit.bor(spell_flags.heal, spell_flags.cast_with_ot_dur, spell_flags.over_time_range),
                 school              = magic_school.holy,
                 coef                = 0.807,
                 over_time_coef      = 0.0,

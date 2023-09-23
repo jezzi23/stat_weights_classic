@@ -41,6 +41,9 @@ local set_tiers = {
     pve_t9_1         = 7,
     pve_t9_2         = 8,
     pve_t9_3         = 9,
+    pve_t10_1        = 10,
+    pve_t10_2        = 11,
+    pve_t10_3        = 12,
 };
 
 local function create_sets()
@@ -115,6 +118,35 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_t9_3;
         end
 
+        -- t10 healing
+        for i = 51175, 51179 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51260, 51264 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 50765, 50769 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51732, 51736 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+
+        -- t10 shadow
+        for i = 50391, 50396 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 51180, 51184 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 51737, 51741 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 51255, 51259 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+
+
     elseif class == "DRUID" then
         -- t7 balance
         for i = 39544, 39548 do
@@ -182,6 +214,36 @@ local function create_sets()
         for i = 48143, 48147 do
             set_tier_ids[i] = set_tiers.pve_t9_3;
         end
+
+        -- t10 resto
+        for i = 51135, 51139 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 51300, 51304 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 50106, 50109 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        set_tier_ids[50113] = set_tiers.pve_t10_3;
+        for i = 51692, 51696 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+
+        -- t10 boomkin
+        for i = 51145, 51149 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51290, 51294 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 50819, 50823 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51702, 51706 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+
 
 
     elseif class == "SHAMAN" then
@@ -279,6 +341,34 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_t9_1;
         end
 
+        -- t10 resto
+        for i = 51190, 51194 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 50835, 50839 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 51245, 51249 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+        for i = 51747, 51751 do
+            set_tier_ids[i] = set_tiers.pve_t10_3;
+        end
+
+        -- t10 elemental
+        for i = 51200, 51204 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 50841, 50845 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51235, 51239 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51757, 51761 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+
     elseif class == "WARLOCK" then
         -- t8
         for i = 46242, 46246 do
@@ -301,6 +391,20 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_t9_1;
         end
 
+        -- t10
+        for i = 50240, 50244 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51205, 51209 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51230, 51234 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51762, 51766 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+
     elseif class == "MAGE" then
         -- t7
         for i = 39491, 39495 do
@@ -321,6 +425,19 @@ local function create_sets()
         end
         for i = 47763, 47767 do
             set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        -- t10
+        for i = 51155, 51159 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51280, 51284 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51712, 51716 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 50275, 50279 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
         end
 
 
@@ -349,6 +466,19 @@ local function create_sets()
         end
         for i = 48585, 48589 do
             set_tier_ids[i] = set_tiers.pve_t9_1;
+        end
+        --t10 holy
+        for i = 51165, 51169 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51270, 51274 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 50865, 50869 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
+        end
+        for i = 51722, 51726 do
+            set_tier_ids[i] = set_tiers.pve_t10_1;
         end
     end
 
@@ -399,6 +529,23 @@ local function create_set_effects()
                 end
                 if num_pieces >= 4 then
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Mind Flay"], 0.05, 0.0);
+                end
+            end,
+            [set_tiers.pve_t10_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Power Word: Shield"], 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Circle of Healing"], 0.1, 0.0);
+                end
+            end,
+            [set_tiers.pve_t10_3] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    local abilities = spell_names_to_id({"Shadow Word: Pain", "Devouring Plague", "Vampiric Touch"});
+                    for k, v in pairs(abilities) do
+                        ensure_exists_and_add(effects.ability.crit, v, 0.05, 0.0);
+                    end
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Mind Flay"], 0.5, 0.0);
                 end
             end,
         };
@@ -530,6 +677,14 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.1, 0.0);
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Unstable Affliction"], 0.1, 0.0);
+                end
+            end,
+            [set_tiers.pve_t10_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    local abilities = spell_names_to_id({"Shadow Bolt", "Incinerate", "Soul Fire", "Corruption"});
+                    for k, v in pairs(abilities) do
+                        ensure_exists_and_add(effects.ability.crit, v, 0.05, 0.0);
+                    end
                 end
             end,
         };
@@ -879,7 +1034,6 @@ local function detect_sets(loadout)
     for k, v in pairs(set_tiers) do
         loadout.num_set_pieces[v] = 0;
     end
-
     for item = 1, 18 do
         local id = GetInventoryItemID("player", item);
         if set_items[id] then
