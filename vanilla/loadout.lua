@@ -280,15 +280,7 @@ local function effects_from_ui_diff(frame)
 end
 
 local function int_to_crit_rating(int, lvl)
-    if lvl ~= 80 then
-        return 0;
-    end
-
-    local lvl_80_int_to_crit_ratio = 166.66638409698;
-    --local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
-    local lvl_80_crit_rating_from_int = int*addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80)/lvl_80_int_to_crit_ratio;
-
-    return lvl_80_crit_rating_from_int;
+    return 60;
 end
 
 local function effects_diff(loadout, effects, diff)
@@ -322,9 +314,6 @@ local function effects_diff(loadout, effects, diff)
     --       It looks like in many cases 166.67 int is needed per 1% crit at many lvl 80 caster classes
     --
     --       Only contribute mana and crit IF we are level 80 since the generalized case is unknown atm
-    local lvl_80_int_to_crit_ratio = 166.66638409698;
-    local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
-    
     local crit_rating_from_int = int_to_crit_rating(diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]), loadout.lvl);
 
     effects.raw.mana = effects.raw.mana + (diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]) * 15)*(1.0 + effects.raw.mana_mod);

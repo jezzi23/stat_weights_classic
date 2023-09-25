@@ -40,7 +40,7 @@ local function create_talents()
             [105] = {
                 apply = function(loadout, effects, pts)
 
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Power Word: Shield"], pts * 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Power Word: Shield"], pts * 0.05, 0.0);
                 end
             },
             [108] = {
@@ -105,7 +105,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local abilities = spell_names_to_id({"Smite", "Holy Fire"});
                     for k, v in pairs(abilities) do
-                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.05, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.05, 0.0);
                     end
                 end
             },
@@ -154,7 +154,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local mf = spell_name_to_id["Moonfire"];
                     ensure_exists_and_add(effects.ability.crit, mf, pts * 0.02, 0);
-                    ensure_exists_and_add(effects.ability.effect_mod, mf, pts * 0.02, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, mf, pts * 0.02, 0.0);
                 end
             },
             [111] = {
@@ -182,7 +182,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath"});
                     for k, v in pairs(abilities) do
-                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.02, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.02, 0.0);
                     end
                 end
             },
@@ -243,7 +243,7 @@ local function create_talents()
                     local abilities = spell_names_to_id({"Holy Light", "Flash of Light"});
 
                     for k, v in pairs(abilities) do
-                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.04, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.04, 0.0);
                     end
                 end
             },
@@ -269,14 +269,14 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local ele_abilities = spell_names_to_id({"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"});
                     for k, v in pairs(ele_abilities) do
-                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.01, 0.0);
                     end
                 end
             },
             [105] = {
                 apply = function(loadout, effects, pts)
                     for k, v in pairs(spell_names_to_id({"Magma Totem", "Searing Totem", "Fire Nova"})) do
-                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.05, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.05, 0.0);
                     end
                 end
             },
@@ -311,7 +311,7 @@ local function create_talents()
             },
             [206] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], pts * 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Lightning Shield"], pts * 0.05, 0.0);
                 end
             },
             [301] = {
@@ -349,7 +349,7 @@ local function create_talents()
             },
             [310] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Healing Stream Totem"], pts * 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Healing Stream Totem"], pts * 0.05, 0.0);
                 end
             },
             [311] = {
@@ -481,7 +481,7 @@ local function create_talents()
             },
             [315] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Cone of Cold"], pts * 0.15, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Cone of Cold"], pts * 0.15, 0.0);
                 end
             },
         };
@@ -510,12 +510,12 @@ local function create_talents()
             },
             [106] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], pts * 0.02, 0.0); 
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Drain Life"], pts * 0.02, 0.0); 
                 end
             },
             [107] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Curse of Agony"], pts*0.02, 0.0); 
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Curse of Agony"], pts*0.02, 0.0); 
                 end
             },
             [116] = {
@@ -531,7 +531,7 @@ local function create_talents()
             },
             [204] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Health Funnel"], pts*0.1, 0.0); 
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Health Funnel"], pts*0.1, 0.0); 
                 end
             },
             -- TODO VANILLA: demo pet stuff demonic sacrifice talent and master demonologist
@@ -568,7 +568,7 @@ local function create_talents()
             },
             [313] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], pts*0.05, 0.0); 
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Immolate"], pts*0.05, 0.0); 
                     ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], -pts*0.05, 0.0); 
                 end
             },
