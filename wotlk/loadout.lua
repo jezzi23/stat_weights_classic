@@ -26,7 +26,6 @@ local addonName, addonTable = ...;
 local stat                              = addonTable.stat;
 local deep_table_copy                   = addonTable.deep_table_copy;
 local loadout_flags                     = addonTable.loadout_flags;
-local stat_ids_in_ui                    = addonTable.stat_ids_in_ui;
 
 local best_rank_by_lvl_update           = addonTable.best_rank_by_lvl_update;
 
@@ -262,15 +261,15 @@ local function effects_from_ui_diff(frame)
     end
 
 
-    diff.stats[stat.int] = stats[stat_ids_in_ui.int].editbox_val;
-    diff.stats[stat.spirit] = stats[stat_ids_in_ui.spirit].editbox_val;
-    diff.mp5 = stats[stat_ids_in_ui.mp5].editbox_val;
+    diff.stats[stat.int] = stats.int.editbox_val;
+    diff.stats[stat.spirit] = stats.spirit.editbox_val;
+    diff.mp5 = stats.mp5.editbox_val;
 
-    diff.crit_rating = stats[stat_ids_in_ui.spell_crit].editbox_val;
-    diff.hit_rating = stats[stat_ids_in_ui.spell_hit].editbox_val;
-    diff.haste_rating = stats[stat_ids_in_ui.spell_haste].editbox_val;
+    diff.crit_rating = stats.spell_crit.editbox_val;
+    diff.hit_rating = stats.spell_hit.editbox_val;
+    diff.haste_rating = stats.spell_haste.editbox_val;
 
-    diff.sp = stats[stat_ids_in_ui.sp].editbox_val;
+    diff.sp = stats.sp.editbox_val;
 
     frame.is_valid = true;
 

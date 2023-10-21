@@ -58,20 +58,6 @@ local stat = {
     spirit = 5
 };
 
-local stat_ids_in_ui = {
-    int                         = 1,
-    spirit                      = 2,
-    mp5                         = 3,
-    sp                          = 4,
-    sd                          = 5,
-    hp                          = 6,
-    spell_crit                  = 7,
-    spell_hit                   = 8,
-    spell_haste                 = 9,
-    spell_pen                   = 10,
-};
-
-
 local loadout_flags = {
     is_dynamic_loadout                  = bit.lshift(1, 1),
     always_assume_buffs                 = bit.lshift(1, 2),

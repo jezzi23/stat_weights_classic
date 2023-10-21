@@ -58,7 +58,19 @@ local active_loadout_and_effects            = addonTable.active_loadout_and_effe
 
 -------------------------------------------------------------------------
 addonTable.sw_addon_name = "Stat Weights Classic";
-addonTable.version =  "3.0.12";
+
+local version_id = 30100
+local version = tostring(version_id);
+addonTable.version = version:sub(1,1).."."..version:sub(2,3).."."..version:sub(4,5);
+addonTable.version_id = version;
+
+addonTable.expansions = {
+    vanilla = 1,
+    tbc     = 2,
+    wotlk   = 3
+}
+local client_build_version = GetBuildInfo();
+addonTable.expansion_loaded = tonumber(client_build_version:sub(1,1));
 
 addonTable.sw_addon_loaded = false;
 

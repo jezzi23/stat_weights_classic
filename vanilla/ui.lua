@@ -344,7 +344,6 @@ local function update_loadouts_rhs()
         loadout.target_res
     );
 
-
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
@@ -1137,35 +1136,36 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetText("Difference");
 
+
     sw_frame.stat_comparison_frame.stats = {
-        [1] = {
-            label_str = "Intellect"
+        int = {
+            label_str = "Intellect",
         },
-        [2] = {
+        spirit = {
             label_str = "Spirit"
         },
-        [3] = {
+        mp5 = {
             label_str = "MP5"
         },
-        [4] = {
+        sp = {
             label_str = "Spell Power"
         },
-        [5] = {
+        sd = {
             label_str = "Spell Damage"
         },
-        [6] = {
+        hp = {
             label_str = "Healing Power"
         },
-        [7] = {
+        spell_crit = {
             label_str = "Critical %"
         },
-        [8] = {
+        spell_hit = {
             label_str = "Hit %"
         },
-        [9] = {
+        spell_haste = {
             label_str = "Cast Speed %"
         },
-        [10] = {
+        spell_pen = {
             label_str = "Spell Penetration"
         },
     };
@@ -1178,10 +1178,13 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.clear_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.clear_button:SetScript("OnClick", function()
 
-        for i = 1, num_stats do
-
-            sw_frame.stat_comparison_frame.stats[i].editbox:SetText("");
+        for k, v in pairs(sw_frame.stat_comparison_frame.stats) do
+            v.editbox:SetText("");
         end
+        --for i = 1, num_stats do
+
+        --    sw_frame.stat_comparison_frame.stats[i].editbox:SetText("");
+        --end
 
         update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
     end);
@@ -1194,9 +1197,7 @@ local function create_sw_gui_stat_comparison_frame()
     --sw_frame.stat_comparison_frame.line_y_offset = sw_frame.stat_comparison_frame.line_y_offset - 10;
 
 
-    for i = 1 , num_stats do
-
-        v = sw_frame.stat_comparison_frame.stats[i];
+    for k, v in pairs(sw_frame.stat_comparison_frame.stats) do
 
         sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 
@@ -1207,7 +1208,7 @@ local function create_sw_gui_stat_comparison_frame()
         v.label:SetText(v.label_str);
         v.label:SetTextColor(222/255, 192/255, 40/255);
 
-        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..i, sw_frame.stat_comparison_frame, "InputBoxTemplate");
+        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..k, sw_frame.stat_comparison_frame, "InputBoxTemplate");
         v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.stat_comparison_frame.line_y_offset);
         v.editbox:SetText("");
         v.editbox:SetAutoFocus(false);
@@ -1246,7 +1247,7 @@ local function create_sw_gui_stat_comparison_frame()
         end);
     end
 
-    sw_frame.stat_comparison_frame.stats[stat_ids_in_ui.sp].editbox:SetText("1");
+    sw_frame.stat_comparison_frame.stats.sp.editbox:SetText("1");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 
