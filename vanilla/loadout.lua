@@ -52,6 +52,7 @@ local function empty_loadout()
         target_lvl = 0,
         default_target_lvl_diff = 3,
         target_hp_perc_default = 1.0,
+        target_res = 0,
 
         buffs = {},
         target_buffs = {},
@@ -68,7 +69,8 @@ local function empty_loadout()
         spell_dmg_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_crit_by_school = {0, 0, 0, 0, 0, 0, 0},
         hit = 0.0,
-        spell_power = 0,
+        spell_dmg = 0,
+        healing_power = 0,
 
         num_set_pieces = {},
         dynamic_buffs = {},
@@ -108,6 +110,7 @@ local function empty_effects(effects)
     effects.raw.mp5 = 0;
     effects.raw.regen_while_casting = 0;
     effects.raw.spell_power = 0;
+    effects.raw.spell_dmg = 0;
     effects.raw.healing_power = 0;
 
     effects.raw.ot_mod = 0;
@@ -224,9 +227,12 @@ local function effects_zero_diff()
         stats = {0, 0, 0, 0, 0},
         mp5 = 0,
         sp = 0,
+        sd = 0,
+        hp = 0,
         hit_rating = 0,
         haste_rating = 0,
         crit_rating = 0,
+        spell_pen = 0,
     };
 end
 
@@ -273,6 +279,9 @@ local function effects_from_ui_diff(frame)
     diff.haste_rating = stats[stat_ids_in_ui.spell_haste].editbox_val;
 
     diff.sp = stats[stat_ids_in_ui.sp].editbox_val;
+    diff.sd = stats[stat_ids_in_ui.sd].editbox_val;
+    diff.hp = stats[stat_ids_in_ui.hp].editbox_val;
+    diff.spell_pen = stats[stat_ids_in_ui.spell_pen].editbox_val;
 
     frame.is_valid = true;
 
@@ -280,7 +289,7 @@ local function effects_from_ui_diff(frame)
 end
 
 local function int_to_crit_rating(int, lvl)
-    return 60;
+    return int/60;
 end
 
 local function effects_diff(loadout, effects, diff)
@@ -302,18 +311,13 @@ local function effects_diff(loadout, effects, diff)
     local hp_gained_from_int = diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.by_attribute.hp_from_stat_mod[stat.int];
     local hp_gained_from_stat = hp_gained_from_spirit + hp_gained_from_int;
 
-    effects.raw.spell_power = effects.raw.spell_power + diff.sp + sp_gained_from_stat;
-    effects.raw.healing_power = effects.raw.healing_power + hp_gained_from_stat;
-
+    effects.raw.spell_power = effects.raw.spell_power + diff.sp;
+    effects.raw.spell_dmg = effects.raw.spell_dmg + diff.sd + sp_gained_from_stat;
+    effects.raw.healing_power = effects.raw.healing_power + diff.hp + hp_gained_from_stat;
 
     effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
     effects.raw.mp5 = effects.raw.mp5 + diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.raw.mp5_from_int_mod;
 
-    -- TODO: crit and mana yields from intellect
-    --       Missing formulas, seems to depend on lvl and class/race?
-    --       It looks like in many cases 166.67 int is needed per 1% crit at many lvl 80 caster classes
-    --
-    --       Only contribute mana and crit IF we are level 80 since the generalized case is unknown atm
     local crit_rating_from_int = int_to_crit_rating(diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]), loadout.lvl);
 
     effects.raw.mana = effects.raw.mana + (diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]) * 15)*(1.0 + effects.raw.mana_mod);
@@ -324,6 +328,9 @@ local function effects_diff(loadout, effects, diff)
 
     for i = 1, 5 do
         effects.by_attribute.stats[i] = effects.by_attribute.stats[i] + diff.stats[i];
+    end
+    for i = 2, 7 do
+        effects.by_school.target_res[i] = effects.by_school.target_res[i] - diff.spell_pen;
     end
 end
 
@@ -401,11 +408,15 @@ local function dynamic_loadout(loadout)
     end
 
     -- in wotlk, healing power will equate to spell power
-    loadout.spell_power = GetSpellBonusHealing();
-    for i = 1, 7 do
-        loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_power;
+    loadout.healing_power = GetSpellBonusHealing();
+    loadout.spell_dmg = math.huge;
+    for i = 2, 7 do
+        loadout.spell_dmg = math.min(loadout.spell_dmg, GetSpellBonusDamage(i));
     end
-    for i = 1, 7 do
+    for i = 2, 7 do
+        loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_dmg;
+    end
+    for i = 2, 7 do
         loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
     end
     local ap_src1, ap_src2, ap_src3 = UnitAttackPower("player");

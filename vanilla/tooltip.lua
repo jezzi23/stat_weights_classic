@@ -89,6 +89,8 @@ local function end_tooltip_section(tooltip)
     tooltip:Show();
 end
 
+local stats = {};
+
 local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     if sw_frame.settings_frame.tooltip_num_checked == 0 or 
@@ -96,7 +98,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         return;
     end
 
-    local stats = {};
     stats_for_spell(stats, spell, loadout, effects); 
     local eval = evaluate_spell(spell, stats, loadout, effects);
 
@@ -132,8 +133,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                       ),
                         138/256, 134/256, 125/256);
     else
-        tooltip:AddLine(string.format("Loadout: %s - Target lvl %d, %.1f%% HP",
-                                      loadout.name, loadout.target_lvl, loadout.enemy_hp_perc * 100
+        tooltip:AddLine(string.format("Loadout: %s - Target lvl %d, %.1f%% HP, %d Resistance",
+                                      loadout.name, loadout.target_lvl,
+                                      loadout.enemy_hp_perc * 100, stats.target_resi
                                       ),
                         138/256, 134/256, 125/256);
     end
@@ -159,15 +161,19 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         end
     end
 
+    local hit_str = string.format("(%.1f%% hit)", stats.hit*100);
+    if stats.target_resi > 0 then
+        hit_str = string.format("(%.1f%% hit, %.1f%% resist)", stats.hit*100, stats.target_avg_resi*100);
+    end
     if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
         if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
             if eval.spell.min_noncrit_if_hit ~= eval.spell.max_noncrit_if_hit then
                 -- dmg spells with real direct range
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
                     
-                    tooltip:AddLine(string.format("%s (%.1f%% hit): %d-%d", 
+                    tooltip:AddLine(string.format("%s %s: %d-%d", 
                                                    effect, 
-                                                   stats.hit*100,
+                                                   hit_str,
                                                    math.floor(eval.spell.min_noncrit_if_hit), 
                                                    math.ceil(eval.spell.max_noncrit_if_hit)),
                                      232.0/255, 225.0/255, 32.0/255);
@@ -175,12 +181,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.7;
+                        if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
+                            falloff = 0.75;
+                        end
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                    falloff*math.floor(eval.spell.min_noncrit_if_hit), 
                                                                    falloff*math.ceil(eval.spell.max_noncrit_if_hit));
 
-                            falloff = falloff * 0.7;
+                            falloff = falloff * falloff;
                         end
                         bounce_str = bounce_str..string.format(" %d-%d",
                                                                falloff*math.floor(eval.spell.min_noncrit_if_hit), 
@@ -200,12 +209,16 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.5;
+                        if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+                            falloff = 0.5 * 1.3;
+                        end
+
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                    falloff*math.floor(eval.spell.min_noncrit_if_hit), 
                                                                    falloff*math.ceil(eval.spell.max_noncrit_if_hit));
 
-                            falloff = falloff * 0.6;
+                            falloff = falloff * falloff;
                         end
                         bounce_str = bounce_str..string.format(" %d-%d",
                                                                falloff*math.floor(eval.spell.min_noncrit_if_hit), 
@@ -216,9 +229,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
             else
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-                    tooltip:AddLine(string.format("%s (%.1f%% hit): %d", 
+                    tooltip:AddLine(string.format("%s %s: %d", 
                                                   effect,
-                                                  stats.hit*100,
+                                                  hit_str,
                                                   math.floor(eval.spell.min_noncrit_if_hit)),
                                                   --string.format("%.0f", eval.spell.min_noncrit_if_hit)),
                                     232.0/255, 225.0/255, 32.0/255);
@@ -286,13 +299,16 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     if spell.base_id == spell_name_to_id["Chain Heal"] then
                         local bounce_str = "     + ";
                         local bounces = 2;
-                        local falloff = 0.6;
+                        local falloff = 0.5;
+                        if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+                            falloff = 1.3*0.5;
+                        end
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                    falloff*math.floor(eval.spell.min_crit_if_hit), 
                                                                    falloff*math.ceil(eval.spell.max_crit_if_hit));
 
-                            falloff = falloff * 0.6;
+                            falloff = falloff * falloff;
                         end
                         bounce_str = bounce_str..string.format(" %d-%d",
                                                                falloff*math.floor(eval.spell.min_crit_if_hit), 
@@ -303,17 +319,23 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.7;
+                        if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
+                            falloff = 0.75;
+                        end
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                    falloff*math.floor(eval.spell.min_crit_if_hit), 
                                                                    falloff*math.ceil(eval.spell.max_crit_if_hit));
 
-                            falloff = falloff * 0.7;
+                            falloff = falloff * falloff;
                         end
                         bounce_str = bounce_str..string.format(" %d-%d",
                                                                falloff*math.floor(eval.spell.min_crit_if_hit), 
                                                                falloff*math.ceil(eval.spell.max_crit_if_hit));
                         tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
+                    elseif spell.base_id == spell_name_to_id["Greater Heal"] and loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+                        tooltip:AddLine("                         + 500 absorb",
+                                        252.0/255, 69.0/255, 3.0/255);
                     end
                 elseif eval.spell.min_crit_if_hit ~= 0 then
 
@@ -433,15 +455,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     if sw_frame.settings_frame.tooltip_expected_effect:GetChecked() then
 
-        -- show avg target magical resi if present
-        if stats.target_resi > 0 then
-            tooltip:AddLine(string.format("Target resi: %d with average %.2f% resists",
-                                          stats.target_resi,
-                                          eval.spell.target_avg_resi * 100
-                                          ), 
-                          232.0/255, 225.0/255, 32.0/255);
-        end
-
         local effect_extra_str = "";
 
         if eval.spell.expectation ~=  eval.spell.expectation_st then
@@ -474,7 +487,11 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
 
-        tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
+        if stats.cast_time_nogcd ~= stats.cast_time then
+            tooltip:AddLine(string.format("Expected Cast Time: 1.5sec ("..stats.cast_time_nogcd.." but gcd capped)", stats.cast_time), 215/256, 83/256, 234/256);
+        else
+            tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
+        end
     end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
@@ -492,8 +509,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         local stat_weights = {};
         stat_weights[1] = {weight = 1.0, str = "SP"};
         stat_weights[2] = {weight = eval.infinite_cast.sp_per_crit, str = "Crit"};
-        stat_weights[3] = {weight = eval.infinite_cast.sp_per_haste, str = "Haste"};
-        local num_weights = 3;
+        local num_weights = 2;
         --if eval.sp_per_int ~= 0 then
         num_weights = num_weights + 1;
         stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_int, str = "Int"};
@@ -506,6 +522,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             num_weights = num_weights + 1;
             stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_hit, str = "Hit"};
+            num_weights = num_weights + 1;
+            stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_pen, str = "Spell Pen"};
         --    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
             --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
         else
@@ -532,7 +550,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
         tooltip:AddLine("Scenario: Cast Until OOM", 1, 1, 1);
 
-        tooltip:AddLine(string.format("%s until OOM : %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
+        tooltip:AddLine(string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
         if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
 
             tooltip:AddLine(string.format("%s per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
@@ -540,15 +558,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             local stat_weights = {};
             stat_weights[1] = {weight = 1.0, str = "SP"};
             stat_weights[2] = {weight = eval.cast_until_oom.sp_per_crit, str = "Crit"};
-            stat_weights[3] = {weight = eval.cast_until_oom.sp_per_haste, str = "Haste"};
-            stat_weights[4] = {weight = eval.cast_until_oom.sp_per_int, str = "Int"};
-            stat_weights[5] = {weight = eval.cast_until_oom.sp_per_spirit, str = "Spirit"};
-            stat_weights[6] = {weight = eval.cast_until_oom.sp_per_mp5, str = "MP5"};
-            local num_weights = 6;
+            stat_weights[3] = {weight = eval.cast_until_oom.sp_per_int, str = "Int"};
+            stat_weights[4] = {weight = eval.cast_until_oom.sp_per_spirit, str = "Spirit"};
+            stat_weights[5] = {weight = eval.cast_until_oom.sp_per_mp5, str = "MP5"};
+            local num_weights = 5;
 
             if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
                 num_weights = 7;
-                stat_weights[7] = {weight = eval.cast_until_oom.sp_per_hit, str = "Hit"};
+                stat_weights[6] = {weight = eval.cast_until_oom.sp_per_hit, str = "Hit"};
+                stat_weights[7] = {weight = eval.cast_until_oom.sp_per_pen, str = "Spell Pen"};
             end
 
             local stat_weights_str = "|";
@@ -650,25 +668,18 @@ local function update_tooltip(tooltip)
         if id and spells[id] then
             tooltip:ClearLines();
             tooltip:SetSpellByID(id);
+
+            if (sw_frame.settings_frame.tooltip_num_checked == 0 or 
+                (sw_frame.settings_frame.show_tooltip_only_when_shift and not IsShiftKeyDown()))
+                and sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
+
+                tooltip:AddLine("Spell Rank: "..spells[id].rank, 138/256, 134/256, 125/256);
+                tooltip:Show();
+            end
         end
     end
 
 end
-
----- DELETE ME
----- tooltip test
---CreateFrame( "GameTooltip", "TestTip", UIParent, "GameTooltipTemplate" ); -- Tooltip 
-----TestTip:SetOwner(WorldFrame, "ANCHOR_NONE")
---TestTip:AddFontStrings(
---    TestTip:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ),
---    TestTip:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" ) );
---
---TestTip:SetPoint("TOPLEFT", 400, -30)
---
---TestTip:SetWidth(400);
---TestTip:SetHeight(600);
---TestTip:AddLine(string.format("Test"), 1, 1,1);
---TestTip:Show();
 
 addonTable.tooltip_stat_display             = tooltip_stat_display;
 addonTable.append_tooltip_spell_info        = append_tooltip_spell_info;

@@ -275,7 +275,7 @@ local function create_talents()
             },
             [105] = {
                 apply = function(loadout, effects, pts)
-                    for k, v in pairs(spell_names_to_id({"Magma Totem", "Searing Totem", "Fire Nova"})) do
+                    for k, v in pairs(spell_names_to_id({"Magma Totem", "Searing Totem", "Fire Nova Totem"})) do
                         ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.05, 0.0);
                     end
                 end
@@ -568,7 +568,7 @@ local function create_talents()
             },
             [313] = {
                 apply = function(loadout, effects, pts)
-                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Immolate"], pts*0.05, 0.0); 
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], pts*0.05, 0.0); 
                     ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], -pts*0.05, 0.0); 
                 end
             },

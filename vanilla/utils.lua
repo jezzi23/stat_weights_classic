@@ -63,9 +63,12 @@ local stat_ids_in_ui = {
     spirit                      = 2,
     mp5                         = 3,
     sp                          = 4,
-    spell_crit                  = 5,
-    spell_hit                   = 6,
-    spell_haste                 = 7,
+    sd                          = 5,
+    hp                          = 6,
+    spell_crit                  = 7,
+    spell_hit                   = 8,
+    spell_haste                 = 9,
+    spell_pen                   = 10,
 };
 
 

@@ -340,6 +340,11 @@ local function update_loadouts_rhs()
         loadout.target_hp_perc_default * 100
     );
 
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetText(
+        loadout.target_res
+    );
+
+
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
@@ -1143,16 +1148,25 @@ local function create_sw_gui_stat_comparison_frame()
             label_str = "MP5"
         },
         [4] = {
-            label_str = "Spell power"
+            label_str = "Spell Power"
         },
         [5] = {
-            label_str = "Critical %"
+            label_str = "Spell Damage"
         },
         [6] = {
-            label_str = "Hit %"
+            label_str = "Healing Power"
         },
         [7] = {
-            label_str = "Counter resistance"
+            label_str = "Critical %"
+        },
+        [8] = {
+            label_str = "Hit %"
+        },
+        [9] = {
+            label_str = "Cast Speed %"
+        },
+        [10] = {
+            label_str = "Spell Penetration"
         },
     };
 
@@ -1698,6 +1712,40 @@ local function create_sw_gui_loadout_frame()
 
     sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEnterPressed", editbox_hp_perc);
     sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEscapePressed", editbox_hp_perc);
+
+    y_offset_lhs = y_offset_lhs - 20;
+
+    sw_frame.loadouts_frame.rhs_list.target_res_label = 
+        sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+    sw_frame.loadouts_frame.rhs_list.target_res_label:SetFontObject(font);
+    sw_frame.loadouts_frame.rhs_list.target_res_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.target_res_label:SetText("Target resistance                   ");
+
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox= CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetText("");
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetSize(40, 15);
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetAutoFocus(false);
+
+    local editbox_target_res = function(self)
+
+        local txt = self:GetText();
+        
+        local target_res = tonumber(txt);
+        local loadout = active_loadout();
+        if target_res and target_res >= 0 then
+
+            loadout.target_res = target_res;
+        else
+            self:SetText("0"); 
+            loadout.target_res = 0;
+        end
+
+        self:ClearFocus();
+    end
+
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEnterPressed", editbox_target_res);
+    sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEscapePressed", editbox_target_res);
 
     y_offset_lhs = y_offset_lhs - 30;
 

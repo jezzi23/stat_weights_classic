@@ -354,7 +354,7 @@ local buffs_predefined = {
             -- TODO VANILLA: active/inactive correctness
             if inactive then
                 for i = 1, 5 do
-                    effects.by_school.stat_mod[i] = effects.by_school.stat_mod[i] + 0.1;
+                    effects.by_attribute.stat_mod[i] = effects.by_attribute.stat_mod[i] + 0.1;
                 end
             end
 
@@ -512,7 +512,11 @@ local buffs_predefined = {
             end
             if buff.src and buff.src == "player" then
 
-                mp5 = id_to_mp5[id] * (1.0 + loadout.talents_table:pts(3, 10) * 0.05);
+                local mod = loadout.talents_table:pts(3, 10) * 0.05;
+                if loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+                    mod = mod + 0.25;
+                end
+                mp5 = id_to_mp5[id] * (1.0 + mod);
             else
                 mp5 = id_to_mp5[id] * 1.2;
             end
@@ -573,7 +577,9 @@ local buffs_predefined = {
     -- lightning shield
     [10432] = {
         apply = function(loadout, effects, buff)
-            -- TODO VANILLA: apply mp5 with tier bonus
+            if loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
+                effects.raw.mp5 = effects.raw.mp5 + 15;
+            end
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.hidden),
         category = buff_category.class,

@@ -57,6 +57,7 @@ local function spell_name_to_ids()
             ["Force of Nature"]         = 6913,
             ["Innervate"]               = 29166,
             ["Swiftmend"]               = 18562,
+            ["Thorns"]                  = 467,
         };
     elseif class == "PRIEST" then
         return {
@@ -90,7 +91,7 @@ local function spell_name_to_ids()
             ["Magma Totem"]             = 8190,
             ["Flame Shock"]             = 8050,
             ["Frost Shock"]             = 8056,
-            ["Fire Nova"]               = 1535,
+            ["Fire Nova Totem"]         = 1535,
             ["Searing Totem"]           = 3599,
             ["Mana Tide"]               = 16191,
         };
@@ -178,6 +179,7 @@ local spell_flags = {
     exception_coef          = bit.lshift(1,18), -- exception to formulaic coef rules
     hybrid                  = bit.lshift(1,19), -- both healing and dmg, halving coef
     base_mana_cost          = bit.lshift(1,20), -- ratio of base mana instead of fixed cost
+    no_crit                 = bit.lshift(1,21),
 };
 
 local function create_spells()
@@ -2319,6 +2321,80 @@ local function create_spells()
                 school              = magic_school.nature,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
+            -- thorns
+            [467] = {
+                base_min            = 3.0,
+                base_max            = 3.0,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 6,
+                lvl_max             = 0,
+                lvl_outdated        = 13,
+                cost                = 35,
+                flags               = bit.bor(spell_flags.cd, spell_flags.exception_coef, spell_flags.no_crit),
+                school              = magic_school.nature,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.0,
+            },
+            [782] = {
+                base_min            = 6.0,
+                base_max            = 6.0, 
+                over_time           = 0.0,
+                rank                = 2,
+                cost                = 60,
+                lvl_req             = 14,
+                lvl_max             = 0,
+                lvl_outdated        = 23,
+				lvl_scaling			= 0.0,
+            },
+            [1075] = {
+                base_min            = 9.0,
+                base_max            = 9.0, 
+                over_time           = 0.0,
+                rank                = 3,
+                cost                = 105,
+                lvl_req             = 24,
+                lvl_max             = 0,
+                lvl_outdated        = 33,
+				lvl_scaling			= 0.0,
+            },
+            [8914] = {
+                base_min            = 12.0,
+                base_max            = 12.0, 
+                over_time           = 0.0,
+                rank                = 4,
+                cost                = 170,
+                lvl_req             = 34,
+                lvl_max             = 0,
+                lvl_outdated        = 43,
+				lvl_scaling			= 0.0,
+            },
+            [9756] = {
+                base_min            = 15.0,
+                base_max            = 15.0, 
+                over_time           = 0.0,
+                rank                = 5,
+                cost                = 240,
+                lvl_req             = 44,
+                lvl_max             = 0,
+                lvl_outdated        = 53,
+				lvl_scaling			= 0.0,
+            },
+            [9910] = {
+                base_min            = 18.0,
+                base_max            = 18.0, 
+                over_time           = 0.0,
+                rank                = 6,
+                cost                = 320,
+                lvl_req             = 54,
+                lvl_max             = 0,
+                lvl_outdated        = 60,
 				lvl_scaling			= 0.0,
             },
         };
