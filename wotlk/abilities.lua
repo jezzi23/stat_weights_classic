@@ -5682,7 +5682,7 @@ local function create_spells()
                 lvl_outdated        = 59,
 				lvl_scaling			= 0.0,
             },
-            [28275] = {
+            [27871] = {
                 base_min            = 0.0,
                 base_max            = 0.0, 
                 over_time           = 787,
@@ -10169,8 +10169,8 @@ elseif class == "MAGE" then
     spells[5143].cast_time = 3.0;
     spells[5143].over_time_duration = 3.0;
 
-    spells[5143].cast_time = 4.0;
-    spells[5143].over_time_duration = 4.0;
+    spells[5144].cast_time = 4.0;
+    spells[5144].over_time_duration = 4.0;
 
 elseif class == "WARLOCK" then
 
@@ -10202,12 +10202,16 @@ end
 
 best_rank_by_lvl_update();
 
-local addonName, addonTable = ...;
-addonTable.spells = spells;
-addonTable.spell_name_to_id = spell_name_to_id;
-addonTable.spell_names_to_id = spell_names_to_id;
-addonTable.magic_school = magic_school;
-addonTable.spell_flags = spell_flags;
-addonTable.best_rank_by_lvl_update = best_rank_by_lvl_update;
-addonTable.best_rank_by_lvl = best_rank_by_lvl;
+local addon_name, swc = ...;
+
+local abilities = {};
+abilities.spells = spells;
+abilities.spell_name_to_id = spell_name_to_id;
+abilities.spell_names_to_id = spell_names_to_id;
+abilities.magic_school = magic_school;
+abilities.spell_flags = spell_flags;
+abilities.best_rank_by_lvl_update = best_rank_by_lvl_update;
+abilities.best_rank_by_lvl = best_rank_by_lvl;
+
+swc.abilities = abilities;
 

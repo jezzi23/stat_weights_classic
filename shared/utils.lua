@@ -20,6 +20,8 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
+local utils = {};
+
 local _, class = UnitClass("player");
 local _, race = UnitRace("player");
 local faction, _ = UnitFactionGroup("player");
@@ -58,17 +60,6 @@ local stat = {
     spirit = 5
 };
 
-local stat_ids_in_ui = {
-    int                         = 1,
-    spirit                      = 2,
-    mp5                         = 3,
-    sp                          = 4,
-    spell_crit                  = 5,
-    spell_hit                   = 6,
-    spell_haste                 = 7,
-};
-
-
 local loadout_flags = {
     is_dynamic_loadout                  = bit.lshift(1, 1),
     always_assume_buffs                 = bit.lshift(1, 2),
@@ -81,20 +72,18 @@ local loadout_flags = {
 };
 
 
-local beacon_snapshot_time = -1000;
-local sequence_counter = 0;
-local addon_running_time = 0;
+utils.ensure_exists_and_mul = ensure_exists_and_mul;
+utils.ensure_exists_and_add = ensure_exists_and_add;
+utils.beacon_snapshot_time = beacon_snapshot_time;
+utils.addon_running_time = addon_running_time;
+utils.class = class;
+utils.race = race;
+utils.faction = faction;
+utils.deep_table_copy = deep_table_copy;
+utils.stat = stat;
+utils.stat_ids_in_ui = stat_ids_in_ui;
+utils.loadout_flags = loadout_flags;
 
-local addonName, addonTable = ...;
-addonTable.ensure_exists_and_mul = ensure_exists_and_mul;
-addonTable.ensure_exists_and_add = ensure_exists_and_add;
-addonTable.beacon_snapshot_time = beacon_snapshot_time;
-addonTable.addon_running_time = addon_running_time;
-addonTable.class = class;
-addonTable.race = race;
-addonTable.faction = faction;
-addonTable.deep_table_copy = deep_table_copy;
-addonTable.stat = stat;
-addonTable.stat_ids_in_ui = stat_ids_in_ui;
-addonTable.loadout_flags = loadout_flags;
+local addon_name, swc = ...;
+swc.utils = utils;
 

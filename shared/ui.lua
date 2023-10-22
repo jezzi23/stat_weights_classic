@@ -20,58 +20,59 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
+local addon_name, swc = ...;
 
-local addonName, addonTable = ...;
+local spells                                    = swc.abilities.spells;
+local spell_name_to_id                          = swc.abilities.spell_name_to_id;
+local spell_names_to_id                         = swc.abilities.spell_names_to_id;
+local magic_school                              = swc.abilities.magic_school;
+local spell_flags                               = swc.abilities.spell_flags;
+local best_rank_by_lvl                          = swc.abilities.best_rank_by_lvl;
 
-local spells                                    = addonTable.spells;
-local spell_name_to_id                          = addonTable.spell_name_to_id;
-local spell_names_to_id                         = addonTable.spell_names_to_id;
-local magic_school                              = addonTable.magic_school;
-local spell_flags                               = addonTable.spell_flags;
-local best_rank_by_lvl                          = addonTable.best_rank_by_lvl;
+local wowhead_talent_link                       = swc.talents.wowhead_talent_link;
+local wowhead_talent_code                       = swc.talents.wowhead_talent_code;
+local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_code_from_url;
 
-local wowhead_talent_link                       = addonTable.wowhead_talent_link;
-local wowhead_talent_code                       = addonTable.wowhead_talent_code;
-local wowhead_talent_code_from_url              = addonTable.wowhead_talent_code_from_url;
+local simulation_type                           = swc.calc.simulation_type;
 
-local simulation_type                           = addonTable.simulation_type;
+local default_sw_settings                       = swc.settings.default_sw_settings;
 
-local default_sw_settings                       = addonTable.default_sw_settings;
+local update_icon_overlay_settings              = swc.overlay.update_icon_overlay_settings
+local icon_stat_display                         = swc.overlay.icon_stat_display;
 
-local update_icon_overlay_settings              = addonTable.update_icon_overlay_settings
+local loadout_flags                             = swc.utils.loadout_flags;
+local stat_ids_in_ui                            = swc.utils.stat_ids_in_ui;
+local class                                     = swc.utils.class;
+local deep_table_copy                           = swc.utils.deep_table_copy;
 
-local loadout_flags                             = addonTable.loadout_flags;
-local stat_ids_in_ui                            = addonTable.stat_ids_in_ui;
-local class                                     = addonTable.class;
-local deep_table_copy                           = addonTable.deep_table_copy;
+local empty_loadout                             = swc.loadout.empty_loadout;
+local empty_effects                             = swc.loadout.empty_effects;
+local effects_add                               = swc.loadout.effects_add;
+local effects_zero_diff                         = swc.loadout.effects_zero_diff;
+local default_loadout                           = swc.loadout.default_loadout;
+local active_loadout                            = swc.loadout.active_loadout;
+local active_loadout_entry                      = swc.loadout.active_loadout_entry;
+local static_loadout_from_dynamic               = swc.loadout.static_loadout_from_dynamic;
+local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
+local print_loadout                             = swc.loadout.print_loadout;
+local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
 
-local empty_loadout                             = addonTable.empty_loadout;
-local empty_effects                             = addonTable.empty_effects;
-local effects_add                               = addonTable.effects_add;
-local effects_zero_diff                         = addonTable.effects_zero_diff;
-local default_loadout                           = addonTable.default_loadout;
-local active_loadout                            = addonTable.active_loadout;
-local active_loadout_entry                      = addonTable.active_loadout_entry;
-local static_loadout_from_dynamic               = addonTable.static_loadout_from_dynamic;
-local active_loadout_and_effects                = addonTable.active_loadout_and_effects;
-local print_loadout                             = addonTable.print_loadout;
+local stats_for_spell                           = swc.calc.stats_for_spell;
+local spell_info                                = swc.calc.spell_info;
+local cast_until_oom                            = swc.calc.cast_until_oom;
+local evaluate_spell                            = swc.calc.evaluate_spell;
+local spell_diff                                = swc.calc.spell_diff;
 
-local active_loadout_and_effects_diffed_from_ui = addonTable.active_loadout_and_effects_diffed_from_ui;
+local tooltip_stat_display                      = swc.tooltip.tooltip_stat_display;
 
-local stats_for_spell                           = addonTable.stats_for_spell;
-local spell_info                                = addonTable.spell_info;
-local cast_until_oom                            = addonTable.cast_until_oom;
-local evaluate_spell                            = addonTable.evaluate_spell;
-local spell_diff                                = addonTable.spell_diff;
+local buff_filters                              = swc.buffs.buff_filters;
+local filter_flags_active                       = swc.buffs.filter_flags_active;
+local buff_category                             = swc.buffs.buff_category;
+local buffs                                     = swc.buffs.buffs;
+local target_buffs                              = swc.buffs.target_buffs;
 
-local icon_stat_display                         = addonTable.icon_stat_display;
-local tooltip_stat_display                      = addonTable.tooltip_stat_display;
-
-local buff_filters                              = addonTable.buff_filters;
-local filter_flags_active                       = addonTable.filter_flags_active;
-local buff_category                             = addonTable.buff_category;
-local buffs                                     = addonTable.buffs;
-local target_buffs                              = addonTable.target_buffs;
+-------------------------------------------------------------------------
+local ui = {};
 
 local sw_frame = {};
 
@@ -124,10 +125,17 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
     end
     
     v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    local rank_str = "(OLD RANK!!!)";
-    if lvl <= spell.lvl_outdated then
+
+    local rank_str = "";
+    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
+        rank_str = "(OLD RANK!!!)";
+        if lvl <= spell.lvl_outdated then
+            rank_str = "(Rank "..spell.rank..")";
+        end
+    else
         rank_str = "(Rank "..spell.rank..")";
     end
+
     if is_duality_spell and 
         bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
@@ -343,6 +351,12 @@ local function update_loadouts_rhs()
         loadout.target_hp_perc_default * 100
     );
 
+    if sw_frame.loadouts_frame.rhs_list.target_res_editbox then
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetText(
+            loadout.target_res
+        );
+    end
+
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
@@ -362,10 +376,6 @@ local function update_loadouts_rhs()
     else
         sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetChecked(false);
     end
-
-    --for i = 2, 7 do
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetText(loadout.target_res_by_school[i]);
-    --end
 
     local num_checked_buffs = 0;
     local num_checked_target_buffs = 0;
@@ -521,8 +531,8 @@ function update_loadouts_lhs()
                 end
                 self:SetChecked(true);
 
-                addonTable.talents_update_needed = true;
-                addonTable.equipment_update_needed = true;
+                swc.core.talents_update_needed = true;
+                swc.core.equipment_update_needed = true;
 
                 sw_frame.loadouts_frame.lhs_list.active_loadout = self.target_index;
 
@@ -573,7 +583,7 @@ local function create_new_loadout_as_copy(loadout_entry)
     new_entry.final_effects = {};
     empty_effects(new_entry.final_effects);
 
-    addonTable.talents_update_needed = true;
+    swc.core.talents_update_needed = true;
 
     new_entry.loadout.name = loadout_entry.loadout.name.." (Copy)";
 
@@ -732,9 +742,11 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_old_rank_warning = 
         create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                            "Old rank warning", nil);  
-
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
-
+    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
+        sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    else
+        sw_frame.settings_frame.icon_old_rank_warning:Hide();
+    end
 
     --sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
     --sw_frame.settings_frame.icon_heal_variant = 
@@ -988,8 +1000,12 @@ local function create_sw_gui_settings_frame()
         "Assumes you cast a particular ability until you are OOM with no cooldowns.";
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
+    sw_frame.settings_frame.tooltip_spell_rank = 
+        create_sw_checkbox("sw_tooltip_spell_rank", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                            "Spell Rank", tooltip_checkbox_func);
+
     sw_frame.settings_frame.tooltip_more_details = 
-        create_sw_checkbox("sw_tooltip_more_details", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+        create_sw_checkbox("sw_tooltip_more_details", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
                             "More details", tooltip_checkbox_func);
     getglobal(sw_frame.settings_frame.tooltip_more_details:GetName()).tooltip = 
         "Effective spell power, ability coefficients, % modifiers, crit modifier";
@@ -1030,6 +1046,9 @@ local function create_sw_gui_settings_frame()
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.more_details) ~= 0 then
         sw_frame.settings_frame.tooltip_more_details:SetChecked(true);
     end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.spell_rank) ~= 0 then
+        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(true);
+    end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cost) ~= 0 then
         sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);
     end
@@ -1065,10 +1084,10 @@ local function create_sw_gui_settings_frame()
 
         __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide = not self:GetChecked();
         if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-            libstub_icon:Hide(addonTable.sw_addon_name);
+            libstub_icon:Hide(swc.core.sw_addon_name);
 
         else
-            libstub_icon:Show(addonTable.sw_addon_name);
+            libstub_icon:Show(swc.core.sw_addon_name);
         end
     end);
 
@@ -1139,29 +1158,71 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.stat_comparison_frame.line_y_offset);
     sw_frame.stat_comparison_frame.stat_diff_header_center:SetText("Difference");
 
-    sw_frame.stat_comparison_frame.stats = {
-        [1] = {
-            label_str = "Intellect"
-        },
-        [2] = {
-            label_str = "Spirit"
-        },
-        [3] = {
-            label_str = "MP5"
-        },
-        [4] = {
-            label_str = "Spell power"
-        },
-        [5] = {
-            label_str = "Critical rating"
-        },
-        [6] = {
-            label_str = "Hit rating"
-        },
-        [7] = {
-            label_str = "Haste rating"
-        },
-    };
+
+    local comparison_stats_listing_order = {};
+
+    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
+
+        sw_frame.stat_comparison_frame.stats = {
+            int = {
+                label_str = "Intellect"
+            },
+            spirit = {
+                label_str = "Spirit"
+            },
+            mp5 = {
+                label_str = "MP5"
+            },
+            sp = {
+                label_str = "Spell Power"
+            },
+            spell_crit = {
+                label_str = "Critical rating"
+            },
+            spell_hit = {
+                label_str = "Hit rating"
+            },
+            spell_haste = {
+                label_str = "Haste rating"
+            },
+        };
+        comparison_stats_listing_order = {"int", "spirit", "mp5", "sp", "spell_crit", "spell_hit", "spell_haste"};
+    else
+        sw_frame.stat_comparison_frame.stats = {
+            int = {
+                label_str = "Intellect"
+            },
+            spirit = {
+                label_str = "Spirit"
+            },
+            mp5 = {
+                label_str = "MP5"
+            },
+            sp = {
+                label_str = "Spell Power"
+            },
+            sd = {
+                label_str = "Spell Damage"
+            },
+            hp = {
+                label_str = "Healing Power"
+            },
+            spell_crit = {
+                label_str = "Critical %"
+            },
+            spell_hit = {
+                label_str = "Hit %"
+            },
+            spell_haste = {
+                label_str = "Cast Speed %"
+            },
+            spell_pen = {
+                label_str = "Spell Penetration"
+            },
+        };
+        comparison_stats_listing_order = {"int", "spirit", "mp5", "sp", "sd", "hp", "spell_crit", "spell_hit", "spell_haste", "spell_pen"};
+    end
+
 
     local num_stats = 0;
     for _ in pairs(sw_frame.stat_comparison_frame.stats) do
@@ -1171,10 +1232,13 @@ local function create_sw_gui_stat_comparison_frame()
     sw_frame.stat_comparison_frame.clear_button = CreateFrame("Button", "button", sw_frame.stat_comparison_frame, "UIPanelButtonTemplate"); 
     sw_frame.stat_comparison_frame.clear_button:SetScript("OnClick", function()
 
-        for i = 1, num_stats do
-
-            sw_frame.stat_comparison_frame.stats[i].editbox:SetText("");
+        for k, v in pairs(sw_frame.stat_comparison_frame.stats) do
+            v.editbox:SetText("");
         end
+        --for i = 1, num_stats do
+
+        --    sw_frame.stat_comparison_frame.stats[i].editbox:SetText("");
+        --end
 
         update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
     end);
@@ -1187,9 +1251,9 @@ local function create_sw_gui_stat_comparison_frame()
     --sw_frame.stat_comparison_frame.line_y_offset = sw_frame.stat_comparison_frame.line_y_offset - 10;
 
 
-    for i = 1 , num_stats do
+    for i, k in pairs(comparison_stats_listing_order) do
 
-        v = sw_frame.stat_comparison_frame.stats[i];
+        v = sw_frame.stat_comparison_frame.stats[k];
 
         sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 
@@ -1200,7 +1264,7 @@ local function create_sw_gui_stat_comparison_frame()
         v.label:SetText(v.label_str);
         v.label:SetTextColor(222/255, 192/255, 40/255);
 
-        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..i, sw_frame.stat_comparison_frame, "InputBoxTemplate");
+        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..k, sw_frame.stat_comparison_frame, "InputBoxTemplate");
         v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.stat_comparison_frame.line_y_offset);
         v.editbox:SetText("");
         v.editbox:SetAutoFocus(false);
@@ -1235,11 +1299,11 @@ local function create_sw_gui_stat_comparison_frame()
 
             end
         	self:ClearFocus()
-            sw_frame.stat_comparison_frame.stats[next_index].editbox:SetFocus();
+            sw_frame.stat_comparison_frame.stats[comparison_stats_listing_order[next_index]].editbox:SetFocus();
         end);
     end
 
-    sw_frame.stat_comparison_frame.stats[stat_ids_in_ui.sp].editbox:SetText("1");
+    sw_frame.stat_comparison_frame.stats.sp.editbox:SetText("1");
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 
@@ -1559,7 +1623,7 @@ local function create_sw_gui_loadout_frame()
 
         local txt = self:GetText();
 
-        addonTable.talents_update_needed = true;
+        swc.core.talents_update_needed = true;
 
         if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 then
             loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
@@ -1596,8 +1660,8 @@ local function create_sw_gui_loadout_frame()
         
         local loadout_entry = active_loadout_entry();
 
-        addonTable.talents_update_needed = true;
-        addonTable.equipment_update_needed = true;
+        swc.core.talents_update_needed = true;
+        swc.core.equipment_update_needed = true;
 
         if self:GetChecked() then
 
@@ -1706,6 +1770,43 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEnterPressed", editbox_hp_perc);
     sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEscapePressed", editbox_hp_perc);
 
+    if swc.core.expansion_loaded == swc.core.expansions.vanilla then
+
+        y_offset_lhs = y_offset_lhs - 20;
+
+        sw_frame.loadouts_frame.rhs_list.target_res_label = 
+            sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+        sw_frame.loadouts_frame.rhs_list.target_res_label:SetFontObject(font);
+        sw_frame.loadouts_frame.rhs_list.target_res_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+        sw_frame.loadouts_frame.rhs_list.target_res_label:SetText("Target resistance                   ");
+
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox= CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetText("");
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetSize(40, 15);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetAutoFocus(false);
+
+        local editbox_target_res = function(self)
+
+            local txt = self:GetText();
+            
+            local target_res = tonumber(txt);
+            local loadout = active_loadout();
+            if target_res and target_res >= 0 then
+
+                loadout.target_res = target_res;
+            else
+                self:SetText("0"); 
+                loadout.target_res = 0;
+            end
+
+            self:ClearFocus();
+        end
+
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEnterPressed", editbox_target_res);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEscapePressed", editbox_target_res);
+    end
+
     y_offset_lhs = y_offset_lhs - 30;
 
     sw_frame.loadouts_frame.rhs_list.max_mana_checkbutton = 
@@ -1722,7 +1823,6 @@ local function create_sw_gui_loadout_frame()
             loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.always_max_mana));
         end
     end)
-
 
     local y_offset_rhs = 0;
 
@@ -1877,105 +1977,6 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
     end);
 
-
-    -- Note: enemy resistance config since vanilla
-    -- doesn't seem too relevant in wotlk
-    --sw_frame.loadouts_frame.rhs_list.target_resi_editbox = {};
-
-    --local num_target_resi_labels = 6;
-    --local target_resi_labels = {
-    --    [2] = {
-    --        label = "Holy",
-    --        color = {255/255, 255/255, 153/255}
-    --    },
-    --    [3] = {
-    --        label = "Fire",
-    --        color = {255/255, 0, 0}
-    --    },
-    --    [4] = {
-    --        label = "Nature",
-    --        color = {0, 153/255, 51/255}
-    --    },
-    --    [5] = {
-    --        label = "Frost",
-    --        color = {51/255, 102/255, 255/255}
-    --    },
-    --    [6] = {
-    --        label = "Shadow",
-    --        color = {102/255, 0, 102/255}
-    --    },
-    --    [7] = {
-    --        label = "Arcane",
-    --        color = {102/255, 0, 204/255}
-    --    }
-    --};
-
-    --local target_resi_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
-
-    --target_resi_label:SetFontObject(font);
-    --target_resi_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
-    --target_resi_label:SetText("Presumed enemy resistances");
-
-    --y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
-
-    --for i = 2, 7 do
-
-    --    local resi_school_label = sw_frame.loadouts_frame.rhs_list.target_buffs_frame:CreateFontString(nil, "OVERLAY");
-
-    --    resi_school_label:SetFontObject(font);
-    --    resi_school_label:SetPoint("TOPLEFT", 22, y_offset_rhs_target_buffs);
-    --    resi_school_label:SetText(target_resi_labels[i].label);
-    --    resi_school_label:SetTextColor(
-    --        target_resi_labels[i].color[1], target_resi_labels[i].color[2], target_resi_labels[i].color[3]
-    --    );
-
-
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i] = 
-    --        CreateFrame("EditBox", "sw_"..target_resi_labels[i].label.."editbox", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "InputBoxTemplate");
-
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i].school_type = i;
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetPoint("TOPLEFT", 130, y_offset_rhs_target_buffs);
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetAutoFocus(false);
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetSize(60, 10);
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTextChanged", function(self)
-
-    --        -- TODO: refactoring
-    --        --if self:GetText() == "" then
-    --        --    sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = 0;
-
-    --        --elseif not string.match(self:GetText(), "[^0123456789]") then
-    --        --    sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type] = tonumber(self:GetText());
-    --        --else 
-    --        --    self:ClearFocus();
-    --        --    self:SetText(tostring(sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout].loadout.target_res_by_school[self.school_type]));
-    --        --end
-    --    end);
-
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEnterPressed", function(self)
-    --    	self:ClearFocus()
-    --    end);
-    --    
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnEscapePressed", function(self)
-    --    	self:ClearFocus()
-    --    end);
-
-    --    sw_frame.loadouts_frame.rhs_list.target_resi_editbox[i]:SetScript("OnTabPressed", function(self)
-
-    --        local next_index = 0;
-    --        if IsShiftKeyDown() then
-    --            next_index = 1 + ((i-3) %num_target_resi_labels);
-    --        else
-    --            next_index = 1 + ((i-1) %num_target_resi_labels);
-
-    --        end
-    --    	self:ClearFocus()
-    --        sw_frame.loadouts_frame.rhs_list.target_resi_editbox[next_index + 1]:SetFocus();
-    --    end);
-
-
-    --    y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 15;
-    --end
-
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton = 
         CreateFrame("CheckButton", "sw_loadout_select_all_target_buffs", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOPLEFT", 20, y_offset_rhs_target_buffs);
@@ -2115,7 +2116,7 @@ local function create_sw_base_gui()
 
     --sw_frame:RegisterEvent("UPDATE_BONUS_ACTIONBAR");
     --sw_frame:RegisterEvent("ACTIONBAR_UPDATE_STATE");
-    for k, v in pairs(addonTable.event_dispatch) do
+    for k, v in pairs(swc.core.event_dispatch) do
         
         sw_frame:RegisterEvent(k);
     end
@@ -2129,11 +2130,11 @@ local function create_sw_base_gui()
 
     sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.title:SetFontObject(font)
-    sw_frame.title:SetText("Stat Weights Classic WOTLK");
+    sw_frame.title:SetText("Stat Weights Classic");
     sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
 
     sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
-        addonTable.event_dispatch[event](self, msg, msg2, msg3);
+        swc.core.event_dispatch[event](self, msg, msg2, msg3);
         end
     );
     
@@ -2175,7 +2176,7 @@ local function load_sw_ui()
     if not __sw__persistent_data_per_char then
         __sw__persistent_data_per_char = {};
     end
-    if addonTable.__sw__use_defaults__ then
+    if swc.core.__sw__use_defaults__ then
         __sw__persistent_data_per_char.settings = nil;
         __sw__persistent_data_per_char.loadouts = nil;
     end
@@ -2195,7 +2196,7 @@ local function load_sw_ui()
     create_sw_gui_settings_frame();
 
     if libstub_data_broker then
-        local sw_launcher = libstub_data_broker:NewDataObject(addonTable.sw_addon_name, {
+        local sw_launcher = libstub_data_broker:NewDataObject(swc.core.sw_addon_name, {
             type = "launcher",
             icon = "Interface\\Icons\\spell_fire_elementaldevastation",
             OnClick = function(self, button)
@@ -2208,7 +2209,7 @@ local function load_sw_ui()
                 end
             end,
             OnTooltipShow = function(tooltip)
-                tooltip:AddLine(addonTable.sw_addon_name..": Version "..addonTable.version);
+                tooltip:AddLine(swc.core.sw_addon_name..": Version "..swc.core.version);
                 tooltip:AddLine("Left/Right click: Toggle addon frame");
                 tooltip:AddLine("This icon can be removed in the addon's settings tab");
                 tooltip:AddLine("More info about this addon at:");
@@ -2216,14 +2217,14 @@ local function load_sw_ui()
             end,
         });
         if libstub_icon then
-            libstub_icon:Register(addonTable.sw_addon_name, sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
+            libstub_icon:Register(swc.core.sw_addon_name, sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
         end
     end
 
     if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-        libstub_icon:Hide(addonTable.sw_addon_name);
+        libstub_icon:Hide(swc.core.sw_addon_name);
     else
-        libstub_icon:Show(addonTable.sw_addon_name);
+        libstub_icon:Show(swc.core.sw_addon_name);
         sw_frame.settings_frame.libstub_icon_checkbox:SetChecked(true);
     end
 
@@ -2274,7 +2275,7 @@ local function load_sw_ui()
     sw_frame.loadouts_frame.lhs_list.loadouts[
         sw_frame.loadouts_frame.lhs_list.active_loadout].check_button:SetChecked(true);
 
-    if not __sw__persistent_data_per_char.sim_type or addonTable.__sw__use_defaults__ then
+    if not __sw__persistent_data_per_char.sim_type or swc.core.__sw__use_defaults__ then
         sw_frame.stat_comparison_frame.sim_type = simulation_type.spam_cast;
     else
         sw_frame.stat_comparison_frame.sim_type = __sw__persistent_data_per_char.sim_type;
@@ -2288,7 +2289,7 @@ local function load_sw_ui()
     end
     sw_frame.stat_comparison_frame.sim_type_button.init_func();
 
-    if __sw__persistent_data_per_char.stat_comparison_spells and not addonTable.__sw__use_defaults__ then
+    if __sw__persistent_data_per_char.stat_comparison_spells and not swc.core.__sw__use_defaults__ then
 
         sw_frame.stat_comparison_frame.spells = __sw__persistent_data_per_char.stat_comparison_spells;
 
@@ -2300,12 +2301,14 @@ local function load_sw_ui()
 
 end
 
-addonTable.font                                 = font;
-addonTable.load_sw_ui                           = load_sw_ui;
-addonTable.icon_overlay_font                    = icon_overlay_font;
-addonTable.create_sw_base_gui                   = create_sw_base_gui;
-addonTable.effects_from_ui                      = effects_from_ui;
-addonTable.update_and_display_spell_diffs       = update_and_display_spell_diffs;
-addonTable.sw_activate_tab                      = sw_activate_tab;
-addonTable.update_loadouts_rhs                  = update_loadouts_rhs;
+ui.font                                 = font;
+ui.load_sw_ui                           = load_sw_ui;
+ui.icon_overlay_font                    = icon_overlay_font;
+ui.create_sw_base_gui                   = create_sw_base_gui;
+ui.effects_from_ui                      = effects_from_ui;
+ui.update_and_display_spell_diffs       = update_and_display_spell_diffs;
+ui.sw_activate_tab                      = sw_activate_tab;
+ui.update_loadouts_rhs                  = update_loadouts_rhs;
+
+swc.ui = ui;
 

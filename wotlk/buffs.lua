@@ -19,23 +19,26 @@
 --LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
---
-local addonName, addonTable = ...;
-local ensure_exists_and_add         = addonTable.ensure_exists_and_add;
-local ensure_exists_and_mul         = addonTable.ensure_exists_and_mul;
-local deep_table_copy               = addonTable.deep_table_copy;
-local stat                          = addonTable.stat;
-local class                         = addonTable.class;
-local race                          = addonTable.race;
-local faction                       = addonTable.faction;
-local loadout_flags                 = addonTable.loadout_flags;
 
-local magic_school                  = addonTable.magic_school;
-local spell_name_to_id              = addonTable.spell_name_to_id;
-local spell_names_to_id             = addonTable.spell_names_to_id;
+local addon_name, swc = ...;
 
-local set_tiers                     = addonTable.set_tiers;
+local ensure_exists_and_add         = swc.utils.ensure_exists_and_add;
+local ensure_exists_and_mul         = swc.utils.ensure_exists_and_mul;
+local deep_table_copy               = swc.utils.deep_table_copy;
+local stat                          = swc.utils.stat;
+local class                         = swc.utils.class;
+local race                          = swc.utils.race;
+local faction                       = swc.utils.faction;
+local loadout_flags                 = swc.utils.loadout_flags;
 
+local magic_school                  = swc.abilities.magic_school;
+local spell_name_to_id              = swc.abilities.spell_name_to_id;
+local spell_names_to_id             = swc.abilities.spell_names_to_id;
+
+local set_tiers                     = swc.equipment.set_tiers;
+
+-------------------------------------------------------------------------------
+local buffs_export = {};
 
 local buff_filters = {
     caster      = bit.lshift(1,1),
@@ -1818,16 +1821,16 @@ local function apply_buffs(loadout, effects)
             loadout.beacon = nil
         end
     end
-
-    --loadout_add(loadout, stats_diff_loadout, effects);
 end
 
-addonTable.buff_filters = buff_filters;
-addonTable.filter_flags_active = filter_flags_active;
-addonTable.buff_category = buff_category;
-addonTable.buffs = buffs;
-addonTable.target_buffs = target_buffs;
-addonTable.detect_buffs = detect_buffs;
-addonTable.apply_buffs = apply_buffs;
-addonTable.non_stackable_effects = non_stackable_effects;
+buffs_export.buff_filters = buff_filters;
+buffs_export.filter_flags_active = filter_flags_active;
+buffs_export.buff_category = buff_category;
+buffs_export.buffs = buffs;
+buffs_export.target_buffs = target_buffs;
+buffs_export.detect_buffs = detect_buffs;
+buffs_export.apply_buffs = apply_buffs;
+buffs_export.non_stackable_effects = non_stackable_effects;
+
+swc.buffs = buffs_export;
 

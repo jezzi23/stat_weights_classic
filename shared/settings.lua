@@ -1,4 +1,3 @@
-
 --MIT License
 --
 --Copyright (c) Stat Weights Classic
@@ -22,10 +21,12 @@
 --SOFTWARE.
 
 
-local addonName, addonTable = ...;
+local addon_name, swc = ...;
 
-local icon_stat_display         = addonTable.icon_stat_display;
-local tooltip_stat_display      = addonTable.tooltip_stat_display;
+local icon_stat_display         = swc.overlay.icon_stat_display;
+local tooltip_stat_display      = swc.tooltip.tooltip_stat_display;
+-------------------------------------------------------------------------------
+local settings = {};
 
 local function default_sw_settings()
     local settings = {};
@@ -49,6 +50,11 @@ local function default_sw_settings()
                 tooltip_stat_display.cost_per_sec,
                 tooltip_stat_display.stat_weights,
                 tooltip_stat_display.cast_until_oom);
+
+    if swc.core.expnsion_loaded ~= swc.core.expansions.wotlk then
+        settings.ability_tooltip =
+            bit.bor(settings.ability_tooltip, tooltip_stat_display.spell_rank);
+    end
 
     settings.icon_overlay_update_freq = 3;
     settings.icon_overlay_font_size = 8;
@@ -135,6 +141,9 @@ local function save_sw_settings()
     if sw_frame.settings_frame.tooltip_more_details:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.more_details);
     end
+    if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.spell_rank);
+    end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cost);
     end
@@ -154,7 +163,11 @@ local function save_sw_settings()
     __sw__persistent_data_per_char.settings.clear_original_tooltip = sw_frame.settings_frame.clear_original_tooltip;
     __sw__persistent_data_per_char.settings.icon_overlay_update_freq = sw_snapshot_loadout_update_freq;
     __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.settings_frame.icon_overlay_font_size;
+
+    __sw__persistent_data_per_char.settings.version_saved = swc.core.version_id;
 end
 
-addonTable.default_sw_settings = default_sw_settings;
-addonTable.save_sw_settings = save_sw_settings;
+settings.default_sw_settings = default_sw_settings;
+settings.save_sw_settings = save_sw_settings;
+
+swc.settings = settings;

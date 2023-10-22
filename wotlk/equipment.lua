@@ -19,17 +19,20 @@
 --LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
+--
+local addon_name, swc = ...;
 
-local addonName, addonTable = ...;
-local ensure_exists_and_add             = addonTable.ensure_exists_and_add;
-local ensure_exists_and_mul             = addonTable.ensure_exists_and_mul;
+local ensure_exists_and_add             = swc.utils.ensure_exists_and_add;
+local ensure_exists_and_mul             = swc.utils.ensure_exists_and_mul;
+local class                             = swc.utils.class;
+local stat                              = swc.utils.stat;
 
-local magic_school                      = addonTable.magic_school;
-local spell_name_to_id                  = addonTable.spell_name_to_id;
-local spell_names_to_id                 = addonTable.spell_names_to_id;
+local magic_school                      = swc.abilities.magic_school;
+local spell_name_to_id                  = swc.abilities.spell_name_to_id;
+local spell_names_to_id                 = swc.abilities.spell_names_to_id;
 
-local class                             = addonTable.class;
-local stat                              = addonTable.stat;
+-------------------------------------------------------------------------------
+local equipment = {};
 
 local set_tiers = {
     pve_t7_1         = 1,
@@ -1116,5 +1119,7 @@ local function apply_equipment(loadout, effects)
     return found_anything;
 end
 
-addonTable.set_tiers = set_tiers;
-addonTable.apply_equipment = apply_equipment;
+equipment.set_tiers = set_tiers;
+equipment.apply_equipment = apply_equipment;
+
+swc.equipment = equipment;

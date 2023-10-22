@@ -3,4 +3,16 @@
 ## Notes: Advanced ability information, icon overlays and more
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char
 ## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
-vanilla/stat_weights_classic.lua
+shared/utils.lua
+vanilla/abilities.lua
+vanilla/equipment.lua
+vanilla/buffs.lua
+vanilla/talents.lua
+shared/loadout.lua
+vanilla/loadout.lua
+vanilla/calc.lua
+vanilla/tooltip.lua
+shared/overlay.lua
+shared/settings.lua
+shared/ui.lua
+shared/core.lua

@@ -25,15 +25,7 @@ local addon_name, swc = ...;
 local stat                              = swc.utils.stat;
 
 local function int_to_crit_rating(int, lvl)
-    if lvl ~= 80 then
-        return 0;
-    end
-
-    local lvl_80_int_to_crit_ratio = 166.66638409698;
-    --local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/addonTable.get_combat_rating_effect(CR_CRIT_SPELL, 80);
-    local lvl_80_crit_rating_from_int = int*swc.calc.get_combat_rating_effect(CR_CRIT_SPELL, 80)/lvl_80_int_to_crit_ratio;
-
-    return lvl_80_crit_rating_from_int;
+    return int/60;
 end
 
 local function effects_diff(loadout, effects, diff)
@@ -55,21 +47,13 @@ local function effects_diff(loadout, effects, diff)
     local hp_gained_from_int = diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.by_attribute.hp_from_stat_mod[stat.int];
     local hp_gained_from_stat = hp_gained_from_spirit + hp_gained_from_int;
 
-    effects.raw.spell_power = effects.raw.spell_power + diff.sp + sp_gained_from_stat;
-    effects.raw.healing_power = effects.raw.healing_power + hp_gained_from_stat;
-
+    effects.raw.spell_power = effects.raw.spell_power + diff.sp;
+    effects.raw.spell_dmg = effects.raw.spell_dmg + diff.sd + sp_gained_from_stat;
+    effects.raw.healing_power = effects.raw.healing_power + diff.hp + hp_gained_from_stat;
 
     effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
     effects.raw.mp5 = effects.raw.mp5 + diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.raw.mp5_from_int_mod;
 
-    -- TODO: crit and mana yields from intellect
-    --       Missing formulas, seems to depend on lvl and class/race?
-    --       It looks like in many cases 166.67 int is needed per 1% crit at many lvl 80 caster classes
-    --
-    --       Only contribute mana and crit IF we are level 80 since the generalized case is unknown atm
-    local lvl_80_int_to_crit_ratio = 166.66638409698;
-    local lvl_80_int_per_crit_rating = lvl_80_int_to_crit_ratio/swc.calc.get_combat_rating_effect(CR_CRIT_SPELL, 80);
-    
     local crit_rating_from_int = int_to_crit_rating(diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]), loadout.lvl);
 
     effects.raw.mana = effects.raw.mana + (diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]) * 15)*(1.0 + effects.raw.mana_mod);
@@ -80,6 +64,9 @@ local function effects_diff(loadout, effects, diff)
 
     for i = 1, 5 do
         effects.by_attribute.stats[i] = effects.by_attribute.stats[i] + diff.stats[i];
+    end
+    for i = 2, 7 do
+        effects.by_school.target_res[i] = effects.by_school.target_res[i] - diff.spell_pen;
     end
 end
 

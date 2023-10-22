@@ -3,15 +3,16 @@
 ## Notes: Advanced caster ability information, icon overlays and more
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char
 ## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
-wotlk/utils.lua
-wotlk/spells.lua
+shared/utils.lua
+wotlk/abilities.lua
 wotlk/equipment.lua
 wotlk/buffs.lua
 wotlk/talents.lua
+shared/loadout.lua
 wotlk/loadout.lua
 wotlk/calc.lua
 wotlk/tooltip.lua
-wotlk/overlay.lua
-wotlk/settings.lua
-wotlk/ui.lua
-wotlk/stat_weights_classic.lua
+shared/overlay.lua
+shared/settings.lua
+shared/ui.lua
+shared/core.lua

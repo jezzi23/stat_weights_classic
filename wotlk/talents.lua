@@ -20,18 +20,20 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addonName, addonTable = ...;
-local ensure_exists_and_add         = addonTable.ensure_exists_and_add;
-local ensure_exists_and_mul         = addonTable.ensure_exists_and_mul;
-local class                         = addonTable.class;
-local race                          = addonTable.race;
+local addon_name, swc = ...;
 
-local magic_school                  = addonTable.magic_school;
-local spell_name_to_id              = addonTable.spell_name_to_id;
-local spell_names_to_id             = addonTable.spell_names_to_id;
-local spells                        = addonTable.spells;
+local ensure_exists_and_add         = swc.utils.ensure_exists_and_add;
+local ensure_exists_and_mul         = swc.utils.ensure_exists_and_mul;
+local class                         = swc.utils.class;
+local race                          = swc.utils.race;
+local stat                          = swc.utils.stat;
 
-local stat                          = addonTable.stat;
+local magic_school                  = swc.abilities.magic_school;
+local spell_name_to_id              = swc.abilities.spell_name_to_id;
+local spell_names_to_id             = swc.abilities.spell_names_to_id;
+local spells                        = swc.abilities.spells;
+-------------------------------------------------------------------------------
+local talents_export = {};
 
 local function create_glyphs()
     if class == "PRIEST" then
@@ -1839,7 +1841,7 @@ local function wowhead_talent_code()
     return talent_code.."_"..glyphs_code;
 end
 
-local function talent_glyphs_table(wowhead_code)
+local function talent_table(wowhead_code)
 
     local talents = {{}, {}, {}};
 
@@ -1884,16 +1886,16 @@ local function talent_glyphs_table(wowhead_code)
     return talents, glyphs_table;
 end
 
-local function apply_talents_glyphs(loadout, effects)
+local function apply_talents(loadout, effects)
 
-    local dynamic_talents, dynamic_glyphs = talent_glyphs_table(loadout.talents_code);
+    local dynamic_talents, dynamic_glyphs = talent_table(loadout.talents_code);
     local custom_talents, custom_glyphs = nil, nil;
 
-    if bit.band(loadout.flags, addonTable.loadout_flags.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
         loadout.talents_table = dynamic_talents;
         loadout.glyphs = dynamic_glyphs;
     else
-        custom_talents, custom_glyphs = talent_glyphs_table(loadout.custom_talents_code);
+        custom_talents, custom_glyphs = talent_table(loadout.custom_talents_code);
         loadout.talents_table = custom_talents;
         loadout.glyphs = custom_glyphs;
     end
@@ -1904,7 +1906,7 @@ local function apply_talents_glyphs(loadout, effects)
         end
     end
 
-    if bit.band(loadout.flags, addonTable.loadout_flags.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
         for i = 1, 3 do
             for j = 1, 29 do
                 local id = i*100 + j;
@@ -1928,10 +1930,12 @@ local function apply_talents_glyphs(loadout, effects)
     end
 end
 
-addonTable.glyphs = glyphs;
-addonTable.wowhead_talent_link = wowhead_talent_link
-addonTable.wowhead_talent_code_from_url = wowhead_talent_code_from_url;
-addonTable.wowhead_talent_code = wowhead_talent_code;
-addonTable.talent_glyphs_table = talent_glyphs_table;
-addonTable.apply_talents_glyphs = apply_talents_glyphs;
+talents_export.glyphs = glyphs;
+talents_export.wowhead_talent_link = wowhead_talent_link
+talents_export.wowhead_talent_code_from_url = wowhead_talent_code_from_url;
+talents_export.wowhead_talent_code = wowhead_talent_code;
+talents_export.talent_table = talent_table;
+talents_export.apply_talents = apply_talents;
+
+swc.talents = talents_export;
 

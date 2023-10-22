@@ -20,34 +20,35 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addonName, addonTable = ...;
+local addon_name, swc = ...;
 
+local spells                            = swc.abilities.spells;
+local spell_name_to_id                  = swc.abilities.spell_name_to_id;
+local spell_names_to_id                 = swc.abilities.spell_names_to_id;
+local magic_school                      = swc.abilities.magic_school;
+local spell_flags                       = swc.abilities.spell_flags;
+local best_rank_by_lvl                  = swc.abilities.best_rank_by_lvl;
 
-local spells                            = addonTable.spells;
-local spell_name_to_id                  = addonTable.spell_name_to_id;
-local spell_names_to_id                 = addonTable.spell_names_to_id;
-local magic_school                      = addonTable.magic_school;
-local spell_flags                       = addonTable.spell_flags;
-local best_rank_by_lvl                  = addonTable.best_rank_by_lvl;
+local stat                              = swc.utils.stat;
+local loadout_flags                     = swc.utils.loadout_flags;
+local class                             = swc.utils.class;
+local deep_table_copy                   = swc.utils.deep_table_copy;
+local loadout_flags                     = swc.utils.loadout_flags;
 
-local stat                              = addonTable.stat;
-local loadout_flags                     = addonTable.loadout_flags;
-local class                             = addonTable.class;
+local effects_zero_diff                 = swc.loadout.effects_zero_diff;
+local effects_diff                      = swc.loadout.effects_diff;
 
-local effects_zero_diff                 = addonTable.effects_zero_diff;
-local effects_diff                      = addonTable.effects_diff;
+local set_tiers                         = swc.equipment.set_tiers;
 
-local set_tiers                         = addonTable.set_tiers;
+local buff_filters                      = swc.buffs.buff_filters;
+local buff_category                     = swc.buffs.buff_category;
+local filter_flags_active               = swc.buffs.filter_flags_active;
+local buffs                             = swc.buffs.buffs;
+local target_buffs                      = swc.buffs.target_buffs;
+local non_stackable_effects             = swc.buffs.non_stackable_effects;
 
-local deep_table_copy                   = addonTable.deep_table_copy;
-
-local buff_filters                      = addonTable.buff_filters;
-local buff_category                     = addonTable.buff_category;
-local filter_flags_active               = addonTable.filter_flags_active;
-local buffs                             = addonTable.buffs;
-local target_buffs                      = addonTable.target_buffs;
-local non_stackable_effects             = addonTable.non_stackable_effects;
-local loadout_flags                     = addonTable.loadout_flags;
+--------------------------------------------------------------------------------
+local calc = {};
 
 local simulation_type = {
     spam_cast           = 1,
@@ -889,11 +890,11 @@ local function spell_info(info, spell, stats, loadout, effects)
             math.min(loadout.lvl - spell.lvl_req, spell.lvl_max - spell.lvl_req));
     end
     if base_min > 0.0 then
-        base_min = math.ceil(base_min + spell.lvl_scaling * lvl_diff_applicable);
+        base_min = math.floor(base_min + spell.lvl_scaling * lvl_diff_applicable);
         base_max = math.ceil(base_max + spell.lvl_scaling * lvl_diff_applicable);
     end
     if bit.band(spell.flags, spell_flags.over_time_lvl_scaling) ~= 0 then
-        base_ot_tick = math.ceil(base_ot_tick + spell.lvl_scaling * lvl_diff_applicable);
+        base_ot_tick = math.floor(base_ot_tick + spell.lvl_scaling * lvl_diff_applicable);
         base_ot_tick_max = math.ceil(base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable);
     end
 
@@ -1634,11 +1635,13 @@ local function spell_diff(spell_normal, spell_diffed, sim_type)
     end
 end
 
-addonTable.simulation_type              = simulation_type;
-addonTable.stats_for_spell              = stats_for_spell;
-addonTable.spell_info                   = spell_info;
-addonTable.cast_until_oom               = cast_until_oom;
-addonTable.evaluate_spell               = evaluate_spell;
-addonTable.get_combat_rating_effect     = get_combat_rating_effect;
-addonTable.spell_diff                   = spell_diff;
+calc.simulation_type              = simulation_type;
+calc.stats_for_spell              = stats_for_spell;
+calc.spell_info                   = spell_info;
+calc.cast_until_oom               = cast_until_oom;
+calc.evaluate_spell               = evaluate_spell;
+calc.get_combat_rating_effect     = get_combat_rating_effect;
+calc.spell_diff                   = spell_diff;
+
+swc.calc = calc;
 
