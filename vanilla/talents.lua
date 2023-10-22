@@ -20,18 +20,20 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addonName, addonTable = ...;
-local ensure_exists_and_add         = addonTable.ensure_exists_and_add;
-local ensure_exists_and_mul         = addonTable.ensure_exists_and_mul;
-local class                         = addonTable.class;
-local race                          = addonTable.race;
+local addon_name, swc = ...;
 
-local magic_school                  = addonTable.magic_school;
-local spell_name_to_id              = addonTable.spell_name_to_id;
-local spell_names_to_id             = addonTable.spell_names_to_id;
-local spells                        = addonTable.spells;
+local ensure_exists_and_add         = swc.utils.ensure_exists_and_add;
+local ensure_exists_and_mul         = swc.utils.ensure_exists_and_mul;
+local class                         = swc.utils.class;
+local race                          = swc.utils.race;
+local stat                          = swc.utils.stat;
 
-local stat                          = addonTable.stat;
+local magic_school                  = swc.abilities.magic_school;
+local spell_name_to_id              = swc.abilities.spell_name_to_id;
+local spell_names_to_id             = swc.abilities.spell_names_to_id;
+local spells                        = swc.abilities.spells;
+-------------------------------------------------------------------------------
+local talents_export = {};
 
 local function create_talents()
     if class == "PRIEST" then
@@ -596,7 +598,7 @@ local talents = create_talents();
 
 local function wowhead_talent_link(code)
     local lowercase_class = string.lower(class);
-    return "https://classic.wowhead.com/wotlk/talent-calc/"..lowercase_class.."/"..code;
+    return "https://classic.wowhead.com/talent-calc/"..lowercase_class.."/"..code;
 end
 
 local function wowhead_talent_code_from_url(link)
@@ -703,14 +705,14 @@ local function apply_talents(loadout, effects)
     local dynamic_talents = talent_table(loadout.talents_code);
     local custom_talents = nil, nil;
 
-    if bit.band(loadout.flags, addonTable.loadout_flags.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
         loadout.talents_table = dynamic_talents;
     else
         custom_talents  = talent_table(loadout.custom_talents_code);
         loadout.talents_table = custom_talents;
     end
 
-    if bit.band(loadout.flags, addonTable.loadout_flags.is_dynamic_loadout) ~= 0 then
+    if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
         for i = 1, 3 do
             for j = 1, 29 do
                 local id = i*100 + j;
@@ -734,9 +736,11 @@ local function apply_talents(loadout, effects)
     end
 end
 
-addonTable.wowhead_talent_link = wowhead_talent_link
-addonTable.wowhead_talent_code_from_url = wowhead_talent_code_from_url;
-addonTable.wowhead_talent_code = wowhead_talent_code;
-addonTable.talent_table = talent_table;
-addonTable.apply_talents = apply_talents;
+talents_export.wowhead_talent_link = wowhead_talent_link
+talents_export.wowhead_talent_code_from_url = wowhead_talent_code_from_url;
+talents_export.wowhead_talent_code = wowhead_talent_code;
+talents_export.talent_table = talent_table;
+talents_export.apply_talents = apply_talents;
+
+swc.talents = talents_export;
 

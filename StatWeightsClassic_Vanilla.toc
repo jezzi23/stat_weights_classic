@@ -4,14 +4,15 @@
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char
 ## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
 shared/utils.lua
-vanilla/spells.lua
+vanilla/abilities.lua
 vanilla/equipment.lua
 vanilla/buffs.lua
 vanilla/talents.lua
+shared/loadout.lua
 vanilla/loadout.lua
 vanilla/calc.lua
 vanilla/tooltip.lua
-vanilla/overlay.lua
-vanilla/settings.lua
-vanilla/ui.lua
-shared/stat_weights_classic.lua
+shared/overlay.lua
+shared/settings.lua
+shared/ui.lua
+shared/core.lua

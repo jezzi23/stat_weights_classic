@@ -20,29 +20,28 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
+local addon_name, swc = ...;
 
-local addonName, addonTable = ...;
+local spells                                    = swc.abilities.spells;
+local spell_flags                               = swc.abilities.spell_flags;
+local spell_name_to_id                          = swc.abilities.spell_name_to_id;
+local spell_names_to_id                         = swc.abilities.spell_names_to_id;
+local magic_school                              = swc.abilities.magic_school;
 
-local spells                                    = addonTable.spells;
-local spell_flags                               = addonTable.spell_flags;
+local loadout_flags                             = swc.utils.loadout_flags;
+local class                                     = swc.utils.class;
 
-local loadout_flags                             = addonTable.loadout_flags;
-local class                                     = addonTable.class;
+local set_tiers                                 = swc.equipment.set_tiers;
 
-local set_tiers                                 = addonTable.set_tiers;
+local stats_for_spell                           = swc.calc.stats_for_spell;
+local spell_info                                = swc.calc.spell_info;
+local cast_until_oom                            = swc.calc.cast_until_oom;
+local evaluate_spell                            = swc.calc.evaluate_spell;
 
-local spell_name_to_id                          = addonTable.spell_name_to_id;
-local spell_names_to_id                         = addonTable.spell_names_to_id;
-local magic_school                              = addonTable.magic_school;
-local spell_flags                               = addonTable.spell_flags;
-
-local stats_for_spell                           = addonTable.stats_for_spell;
-local spell_info                                = addonTable.spell_info;
-local cast_until_oom                            = addonTable.cast_until_oom;
-local evaluate_spell                            = addonTable.evaluate_spell;
-
-local active_loadout_and_effects                = addonTable.active_loadout_and_effects;
-local active_loadout_and_effects_diffed_from_ui = addonTable.active_loadout_and_effects_diffed_from_ui;
+local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
+local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
+-------------------------------------------------------------------------------
+local tooltip_export = {};
 
 local tooltip_stat_display = {
     normal              = bit.lshift(1,1),
@@ -597,7 +596,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         tooltip:AddLine(string.format("Spell power effect: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod*stats.spell_power, stats.ot_coef*stats.spell_ot_mod*stats.spell_power_ot));
     end
     -- debug tooltip stuff
-    if addonTable.__sw__debug__ then
+    if swc.core.__sw__debug__ then
         tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
         tooltip:AddLine("Base "..effect..": "..spell.over_time);
         tooltip:AddLine(
@@ -655,7 +654,7 @@ local function append_tooltip_spell_info(is_fake)
                 name = spell_name
             };
 
-            addonTable.update_and_display_spell_diffs(loadout, effects, effects_diffed);
+            swc.core.update_and_display_spell_diffs(loadout, effects, effects_diffed);
         end
     end
 end
@@ -663,7 +662,7 @@ end
 local function update_tooltip(tooltip)
 
     --tooltips update dynamically without debug setting
-    if not addonTable.__sw__debug__ and tooltip:IsShown() then
+    if not swc.core.__sw__debug__ and tooltip:IsShown() then
         local _, id = tooltip:GetSpell();
         if id and spells[id] then
             tooltip:ClearLines();
@@ -681,7 +680,9 @@ local function update_tooltip(tooltip)
 
 end
 
-addonTable.tooltip_stat_display             = tooltip_stat_display;
-addonTable.append_tooltip_spell_info        = append_tooltip_spell_info;
-addonTable.update_tooltip                   = update_tooltip;
+tooltip_export.tooltip_stat_display             = tooltip_stat_display;
+tooltip_export.append_tooltip_spell_info        = append_tooltip_spell_info;
+tooltip_export.update_tooltip                   = update_tooltip;
+
+swc.tooltip = tooltip_export;
 

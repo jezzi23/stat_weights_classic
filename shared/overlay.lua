@@ -1,4 +1,3 @@
-
 --MIT License
 --
 --Copyright (c) Stat Weights Classic
@@ -22,17 +21,19 @@
 --SOFTWARE.
 
 
-local addonName, addonTable = ...;
+local addon_name, swc = ...;
 
-local spells                                        = addonTable.spells;
-local spell_flags                                   = addonTable.spell_flags;
+local spells                                        = swc.abilities.spells;
+local spell_flags                                   = swc.abilities.spell_flags;
 
-local active_loadout_and_effects                    = addonTable.active_loadout_and_effects;
-local active_loadout_and_effects_diffed_from_ui     = addonTable.active_loadout_and_effects_diffed_from_ui;
+local active_loadout_and_effects                    = swc.loadout.active_loadout_and_effects;
+local active_loadout_and_effects_diffed_from_ui     = swc.loadout.active_loadout_and_effects_diffed_from_ui;
 
-local stats_for_spell                               = addonTable.stats_for_spell;
-local spell_info                                    = addonTable.spell_info;
-local cast_until_oom                                = addonTable.cast_until_oom;
+local stats_for_spell                               = swc.calc.stats_for_spell;
+local spell_info                                    = swc.calc.spell_info;
+local cast_until_oom                                = swc.calc.cast_until_oom;
+--------------------------------------------------------------------------------
+local overlay = {};
 
 local icon_stat_display = {
     normal                  = bit.lshift(1,1),
@@ -407,6 +408,41 @@ local spell_cache = {};
 
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects)
 
+    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
+        if loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
+           -- low spell rank
+
+            for i = 1, 3 do
+                if not frame_info.overlay_frames[i] then
+                    frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
+                end
+                frame_info.overlay_frames[i]:SetFont(
+                    swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+            end
+
+            frame_info.overlay_frames[1]:SetPoint("TOP", 1, -3);
+            frame_info.overlay_frames[2]:SetPoint("CENTER", 1, -1.5);
+            frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
+
+            if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() then
+                frame_info.overlay_frames[1]:SetText("OLD");
+                frame_info.overlay_frames[2]:SetText("RANK");
+                frame_info.overlay_frames[3]:SetText("!!!");
+            else
+                frame_info.overlay_frames[1]:SetText("");
+                frame_info.overlay_frames[2]:SetText("");
+                frame_info.overlay_frames[3]:SetText("");
+            end
+
+            for i = 1, 3 do
+                frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255); 
+                frame_info.overlay_frames[i]:Show();
+            end
+            
+            return;
+        end
+    end
+
     if not spell_cache[spell_id] then
         spell_cache[spell_id] = {};
         spell_cache[spell_id].dmg = {};
@@ -424,9 +460,9 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     end
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
-    if spell_cache[spell_id].seq ~= addonTable.sequence_counter then
+    if spell_cache[spell_id].seq ~= swc.core.sequence_counter then
 
-        spell_cache[spell_id].seq = addonTable.sequence_counter;
+        spell_cache[spell_id].seq = swc.core.sequence_counter;
         stats_for_spell(stats, spell, loadout, effects);
         spell_info(spell_effect, spell, stats, loadout, effects);
         cast_until_oom(spell_effect, stats, loadout, effects);
@@ -438,7 +474,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
             frame_info.overlay_frames[3] = frame_info.frame:CreateFontString(nil, "OVERLAY");
 
             frame_info.overlay_frames[3]:SetFont(
-                addonTable.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+                swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
 
             frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
         end
@@ -456,7 +492,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
                     frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
 
                     frame_info.overlay_frames[i]:SetFont(
-                        addonTable.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+                        swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
 
                     if i == 1 then
                         frame_info.overlay_frames[i]:SetPoint("TOP", 1, -3);
@@ -519,14 +555,14 @@ __sw__icon_frames = {};
 
 local function update_spell_icons(loadout, effects)
 
-    if addonTable.setup_action_bar_needed then
+    if swc.core.setup_action_bar_needed then
         setup_action_bars();
-        addonTable.setup_action_bar_needed = false;
+        swc.core.setup_action_bar_needed = false;
     end
 
-    if addonTable.special_action_bar_changed then
+    if swc.core.special_action_bar_changed then
         on_special_action_bar_changed();
-        addonTable.special_action_bar_changed = false;
+        swc.core.special_action_bar_changed = false;
     end
 
     -- update spell book icons
@@ -603,9 +639,11 @@ local function update_overlay()
     end
 end
 
-addonTable.setup_action_bars            = setup_action_bars;
-addonTable.update_overlay               = update_overlay;
-addonTable.icon_stat_display            = icon_stat_display;
-addonTable.update_icon_overlay_settings = update_icon_overlay_settings;
-addonTable.reassign_overlay_icon        = reassign_overlay_icon;
+overlay.setup_action_bars            = setup_action_bars;
+overlay.update_overlay               = update_overlay;
+overlay.icon_stat_display            = icon_stat_display;
+overlay.update_icon_overlay_settings = update_icon_overlay_settings;
+overlay.reassign_overlay_icon        = reassign_overlay_icon;
+
+swc.overlay = overlay;
 
