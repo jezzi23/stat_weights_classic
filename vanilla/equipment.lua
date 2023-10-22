@@ -498,7 +498,6 @@ local items = {
 };
 
 local function detect_sets(loadout)
-    -- go through equipment to find set pieces
     for k, v in pairs(set_tiers) do
         loadout.num_set_pieces[v] = 0;
     end

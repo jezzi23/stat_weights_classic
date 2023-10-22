@@ -2130,7 +2130,7 @@ local function create_sw_base_gui()
 
     sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.title:SetFontObject(font)
-    sw_frame.title:SetText("Stat Weights Classic WOTLK");
+    sw_frame.title:SetText("Stat Weights Classic");
     sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
 
     sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
