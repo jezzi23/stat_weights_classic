@@ -193,12 +193,12 @@ local buffs_predefined = {
     -- power infusion
     [10060] = {
         apply = function(loadout, effects, buff)
-            effects.raw.haste_mod = effects.raw.haste_mod + 0.2;
-            effects.raw.cost_mod = effects.raw.cost_mod + 0.2;
+            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + 0.2;
+            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.2;
         end,
         filter = buff_filters.caster,
         category = buff_category.raid,
-        tooltip = "20% haste (fom priest)",
+        tooltip = "20% spell dmg/heal (fom priest)",
     },
     --arcane power
     [12042] = {
@@ -289,7 +289,7 @@ local buffs_predefined = {
                 ensure_exists_and_add(effects.ability.cost_mod, v, 0.05, 0);
             end
         end,
-        filter = buff_filters.shaman,
+        filter = buff_filters.druid,
         category = buff_category.class,
     },
     -- amplify curse
@@ -482,7 +482,7 @@ local buffs_predefined = {
     },
     -- moonkin
     [24907] = {
-        apply = function(loadout, effects, buff)
+        apply = function(loadout, effects, buff, inactive)
 
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.moonkin_crit) == 0 then
                 if inactive then
@@ -846,6 +846,15 @@ local target_buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.priest, buff_filters.mage, buff_filters.druid, buff_filters.hostile),
         category = buff_category.raid,
+    },
+    -- frost nova 
+    [122] = {
+        apply = function(loadout, effects, buff)
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_frozen, loadout_flags.target_snared);
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "Frozen effect",
     },
 };
 

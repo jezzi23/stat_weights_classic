@@ -65,6 +65,18 @@ local function create_talents()
                     effects.raw.mana_mod = effects.raw.mana_mod + pts * 0.02;
                 end
             },
+            [114] = {
+                apply = function(loadout, effects, pts)
+                    
+                    -- TODO VANILLA: mana burn
+                    -- TODO VANILLA: make separate spell dmg mod for hybrids like holy nova
+                    local offensives = spell_names_to_id({"Smite", "Mind Blast", "Holy Fire", "Holy Nova", "Shadow Word: Pain", "Mind Flay", "Starshards"});
+                    for k, v in pairs(offensives) do
+                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
+                        ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
+                    end
+                end
+            },
             [116] = {
                 apply = function(loadout, effects, pts)
                     effects.by_school.spell_dmg_mod[magic_school.holy] =
@@ -119,6 +131,7 @@ local function create_talents()
             [214] = {
                 apply = function(loadout, effects, pts)
                     effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + pts * 0.05;
+                    effects.by_attribute.hp_from_stat_mod[stat.spirit] = effects.by_attribute.hp_from_stat_mod[stat.spirit] + pts * 0.05;
                 end
             },
             [215] = {
@@ -278,7 +291,7 @@ local function create_talents()
             [105] = {
                 apply = function(loadout, effects, pts)
                     for k, v in pairs(spell_names_to_id({"Magma Totem", "Searing Totem", "Fire Nova Totem"})) do
-                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.05, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.05, 0.0);
                     end
                 end
             },
@@ -405,8 +418,13 @@ local function create_talents()
             },
             [115] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    effects.raw.spell_dmg_mod_mul = 
-                        (1.0 + effects.raw.spell_dmg_mod_mul) * (1.0 + pts * 0.01) - 1.0;
+
+                    effects.by_school.spell_dmg_mod_add[magic_school.fire] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.fire] + pts*0.01;
+                    effects.by_school.spell_dmg_mod_add[magic_school.arcane] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] + pts*0.01;
+                    effects.by_school.spell_dmg_mod_add[magic_school.frost] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.frost] + pts*0.01;
 
                     for i = 2,7 do
                         effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01 * missing_pts;
@@ -463,8 +481,8 @@ local function create_talents()
             },
             [308] = {
                 apply = function(loadout, effects, pts)
-                    effects.by_school.spell_dmg_mod[magic_school.frost] = 
-                        effects.by_school.spell_dmg_mod[magic_school.frost] + 0.02 * pts;
+                    effects.by_school.spell_dmg_mod_add[magic_school.frost] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.frost] + 0.02 * pts;
                 end
             },
             [312] = {
@@ -502,7 +520,7 @@ local function create_talents()
             [102] = {
                 apply = function(loadout, effects, pts)
                     -- TODO VANILLA: is this capped at 1.0 or 1.5 effectively?
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Corruption"], pts * 0.04, 0.0); 
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Corruption"], pts * 0.4, 0.0); 
                 end
             },
             [105] = {

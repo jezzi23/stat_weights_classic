@@ -85,6 +85,18 @@ local function base_mana_pool()
     return base_mana;
 end
 
+local function spirit_mana_regen(spirit)
+    local mp2 = 0;
+    if class == "PRIEST" or class == "MAGE" then
+        mp2 = (13 + spirit/4);
+    elseif class == "DRUID" or class == "SHAMAN" or class == "PALADIN" then
+        mp2 = (15 + spirit/5);
+    elseif class == "WARLOCK" then
+        mp2 = (8 + spirit/4);
+    end
+    return mp2;
+end
+
 local special_abilities = nil;
 local function set_alias_spell(spell, loadout)
 
@@ -180,7 +192,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.spell_mod = 1.0;
     stats.spell_ot_mod = 1.0;
     stats.flat_addition = 0;
-    stats.spell_mod_base = 1.0; -- modifier than only works on spell base but with spellpower
+    stats.spell_mod_base = 1.0; -- modifier than only works on spell base
     local resource_refund = effects.raw.resource_refund;
 
     if not effects.ability.effect_mod[spell.base_id] then
@@ -226,7 +238,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     local cast_mod_mul = 0.0;
 
-    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
+    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school] + loadout.spell_dmg_hit_by_school[spell.school];
     if effects.ability.hit[spell.base_id] then
         stats.extra_hit = stats.extra_hit + effects.ability.hit[spell.base_id];
     end
@@ -301,6 +313,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 stats.crit_mod = stats.crit_mod * (1.0 + pts * 0.08);
             end
         end
+
+        if bit.band(loadout.flags, loadout_flags.target_frozen) ~= 0 then
+
+            local pts = loadout.talents_table:pts(3, 13);
+            stats.crit = stats.crit + pts*0.1;
+        end
     elseif class == "WARLOCK" then
     end
 
@@ -339,7 +357,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.cast_time_nogcd = stats.cast_time;
     stats.cast_time = math.max(stats.cast_time, stats.gcd);
 
-    -- multiplicitive vs additive can become an error here 
     if bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
         stats.spell_mod_base = stats.spell_mod_base + effects.raw.spell_heal_mod_base;
@@ -618,22 +635,20 @@ local function spell_info(info, spell, stats, loadout, effects)
     end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
-        if spell.base_id == spell_name_to_id["Innervate"] then
-            if loadout.glyphs[54832] then
-                info.mana_restored = base_mana_pool()*2.70;
-            else
-                info.mana_restored = base_mana_pool()*2.25;
-            end
-        elseif spell.base_id == spell_name_to_id["Life Tap"] then
-            info.mana_restored = spell.base_min + stats.spell_power*spell.coef;
+        if spell.base_id == spell_name_to_id["Life Tap"] then
+            info.mana_restored = spell.base_min + spell.lvl_scaling;
 
-            local pts = loadout.talents_table:pts(1, 6);
+            local pts = loadout.talents_table:pts(1, 5);
             info.mana_restored = info.mana_restored * (1.0 + pts*0.1);
-        elseif spell.base_id == spell_name_to_id["Shadowfiend"] then
-            info.mana_restored = 0.05*loadout.max_mana*10;
+        elseif spell.base_id == spell_name_to_id["Mana Tide Totem"] then
+            info.mana_restored = spell.over_time * spell.over_time_duration/spell.over_time_tick_freq;
         else
-            -- evocate, mana tide, divine plea of % max mana
-            info.mana_restored = spell.base_min * loadout.max_mana;
+            -- evocate, innervate
+            local spirit = loadout.stats[stat.spirit] + effects.by_attribute.stats[stat.spirit];
+            -- calculate as mana that you would not have gotten if you were casting other spells
+            info.mana_restored = 0.5*spirit_mana_regen(spirit) *
+                (1.0 - effects.raw.regen_while_casting) *
+                spell.base_min * math.max(stats.cast_time, spell.over_time_duration);
         end
         info.effect_per_cost = math.huge;
     end
@@ -659,14 +674,8 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     -- without mp5
     local spirit = loadout.stats[stat.spirit] + effects.by_attribute.stats[stat.spirit];
 
-    local mp2_not_casting = 0;
-    if class == "PRIEST" or class == "MAGE" then
-        mp2_not_casting = (13 + spirit/4);
-    elseif class == "DRUID" or class == "SHAMAN" or class == "PALADIN" then
-        mp2_not_casting = (15 + spirit/5);
-    elseif class == "WARLOCK" then
-        mp2_not_casting = (8 + spirit/4);
-    end
+    local mp2_not_casting = spirit_mana_regen(spirit);
+
     if not calculating_weights then
         mp2_not_casting = math.ceil(mp2_not_casting);
     end
@@ -721,7 +730,10 @@ if class == "SHAMAN" then
             if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
                 info.expectation = (1 + 0.2 + 0.2*0.2) * info.expectation_st;
             end
-        end
+        end,
+        [spell_name_to_id["Healing Stream Totem"]] = function(spell, info, loadout, stats, effects)
+            info.expectation = 5 * info.expectation_st;
+        end,
 
     };
 elseif class == "PRIEST" then
@@ -901,7 +913,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     spell_info(spell_effect_extra_1pen, spell, spell_stats_diffed, loadout, effects_diffed);
     cast_until_oom(spell_effect_extra_1pen, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
-    diff.haste_rating = 0;
+    diff.spell_pen = 0;
 
     diff.stats[stat.int] = 1;
     effects_diff(loadout, effects_diffed, diff);

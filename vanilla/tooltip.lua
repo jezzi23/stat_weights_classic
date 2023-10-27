@@ -148,16 +148,20 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
-        tooltip:AddLine(string.format("Restores %d mana over %.2f sec for yourself",
+        tooltip:AddLine(string.format("Restores %d mana over %.2f sec for yourself.",
                                       math.ceil(eval.spell.mana_restored),
                                       math.max(stats.cast_time, spell.over_time_duration)
                                       ),
                         0, 1, 1);
 
-        if spell.base_id ~= spell_name_to_id["Shadowfiend"] then
-            end_tooltip_section(tooltip);
-            return;
+        if class == "MAGE" or class == "DRUID" then
+            tooltip:AddLine(string.format("Calculated as mana that you would not otherwise had gotten while casting other spells."),
+                            0, 1, 1);
+
         end
+
+        end_tooltip_section(tooltip);
+        return;
     end
 
     local hit_str = string.format("(%.1f%% hit)", stats.hit*100);
@@ -487,7 +491,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
 
         if stats.cast_time_nogcd ~= stats.cast_time then
-            tooltip:AddLine(string.format("Expected Cast Time: 1.5sec ("..stats.cast_time_nogcd.." but gcd capped)", stats.cast_time), 215/256, 83/256, 234/256);
+            tooltip:AddLine(string.format("Expected Cast Time: 1.5sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
         else
             tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
         end
@@ -537,7 +541,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             else
                 stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
             end
-            if i == max_weights_per_line then
+            if i == max_weights_per_line and i ~= num_weights then
                 stat_weights_str = stat_weights_str.."\n|";
             end
         end
@@ -591,7 +595,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         tooltip:AddLine(string.format("Spell power: %d direct / %d periodic", stats.spell_power, stats.spell_power_ot));
         tooltip:AddLine(string.format("Critical modifier %.5f", stats.crit_mod));
         tooltip:AddLine(string.format("Coefficient: %.3f direct / %.3f periodic", stats.coef, stats.ot_coef));
-        tooltip:AddLine(string.format("Effect modifier: %.3f direct / %.3f periodic", stats.spell_mod, stats.spell_ot_mod));
+        tooltip:AddLine(string.format("Effect modifier: %.3f direct / %.3f periodic / %.3f base", stats.spell_mod, stats.spell_ot_mod, stats.spell_mod_base));
         tooltip:AddLine(string.format("Effective coefficient: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod, stats.ot_coef*stats.spell_ot_mod));
         tooltip:AddLine(string.format("Spell power effect: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod*stats.spell_power, stats.ot_coef*stats.spell_ot_mod*stats.spell_power_ot));
     end

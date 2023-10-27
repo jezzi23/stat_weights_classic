@@ -68,6 +68,7 @@ local function empty_loadout()
         hit_rating = 0.0,
 
         spell_dmg_by_school = {0, 0, 0, 0, 0, 0, 0},
+        spell_dmg_hit_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_crit_by_school = {0, 0, 0, 0, 0, 0, 0},
         hit = 0.0,
         spell_dmg = 0,
@@ -314,6 +315,11 @@ local function print_loadout(loadout, effects)
         str = str .. loadout.spell_crit_by_school[i] .. ", "
     end
     str = str.."}";
+    str = "spell_hit_school : {";
+    for i = 2,7 do
+        str = str .. loadout.spell_crit_by_school[i] .. ", "
+    end
+    str = str.."}";
     print(str);
     for w, e in pairs(effects.ability) do
         local str = w.. ": {";
@@ -365,6 +371,9 @@ local function dynamic_loadout(loadout)
         loadout.mana = UnitPower("player", 0);
     end
 
+    loadout.haste_rating = 0;
+    loadout.hit_rating = 0;
+
     if swc.core.expansion_loaded == swc.core.expansions.vanilla then
         loadout.healing_power = GetSpellBonusHealing();
         loadout.spell_dmg = math.huge;
@@ -374,23 +383,33 @@ local function dynamic_loadout(loadout)
         for i = 2, 7 do
             loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_dmg;
         end
+        -- right after load GetSpellHitModifier seems to sometimes returns a nil.... so check first I guess
+       local spell_hit = 0;
+       local real_hit = GetSpellHitModifier();
+       if real_hit then
+           spell_hit = real_hit/100;
+       end
+       for i = 1, 7 do
+           loadout.spell_dmg_hit_by_school[i] = spell_hit;
+       end
     else
         -- in wotlk, healing power will equate to spell power
         loadout.spell_power = GetSpellBonusHealing();
         for i = 1, 7 do
             loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_power;
         end
+
+        -- crit and hit is already gathered indirectly from rating, but not haste
+        loadout.haste_rating = GetCombatRating(CR_HASTE_SPELL);
+        loadout.hit_rating = GetCombatRating(CR_HIT_SPELL);
     end
+
     for i = 2, 7 do
         loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
     end
     local ap_src1, ap_src2, ap_src3 = UnitAttackPower("player");
     loadout.attack_power = ap_src1 + ap_src2 + ap_src3;
 
-    -- crit and hit is already gathered indirectly from rating, but not haste
-    -- TODO VANILLA:
-    loadout.haste_rating = 0;
-    loadout.hit_rating = 0;
 
     loadout.player_name = UnitName("player"); 
     loadout.target_name = UnitName("target"); 
