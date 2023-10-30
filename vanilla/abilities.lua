@@ -5965,7 +5965,7 @@ local function create_spells()
                 lvl_req             = 1,
                 lvl_max             = 5,
                 lvl_outdated        = 9,
-                flags               = bit.bor(spell_flags.cast_with_ot_dur, spell_flags.over_time_crit),
+                flags               = bit.bor(spell_flags.cast_with_ot_dur),
                 school              = magic_school.fire,
                 coef                = 0.2,
                 over_time_coef      = 0.2,

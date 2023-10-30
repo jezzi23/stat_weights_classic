@@ -55,6 +55,9 @@ local icon_stat_display = {
 
 local function action_id_of_button(button)
 
+    if not button then
+        return nil;
+    end
     if action_bar_addon_name == "Default" then
         return button.action;
     else
