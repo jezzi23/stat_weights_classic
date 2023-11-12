@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30100
+local version_id = 30101
 local version = tostring(version_id);
 core.version = version:sub(1,1).."."..version:sub(2,3).."."..version:sub(4,5);
 core.version_id = version;

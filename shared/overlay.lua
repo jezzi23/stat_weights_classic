@@ -121,7 +121,6 @@ local function gather_spell_icons()
 
 
         init_frame_overlay(spell_book_frames[i]);
-        --= {nil, nil, nil};
     end
 
     -- gather action bar icons
@@ -214,10 +213,6 @@ local function gather_spell_icons()
 
                 init_frame_overlay(action_bar_frames_of_interest[action_id]);
 
-                --if spell_id ~= 0 then
-
-                    --action_bar_frames_of_interest[action_id].overlay_frames = {nil, nil, nil}
-                --end
             end
         end
     end
