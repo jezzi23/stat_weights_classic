@@ -1011,7 +1011,7 @@ local function apply_talents(loadout, effects)
         loadout.talents_table = dynamic_talents;
         loadout.runes = dynamic_runes;
     else
-        custom_talents  = talent_table(loadout.custom_talents_code);
+        custom_talents, custom_runes = talent_table(loadout.custom_talents_code);
         loadout.talents_table = custom_talents;
         loadout.runes = custom_runes;
     end

@@ -706,8 +706,8 @@ local target_buffs_predefined = {
                 id = buff.id;
             end
 
-            ensure_exists_and_add(effects.ability.effect_flat_add, spell_name_to_id["Holy Light"], id_to_hl[id], 0);
-            ensure_exists_and_add(effects.ability.effect_flat_add, spell_name_to_id["Flash of Light"], id_to_fl[id], 0);
+            ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Holy Light"], id_to_hl[id], 0);
+            ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Flash of Light"], id_to_fl[id], 0);
 
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
