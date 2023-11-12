@@ -31,8 +31,9 @@ local settings = {};
 local function default_sw_settings()
     local settings = {};
     settings.ability_icon_overlay = 
-        bit.bor(icon_stat_display.normal, 
-                icon_stat_display.crit, 
+        bit.bor(
+                --icon_stat_display.normal, 
+                --icon_stat_display.crit, 
                 icon_stat_display.effect_per_sec,
                 icon_stat_display.show_heal_variant
                 );
@@ -49,17 +50,14 @@ local function default_sw_settings()
                 tooltip_stat_display.effect_per_cost,
                 tooltip_stat_display.cost_per_sec,
                 tooltip_stat_display.stat_weights,
+                tooltip_stat_display.spell_rank,
                 tooltip_stat_display.cast_until_oom);
-
-    if swc.core.expnsion_loaded ~= swc.core.expansions.wotlk then
-        settings.ability_tooltip =
-            bit.bor(settings.ability_tooltip, tooltip_stat_display.spell_rank);
-    end
 
     settings.icon_overlay_update_freq = 3;
     settings.icon_overlay_font_size = 8;
+    settings.icon_overlay_disable = false;
     settings.icon_overlay_mana_abilities = true;
-    settings.icon_overlay_old_rank = true;
+    settings.icon_overlay_old_rank = false;
     settings.show_tooltip_only_when_shift = false;
     settings.clear_original_tooltip = false;
     settings.libstub_minimap_icon = { hide = false };
@@ -154,6 +152,7 @@ local function save_sw_settings()
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cast_until_oom);
     end
 
+    __sw__persistent_data_per_char.settings.icon_overlay_disable = sw_frame.settings_frame.icon_overlay_disable:GetChecked();
     __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities = sw_frame.settings_frame.icon_mana_overlay:GetChecked();
     __sw__persistent_data_per_char.settings.icon_overlay_old_rank = sw_frame.settings_frame.icon_old_rank_warning:GetChecked();
 

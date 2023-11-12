@@ -69,7 +69,7 @@ local buff_category = {
     raid        = 3,
     consumes    = 4,
     world_buffs = 5,
-    trinket     = 6,
+    item        = 6,
 };
 
 local filter_flags_active = 0;
@@ -112,6 +112,7 @@ local non_stackable_effects = {
     bow_mp5                     = bit.lshift(1, 11),
 };
 
+local FILL_ME_WITH_KNOWN_VALUES = 0;
 
 --TODO VANILLA: 
 --    pala blessing of healing thing
@@ -222,7 +223,7 @@ local buffs_predefined = {
             effects.raw.haste_mod = effects.raw.haste_mod + 0.33;
         end,
         filter = buff_filters.mage,
-        category = buff_category.raid,
+        category = buff_category.item,
         tooltip = "33% haste",
     },
     -- dmf dmg
@@ -245,7 +246,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.mage,
-        category = buff_category.trinket,
+        category = buff_category.item,
         tooltip = "Arcane 50% crit dmg and 5% crit",
     },
     -- zg trinket
@@ -257,7 +258,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.warlock,
-        category = buff_category.trinket,
+        category = buff_category.item,
         tooltip = "Destruction spells 10% crit",
     },
     -- zg trinket
@@ -270,7 +271,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.priest,
-        category = buff_category.trinket,
+        category = buff_category.item,
     },
     -- zg trinket
     [24499] = {
@@ -278,7 +279,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], 0.5, 0);
         end,
         filter = buff_filters.shaman,
-        category = buff_category.class,
+        category = buff_category.item,
     },
     -- zg trinket
     [24542] = {
@@ -290,7 +291,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.druid,
-        category = buff_category.class,
+        category = buff_category.item,
     },
     -- amplify curse
     [18288] = {
@@ -326,7 +327,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
-        category = buff_category.trinket,
+        category = buff_category.item,
     },
     -- zandalari hero charm
     [24658] = {
@@ -337,7 +338,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.caster,
-        category = buff_category.trinket,
+        category = buff_category.item,
     },
     -- berserk
     [26635] = {
@@ -384,7 +385,7 @@ local buffs_predefined = {
             effects.raw.spell_dmg_mod = effects.raw.spell_dmg_mod + 0.2;
         end,
         filter = buff_filters.shaman,
-        category = buff_category.trinket,
+        category = buff_category.item,
     },
     -- blessed prayer beads
     [24354] = {
@@ -394,7 +395,7 @@ local buffs_predefined = {
             end
         end,
         filter = buff_filters.priest,
-        category = buff_category.trinket,
+        category = buff_category.item,
     },
     -- beast slaying (troll)
     [20557] = {
@@ -538,13 +539,13 @@ local buffs_predefined = {
         filter = buff_filters.caster,
         category = buff_category.consumes,
     },
-    --  brilliant wizard oil
+    -- brilliant wizard oil
     [25122] = {
-        apply = function(loadout, effects, buff, inactive)
-
-
-            if inactive then
-                effects.raw.spell_power = effects.raw.spell_power + 36;
+        apply = function(loadout, effects, buff)
+            
+            local _, _, _, enchant_id = GetWeaponEnchantInfo();
+            if enchant_id ~= 2628 then 
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 125;
                 for i = 2, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01;
                 end
@@ -552,20 +553,22 @@ local buffs_predefined = {
         end,
         filter = buff_filters.caster,
         category = buff_category.consumes,
-        icon_id = GetItemIcon(20749)
+        tooltip = "36 spell damage and 1% crit",
     },
     --  brilliant mana oil
     [25123] = {
         apply = function(loadout, effects, buff, inactive)
 
 
-            if inactive then
+            local _, _, _, enchant_id = GetWeaponEnchantInfo();
+            if enchant_id ~= 2629 then 
                 effects.raw.healing_power = effects.raw.healing_power + 25;
+                effects.raw.mp5 = effects.raw.mp5 + 12;
             end
-            effects.raw.mp5 = effects.raw.mp5 + 12;
         end,
         filter = buff_filters.caster,
         category = buff_category.consumes,
+        tooltip = "12 mp5 and 25 healing power",
         icon_id = GetItemIcon(20748)
     },
     -- demonic sacrifice imp
@@ -595,7 +598,31 @@ local buffs_predefined = {
         filter = buff_filters.priest,
         category = buff_category.class,
     },
-
+    -- fury of the stormrage
+    [FILL_ME_WITH_KNOWN_VALUES] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id("Wrath"), 1.00, 0);
+        end,
+        filter = buff_filters.druid,
+        category = buff_category.class,
+    },
+    -- fury of the stormrage proc
+    [FILL_ME_WITH_KNOWN_VALUES] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id("Healing Touch"), 1.00, 0);
+        end,
+        filter = buff_filters.druid,
+        category = buff_category.class,
+    },
+    -- fingers of frost
+    [FILL_ME_WITH_KNOWN_VALUES] = {
+        apply = function(loadout, effects, buff)
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_frozen);
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "Frozen effect",
+    },
 
 };
 

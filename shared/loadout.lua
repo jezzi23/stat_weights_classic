@@ -26,8 +26,6 @@ local stat                              = swc.utils.stat;
 local deep_table_copy                   = swc.utils.deep_table_copy;
 local loadout_flags                     = swc.utils.loadout_flags;
 
-local best_rank_by_lvl_update           = swc.abilities.best_rank_by_lvl_update;
-
 local apply_buffs                       = swc.buffs.apply_buffs;
 local detect_buffs                      = swc.buffs.detect_buffs;
 
@@ -186,7 +184,6 @@ local function zero_effects(effects)
     end
 end
 
--- deep copy to avoid reference entanglement
 local function loadout_copy(loadout)
     return deep_table_copy(loadout);
 end
@@ -353,9 +350,6 @@ end
 local function dynamic_loadout(loadout)
 
     local level = UnitLevel("player");
-    if loadout.lvl ~= level then
-        best_rank_by_lvl_update();
-    end
     loadout.lvl = level;
 
     for i = 1, 5 do

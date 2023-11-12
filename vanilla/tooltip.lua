@@ -26,6 +26,8 @@ local spells                                    = swc.abilities.spells;
 local spell_flags                               = swc.abilities.spell_flags;
 local spell_name_to_id                          = swc.abilities.spell_name_to_id;
 local spell_names_to_id                         = swc.abilities.spell_names_to_id;
+local next_spell_rank                           = swc.abilities.next_spell_rank;
+local best_rank_by_lvl                          = swc.abilities.best_rank_by_lvl;
 local magic_school                              = swc.abilities.magic_school;
 
 local loadout_flags                             = swc.utils.loadout_flags;
@@ -37,6 +39,8 @@ local stats_for_spell                           = swc.calc.stats_for_spell;
 local spell_info                                = swc.calc.spell_info;
 local cast_until_oom                            = swc.calc.cast_until_oom;
 local evaluate_spell                            = swc.calc.evaluate_spell;
+
+local rune_ids                                  = swc.talents.rune_ids;
 
 local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
 local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
@@ -139,7 +143,22 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                         138/256, 134/256, 125/256);
     end
     if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
-        tooltip:AddLine("Spell Rank: "..spell.rank, 138/256, 134/256, 125/256);
+
+        local next_rank_str = "";
+        local best_rank, highest_rank = best_rank_by_lvl(spell.base_id, loadout.lvl);
+        local next_rank = next_spell_rank(spell);
+        if next_rank and best_rank and spells[best_rank].rank + 1 == spells[next_rank].rank then
+            next_rank_str = next_rank_str.."(highest yet; next rank at lvl "..spells[next_rank].lvl_req..")";
+        elseif best_rank and spells[best_rank].rank == spell.rank then
+            next_rank_str = "(highest available)";
+        elseif best_rank and spells[best_rank].rank > spell.rank then
+            next_rank_str = "(downranked)";
+        else 
+            next_rank_str = "(unavailable)";
+        end
+
+        tooltip:AddLine(string.format("Spell Rank: %d %s", spell.rank, next_rank_str),
+                        138/256, 134/256, 125/256);
     end
 
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 or
@@ -264,7 +283,11 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                     pts = loadout.talents_table:pts(2, 3);
                     effect_type_str = "ignites"
                     extra_crit_mod = 0.08 * pts;
-
+                elseif class == "DRUID" then
+                    if loadout.runes[rune_ids.living_seed] and bit.band(spell.flags, spell_flags.heal) ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
+                        effect_type_str = "seeds";
+                        extra_crit_mod = 0.3;
+                    end
                 end
                 if effect_type_str and eval.spell.min_crit_if_hit ~= 0 then
                     local min_crit_if_hit = eval.spell.min_crit_if_hit/(1 + extra_crit_mod);

@@ -29,6 +29,8 @@ local magic_school                      = swc.abilities.magic_school;
 local spell_flags                       = swc.abilities.spell_flags;
 local best_rank_by_lvl                  = swc.abilities.best_rank_by_lvl;
 
+local rune_ids                          = swc.talents.rune_ids;
+
 local stat                              = swc.utils.stat;
 local loadout_flags                     = swc.utils.loadout_flags;
 local class                             = swc.utils.class;
@@ -104,19 +106,19 @@ local function set_alias_spell(spell, loadout)
 
     local swiftmend = spell_name_to_id["Swiftmend"];
     if spell.base_id == swiftmend then
-        alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Rejuvenation"]]];
+        alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
         if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
             local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
             -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
             if regrowth_buff then
                 if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
-                    alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Regrowth"]]];
+                    alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Regrowth"], loadout.lvl)];
                 end
             end
         end
     elseif spell.base_id == conflagrate then
-        alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Immolate"]]];
+        alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Immolate"], loadout.lvl)];
     end
 
     return alias_spell;
@@ -261,8 +263,25 @@ local function stats_for_spell(stats, spell, loadout, effects)
             local mana_refund = original_base_cost;
             resource_refund = resource_refund + stats.crit * 0.3 * mana_refund;
         end
+        if spell.base_id == spell_name_to_id["Lifebloom"] then
+            local mana_refund = stats.cost * cost_mod * 0.5;
+            resource_refund = resource_refund + mana_refund;
+        end
 
-        
+        if loadout.runes[rune_ids.living_seed] then
+            if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"])
+                or spell.base_id == spell_name_to_id["Rejuvenation"] or spell.base_id == spell_name_to_id["Swiftmend"] then
+                -- living seed
+                stats.crit_mod = stats.crit_mod * 1.3;
+            end
+        end
+        if loadout.runes[rune_ids.lifebloom] and
+                (spell.base_id == spell_name_to_id["Rejuvenation"] or spell.base_id == spell_name_to_id["Lifebloom"]) then
+
+            stats.gcd = stats.gcd - 0.5;
+        end
+
+
     elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
         -- illumination
         local pts = loadout.talents_table:pts(1, 9);
@@ -305,6 +324,24 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 -- master of elements
                 local mana_refund = pts * 0.1 * original_base_cost;
                 resource_refund = resource_refund + stats.hit*stats.crit * mana_refund;
+            end
+
+            if loadout.runes[rune_ids.burnout] then
+                resource_refund = resource_refund - stats.crit * base_mana_pool();
+            end
+
+            if loadout.runes[rune_ids.enlightment] then
+                local mana_perc = loadout.mana/math.max(1, loadout.max_mana());
+                if mana_perc > 0.7 then
+                    effects.by_school.spell_dmg_mod_add[magic_school.fire] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.fire] + 0.1;
+                    effects.by_school.spell_dmg_mod_add[magic_school.arcane] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.1;
+                    effects.by_school.spell_dmg_mod_add[magic_school.frost] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.frost] + 0.1;
+                elseif mana_perc < 0.3 then
+                    effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.1;
+                end
             end
 
             -- ignite
@@ -585,7 +622,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     -- 1.5 sec gcd is always implied which is the only penalty for misses
     if bit.band(spell.flags, spell_flags.channel_missable) ~= 0 then
 
-        local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - 1.5)/info.ot_duration;
+        local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - stats.gcd)/info.ot_duration;
         info.expected_ot = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
     end
 
@@ -822,6 +859,9 @@ elseif class == "DRUID" then
             info.ot_duration = 0.0;
             info.ot_freq = 0.0;
         end,
+        --[spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
+        --    info.expectation = 5 * info.expectation_st;
+        --end,
     };
 elseif class == "WARLOCK" then
     special_abilities = {

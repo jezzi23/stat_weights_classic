@@ -35,6 +35,232 @@ local spells                        = swc.abilities.spells;
 -------------------------------------------------------------------------------
 local talents_export = {};
 
+local rune_ids = {
+    --priest
+    serendipity                     = 0,
+    strength_of_soul                = 0,
+    twisted_faith                   = 0,
+    void_plague                     = 0,
+    circle_of_healing               = 0,
+    mind_sear                       = 0,
+    penance                         = 0,
+    shadow_word_death               = 0,
+    homunculi                       = 0,
+    power_word_barrier              = 0,
+    prayer_of_mending               = 0,
+    shared_pain                     = 0,
+    --druid
+    fury_of_the_stormrage           = 0,
+    living_seed                     = 0,
+    survival_of_the_fittest         = 0,
+    wild_strikes                    = 0,
+    lacerate                        = 0,
+    mangle                          = 0,
+    sunfire                         = 0,
+    wild_growth                     = 0,
+    lifebloom                       = 0,
+    savage_roar                     = 0,
+    skull_bash                      = 0,
+    starsurge                       = 0,
+    --paladin
+    aegis                           = 0,
+    divine_storm                    = 0,
+    horn_of_lordaeron               = 0,
+    seal_of_martyrdom               = 0,
+    beacon_of_light                 = 0,
+    crusader_strike                 = 0,
+    hand_of_reckoning               = 0,
+    avengers_shield                 = 0,
+    divine_sacrifice                = 0,
+    exorcist                        = 0,
+    inspiration_exemplar            = 0,
+    rebuke                          = 0,
+    --shaman
+    dual_wield_specialization       = 0,
+    healing_rain                    = 0,
+    overload                        = 0,
+    shield_mastery                  = 0,
+    lava_burst                      = 0,
+    lava_lash                       = 0,
+    molten_blast                    = 0,
+    water_shield                    = 0,
+    ancestral_guidance              = 0,
+    earth_shield                    = 0,
+    shamanistic_rage                = 0,
+    way_of_earth                    = 0,
+    --mage
+    burnout                         = 0,
+    enlightment                     = 0,
+    fingers_of_frost                = 0,
+    regeneration                    = 0,
+    arcane_blast                    = 0,
+    ice_lance                       = 0,
+    living_bomb                     = 0,
+    rewind_time                     = 0,
+    arcane_surge                    = 0,
+    icy_veins                       = 0,
+    living_flame                    = 0,
+    mass_regeneration               = 0,
+    --warlock
+    demonic_tactics                 = 0,
+    lake_of_fire                    = 0,
+    master_channeler                = 0,
+    soul_siphon                     = 0,
+    chaos_bolt                      = 0,
+    haunt                           = 0,
+    metamorphosis                   = 0,
+    shadow_bolt_valley              = 0,
+    demonic_grace                   = 0,
+    demonic_pact                    = 0,
+    everlasting_affliction          = 0,
+    incinerate                      = 0,
+};    
+
+-- maps rune engraving enchant id to effect and wowhead's encoding
+local function create_runes()
+    local FILL_ME_WITH_KNOWN_VALUES = 0;
+    if class == "PRIEST" then
+        return {
+            [rune_ids.serendipity       ] = { wowhead_id = "50t"},
+            [rune_ids.strength_of_soul  ] = { wowhead_id = "50v"},
+            [rune_ids.twisted_faith     ] = { wowhead_id = "50w"},
+            [rune_ids.void_plague       ] = { wowhead_id = "50s"},
+            [rune_ids.circle_of_healing ] = { wowhead_id = "a13"},
+            [rune_ids.mind_sear         ] = { wowhead_id = "a12"},
+            [rune_ids.penance           ] = { wowhead_id = "a11"},
+            [rune_ids.shadow_word_death ] = { wowhead_id = "a14"},
+            [rune_ids.homunculi         ] = { wowhead_id = "70z"},
+            [rune_ids.power_word_barrier] = { wowhead_id = "70x"},
+            [rune_ids.prayer_of_mending ] = { wowhead_id = "710"},
+            [rune_ids.shared_pain       ] = { wowhead_id = "70y"},
+        };
+    elseif class == "DRUID" then
+        return {
+            [rune_ids.fury_of_the_stormrage  ] = { wowhead_id = "50f"},
+            [rune_ids.living_seed            ] = { wowhead_id = "50d"},
+            [rune_ids.survival_of_the_fittest] = { wowhead_id = "50g"},
+            [rune_ids.wild_strikes           ] = { wowhead_id = "50e"},
+            [rune_ids.lacerate               ] = { wowhead_id = "a0p"},
+            [rune_ids.mangle                 ] = { wowhead_id = "a0r"},
+            [rune_ids.sunfire                ] = { wowhead_id = "a0n"},
+            [rune_ids.wild_growth            ] = { wowhead_id = "a0q"},
+            [rune_ids.savage_roar            ] = { wowhead_id = "70m"},
+            [rune_ids.skull_bash             ] = { wowhead_id = "70k"},
+            [rune_ids.starsurge              ] = { wowhead_id = "70h"},
+
+            [rune_ids.lifebloom] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Rejuvenation"], 0.5, 0.0);
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lifebloom"], 0.5, 0.0);
+                end,
+                wowhead_id = "70j"
+            },
+        };
+    elseif class == "PALADIN" then
+        return {
+
+            [rune_ids.aegis               ] = { wowhead_id = "534"},
+            [rune_ids.divine_storm        ] = { wowhead_id = "532"},
+            [rune_ids.horn_of_lordaeron   ] = { wowhead_id = "533"},
+            [rune_ids.seal_of_martyrdom   ] = { wowhead_id = "531"},
+            [rune_ids.beacon_of_light     ] = { wowhead_id = "a3a"},
+            [rune_ids.crusader_strike     ] = { wowhead_id = "a3b"},
+            [rune_ids.hand_of_reckoning   ] = { wowhead_id = "a3c"},
+            [rune_ids.avengers_shield     ] = { wowhead_id = "737"},
+            [rune_ids.rebuke              ] = { wowhead_id = "739"},
+            [rune_ids.exorcist            ] = { wowhead_id = "738"},
+            [rune_ids.inspiration_exemplar] = { wowhead_id = "736"},
+            [rune_ids.divine_sacrifice    ] = { wowhead_id = "735"},
+        };
+    elseif class == "SHAMAN" then
+        return {
+            [rune_ids.dual_wield_specialization] = { wowhead_id = "52n"},
+            [rune_ids.healing_rain             ] = { wowhead_id = "52r"},
+            [rune_ids.shield_mastery           ] = { wowhead_id = "52p"},
+            [rune_ids.lava_lash                ] = { wowhead_id = "a2z"},
+            [rune_ids.molten_blast             ] = { wowhead_id = "a30"},
+            [rune_ids.water_shield             ] = { wowhead_id = "a2x"},
+            [rune_ids.ancestral_guidance       ] = { wowhead_id = "72s"},
+            [rune_ids.earth_shield             ] = { wowhead_id = "72t"},
+            [rune_ids.way_of_earth             ] = { wowhead_id = "72v"},
+
+            [rune_ids.overload] = {
+                apply = function(loadout, effects)
+                end,
+                wowhead_id = "52q"
+            },
+            [rune_ids.lava_burst] = {
+                apply = function(loadout, effects)
+                    -- flame shock tracking
+                end,
+                wowhead_id = "a2y"
+            },
+            [rune_ids.shamanistic_rage] = {
+                apply = function(loadout, effects)
+                    -- buff
+                end,
+                wowhead_id = "72w"
+            },
+        };
+    elseif class == "MAGE" then
+        return {
+            [rune_ids.regeneration     ] = { wowhead_id = "503"},
+            [rune_ids.arcane_blast     ] = { wowhead_id = "a0b"},
+            [rune_ids.ice_lance        ] = { wowhead_id = "a0c"},
+            [rune_ids.living_bomb      ] = { wowhead_id = "a0a"},
+            [rune_ids.rewind_time      ] = { wowhead_id = "a09"},
+            [rune_ids.arcane_surge     ] = { wowhead_id = "706"},
+            [rune_ids.icy_veins        ] = { wowhead_id = "705"},
+            [rune_ids.living_flame     ] = { wowhead_id = "708"},
+            [rune_ids.mass_regeneration] = { wowhead_id = "707"},
+
+            [rune_ids.burnout] = {
+                apply = function(loadout, effects, inactive)
+                    -- 15% spell crit but 1% more base mana cost on crit
+                    if inactive then
+                        for i = 2, 7 do
+                            effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.15;
+                        end
+                    end
+                end,
+                wowhead_id = "501"
+            },
+            [rune_ids.enlightment] = {
+                apply = function(loadout, effects)
+                    -- 10% dmg when over 70% mana, below 30% 0.1 regen while casting
+                end,
+                wowhead_id = "504"
+            },
+            [rune_ids.fingers_of_frost] = {
+                apply = function(loadout, effects)
+                    -- fingers of frost tracking
+                end,
+                wowhead_id = "502"
+            },
+        };
+
+    elseif class == "WARLOCK" then
+        return {
+
+            [rune_ids.demonic_tactics       ] = { wowhead_id = "518"},
+            [rune_ids.lake_of_fire          ] = { wowhead_id = "515"},
+            [rune_ids.master_channeler      ] = { wowhead_id = "516"},
+            [rune_ids.soul_siphon           ] = { wowhead_id = "517"},
+            [rune_ids.chaos_bolt            ] = { wowhead_id = "a1f"},
+            [rune_ids.haunt                 ] = { wowhead_id = "a1g"},
+            [rune_ids.metamorphosis         ] = { wowhead_id = "a1d"},
+            [rune_ids.shadow_bolt_valley    ] = { wowhead_id = "a1e"},
+            [rune_ids.demonic_grace         ] = { wowhead_id = "71b"},
+            [rune_ids.demonic_pact          ] = { wowhead_id = "71c"},
+            [rune_ids.everlasting_affliction] = { wowhead_id = "719"},
+            [rune_ids.incinerate            ] = { wowhead_id = "71a"},
+            
+        };
+    else
+        return {};
+    end
+end
+
 local function create_talents()
     if class == "PRIEST" then
         return {
@@ -612,7 +838,29 @@ local function create_talents()
     end
 end
 
+local function engraving_runes_id()
+    local ids = {};
+    local item_slots = {5, 7, 10};
+    for k, v in pairs(item_slots) do
+        local link = GetInventoryItemLink("player", v);
+        --local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name 
+        if link then
+            local _, _, _, _, _, enchant_id, _, _, _, _, _, _, _, _ = string.find(link,
+                "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+            --ids[k] = enchant_id;
+            ids[k] = nil;
+        end
+    end
+    return ids
+end
+
 local talents = create_talents();
+local runes = create_runes();
+local wowhead_rune_code_to_id = {};
+-- reverse mapping from wowhead 3 char code to rune spell id
+for k, v in pairs(runes) do
+    wowhead_rune_code_to_id[v.wowhead_id] = k; 
+end
 
 local function wowhead_talent_link(code)
     local lowercase_class = string.lower(class);
@@ -685,7 +933,23 @@ local function wowhead_talent_code()
         talent_code = sub_codes[1].."-"..sub_codes[2].."-"..sub_codes[3];
     end
 
-    return talent_code;
+    local runes_code = "";
+
+    local item_rune_ids = engraving_runes_id();
+    -- In order: head, legs, gloves
+    --local primary_rune_prefixes = {"5", "7", "a"};
+    local first_prefix = "0";
+    for i = 1, 3 do
+        if item_rune_ids[i] then
+            runes_code = runes_code..first_rune_prefix..runes[item_rune_ids[i]].wowhead_id;
+        end
+        if item_rune_ids[i] then
+            first_rune_prefix = "";
+        end
+
+    end
+
+    return talent_code.."_"..runes_code;
 end
 
 local function talent_table(wowhead_code)
@@ -715,19 +979,52 @@ local function talent_table(wowhead_code)
         end
     end;
 
-    return talents;
+    local runes_table = {};
+    if wowhead_code:sub(i, i) == "0" then
+        i = i + 1;
+        for i = 1, 3 do
+            -- runes start with 5 for chest, 7 for legs, "a" (10) for gloves
+            -- followed by 2 id characters
+            if string.match(wowhead_code:sub(i, i), "[0-9a-z]") ~= nil then
+                local rune_code = wowhead_code:sub(i, i + 2);
+                local rune_id = wowhead_rune_code_to_id[rune_code];
+                if rune_id then
+                    runes_table[rune_id] = runes[rune_id];
+                end
+                i = i + 3;
+            else
+                break;
+            end
+
+        end
+    end
+
+    return talents, runes_table;
 end
 
 local function apply_talents(loadout, effects)
 
-    local dynamic_talents = talent_table(loadout.talents_code);
-    local custom_talents = nil, nil;
+    local dynamic_talents, dynamic_runes = talent_table(loadout.talents_code);
+    local custom_talents, custom_runes = nil, nil;
 
     if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
         loadout.talents_table = dynamic_talents;
+        loadout.runes = dynamic_runes;
     else
         custom_talents  = talent_table(loadout.custom_talents_code);
         loadout.talents_table = custom_talents;
+        loadout.runes = custom_runes;
+    end
+
+    for k, v in pairs(loadout.runes) do
+        if v.apply then
+            if dynamic_runes[k] then
+                v.apply(loadout, effects);
+            else
+                -- not dynamically active
+                v.apply(loadout, effects, true);
+            end
+        end
     end
 
     if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
@@ -759,6 +1056,7 @@ talents_export.wowhead_talent_code_from_url = wowhead_talent_code_from_url;
 talents_export.wowhead_talent_code = wowhead_talent_code;
 talents_export.talent_table = talent_table;
 talents_export.apply_talents = apply_talents;
+talents_export.rune_ids = rune_ids;
 
 swc.talents = talents_export;
 

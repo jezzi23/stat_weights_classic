@@ -26,6 +26,8 @@ local spells                                    = swc.abilities.spells;
 local spell_flags                               = swc.abilities.spell_flags;
 local spell_name_to_id                          = swc.abilities.spell_name_to_id;
 local spell_names_to_id                         = swc.abilities.spell_names_to_id;
+local next_spell_rank                           = swc.abilities.next_spell_rank;
+local best_rank_by_lvl                          = swc.abilities.best_rank_by_lvl;
 local magic_school                              = swc.abilities.magic_school;
 
 local loadout_flags                             = swc.utils.loadout_flags;
@@ -127,8 +129,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     if loadout.lvl > spell.lvl_outdated and not swc.core.__sw__debug__ then
         tooltip:AddLine("Ability downranking is not optimal in WOTLK! A new rank is available at your level.", 252.0/255, 69.0/255, 3.0/255);
-        end_tooltip_section(tooltip);
-        return;
+        --tooltip:AddLine("Spell Rank: "..spell.rank, 138/256, 134/256, 125/256);
+        --end_tooltip_section(tooltip);
+        --return;
     end 
 
     if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
@@ -144,7 +147,22 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 
     if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
-        tooltip:AddLine("Spell Rank: "..spell.rank, 138/256, 134/256, 125/256);
+
+        local next_rank_str = "";
+        local best_rank, highest_rank = best_rank_by_lvl(spell.base_id, loadout.lvl);
+        local next_rank = next_spell_rank(spell);
+        if next_rank and best_rank and spells[best_rank].rank + 1 == spells[next_rank].rank then
+            next_rank_str = next_rank_str.."(highest yet; next rank at lvl "..spells[next_rank].lvl_req..")";
+        elseif best_rank and spells[best_rank].rank == spell.rank then
+            next_rank_str = "(highest available)";
+        elseif best_rank and spells[best_rank].rank > spell.rank then
+            next_rank_str = "(downranked)";
+        else 
+            next_rank_str = "(unavailable)";
+        end
+
+        tooltip:AddLine(string.format("Spell Rank: %d %s", spell.rank, next_rank_str),
+                        138/256, 134/256, 125/256);
     end
 
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 or

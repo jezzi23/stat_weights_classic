@@ -58,6 +58,10 @@ local function spell_name_to_ids()
             ["Innervate"]               = 29166,
             ["Swiftmend"]               = 18562,
             ["Thorns"]                  = 467,
+            ["Lifebloom"]               = 408124,
+            --["Starsurge"]               = 417157,
+            --["Sunfire"]                 = sunfire,
+            --["Wild Growth"]             = wild_growth,
         };
     elseif class == "PRIEST" then
         return {
@@ -142,10 +146,10 @@ local localized_spell_names_to_id = {};
 for k, v in pairs(spell_name_to_id) do
     local lname = GetSpellInfo(v);
     if not lname then
-        print(k,v);
+        --print("spell not found: ", k,v);
+    else
+        localized_spell_names_to_id[lname] = v;
     end
-
-    localized_spell_names_to_id[lname] = v;
 end
 
 local magic_school = {
@@ -180,6 +184,7 @@ local spell_flags = {
     hybrid                  = bit.lshift(1,19), -- both healing and dmg, halving coef
     base_mana_cost          = bit.lshift(1,20), -- ratio of base mana instead of fixed cost
     no_crit                 = bit.lshift(1,21),
+    sod_rune                = bit.lshift(1,22), -- contains special level scaling
 };
 
 local function create_spells()
@@ -2397,6 +2402,85 @@ local function create_spells()
                 lvl_outdated        = 60,
 				lvl_scaling			= 0.0,
             },
+            ---- lifebloom
+            --[408124] = {
+            --    base_min            = 38.949830,
+            --    base_max            = 38.949830,
+            --    over_time           = 38.949830,
+            --    over_time_tick_freq = 1,
+            --    over_time_duration  = 7.0,
+            --    cast_time           = 1.5,
+            --    rank                = 1,
+            --    lvl_req             = 20,
+            --    lvl_max             = 60,
+            --    lvl_outdated        = 60,
+            --    cost                = 0.28,
+            --    flags               = bit.bor(spell_flags.heal, spell_flags.base_mana_cost, spell_flags.exception_coef, spell_flags.sod_rune),
+            --    school              = magic_school.nature,
+            --    coef                = 0.274,
+            --    over_time_coef      = 0.051,
+			--	lvl_scaling			= 0.606705,
+			--	lvl_scaling_squared	= 0.167780,
+            --    lvl_coef            = 0.57,
+			--	lvl_coef_periodic   = 0.04,
+            --},
+            ---- starsurge
+            --[417157] = {
+            --    base_min            = 1.35,
+            --    base_max            = 1.35,
+            --    over_time           = 0.0,
+            --    over_time_tick_freq = 0,
+            --    over_time_duration  = 0.0,
+            --    cast_time           = 1.5,
+            --    rank                = 1,
+            --    lvl_req             = 20,
+            --    lvl_max             = 60,
+            --    lvl_outdated        = 60,
+            --    cost                = mana_cost_guess,
+            --    flags               = bit.bor(spell_flags.aoe, spell_flags.cd, spell_flags.sod_rune),
+            --    school              = magic_school.arcane,
+            --    coef                = 0.0,
+            --    over_time_coef      = 0.0,
+			--	lvl_scaling			= scaling_per_lvl_guess,
+            --},
+            ---- sunfire
+            --[sunfire] = {
+            --    base_min            = 55.0,
+            --    base_max            = 65.0,
+            --    over_time           = 110/4,
+            --    over_time_tick_freq = 3,
+            --    over_time_duration  = 12.0,
+            --    cast_time           = 1.5,
+            --    rank                = 1,
+            --    lvl_req             = 20,
+            --    lvl_max             = 60,
+            --    lvl_outdated        = 60,
+            --    cost                = mana_cost_guess,
+            --    flags               = 0,
+            --    school              = magic_school.nature,
+            --    coef                = 0.0,
+            --    over_time_coef      = 0.0,
+			--	lvl_scaling			= scaling_per_lvl_guess,
+            --},
+            ---- wild_growth
+            --[wild_growth] = {
+            --    base_min            = 0.0,
+            --    base_max            = 0.0,
+            --    over_time           = 156/7,
+            --    over_time_tick_freq = 1,
+            --    over_time_duration  = 7.0,
+            --    cast_time           = 1.5,
+            --    rank                = 1,
+            --    lvl_req             = 20,
+            --    lvl_max             = 60,
+            --    lvl_outdated        = 60,
+            --    cost                = mana_cost_guess,
+            --    flags               = bit.bor(spell_flags.aoe, spell_flags.heal, spell_flags.cd),
+            --    school              = magic_school.nature,
+            --    coef                = 0.0,
+            --    over_time_coef      = 0.0,
+			--	lvl_scaling			= scaling_per_lvl_guess,
+            --},
         };
 
     elseif class == "PRIEST" then
@@ -6471,6 +6555,11 @@ end
 
 local spells = create_spells();
 
+local spells_by_rank = {};
+for k, v in pairs(localized_spell_names_to_id) do
+    spells_by_rank[v] = {};
+end
+
 for k, v in pairs(spells) do
     if v.lvl_req > 60 then
        spells[k] = nil; 
@@ -6479,49 +6568,33 @@ for k, v in pairs(spells) do
         -- rank1 contains some general fields that we write to all ranks
         local rank1_of_spell = localized_spell_names_to_id[name]
         local spell_data = spells[rank1_of_spell];
-        -- TODO VANILLA:
         if not name or not spell_data then
-            print(k);
-        end
+            --print("spell not found: ", k);
+            spells[k] = nil;
+        else
+            spells_by_rank[rank1_of_spell][v.rank] = k;
 
-        v.over_time_tick_freq = spell_data.over_time_tick_freq;
-        v.over_time_duration  = spell_data.over_time_duration;
-        v.cast_time           = spell_data.cast_time;
-        v.flags               = spell_data.flags;
-        v.school              = spell_data.school;
-        v.coef                = spell_data.coef;
-        v.over_time_coef      = spell_data.over_time_coef;
-        v.base_id             = rank1_of_spell;
-        if v.healing_version then
+            v.over_time_tick_freq = spell_data.over_time_tick_freq;
+            v.over_time_duration  = spell_data.over_time_duration;
+            v.cast_time           = spell_data.cast_time;
+            v.flags               = spell_data.flags;
+            v.school              = spell_data.school;
+            v.coef                = spell_data.coef;
+            v.over_time_coef      = spell_data.over_time_coef;
+            v.base_id             = rank1_of_spell;
+            if v.healing_version then
 
-            v.healing_version.over_time_tick_freq = spell_data.healing_version.over_time_tick_freq;
-            v.healing_version.over_time_duration  = spell_data.healing_version.over_time_duration;
-            v.healing_version.cast_time           = spell_data.healing_version.cast_time;
-            v.healing_version.flags               = spell_data.healing_version.flags;
-            v.healing_version.school              = spell_data.healing_version.school;
-            v.healing_version.coef                = spell_data.healing_version.coef;
-            v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
-            v.healing_version.base_id             = rank1_of_spell;
-        end
-    end
-end
-
-local best_rank_by_lvl = {};
-
-local function best_rank_by_lvl_update()
-
-    local lvl = UnitLevel("player");
-
-    for k, v in pairs(spells) do
-        if v.lvl_req <= lvl then
-            if best_rank_by_lvl[v.base_id] then
-                if spells[best_rank_by_lvl[v.base_id]].lvl_req <=  v.lvl_req then
-                    best_rank_by_lvl[v.base_id] = k;
-                end
-            else
-                best_rank_by_lvl[v.base_id] = v.base_id;
+                v.healing_version.over_time_tick_freq = spell_data.healing_version.over_time_tick_freq;
+                v.healing_version.over_time_duration  = spell_data.healing_version.over_time_duration;
+                v.healing_version.cast_time           = spell_data.healing_version.cast_time;
+                v.healing_version.flags               = spell_data.healing_version.flags;
+                v.healing_version.school              = spell_data.healing_version.school;
+                v.healing_version.coef                = spell_data.healing_version.coef;
+                v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
+                v.healing_version.base_id             = rank1_of_spell;
             end
         end
+
     end
 end
 
@@ -6668,6 +6741,33 @@ for k, v in pairs(spells) do
     end
 end
 
+local function next_spell_rank(spell_data)
+
+    if spells_by_rank[spell_data.base_id][spell_data.rank+1] then
+        return spells_by_rank[spell_data.base_id][spell_data.rank+1];
+    else
+        return nil;
+    end
+end
+
+local function best_rank_by_lvl(spell_base_id, lvl)
+
+    local i = 1;
+
+    local best_by_lvl = 0;
+
+    while spells_by_rank[spell_base_id][i] do
+        if spells[spells_by_rank[spell_base_id][i]].lvl_req <= lvl then
+            best_by_lvl = i;
+        end
+        i = i + 1;
+    end
+
+    if best_by_lvl == 0 then
+        return nil, spells_by_rank[spell_base_id][i-1];
+    end
+    return spells_by_rank[spell_base_id][best_by_lvl], spells_by_rank[spell_base_id][i-1];
+end
 
 local function spell_names_to_id(english_names)
     local base_ids = {};
@@ -6677,8 +6777,6 @@ local function spell_names_to_id(english_names)
     return base_ids;
 end
 
-best_rank_by_lvl_update();
-
 local addon_name, swc = ...;
 local abilities = {};
 
@@ -6687,8 +6785,8 @@ abilities.spell_name_to_id = spell_name_to_id;
 abilities.spell_names_to_id = spell_names_to_id;
 abilities.magic_school = magic_school;
 abilities.spell_flags = spell_flags;
-abilities.best_rank_by_lvl_update = best_rank_by_lvl_update;
 abilities.best_rank_by_lvl = best_rank_by_lvl;
+abilities.next_spell_rank = next_spell_rank;
 
 swc.abilities = abilities;
 

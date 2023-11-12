@@ -10007,11 +10007,18 @@ if race == "BloodElf" then
     };
 end
 
+local spells_by_rank = {};
+for k, v in pairs(localized_spell_names_to_id) do
+    spells_by_rank[v] = {};
+end
+
 for k, v in pairs(spells) do
     local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
     -- rank1 contains some general fields that we write to all ranks
     local rank1_of_spell = localized_spell_names_to_id[name]
     local spell_data = spells[rank1_of_spell];
+
+    spells_by_rank[rank1_of_spell][v.rank] = k;
 
     v.over_time_tick_freq = spell_data.over_time_tick_freq;
     v.over_time_duration  = spell_data.over_time_duration;
@@ -10032,25 +10039,6 @@ for k, v in pairs(spells) do
         v.healing_version.coef                = spell_data.healing_version.coef;
         v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
         v.healing_version.base_id             = rank1_of_spell;
-    end
-end
-
-local best_rank_by_lvl = {};
-
-local function best_rank_by_lvl_update()
-
-    local lvl = UnitLevel("player");
-
-    for k, v in pairs(spells) do
-        if v.lvl_req <= lvl then
-            if best_rank_by_lvl[v.base_id] then
-                if spells[best_rank_by_lvl[v.base_id]].lvl_req <=  v.lvl_req then
-                    best_rank_by_lvl[v.base_id] = k;
-                end
-            else
-                best_rank_by_lvl[v.base_id] = v.base_id;
-            end
-        end
     end
 end
 
@@ -10192,6 +10180,34 @@ elseif class == "WARLOCK" then
     spells[705].cost_base_perc = 0.16;
 end
 
+local function next_spell_rank(spell_data)
+
+    if spells_by_rank[spell_data.base_id][spell_data.rank+1] then
+        return spells_by_rank[spell_data.base_id][spell_data.rank+1];
+    else
+        return nil;
+    end
+end
+
+local function best_rank_by_lvl(spell_base_id, lvl)
+
+    local i = 1;
+
+    local best_by_lvl = 0;
+
+    while spells_by_rank[spell_base_id][i] do
+        if spells[spells_by_rank[spell_base_id][i]].lvl_req <= lvl then
+            best_by_lvl = i;
+        end
+        i = i + 1;
+    end
+
+    if best_by_lvl == 0 then
+        return nil, spells_by_rank[spell_base_id][i-1];
+    end
+    return spells_by_rank[spell_base_id][best_by_lvl], spells_by_rank[spell_base_id][i-1];
+end
+
 local function spell_names_to_id(english_names)
     local base_ids = {};
     for k, v in pairs(english_names) do
@@ -10200,18 +10216,16 @@ local function spell_names_to_id(english_names)
     return base_ids;
 end
 
-best_rank_by_lvl_update();
-
 local addon_name, swc = ...;
-
 local abilities = {};
+
 abilities.spells = spells;
 abilities.spell_name_to_id = spell_name_to_id;
 abilities.spell_names_to_id = spell_names_to_id;
 abilities.magic_school = magic_school;
 abilities.spell_flags = spell_flags;
-abilities.best_rank_by_lvl_update = best_rank_by_lvl_update;
 abilities.best_rank_by_lvl = best_rank_by_lvl;
+abilities.next_spell_rank = next_spell_rank;
 
 swc.abilities = abilities;
 

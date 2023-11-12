@@ -292,7 +292,7 @@ local buffs_predefined = {
 
             if inactive then
                 effects.raw.spell_power = effects.raw.spell_power + loadout.stats[stat.spirit] * 0.1 * imp_moonkin_pts;
-                effects.raw.crit_rating = effects.raw.crit_rating + addonTable.int_to_crit_rating(loadout.stats[stat.int] * 0.02*furor_pts, loadout.lvl);
+                effects.raw.crit_rating = effects.raw.crit_rating + swc.loadout.int_to_crit_rating(loadout.stats[stat.int] * 0.02*furor_pts, loadout.lvl);
             end
         end,
         filter = buff_filters.druid,
@@ -1202,7 +1202,6 @@ local buffs_predefined = {
         tooltip = "SP scaling from pet stamina and intellect. Felguard assumed when forcibly applied",
     },
 };
-
 -- identical implementations
 buffs_predefined[31583] = deep_table_copy(buffs_predefined[31869]);-- arcane_empowerment
 buffs_predefined[34460] = deep_table_copy(buffs_predefined[31869]);-- ferocious inspiration

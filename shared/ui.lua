@@ -271,7 +271,11 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
     for random_rank, v in pairs(frame.spells) do
 
         -- best rank
-        local k = best_rank_by_lvl[spells[random_rank].base_id];
+        local k = best_rank_by_lvl(spells[random_rank].base_id, loadout.lvl);
+        if k == 0 then
+            k = random_rank;
+        end
+        
 
         stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
         stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
@@ -730,31 +734,29 @@ local function create_sw_gui_settings_frame()
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
-    sw_frame.settings_frame.icon_mana_overlay = 
-        create_sw_checkbox("sw_icon_mana_overlay", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Show mana restoration", nil);
+    sw_frame.settings_frame.icon_overlay_disable = 
+        create_sw_checkbox("sw_icon_overlay_disable", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Disable all overlays", nil);
 
-    sw_frame.settings_frame.icon_heal_variant = 
-        create_sw_checkbox("sw_icon_heal_variant", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Show healing for hybrids", nil);  
+    sw_frame.settings_frame.icon_mana_overlay = 
+        create_sw_checkbox("sw_icon_mana_overlay", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Show mana restoration", nil);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
-    sw_frame.settings_frame.icon_old_rank_warning = 
-        create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Old rank warning", nil);  
-    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
-        sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
-    else
-        sw_frame.settings_frame.icon_old_rank_warning:Hide();
-    end
+    sw_frame.settings_frame.icon_heal_variant = 
+        create_sw_checkbox("sw_icon_heal_variant", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Show healing for hybrids", nil);  
 
-    --sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
-    --sw_frame.settings_frame.icon_heal_variant = 
-    --    CreateFrame("CheckButton", "sw_icon_heal_variant", sw_frame.settings_frame, "ChatConfigCheckButtonTemplate"); 
-    --sw_frame.settings_frame.icon_heal_variant:SetPoint("TOPLEFT", 10, sw_frame.settings_frame.y_offset);   
-    --getglobal(sw_frame.settings_frame.icon_heal_variant:GetName() .. 'Text'):SetText("Show healing for hybrids");
-    --sw_frame.settings_frame.icon_heal_variant:SetScript("OnClick", function(self)
-    --end);
+    sw_frame.settings_frame.icon_old_rank_warning = 
+        create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Old rank warning", nil);  
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
+    sw_frame.settings_frame.icon_overlay_disable:SetScript("OnClick", function(self)
+            
+        swc.overlay.clear_overlays();
+        
+    end);
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
@@ -816,9 +818,6 @@ local function create_sw_gui_settings_frame()
                 local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
                 if spells[id] then
                     for i = 1, 3 do
-                        if not v.overlay_frames[i] then
-                            v.overlay_frames[i] = v.frame:CreateFontString(nil, "OVERLAY");
-                        end
                         v.overlay_frames[i]:SetFont(
                             icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
                     end
@@ -830,9 +829,6 @@ local function create_sw_gui_settings_frame()
                 local id = v.spell_id;
                 if spells[id] then
                     for i = 1, 3 do
-                        if not v.overlay_frames[i] then
-                            v.overlay_frames[i] = v.frame:CreateFontString(nil, "OVERLAY");
-                        end
                         v.overlay_frames[i]:SetFont(
                             icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
                     end
@@ -921,6 +917,10 @@ local function create_sw_gui_settings_frame()
 
     if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.show_heal_variant) ~= 0 then
         sw_frame.settings_frame.icon_heal_variant:SetChecked(true);
+    end
+
+    if __sw__persistent_data_per_char.settings.icon_overlay_disable then
+        sw_frame.settings_frame.icon_overlay_disable:SetChecked(true);
     end
 
     if __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities then
@@ -1435,8 +1435,14 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_lname, buff_inf
         category_txt = "RAID: ";
         getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(103/255, 52/255, 235/255);
     elseif buff_info.category == buff_category.consumes  then
-        category_txt = "CONSUMES/EFFECTS: ";
+        category_txt = "CONSUMES: ";
         getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(225/255, 235/255, 52/255);
+    elseif buff_info.category == buff_category.item  then
+        category_txt = "ITEM EFFECT: ";
+        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(0/255, 204/255, 255/255);
+    elseif buff_info.category == buff_category.world_buffs  then
+        category_txt = "WORLD BUFF: ";
+        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(0/255, 153/255, 51/255);
     end
     if buff_info.tooltip then
         getglobal(buffs_table[index].checkbutton:GetName()).tooltip = category_txt..buff_info.tooltip;
@@ -1652,9 +1658,16 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.dynamic_button = 
         CreateFrame("CheckButton", "sw_loadout_dynamic_check", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
-    getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Use active talents, glyphs");
-    getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
-        "When a valid wowhead link is pasted above, your loadout will use its talents & glyphs instead of your active ones.";
+
+    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
+        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Use active talents, glyphs");
+        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
+            "When a valid wowhead link is pasted above, your loadout will use its talents & glyphs instead of your active ones.";
+    else
+        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Use active talents, runes");
+        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
+            "When a valid wowhead link is pasted above, your loadout will use its talents & runes instead of your active ones.";
+    end
 
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetScript("OnClick", function(self)
         

@@ -77,9 +77,9 @@ local function get_combat_rating_effect(rating_id, level)
     return rating_per_percentage;
 end
 
--- TODO: this is probably still in use along with more wotlk scaling punishments
-local function level_scaling(lvl)
-    return math.min(1, 1 - (20 - lvl)* 0.0375);
+local function level_scaling(lvl_max, lvl_now)
+
+    return math.min(1, math.max(0, (22 + lvl_max - lvl_now) / 20));
 end
 
 local function spell_hit(lvl, lvl_target, hit)
@@ -205,24 +205,24 @@ local function set_alias_spell(spell, loadout)
     local alias_spell = spell;
 
     if spell.base_id == spell_name_to_id["Swiftmend"] then
-        alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Rejuvenation"]]];
+        alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
         if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
             local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
             if regrowth_buff then
                 if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
-                    alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Regrowth"]]];
+                    alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Regrowth"], loadout.lvl)];
                 end
             end
         end
     elseif spell.base_id == spell_name_to_id["Conflagrate"] then
-        alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Immolate"]]];
+        alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Immolate"], loadout.lvl)];
         if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 and
             loadout.hostile_towards == "target" and
             loadout.dynamic_buffs["target"][GetSpellInfo(61291)] and
             not loadout.dynamic_buffs["target"][GetSpellInfo(348)] then
 
-            alias_spell = spells[best_rank_by_lvl[spell_name_to_id["Shadowflame"]]];
+            alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Shadowflame"], loadout.lvl)];
         end
     end
 
@@ -851,7 +851,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.cost = stats.cost - refund*coef_estimate;
     end
 
-    local lvl_scaling = level_scaling(spell.lvl_req);
+    local lvl_scaling = level_scaling(spell.lvl_max, loadout.lvl);
     stats.coef = spell.coef * lvl_scaling;
     stats.ot_coef = spell.over_time_coef *lvl_scaling;
 
