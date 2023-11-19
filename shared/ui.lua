@@ -347,6 +347,20 @@ local function update_loadouts_rhs()
         loadout.default_target_lvl_diff
     );
 
+    if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
+
+        sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:SetChecked(true);
+        sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetText(
+            loadout.lvl
+        );
+        --sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:Show();
+        sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetAlpha(1.0);
+    else
+        sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:SetChecked(false);
+        --sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:Hide();
+        sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetAlpha(0.2);
+    end
+
     sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetText(
         loadout.extra_mana
     );
@@ -361,18 +375,22 @@ local function update_loadouts_rhs()
         );
     end
 
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetText(loadout.unbounded_aoe_targets);
+
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
             wowhead_talent_link(loadout.talents_code)
         );
-        sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
+        sw_frame.loadouts_frame.rhs_list.talent_editbox:SetAlpha(0.2);
+        sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
     else
 
         sw_frame.loadouts_frame.rhs_list.talent_editbox:SetText(
             wowhead_talent_link(loadout.custom_talents_code)
         );
-        sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(false);
+        sw_frame.loadouts_frame.rhs_list.talent_editbox:SetAlpha(1.0);
+        sw_frame.loadouts_frame.rhs_list.dynamic_button:SetChecked(true);
     end
 
     if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
@@ -383,7 +401,9 @@ local function update_loadouts_rhs()
 
     local num_checked_buffs = 0;
     local num_checked_target_buffs = 0;
+    local buffs_list_alpha = 1.0;
     if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+        buffs_list_alpha = 0.2;
         for k = 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs do
             local v = sw_frame.loadouts_frame.rhs_list.buffs[k];
             v.checkbutton:SetChecked(true);
@@ -451,8 +471,10 @@ local function update_loadouts_rhs()
     if self_buffs_tab then
         for i = num_skips, math.min(num_skips + buffs_show_max - 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs) do
             sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
+            sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:SetAlpha(buffs_list_alpha);
             sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton:Show();
             sw_frame.loadouts_frame.rhs_list.buffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
+            sw_frame.loadouts_frame.rhs_list.buffs[i].icon:SetAlpha(buffs_list_alpha);
             sw_frame.loadouts_frame.rhs_list.buffs[i].icon:Show();
             y_offset = y_offset - 20;
         end
@@ -466,8 +488,10 @@ local function update_loadouts_rhs()
         if target_buffs_iters > 0 then
             for i = num_skips, num_skips + target_buffs_iters - 1 do
                 sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
+                sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:SetAlpha(buffs_list_alpha);
                 sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton:Show();
                 sw_frame.loadouts_frame.rhs_list.target_buffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
+                sw_frame.loadouts_frame.rhs_list.target_buffs[i].icon:SetAlpha(buffs_list_alpha);
                 sw_frame.loadouts_frame.rhs_list.target_buffs[i].icon:Show();
                 y_offset = y_offset - 20;
             end
@@ -495,6 +519,8 @@ local function update_loadouts_rhs()
             sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetChecked(true);
         end
     end
+    sw_frame.loadouts_frame.rhs_list.select_all_buffs_checkbutton:SetAlpha(buffs_list_alpha);
+    sw_frame.loadouts_frame.rhs_list.select_all_target_buffs_checkbutton:SetAlpha(buffs_list_alpha);
 end
 
 local loadout_checkbutton_id_counter = 1;
@@ -777,10 +803,7 @@ local function create_sw_gui_settings_frame()
 
     local hz_editbox = function(self)
 
-        
-        local txt = self:GetText();
-        
-        local hz = tonumber(txt);
+        local hz = tonumber(self:GetText());
         if hz and hz >= 0.01 and hz <= 300 then
 
             sw_snapshot_loadout_update_freq = tonumber(hz);
@@ -791,12 +814,22 @@ local function create_sw_gui_settings_frame()
         end
 
     	self:ClearFocus();
+        self:HighlightText(0,0);
     end
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
 
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEnterPressed", hz_editbox);
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEscapePressed", hz_editbox);
+    sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEditFocusLost", hz_editbox);
+    sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnTextChanged", function(self)
+        local hz = tonumber(self:GetText());
+        if hz and hz >= 0.01 and hz <= 300 then
+
+            sw_snapshot_loadout_update_freq = tonumber(hz);
+        end
+
+    end);
 
     sw_frame.settings_frame.icon_overlay_font_size_slider =
         CreateFrame("Slider", "icon_overlay_font_size", sw_frame.settings_frame, "OptionsSliderTemplate");
@@ -1114,6 +1147,58 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.clear_original_tooltip_button:SetChecked(
         sw_frame.settings_frame.clear_original_tooltip
     );
+
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id = CreateFrame("EditBox", "sw_settings_overwrite_tooltip", sw_frame.settings_frame, "InputBoxTemplate");
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetPoint("TOPLEFT", sw_frame.settings_frame, 200, sw_frame.settings_frame.y_offset-5);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetText("");
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetSize(170, 15);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetAutoFocus(false);
+
+    local tooltip_overwrite_editbox = function(self)
+        local txt = self:GetText();
+        if txt == "" then
+            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Show();
+        else
+            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
+        end
+        local id = tonumber(txt);
+        if id and spells[id] then
+            self:SetTextColor(0, 1, 0);
+        else
+            self:SetTextColor(1, 0, 0);
+        end
+        self:ClearFocus();
+    end
+
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnEnterPressed", tooltip_overwrite_editbox);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnEscapePressed", tooltip_overwrite_editbox);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnEditFocusLost", tooltip_overwrite_editbox);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnTextChanged", function(self)
+        local txt = self:GetText();
+        if txt == "" then
+            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Show();
+        else
+            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
+        end
+        local id = tonumber(txt);
+        if id and spells[id] then
+            self:SetTextColor(0, 1, 0);
+        else
+            self:SetTextColor(1, 0, 0);
+        end
+    end);
+    
+
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:SetFontObject(font);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:SetPoint("TOPLEFT", 202, sw_frame.settings_frame.y_offset-8);
+    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:SetText("SPELL ID TOOLTIP OVERWRITE");
+
+    if swc.core.expansion_loaded ~= swc.core.expansions.vanilla then
+        sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
+        sw_frame.settings_frame.tmp_tooltip_overwrite_id:Hide();
+    end
+
 end
 
 local function create_sw_gui_stat_comparison_frame()
@@ -1418,32 +1503,36 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_lname, buff_inf
     buffs_table[index].checkbutton.buff_info = buff_info.filter;
     buffs_table[index].checkbutton.buff_lname = buff_lname;
     buffs_table[index].checkbutton.buff_type = buff_type;
+    local buff_name_max_len = 25;
     if buff_info.name then
         -- overwrite name if its bad for display
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_info.name);
+        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_info.name:sub(1, buff_name_max_len));
     else
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_lname);
+        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_lname:sub(1, buff_name_max_len));
     end
     local buff_text_colors = {
 
     };
     local category_txt = "";
+    local checkbutton_txt = getglobal(buffs_table[index].checkbutton:GetName() .. 'Text');
+    local rgb = {};
     if buff_info.category == buff_category.class  then
         category_txt = "CLASS: ";
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(235/255, 52/255, 88/255);
+        rgb = {235/255, 52/255, 88/255};
     elseif buff_info.category == buff_category.raid  then
         category_txt = "RAID: ";
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(103/255, 52/255, 235/255);
+        rgb = {103/255, 52/255, 235/255};
     elseif buff_info.category == buff_category.consumes  then
         category_txt = "CONSUMES: ";
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(225/255, 235/255, 52/255);
+        rgb = {225/255, 235/255, 52/255};
     elseif buff_info.category == buff_category.item  then
         category_txt = "ITEM EFFECT: ";
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(0/255, 204/255, 255/255);
+        rgb = {0/255, 204/255, 255/255};
     elseif buff_info.category == buff_category.world_buffs  then
         category_txt = "WORLD BUFF: ";
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetTextColor(0/255, 153/255, 51/255);
+        rgb = {0/255, 153/255, 51/255};
     end
+    checkbutton_txt:SetTextColor(rgb[1], rgb[2], rgb[3]);
     if buff_info.tooltip then
         getglobal(buffs_table[index].checkbutton:GetName()).tooltip = category_txt..buff_info.tooltip;
     end
@@ -1660,13 +1749,13 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
 
     if swc.core.expansion_loaded == swc.core.expansions.wotlk then
-        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Use active talents, glyphs");
+        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Custom talents & glyphs");
         getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
-            "When a valid wowhead link is pasted above, your loadout will use its talents & glyphs instead of your active ones.";
+            "Given a valid wowhead talents link above, your loadout will use its talents & glyphs instead of your active ones.";
     else
-        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Use active talents, runes");
+        getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()..'Text'):SetText("Custom talents & runes");
         getglobal(sw_frame.loadouts_frame.rhs_list.dynamic_button:GetName()).tooltip = 
-            "When a valid wowhead link is pasted above, your loadout will use its talents & runes instead of your active ones.";
+            "Given a valid wowhead talents link above, your loadout will use its talents & runes instead of your active ones.";
     end
 
     sw_frame.loadouts_frame.rhs_list.dynamic_button:SetScript("OnClick", function(self)
@@ -1677,15 +1766,198 @@ local function create_sw_gui_loadout_frame()
         swc.core.equipment_update_needed = true;
 
         if self:GetChecked() then
-
-            loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout);
-        else
             loadout_entry.loadout.flags = bit.band(loadout_entry.loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
+        else
+            loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout);
         end
         update_loadouts_rhs();
     end);
 
-    y_offset_lhs = y_offset_lhs - 10;
+    y_offset_lhs = y_offset_lhs - 20;
+
+    sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton = 
+        CreateFrame("CheckButton", "sw_loadout_custom_lvl_checkbutton", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
+    sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:SetHitRectInsets(0, 0, 0, 0);
+
+    getglobal(sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:GetName()..'Text'):SetText("Custom char lvl");
+    getglobal(sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:GetName()).tooltip = 
+        "Displays ability information as if character is a custom level (attributes from levels are not accounted for)";
+
+    sw_frame.loadouts_frame.rhs_list.custom_lvl_checkbutton:SetScript("OnClick", function(self)
+        
+        local loadout_entry = active_loadout_entry();
+
+        if self:GetChecked() then
+            loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.custom_lvl);
+        else
+            loadout_entry.loadout.flags = bit.band(loadout_entry.loadout.flags, bit.bnot(loadout_flags.custom_lvl));
+        end
+        update_loadouts_rhs();
+    end);
+
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs + 7);
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetSize(40, 15);
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetAutoFocus(false);
+
+    local clvl_editbox = function(self)
+
+        local loadout = active_loadout();
+        local lvl = tonumber(self:GetText());
+        if lvl and lvl >= 1 and lvl <= 100 then
+            loadout.lvl = lvl;
+        else
+
+            local clvl = UnitLevel("player");
+            self:SetText(""..clvl);
+        end
+
+    	self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetScript("OnEnterPressed", clvl_editbox);
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetScript("OnEscapePressed", clvl_editbox);
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetScript("OnEditFocusLost", clvl_editbox);
+    sw_frame.loadouts_frame.rhs_list.loadout_clvl_editbox:SetScript("OnTextChanged", function(self)
+
+        local loadout = active_loadout();
+        local lvl = tonumber(self:GetText());
+        if lvl and lvl >= 1 and lvl <= 100 then
+            loadout.lvl = lvl;
+        end
+    end);
+
+    y_offset_lhs = y_offset_lhs - 12;
+
+    sw_frame.loadouts_frame.rhs_list.loadout_level_label = 
+        sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetFontObject(font);
+    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetText("Default target lvl diff");
+
+    sw_frame.loadouts_frame.rhs_list.level_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetText("");
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetSize(40, 15);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetAutoFocus(false);
+
+    local editbox_lvl = function(self)
+
+        local lvl_diff = tonumber(self:GetText());
+        local loadout = active_loadout();
+        if lvl_diff and lvl_diff == math.floor(lvl_diff) and loadout.lvl + lvl_diff >= 1 and loadout.lvl + lvl_diff <= 83 then
+
+            loadout.default_target_lvl_diff = lvl_diff;
+        else
+            self:SetText(""..loadout.default_target_lvl_diff); 
+        end
+
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEnterPressed", editbox_lvl);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEscapePressed", editbox_lvl);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEditFocusLost", editbox_lvl);
+    sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnTextChanged", function(self)
+        -- silently try to apply valid changes but don't panic while focus is on
+        local lvl_diff = tonumber(txt);
+        local loadout = active_loadout();
+        if lvl_diff and lvl_diff == math.floor(lvl_diff) and loadout.lvl + lvl_diff >= 1 and loadout.lvl + lvl_diff <= 83 then
+
+            loadout.default_target_lvl_diff = lvl_diff;
+        end
+    end);
+
+    y_offset_lhs = y_offset_lhs - 20;
+
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label = 
+        sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label:SetFontObject(font);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label:SetText("Default target HP                   %");
+
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetText("");
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetSize(40, 15);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetAutoFocus(false);
+
+    local editbox_hp_perc = function(self)
+
+        local hp_perc = tonumber(self:GetText());
+        local loadout = active_loadout();
+        if hp_perc and hp_perc >= 0 then
+
+            loadout.target_hp_perc_default = 0.01*hp_perc;
+        else
+            self:SetText(""..loadout.target_hp_perc_default*100); 
+        end
+
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEnterPressed", editbox_hp_perc);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEscapePressed", editbox_hp_perc);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEditFocusLost", editbox_hp_perc);
+    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnTextChanged", function(self)
+
+        local hp_perc = tonumber(self:GetText());
+        local loadout = active_loadout();
+        if hp_perc and hp_perc >= 0 then
+
+            loadout.target_hp_perc_default = 0.01*hp_perc;
+        end
+    end);
+
+    if swc.core.expansion_loaded == swc.core.expansions.vanilla then
+
+        y_offset_lhs = y_offset_lhs - 20;
+
+        sw_frame.loadouts_frame.rhs_list.target_res_label = 
+            sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
+        sw_frame.loadouts_frame.rhs_list.target_res_label:SetFontObject(font);
+        sw_frame.loadouts_frame.rhs_list.target_res_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+        sw_frame.loadouts_frame.rhs_list.target_res_label:SetText("Target resistance                   ");
+
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox= CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetText("");
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetSize(40, 15);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetAutoFocus(false);
+
+        local editbox_target_res = function(self)
+
+            local target_res = tonumber(self:GetText());
+            local loadout = active_loadout();
+            if target_res and target_res >= 0 then
+
+                loadout.target_res = target_res;
+            else
+                self:SetText("0"); 
+                loadout.target_res = 0;
+            end
+
+            self:ClearFocus();
+            self:HighlightText(0,0);
+        end
+
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEnterPressed", editbox_target_res);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEscapePressed", editbox_target_res);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEditFocusLost", editbox_target_res);
+        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnTextChanged", function(self)
+            local target_res = tonumber(self:GetText());
+            local loadout = active_loadout();
+            if target_res and target_res >= 0 then
+                loadout.target_res = target_res;
+            end
+        end);
+    end
+
+    y_offset_lhs = y_offset_lhs - 20;
 
     sw_frame.loadouts_frame.rhs_list.loadout_extra_mana = 
         sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
@@ -1712,115 +1984,68 @@ local function create_sw_gui_loadout_frame()
         end
 
     	self:ClearFocus();
+        self:HighlightText(0,0);
     end
 
     sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetScript("OnEnterPressed", mana_editbox);
     sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetScript("OnEscapePressed", mana_editbox);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetScript("OnEditFocusLost", mana_editbox);
+    sw_frame.loadouts_frame.rhs_list.loadout_extra_mana_editbox:SetScript("OnTextChanged", function(self)
+
+        local loadout = active_loadout();
+        local mana = tonumber(self:GetText());
+        if mana then
+            loadout.extra_mana = mana;
+        end
+    end);
 
     y_offset_lhs = y_offset_lhs - 20;
 
-    sw_frame.loadouts_frame.rhs_list.loadout_level_label = 
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets = 
         sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
-    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetFontObject(font);
-    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.loadout_level_label:SetText("Default target lvl diff");
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets:SetFontObject(font);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets:SetText("Limitless AOE targets");
 
-    sw_frame.loadouts_frame.rhs_list.level_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetText("");
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetSize(40, 15);
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetAutoFocus(false);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetSize(40, 15);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetAutoFocus(false);
 
-    local editbox_lvl = function(self)
-
+    local aoe_targets_editbox_fn = function(self)
+        local loadout = active_loadout();
         local txt = self:GetText();
         
-        local lvl_diff = tonumber(txt);
-        local loadout = active_loadout();
-        if lvl_diff and lvl_diff == math.floor(lvl_diff) and loadout.lvl + lvl_diff >= 1 and loadout.lvl + lvl_diff <= 83 then
-
-            loadout.default_target_lvl_diff = lvl_diff;
+        local targets = tonumber(txt);
+        if targets and targets >= 1 then
+            loadout.unbounded_aoe_targets = math.floor(targets);
         else
-            self:SetText(""..loadout.default_target_lvl_diff); 
+            self:SetText("1");
+            loadout.unbounded_aoe_targets = 1;
         end
 
-        self:ClearFocus();
+    	self:ClearFocus();
+        self:HighlightText(0,0);
     end
 
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEnterPressed", editbox_lvl);
-    sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEscapePressed", editbox_lvl);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetScript("OnEnterPressed", aoe_targets_editbox_fn);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetScript("OnEscapePressed", aoe_targets_editbox_fn);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetScript("OnEditFocusLost", aoe_targets_editbox_fn);
+    sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:SetScript("OnTextChanged", function(self)
 
-    y_offset_lhs = y_offset_lhs - 20;
-
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label = 
-        sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label:SetFontObject(font);
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label:SetText("Default target HP                   %");
-
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetText("");
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetSize(40, 15);
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetAutoFocus(false);
-
-    local editbox_hp_perc = function(self)
-
-        local txt = self:GetText();
-        
-        local hp_perc = tonumber(txt);
         local loadout = active_loadout();
-        if hp_perc and hp_perc >= 0 then
-
-            loadout.target_hp_perc_default = 0.01*hp_perc;
-        else
-            self:SetText(""..loadout.target_hp_perc_default*100); 
+        local targets = tonumber(self:GetText());
+        if targets and targets >= 1 then
+            loadout.unbounded_aoe_targets = math.floor(targets);
         end
 
-        self:ClearFocus();
+    end);
+    if swc.core.expansion_loaded ~= swc.core.expansions.vanilla then
+        sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets:Hide();
+        sw_frame.loadouts_frame.rhs_list.loadout_unbounded_aoe_targets_editbox:Hide();
     end
 
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEnterPressed", editbox_hp_perc);
-    sw_frame.loadouts_frame.rhs_list.hp_perc_label_editbox:SetScript("OnEscapePressed", editbox_hp_perc);
-
-    if swc.core.expansion_loaded == swc.core.expansions.vanilla then
-
-        y_offset_lhs = y_offset_lhs - 20;
-
-        sw_frame.loadouts_frame.rhs_list.target_res_label = 
-            sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
-        sw_frame.loadouts_frame.rhs_list.target_res_label:SetFontObject(font);
-        sw_frame.loadouts_frame.rhs_list.target_res_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-        sw_frame.loadouts_frame.rhs_list.target_res_label:SetText("Target resistance                   ");
-
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox= CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadouts_frame.rhs_list, "InputBoxTemplate");
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 130, y_offset_lhs - 2);
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetText("");
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetSize(40, 15);
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetAutoFocus(false);
-
-        local editbox_target_res = function(self)
-
-            local txt = self:GetText();
-            
-            local target_res = tonumber(txt);
-            local loadout = active_loadout();
-            if target_res and target_res >= 0 then
-
-                loadout.target_res = target_res;
-            else
-                self:SetText("0"); 
-                loadout.target_res = 0;
-            end
-
-            self:ClearFocus();
-        end
-
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEnterPressed", editbox_target_res);
-        sw_frame.loadouts_frame.rhs_list.target_res_editbox:SetScript("OnEscapePressed", editbox_target_res);
-    end
-
-    y_offset_lhs = y_offset_lhs - 30;
+    y_offset_lhs = y_offset_lhs - 27;
 
     sw_frame.loadouts_frame.rhs_list.max_mana_checkbutton = 
         CreateFrame("CheckButton", "sw_loadout_max_mana", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
@@ -1844,7 +2069,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetPoint("TOPLEFT", sw_frame.loadouts_frame.rhs_list, 0, y_offset_rhs);
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs even when inactive");
     getglobal(sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:GetName()).tooltip = 
-        "The selected buffs will be forcibly applied, but the highest rank is used (level 80) in any case";
+        "The selected buffs will be forcibly applied behind the scenes to the spell calculations";
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetScript("OnClick", function(self)
 
         local loadout = active_loadout();
@@ -2176,7 +2401,7 @@ local function create_sw_base_gui()
     sw_frame.tab3:SetPoint("TOPLEFT", 238, -25);
     sw_frame.tab3:SetWidth(150);
     sw_frame.tab3:SetHeight(25);
-    sw_frame.tab3:SetText("Stat Comparison");
+    sw_frame.tab3:SetText("Stat Calculator");
     sw_frame.tab3:SetScript("OnClick", function()
         sw_activate_tab(3);
     end);

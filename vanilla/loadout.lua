@@ -66,7 +66,7 @@ local function effects_diff(loadout, effects, diff)
         effects.by_attribute.stats[i] = effects.by_attribute.stats[i] + diff.stats[i];
     end
     for i = 2, 7 do
-        effects.by_school.target_res[i] = effects.by_school.target_res[i] - diff.spell_pen;
+        effects.by_school.target_res[i] = effects.by_school.target_res[i] + diff.spell_pen;
     end
 end
 

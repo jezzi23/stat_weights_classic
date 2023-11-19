@@ -79,10 +79,57 @@ local function target_avg_magical_res(self_lvl, target_res)
     return math.min(0.75, 0.75 * (target_res/(self_lvl * 5)))
 end
 
-local function base_mana_pool()
+-- base mana doesn't seem to follow a formula
+-- use some rough estimate when using a custom level
+local lvl_20_mana_bracket = {
+    ["DRUID"] =     { start = 50,   per_lvl = (329-50)/19},
+    ["MAGE"] =      { start = 100,  per_lvl = (343-100)/19},
+    ["PALADIN"] =   { start = 60,   per_lvl = (390-60)/19},
+    ["PRIEST"] =    { start = 110,  per_lvl = (350-110)/19}, --20 unknown
+    ["SHAMAN"] =    { start = 55,   per_lvl = (346-55)/19},
+    ["WARLOCK"] =   { start = 90,   per_lvl = (325-50)/19}, --20 unknown
+};
+local lvl_40_mana_bracket = {
+    ["DRUID"] =     { start = 354,   per_lvl = (824-354)/21},
+    ["MAGE"] =      { start = 371,  per_lvl = (853-371)/21},
+    ["PALADIN"] =   { start = 412,   per_lvl = (987-412)/21},
+    ["PRIEST"] =    { start = 375,  per_lvl = (911-375)/21}, -- ??
+    ["SHAMAN"] =    { start = 370,   per_lvl = (975-370)/21},
+    ["WARLOCK"] =   { start = 365,   per_lvl = (965-365)/23},
+};
+local lvl_60_mana_bracket = {
+    ["DRUID"] =     { start = 854,   per_lvl = (1244-854)/20},
+    ["MAGE"] =      { start = 853,  per_lvl = (1213-853)/20},
+    ["PALADIN"] =   { start = 987,   per_lvl = (1512-987)/20},
+    ["PRIEST"] =    { start = 911,  per_lvl = (1400-911)/20}, -- ??
+    ["SHAMAN"] =    { start = 975,   per_lvl = (1520-975)/20},
+    ["WARLOCK"] =   { start = 918,   per_lvl = (1522-918)/20},
+};
+local lvl_70_mana_bracket = {
+    ["DRUID"] =     { start = 1244 },
+    ["MAGE"] =      { start = 1213 },
+    ["PALADIN"] =   { start = 1512 },
+    ["PRIEST"] =    { start = 1400 }, -- ??
+    ["SHAMAN"] =    { start = 1520 },
+    ["WARLOCK"] =   { start = 1522 },
+};
+
+local function base_mana_pool(clvl)
 
     local intellect = UnitStat("player", 4);
     local base_mana = UnitPowerMax("player", 0) - (min(20, intellect) + 15*(intellect - min(20, intellect)));
+
+    if clvl ~= UnitLevel("player") then
+        if clvl >= 60 then
+            return lvl_70_mana_bracket[class].start;
+        elseif clvl >= 40 then
+            return lvl_60_mana_bracket[class].start + lvl_60_mana_bracket[class].per_lvl * (clvl-40);
+        elseif clvl >= 20 then
+            return lvl_40_mana_bracket[class].start + lvl_40_mana_bracket[class].per_lvl * (clvl-20);
+        else
+            return lvl_20_mana_bracket[class].start + lvl_20_mana_bracket[class].per_lvl * clvl;
+        end
+    end
 
     return base_mana;
 end
@@ -104,8 +151,7 @@ local function set_alias_spell(spell, loadout)
 
     local alias_spell = spell;
 
-    local swiftmend = spell_name_to_id["Swiftmend"];
-    if spell.base_id == swiftmend then
+    if spell.base_id == spell_name_to_id["Swiftmend"] then
         alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
         if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
             local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
@@ -117,7 +163,9 @@ local function set_alias_spell(spell, loadout)
                 end
             end
         end
-    elseif spell.base_id == conflagrate then
+    elseif spell.base_id == spell_name_to_id["Sunfire (Bear)"] or spell.base_id == spell_name_to_id["Sunfire (Cat)"]  then
+        alias_spell = spells[414684];
+    elseif spell.base_id == spell_name_to_id["Conflagrate"] then
         alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Immolate"], loadout.lvl)];
     end
 
@@ -181,7 +229,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
     local target_vuln_ot_mod = 1.0;
 
     if effects.ability.vuln_mod[spell.base_id] then
-        target_vuln_mod = target_vuln_mod + effects.ability.vuln_mod[spell.base_id];
+
+        if loadout.runes[rune_ids.soul_siphon] then
+            target_vuln_mod = target_vuln_mod + math.max(0.18, effects.ability.vuln_mod[spell.base_id]);
+        else
+            target_vuln_mod = target_vuln_mod + effects.ability.vuln_mod[spell.base_id];
+        end
     end
     
     target_vuln_ot_mod = target_vuln_mod;
@@ -224,7 +277,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     if bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
-        stats.cost = math.floor(math.floor(original_base_cost * base_mana_pool()-effects.raw.cost_flat) * (1.0 - cost_mod_base));
+        stats.cost = math.floor(math.floor(original_base_cost * base_mana_pool(loadout.lvl)-effects.raw.cost_flat) * (1.0 - cost_mod_base));
     else
         stats.cost = math.floor((original_base_cost - effects.raw.cost_flat)) * (1.0 - cost_mod_base);
     end
@@ -256,6 +309,32 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.hit = math.min(0.99, stats.hit);
     end
 
+    stats.cast_time = spell.cast_time;
+    if effects.ability.cast_mod[spell.base_id] then
+
+        stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
+    end
+    
+    local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
+    local haste_from_rating = 0.01 * max(0.0, loadout.haste_rating + effects.raw.haste_rating) / haste_rating_per_perc;
+
+    local cast_reduction = effects.raw.haste_mod + haste_from_rating;
+
+    if effects.ability.cast_mod_mul[spell.base_id] then
+        cast_reduction = cast_reduction + effects.ability.cast_mod_mul[spell.base_id];
+    end
+
+    stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
+
+    stats.target_resi = 0;
+    if bit.band(spell.flags, spell_flags.heal) == 0 then
+        -- mod res by school currently used to snapshot equipment and set bonuses
+        stats.target_resi = math.max(0, loadout.target_res - effects.by_school.target_res[spell.school]);
+    end
+
+    stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
+
+
     if class == "PRIEST" then
     elseif class == "DRUID" then
 
@@ -269,7 +348,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
         end
 
         if loadout.runes[rune_ids.living_seed] then
-            if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"])
+            -- looks like seeds will work on lifebloom in sod
+            if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0)
                 or spell.base_id == spell_name_to_id["Rejuvenation"] or spell.base_id == spell_name_to_id["Swiftmend"] then
                 -- living seed
                 stats.crit_mod = stats.crit_mod * 1.3;
@@ -281,15 +361,26 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.gcd = stats.gcd - 0.5;
         end
 
+        -- nature's grace
+        local pts = loadout.talents_table:pts(1, 13);
+        if pts ~= 0 and spell.base_min ~= 0 then
 
-    elseif class == "PALADIN" and bit.band(spell.flags, spell_flags.heal) ~= 0 then
-        -- illumination
-        local pts = loadout.talents_table:pts(1, 9);
-        if pts ~= 0 then
-            local mana_refund = original_base_cost;
-            resource_refund = resource_refund + stats.crit * pts*0.2 * mana_refund;
+            stats.cast_time = (1.0 - stats.crit) * stats.cast_time +
+                stats.crit * math.max(stats.cast_time * 0.8, stats.gcd);
         end
 
+    elseif class == "PALADIN" then
+        if bit.band(spell.flags, spell_flags.heal) ~= 0  then
+            -- illumination
+            local pts = loadout.talents_table:pts(1, 9);
+            if pts ~= 0 then
+                local mana_refund = original_base_cost;
+                resource_refund = resource_refund + stats.crit * pts*0.2 * mana_refund;
+            end
+        end
+        if spell.base_id == spell_name_to_id["Exorcism"] and loadout.runes[rune_ids.exorcist] then
+            stats.crit = 1.0;
+        end
     elseif class == "SHAMAN" then
         -- shaman clearcast
         
@@ -327,18 +418,18 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
 
             if loadout.runes[rune_ids.burnout] then
-                resource_refund = resource_refund - stats.crit * base_mana_pool();
+                resource_refund = resource_refund - stats.crit * base_mana_pool(loadout.lvl);
             end
 
             if loadout.runes[rune_ids.enlightment] then
-                local mana_perc = loadout.mana/math.max(1, loadout.max_mana());
+                local mana_perc = loadout.mana/math.max(1, loadout.max_mana);
                 if mana_perc > 0.7 then
-                    effects.by_school.spell_dmg_mod_add[magic_school.fire] = 
-                        effects.by_school.spell_dmg_mod_add[magic_school.fire] + 0.1;
-                    effects.by_school.spell_dmg_mod_add[magic_school.arcane] = 
-                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.1;
-                    effects.by_school.spell_dmg_mod_add[magic_school.frost] = 
-                        effects.by_school.spell_dmg_mod_add[magic_school.frost] + 0.1;
+                    effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                        effects.by_school.spell_dmg_mod[magic_school.fire] + 0.1;
+                    effects.by_school.spell_dmg_mod[magic_school.arcane] = 
+                        effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.1;
+                    effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                        effects.by_school.spell_dmg_mod[magic_school.frost] + 0.1;
                 elseif mana_perc < 0.3 then
                     effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.1;
                 end
@@ -349,46 +440,36 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if pts ~= 0 and spell.school == magic_school.fire then
                 stats.crit_mod = stats.crit_mod * (1.0 + pts * 0.08);
             end
+            if spell.base_id == spell_name_to_id["Arcane Surge"] then
+                -- unclear if dmg bonus is applied on spell power or not
+                stats.spell_mod_base =  stats.spell_mod_base + 3*loadout.mana/math.max(1, loadout.max_mana);
+                stats.cost = loadout.mana;
+            end
+
+            if class == "MAGE" and loadout.num_set_pieces[set_tiers.pve_2] >= 8 and
+                     (spell.base_id == spell_name_to_id["Frostbolt"] or spell.base_id == spell_name_to_id["Fireball"]) then
+
+                stats.cast_time = 0.9 * stats.cast_time + 0.1 * stats.gcd;
+
+            end
         end
 
         if bit.band(loadout.flags, loadout_flags.target_frozen) ~= 0 then
 
             local pts = loadout.talents_table:pts(3, 13);
-            stats.crit = stats.crit + pts*0.1;
+
+            stats.crit = math.max(0.0, math.min(1.0, stats.crit + pts*0.1));
+
+            if spell.base_id == spell_name_to_id["Ice Lance"] then
+                target_vuln_mod = target_vuln_mod * 3;
+            end
         end
+
     elseif class == "WARLOCK" then
-    end
-
-    stats.cast_time = spell.cast_time;
-    if effects.ability.cast_mod[spell.base_id] then
-
-        stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
-    end
-    
-    local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
-    local haste_from_rating = 0.01 * max(0.0, loadout.haste_rating + effects.raw.haste_rating) / haste_rating_per_perc;
-
-    local cast_reduction = effects.raw.haste_mod + haste_from_rating;
-
-    if effects.ability.cast_mod_mul[spell.base_id] then
-        cast_reduction = cast_reduction + effects.ability.cast_mod_mul[spell.base_id];
-    end
-
-    
-    stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
-
-
-    -- nature's grace
-    local pts = loadout.talents_table:pts(1, 13);
-    if class == "DRUID" and pts ~= 0 and spell.base_min ~= 0 then
-
-        stats.cast_time = (1.0 - stats.crit) * stats.cast_time +
-            stats.crit * math.max(stats.cast_time * 0.8, stats.gcd);
-
-    elseif class == "MAGE" and loadout.num_set_pieces[set_tiers.pve_2] >= 8 and
-             (spell.base_id == spell_name_to_id["Frostbolt"] or spell.base_id == spell_name_to_id["Fireball"]) then
-
-             stats.cast_time = 0.9 * stats.cast_time + 0.1 * stats.gcd;
+        if spell.base_id == spell_name_to_id["Chaos Bolt"] then
+            stats.hit = 1.0;
+            stats.target_avg_resi = 0.0;
+        end
     end
 
     stats.cast_time_nogcd = stats.cast_time;
@@ -463,16 +544,20 @@ local function stats_for_spell(stats, spell, loadout, effects)
        stats.ot_extra_ticks = 0.0;
     end
 
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
-        stats.spell_power = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
-    else
-        stats.spell_power = loadout.spell_dmg + loadout.spell_dmg_by_school[spell.school] +
+    stats.spell_dmg = loadout.spell_dmg + loadout.spell_dmg_by_school[spell.school] +
             effects.raw.spell_dmg + effects.raw.spell_power;
+
+    stats.spell_heal = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
+    stats.attack_power = loadout.attack_power;
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+        stats.spell_power = stats.spell_heal;
+    else
+        stats.spell_power = stats.spell_dmg;
     end
 
     if bit.band(spell.flags, spell_flags.hybrid_scaling) ~= 0 then
         
-        stats.spell_power = stats.spell_power + loadout.attack_power;
+        stats.spell_power = stats.spell_power + stats.attack_power;
     end
 
     if effects.ability.sp[spell.base_id] then
@@ -482,14 +567,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.sp_ot[spell.base_id] then
         stats.spell_power_ot = stats.spell_power_ot + effects.ability.sp_ot[spell.base_id];
     end
-
-    stats.target_resi = 0;
-    if bit.band(spell.flags, spell_flags.heal) == 0 then
-        -- mod res by school currently used to snapshot equipment and set bonuses
-        stats.target_resi = math.max(0, loadout.target_res + effects.by_school.target_res[spell.school]);
-    end
-
-    stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
 
     stats.cost = stats.cost * cost_mod;
     stats.cost = math.floor(stats.cost + 0.5);
@@ -549,12 +626,27 @@ local function spell_info(info, spell, stats, loadout, effects)
             math.min(loadout.lvl - spell.lvl_req, spell.lvl_max - spell.lvl_req));
     end
     if base_min > 0.0 then
-        base_min = math.floor(base_min + spell.lvl_scaling * lvl_diff_applicable);
-        base_max = math.ceil(base_max + spell.lvl_scaling * lvl_diff_applicable);
+
+        -- special sod runed ability lvl scaling
+        if bit.band(spell.flags, spell_flags.sod_rune) ~= 0 then
+            base_min = spell.lvl_coef * (base_min + spell.lvl_scaling * lvl_diff_applicable + spell.lvl_scaling_squared * lvl_diff_applicable * lvl_diff_applicable);
+            base_max = spell.lvl_coef_max * (base_max + spell.lvl_scaling * lvl_diff_applicable + spell.lvl_scaling_squared * lvl_diff_applicable * lvl_diff_applicable);
+        else
+            -- normal direct per lvl scaling
+            base_min = base_min + spell.lvl_scaling * lvl_diff_applicable;
+            base_max = base_max + spell.lvl_scaling * lvl_diff_applicable;
+        end
+
     end
-    if bit.band(spell.flags, spell_flags.over_time_lvl_scaling) ~= 0 then
-        base_ot_tick = math.floor(base_ot_tick + spell.lvl_scaling * lvl_diff_applicable);
-        base_ot_tick_max = math.ceil(base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable);
+
+    if bit.band(spell.flags, spell_flags.sod_rune) ~= 0 then
+        -- special sod runed ability periodic lvl scaling
+        base_ot_tick = spell.lvl_coef_ot * (base_ot_tick + spell.lvl_scaling * lvl_diff_applicable + spell.lvl_scaling_squared * lvl_diff_applicable * lvl_diff_applicable);
+        base_ot_tick_max = spell.lvl_coef_ot_max * (base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable + spell.lvl_scaling_squared * lvl_diff_applicable * lvl_diff_applicable);
+    elseif bit.band(spell.flags, spell_flags.over_time_lvl_scaling) ~= 0 then
+        -- normal over time per lvl scaling
+        base_ot_tick = base_ot_tick + spell.lvl_scaling * lvl_diff_applicable;
+        base_ot_tick_max = base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable;
     end
 
     info.ot_freq = spell.over_time_tick_freq;
@@ -563,14 +655,6 @@ local function spell_info(info, spell, stats, loadout, effects)
     if spell.cast_time == spell.over_time_duration then
         info.ot_freq = spell.over_time_tick_freq*(stats.cast_time/spell.over_time_duration);
         info.ot_duration = stats.cast_time;
-    end
-
-    -- certain ticks may tick faster
-    if class == "PRIEST" then
-
-    elseif class == "WARLOCK" then
-    elseif class == "MAGE" then
-    elseif class == "DRUID" then
     end
 
     info.min_noncrit_if_hit = 
@@ -617,22 +701,28 @@ local function spell_info(info, spell, stats, loadout, effects)
         end
     end
     local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
-    info.expected_ot = stats.hit * expected_ot_if_hit;
+    info.expected_ot_st = stats.hit * expected_ot_if_hit;
     -- soul drain, life drain, mind flay are all directed casts that can only miss on the channel itself
     -- 1.5 sec gcd is always implied which is the only penalty for misses
     if bit.band(spell.flags, spell_flags.channel_missable) ~= 0 then
 
         local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - stats.gcd)/info.ot_duration;
-        info.expected_ot = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
+        info.expected_ot_st = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
     end
 
-    info.expectation_direct = 0.5 * (info.min + info.max);
+    info.expectation_direct_st = 0.5 * (info.min + info.max);
+    info.expectation_direct = info.expectation_direct_st;
+    if bit.band(spell.flags, spell_flags.unbounded_aoe_direct) ~= 0 then
+        info.expectation_direct = info.expectation_direct_st * loadout.unbounded_aoe_targets;
+    end
 
-    info.expectation = info.expectation_direct + info.expected_ot;
+    info.expected_ot = info.expected_ot_st;
+    if bit.band(spell.flags, spell_flags.unbounded_aoe_ot) ~= 0 then
+        info.expected_ot = info.expected_ot_st * loadout.unbounded_aoe_targets;
+    end
 
-    info.expectation = info.expectation * (1 - stats.target_avg_resi);
-
-    info.expectation_st = info.expectation;
+    info.expectation_st = (info.expectation_direct_st + info.expected_ot_st) * (1 - stats.target_avg_resi);
+    info.expectation = (info.expectation_direct + info.expected_ot) * (1 - stats.target_avg_resi);
 
     if original_spell_id ~= spell.base_id then
         -- using alias for swiftmend/conflagrate
@@ -677,6 +767,16 @@ local function spell_info(info, spell, stats, loadout, effects)
 
             local pts = loadout.talents_table:pts(1, 5);
             info.mana_restored = info.mana_restored * (1.0 + pts*0.1);
+            if stats.crit == 1.0 then
+                info.mana_restored = 2*info.mana_restored;
+            end
+        elseif spell.base_id == spell_name_to_id["Shamanistic Rage"] then
+
+            info.mana_restored =
+                math.max(0.15*stats.attack_power,
+                         0.1*stats.spell_dmg,
+                         0.06*stats.spell_heal) *
+                spell.over_time_duration/spell.over_time_tick_freq;
         elseif spell.base_id == spell_name_to_id["Mana Tide Totem"] then
             info.mana_restored = spell.over_time * spell.over_time_duration/spell.over_time_tick_freq;
         else
@@ -716,7 +816,8 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     if not calculating_weights then
         mp2_not_casting = math.ceil(mp2_not_casting);
     end
-    local mp1_casting = 0.2 * effects.raw.mp5 + 0.5 * mp2_not_casting * effects.raw.regen_while_casting;
+    local mp5 = effects.raw.mp5 + loadout.max_mana*effects.raw.perc_max_mana_as_mp5;
+    local mp1_casting = 0.2 * mp5 + 0.5 * mp2_not_casting * effects.raw.regen_while_casting;
 
     -- TODO: don't use this when stat comparison is open
     -- TODO VANILLA: formula seems incorrect
@@ -751,6 +852,9 @@ if class == "SHAMAN" then
             else
                 info.expectation = (1 + 0.5 + 0.5*0.5) * info.expectation_st;
             end
+            if loadout.runes[rune_ids.overload] then
+                info.expectation = (1.0 + 0.33*0.5)*info.expectation;
+            end
         end,
         [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
             info.expectation = 3 * info.expectation_st;
@@ -762,21 +866,48 @@ if class == "SHAMAN" then
             else
                 info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
             end
+            -- TODO: does overload proc of first hit or on bounces two?
+            if loadout.runes[rune_ids.overload] then
+                info.expectation = (1.0 + 0.33*0.5)*info.expectation;
+            end
         end,
         [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
             if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
                 info.expectation = (1 + 0.2 + 0.2*0.2) * info.expectation_st;
             end
+            if loadout.runes[rune_ids.overload] then
+                info.expectation = (1.0 + 0.33*0.5)*info.expectation;
+            end
         end,
         [spell_name_to_id["Healing Stream Totem"]] = function(spell, info, loadout, stats, effects)
             info.expectation = 5 * info.expectation_st;
         end,
-
+        [spell_name_to_id["Healing Rain"]] = function(spell, info, loadout, stats, effects)
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout, stats, effects)
+            if loadout.runes[rune_ids.overload] then
+                info.expectation = (1.0 + 0.33*0.5)*info.expectation_st;
+            end
+        end,
+        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats, effects)
+            if loadout.runes[rune_ids.overload] then
+                info.expectation = (1.0 + 0.33*0.5)*info.expectation_st;
+            end
+        end,
     };
 elseif class == "PRIEST" then
     special_abilities = {
         [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
             info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout, stats, effects)
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Shadow Word: Pain"]] = function(spell, info, loadout, stats, effects)
+            if loadout.runes[rune_ids.shared_pain] then
+                info.expectation = 3 * info.expectation_st;
+            end
         end,
         [spell_name_to_id["Power Word: Shield"]] = function(spell, info, loadout)
 
@@ -859,9 +990,9 @@ elseif class == "DRUID" then
             info.ot_duration = 0.0;
             info.ot_freq = 0.0;
         end,
-        --[spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
-        --    info.expectation = 5 * info.expectation_st;
-        --end,
+        [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
+            info.expectation = 5 * info.expectation_st;
+        end,
     };
 elseif class == "WARLOCK" then
     special_abilities = {
@@ -896,9 +1027,27 @@ elseif class == "WARLOCK" then
             info.expectation_st = 0.5 * (info.min + info.max);
             info.expectation = info.expectation_st;
         end,
+        [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout, stats, effects)
+            info.expectation = 3 * info.expectation_st;
+        end,
+        [spell_name_to_id["Shadow Bolt"]] = function(spell, info, loadout)
+
+            if loadout.runes[rune_ids.shadow_bolt_volley] then
+                info.expectation = (1 + 0.8 + 0.8*0.8 + 0.8*0.8*0.8 + 0.8*0.8*0.8*0.8) * info.expectation_st;
+            end
+        end,
     };
 elseif class == "PALADIN" then
     special_abilities = {
+        [spell_name_to_id["Avenger's Shield"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
+    };
+elseif class == "MAGE" then
+    special_abilities = {
+        [spell_name_to_id["Mass Regeneration"]] = function(spell, info, loadout)
+            info.expectation = 5 * info.expectation_st;
+        end,
     };
 else
     special_abilities = {};

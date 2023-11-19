@@ -134,14 +134,18 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         --return;
     end 
 
+    local clvl_specified = "";
+    if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
+        clvl_specified = string.format(" (clvl: %d)", loadout.lvl);
+    end
     if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
-        tooltip:AddLine(string.format("Loadout: %s - Target %.1f%% HP",
-                                      loadout.name, loadout.friendly_hp_perc * 100
+        tooltip:AddLine(string.format("Loadout: %s%s - Target %.1f%% HP",
+                                      loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
                                       ),
                         138/256, 134/256, 125/256);
     else
-        tooltip:AddLine(string.format("Loadout: %s - Target lvl %d, %.1f%% HP",
-                                      loadout.name, loadout.target_lvl, loadout.enemy_hp_perc * 100
+        tooltip:AddLine(string.format("Loadout: %s%s - Target lvl %d, %.1f%% HP",
+                                      loadout.name, clvl_specified, loadout.target_lvl, loadout.enemy_hp_perc * 100
                                       ),
                         138/256, 134/256, 125/256);
     end
@@ -166,8 +170,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 or
-        bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
-        tooltip:AddLine("WARNING: using custom talents, glyphs or buffs!", 1, 0, 0);
+        bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 or 
+        bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
+        tooltip:AddLine("WARNING: using custom talents, glyphs, lvl or buffs!", 1, 0, 0);
     end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then

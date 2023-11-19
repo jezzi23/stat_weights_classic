@@ -69,6 +69,7 @@ local loadout_flags = {
     target_frozen                       = bit.lshift(1, 6),
     target_friendly                     = bit.lshift(1, 7),
     always_max_mana                     = bit.lshift(1, 8),
+    custom_lvl                          = bit.lshift(1, 9),
 };
 
 

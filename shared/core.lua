@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30101
+local version_id = 30200
 local version = tostring(version_id);
 core.version = version:sub(1,1).."."..version:sub(2,3).."."..version:sub(4,5);
 core.version_id = version;
@@ -94,7 +94,7 @@ local class_is_supported = class_supported();
 
 local event_dispatch = {
     ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, msg, msg2, msg3)
-        if msg3 == 53563 then  -- beacon
+        if msg3 == 407613 then  -- beacon
              core.beacon_snapshot_time = core.addon_running_time;
         end
     end,
@@ -354,7 +354,7 @@ local function command(msg, editbox)
             sw_activate_tab(2);
         elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
             sw_activate_tab(1);
-        elseif msg == "compare" or msg == "sc" or msg == "stat compare"  or msg == "stat" then
+        elseif msg == "compare" or msg == "sc" or msg == "stat compare"  or msg == "stat" or msg == "calc" or msg == "calculator" then
             sw_activate_tab(3);
         elseif msg == "reset" then
 

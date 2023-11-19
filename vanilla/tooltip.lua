@@ -130,14 +130,18 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
 
+    local clvl_specified = "";
+    if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
+        clvl_specified = string.format(" (clvl: %d)", loadout.lvl);
+    end
     if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
-        tooltip:AddLine(string.format("Loadout: %s - Target %.1f%% HP",
-                                      loadout.name, loadout.friendly_hp_perc * 100
+        tooltip:AddLine(string.format("Loadout: %s%s | Target: %.1f%% HP",
+                                      loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
                                       ),
                         138/256, 134/256, 125/256);
     else
-        tooltip:AddLine(string.format("Loadout: %s - Target lvl %d, %.1f%% HP, %d Resistance",
-                                      loadout.name, loadout.target_lvl,
+        tooltip:AddLine(string.format("Loadout: %s%s | Target: %dx lvl %d, %.1f%% HP, %d Resistance",
+                                      loadout.name, clvl_specified, loadout.unbounded_aoe_targets, loadout.target_lvl,
                                       loadout.enemy_hp_perc * 100, stats.target_resi
                                       ),
                         138/256, 134/256, 125/256);
@@ -162,8 +166,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 or
-        bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
-        tooltip:AddLine("WARNING: using custom talents, glyphs or buffs!", 1, 0, 0);
+        bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 or 
+        bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
+        tooltip:AddLine("WARNING: using custom talents, runes, lvl or buffs!", 1, 0, 0);
     end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
@@ -279,12 +284,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                 local effect_type_str = nil;
                 local extra_crit_mod = 0;
                 local pts = 0;
-                if class == "MAGE" and spell.school == magic_school.fire and loadout.talents_table:pts(2, 4) ~= 0 then
+                if class == "MAGE" and spell.school == magic_school.fire and loadout.talents_table:pts(2, 3) ~= 0 then
                     pts = loadout.talents_table:pts(2, 3);
                     effect_type_str = "ignites"
                     extra_crit_mod = 0.08 * pts;
                 elseif class == "DRUID" then
-                    if loadout.runes[rune_ids.living_seed] and bit.band(spell.flags, spell_flags.heal) ~= 0 and spell.base_id ~= spell_name_to_id["Lifebloom"] then
+                    if loadout.runes[rune_ids.living_seed] and bit.band(spell.flags, spell_flags.heal) ~= 0 then
                         effect_type_str = "seeds";
                         extra_crit_mod = 0.3;
                     end
@@ -384,9 +389,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             if spell.base_id == spell_name_to_id["Curse of Agony"] then
                 local dmg_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                 local dmg_wo_sp = (eval.spell.ot_if_hit - dmg_from_sp);
-                tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %.2fs (%.1f-%.1f-%.1f for %d ticks)",
+                tooltip:AddLine(string.format("%s %s: %d over %.2fs (%.1f-%.1f-%.1f for %d ticks)",
                                               effect,
-                                              stats.hit * 100,
+                                              hit_str,
                                               eval.spell.ot_if_hit, 
                                               eval.spell.ot_duration, 
                                               (0.5*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
@@ -395,9 +400,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                               eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
             elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                tooltip:AddLine(string.format("%s (%.1f%% hit): %d-%d over %.2fs (%d-%d for %d ticks)",
+                tooltip:AddLine(string.format("%s %s: %d-%d over %.2fs (%d-%d for %d ticks)",
                                               effect,
-                                              stats.hit * 100,
+                                              hit_str,
                                               eval.spell.ot_if_hit,
                                               eval.spell.ot_if_hit_max,
                                               eval.spell.ot_duration, 
@@ -406,9 +411,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                                               eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
             else
-                tooltip:AddLine(string.format("%s (%.1f%% hit): %d over %.2fs (%.1f for %d ticks)",
+                tooltip:AddLine(string.format("%s %s: %d over %.2fs (%.1f for %d ticks)",
                                               effect,
-                                              stats.hit * 100,
+                                              hit_str,
                                               eval.spell.ot_if_hit, 
                                               eval.spell.ot_duration, 
                                               eval.spell.ot_if_hit/eval.spell.ot_ticks,
@@ -481,33 +486,56 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     if sw_frame.settings_frame.tooltip_expected_effect:GetChecked() then
 
-        local effect_extra_str = "";
 
-        if eval.spell.expectation ~=  eval.spell.expectation_st then
+        if eval.spell.expectation ~= eval.spell.expectation_st then
 
-          tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell.expectation_st).." (single effect)",
+            tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell.expectation_st).." (single effect)",
                           255.0/256, 128.0/256, 0);
+            local aoe_ratio = eval.spell.expectation/eval.spell.expectation_st;
+            tooltip:AddLine("Total "..effect..string.format(": %.1f (%.2fx effects)", eval.spell.expectation, aoe_ratio),
+                            255.0/256, 128.0/256, 0);
+        else
+            tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell.expectation),
+                            255.0/256, 128.0/256, 0);
         end
-        tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell.expectation)..effect_extra_str,
-                        255.0/256, 128.0/256, 0);
 
 
     end
 
     if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
+        local direct_to_periodic_str = "";
+        if eval.spell.expected_ot ~= 0 and eval.spell.expectation_direct ~= 0 then
+            local direct_ratio = eval.spell.expectation_direct/(eval.spell.expectation_direct + eval.spell.expected_ot);
+
+            local ignite_pts = loadout.talents_table:pts(2, 3);
+            if class == "MAGE" and spell.school == magic_school.fire and
+                    ignite_pts ~= 0 and eval.spell.min_crit_if_hit ~= 0 then
+
+                local extra_crit_mod = 0.08 * ignite_pts;
+
+                local crit_portion_expectation = eval.spell.expectation_direct -
+                    (eval.spell.expectation_direct/eval.spell.expectation_direct_st)*
+                        (1.0-stats.crit)*stats.hit*(1 - stats.target_avg_resi)*0.5*(eval.spell.min_noncrit_if_hit+eval.spell.max_noncrit_if_hit);
+                local ignite_expectation = extra_crit_mod * crit_portion_expectation/(1.0 + extra_crit_mod);
+                
+                
+                direct_ratio = (eval.spell.expectation_direct-ignite_expectation)/(eval.spell.expectation_direct + eval.spell.expected_ot);
+            end
+            direct_to_periodic_str = string.format(" (%.1f%% direct | %.1f%% periodic)", direct_ratio*100, (1.0-direct_ratio)*100);
+        end
         if eval.spell.effect_per_sec ~= eval.spell.effect_per_dur then
-            tooltip:AddLine(string.format("%s: %.1f", 
+            tooltip:AddLine(string.format("%s: %.1f%s", 
                                           effect_per_sec.." (cast time)",
-                                          eval.spell.effect_per_sec),
+                                          eval.spell.effect_per_sec, direct_to_periodic_str),
                             255.0/256, 128.0/256, 0);
             tooltip:AddLine(string.format("%s: %.1f", 
                                           effect_per_sec.." (duration)",
                                           eval.spell.effect_per_dur),
                             255.0/256, 128.0/256, 0);
             else
-            tooltip:AddLine(string.format("%s: %.1f", 
+            tooltip:AddLine(string.format("%s: %.1f%s", 
                                           effect_per_sec,
-                                          eval.spell.effect_per_sec),
+                                          eval.spell.effect_per_sec, direct_to_periodic_str),
                             255.0/256, 128.0/256, 0);
         end
     end
@@ -520,6 +548,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         end
     end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
+        if loadout.lvl ~= UnitLevel("player") and bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
+            tooltip:AddLine(string.format("NOTE: Mana cost at custom lvl is inaccurate; roughly estimated",stats.cost), 1.0, 0.0, 0.0);
+        end
         tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
     end
     if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
@@ -660,8 +691,19 @@ end
 local function append_tooltip_spell_info(is_fake)
 
     local spell_name, spell_id = GameTooltip:GetSpell();
-
     local spell = spells[spell_id];
+
+    local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.settings_frame.tmp_tooltip_overwrite_id:GetText());
+    if tmp_tooltip_overwrite_spell_id and spells[tmp_tooltip_overwrite_spell_id] then
+        local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
+        if not lname then
+            GameTooltip:ClearLines();
+            GameTooltip:AddLine("OVERWRITING TOOLTIP WITH: "..swc.abilities.english_spell_name_to_base_id[spell.base_id]);
+        end
+        spell = spells[tmp_tooltip_overwrite_spell_id];
+        GameTooltip:AddLine("Remove this overwrite spell id from /swc settings or /reload", 1.0, 0.0, 0.0);
+    end
+
     if not spell then
         return;
     end
@@ -691,7 +733,21 @@ local function update_tooltip(tooltip)
     --tooltips update dynamically without debug setting
     if not swc.core.__sw__debug__ and tooltip:IsShown() then
         local _, id = tooltip:GetSpell();
-        if id and spells[id] then
+
+        -- Workaround: need to set some spell id that exists to get tooltip refreshed when
+        --            looking at custom spell id tooltip
+        local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.settings_frame.tmp_tooltip_overwrite_id:GetText());
+        if tmp_tooltip_overwrite_spell_id and spells[tmp_tooltip_overwrite_spell_id] then
+            tooltip:ClearLines();
+            local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
+            if lname then
+                tooltip:ClearLines();
+                tooltip:SetSpellByID(tmp_tooltip_overwrite_spell_id);
+            else
+                tooltip:SetSpellByID(6603);
+            end
+
+        elseif id and spells[id] then
             tooltip:ClearLines();
             tooltip:SetSpellByID(id);
 

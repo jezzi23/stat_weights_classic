@@ -45,13 +45,13 @@ local function empty_loadout()
         name = "Empty";
         talents_code = "",
         custom_talents_code = "",
-        --talents_table = talent_glyphs_table(""),
         talents_table = {},
         lvl = 1,
         target_lvl = 0,
         default_target_lvl_diff = 3,
         target_hp_perc_default = 1.0,
         target_res = 0,
+        unbounded_aoe_targets = 1,
 
         buffs = {},
         target_buffs = {},
@@ -109,6 +109,7 @@ local function empty_effects(effects)
     effects.raw.mana = 0;
     effects.raw.mp5_from_int_mod = 0;
     effects.raw.mp5 = 0;
+    effects.raw.perc_max_mana_as_mp5 = 0;
     effects.raw.regen_while_casting = 0;
     effects.raw.spell_power = 0;
     effects.raw.spell_dmg = 0;
@@ -349,8 +350,9 @@ end
 
 local function dynamic_loadout(loadout)
 
-    local level = UnitLevel("player");
-    loadout.lvl = level;
+    if bit.band(loadout.flags, loadout_flags.custom_lvl) == 0 then
+        loadout.lvl = UnitLevel("player");
+    end
 
     for i = 1, 5 do
         local _, stat, _, _ = UnitStat("player", i);
@@ -484,8 +486,8 @@ local function active_loadout_and_effects()
         swc.core.talents_update_needed = true;
     end
 
-    if swc.core.talents_update_needed
-        or loadout_entry.loadout.talents_code == "_" -- workaround around edge case when the talents query won't work shortly after logging in
+    if swc.core.talents_update_needed or
+        (loadout_entry.loadout.talents_code == "_" and UnitLevel("player") >= 10) -- workaround around edge case when the talents query won't work shortly after logging in
         then
 
         loadout_entry.loadout.talents_code = wowhead_talent_code();
