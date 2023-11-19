@@ -94,7 +94,7 @@ local class_is_supported = class_supported();
 
 local event_dispatch = {
     ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, msg, msg2, msg3)
-        if msg3 == 407613 then  -- beacon
+        if msg3 == 53563 or msg3 == 407613 then  -- beacon
              core.beacon_snapshot_time = core.addon_running_time;
         end
     end,

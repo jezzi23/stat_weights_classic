@@ -1814,7 +1814,7 @@ local function apply_buffs(loadout, effects)
             beacon_duration = 90;
         end
  
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and addonTable.beacon_snapshot_time + beacon_duration >= addonTable.addon_running_time then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and swc.core.beacon_snapshot_time + beacon_duration >= swc.core.addon_running_time then
             loadout.beacon = true;
         else
             loadout.beacon = nil
