@@ -164,6 +164,13 @@ local event_dispatch = {
 
         core.special_action_bar_changed = true;
     end,
+    ["ACTIONBAR_PAGE_CHANGED"] = function(self, msg, msg2, msg3)
+        if not core.sw_addon_loaded then
+            return;
+        end
+
+        core.special_action_bar_changed = true;
+    end,
     ["UNIT_EXITED_VEHICLE"] = function(self, msg, msg2, msg3)
         if not core.sw_addon_loaded then
             return;

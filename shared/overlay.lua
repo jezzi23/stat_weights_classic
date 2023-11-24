@@ -160,11 +160,14 @@ local function gather_spell_icons()
             end
         end
 
-        local dominos_button_index = 13;
+        --local dominos_button_index = 13;
         for i = index, 120 do
-            action_bar_frame_names[i] = "DominosActionButton"..dominos_button_index;
-
-            dominos_button_index = dominos_button_index + 1;
+            action_bar_frame_names[i] = "DominosActionButton"..i;
+            --action_bar_frame_names[i] = "DominosActionButton"..dominos_button_index;
+            --dominos_button_index = dominos_button_index + 1;
+        end
+        for i = 13, 24 do
+            action_bar_frame_names[i] = "DominosActionButton"..i;
         end
         action_bar_addon_name = "Dominos";
 
@@ -192,7 +195,8 @@ local function gather_spell_icons()
         local frame = getfenv()[v];
         if frame then
 
-            local action_id = action_id_of_button(frame);
+            --local action_id = action_id_of_button(frame);
+            action_id = k;
             if action_id then
                 local spell_id = 0;
                 local action_type, id, _ = GetActionInfo(action_id);
@@ -284,8 +288,6 @@ local function on_special_action_bar_changed()
                  spell_id, _ = GetMacroSpell(id);
             elseif action_type == "spell" then
                  spell_id = id;
-            else
-                spell_id = 0;
             end
 
             reassign_overlay_icon_spell(action_id, spell_id, getfenv()[__sw__icon_frames.bar_names[action_id]]);
