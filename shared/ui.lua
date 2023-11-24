@@ -309,7 +309,7 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
     end
     frame.footer:SetFontObject(font);
     frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    frame.footer:SetText("Add abilities by holding SHIFT while opening their tooltip");
+    frame.footer:SetText("Add abilities by holding CONTROL while hovering their tooltips");
 end
 
 local function loadout_name_already_exists(name)
@@ -784,7 +784,7 @@ local function create_sw_gui_settings_frame()
         
     end);
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 10;
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset);
@@ -987,6 +987,14 @@ local function create_sw_gui_settings_frame()
         end
     end;
 
+    sw_frame.settings_frame.tooltip_loadout_info = 
+        create_sw_checkbox("sw_tooltip_loadout_info", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                            "Loadout info", tooltip_checkbox_func);
+    sw_frame.settings_frame.tooltip_spell_rank = 
+        create_sw_checkbox("sw_tooltip_spell_rank", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                            "Spell rank info", tooltip_checkbox_func);
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
     sw_frame.settings_frame.tooltip_normal_effect = 
         create_sw_checkbox("sw_tooltip_normal_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                             "Normal effect", tooltip_checkbox_func);
@@ -1033,12 +1041,8 @@ local function create_sw_gui_settings_frame()
         "Assumes you cast a particular ability until you are OOM with no cooldowns.";
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
-    sw_frame.settings_frame.tooltip_spell_rank = 
-        create_sw_checkbox("sw_tooltip_spell_rank", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Spell Rank", tooltip_checkbox_func);
-
     sw_frame.settings_frame.tooltip_more_details = 
-        create_sw_checkbox("sw_tooltip_more_details", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+        create_sw_checkbox("sw_tooltip_more_details", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                             "More details", tooltip_checkbox_func);
     getglobal(sw_frame.settings_frame.tooltip_more_details:GetName()).tooltip = 
         "Effective spell power, ability coefficients, % modifiers, crit modifier";
@@ -1049,6 +1053,12 @@ local function create_sw_gui_settings_frame()
     --end
 
     -- set tooltip options as according to saved persistent data
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.loadout_info) == 0 then
+        sw_frame.settings_frame.tooltip_loadout_info:SetChecked(true);
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.spell_rank) ~= 0 then
+        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(true);
+    end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.normal) ~= 0 then
         sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
     end
@@ -1078,9 +1088,6 @@ local function create_sw_gui_settings_frame()
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.more_details) ~= 0 then
         sw_frame.settings_frame.tooltip_more_details:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.spell_rank) ~= 0 then
-        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(true);
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cost) ~= 0 then
         sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);
@@ -2469,7 +2476,7 @@ local function load_sw_ui()
     create_sw_gui_loadout_frame();
 
 
-    if not __sw__persistent_data_per_char.loadouts then
+    if not __sw__persistent_data_per_char.loadouts or not __sw__persistent_data_per_char.loadouts.num_loadouts  then
         -- load defaults
         __sw__persistent_data_per_char.loadouts = {};
         __sw__persistent_data_per_char.loadouts.loadouts_list = {};

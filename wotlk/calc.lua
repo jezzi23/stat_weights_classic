@@ -79,6 +79,9 @@ end
 
 local function level_scaling(lvl_max, lvl_now)
 
+    if lvl_max == 0 then
+        return 1.0;
+    end
     return math.min(1, math.max(0, (22 + lvl_max - lvl_now) / 20));
 end
 
@@ -377,7 +380,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if spell.base_min == 0.0 and stats.ot_crit == 0.0  and bit.band(spell.flags, spell_flags.heal) == 0 then
                 -- must be shadow word pain, devouring plague or vampiric touch
                 stats.ot_crit = stats.crit;
-                stats.crit_mod = stats.crit_mod + 0.5;
             end
         end
         -- glyph of renew
@@ -851,9 +853,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.cost = stats.cost - refund*coef_estimate;
     end
 
-    local lvl_scaling = level_scaling(spell.lvl_max, loadout.lvl);
-    stats.coef = spell.coef * lvl_scaling;
-    stats.ot_coef = spell.over_time_coef *lvl_scaling;
+    stats.coef = spell.coef;
+    stats.ot_coef = spell.over_time_coef;
 
     if effects.ability.coef_mod[spell.base_id] then
         stats.coef = stats.coef + effects.ability.coef_mod[spell.base_id];
@@ -861,6 +862,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.coef_ot_mod[spell.base_id] then
         stats.ot_coef = stats.ot_coef * (1.0 + effects.ability.coef_ot_mod[spell.base_id]);
     end
+    local lvl_scaling = level_scaling(spell.lvl_max, loadout.lvl);
+    stats.coef = stats.coef * lvl_scaling;
+    stats.ot_coef = stats.ot_coef * lvl_scaling;
 
     stats.cost_per_sec = stats.cost / stats.cast_time;
 
@@ -1046,7 +1050,7 @@ local function spell_info(info, spell, stats, loadout, effects)
             info.max_noncrit_if_hit = direct;
 
             -- crit mod does not benefit from spec here it seems
-            local crit_mod = max(1.5, 1.5 + effects.raw.special_crit_mod);
+            local crit_mod = max(1.5, 1.5*(1.0 + effects.raw.special_crit_mod));
             info.min_crit_if_hit = direct * crit_mod;
             info.max_crit_if_hit = direct * crit_mod;
 

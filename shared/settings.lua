@@ -50,7 +50,6 @@ local function default_sw_settings()
                 tooltip_stat_display.effect_per_cost,
                 tooltip_stat_display.cost_per_sec,
                 tooltip_stat_display.stat_weights,
-                tooltip_stat_display.spell_rank,
                 tooltip_stat_display.cast_until_oom);
 
     settings.icon_overlay_update_freq = 3;
@@ -69,6 +68,7 @@ local function save_sw_settings()
 
     local icon_overlay_settings = 0;
     local tooltip_settings = 0;
+
 
     if sw_frame.settings_frame.icon_normal_effect:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.normal);
@@ -109,6 +109,12 @@ local function save_sw_settings()
     if sw_frame.settings_frame.icon_heal_variant:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.show_heal_variant);
     end
+    if not sw_frame.settings_frame.tooltip_loadout_info:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.loadout_info);
+    end
+    if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.spell_rank);
+    end
     if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.normal);
     end
@@ -138,9 +144,6 @@ local function save_sw_settings()
     end
     if sw_frame.settings_frame.tooltip_more_details:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.more_details);
-    end
-    if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
-        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.spell_rank);
     end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cost);

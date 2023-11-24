@@ -11,6 +11,7 @@ wotlk/talents.lua
 shared/loadout.lua
 wotlk/loadout.lua
 wotlk/calc.lua
+shared/tooltip.lua
 wotlk/tooltip.lua
 shared/overlay.lua
 shared/settings.lua

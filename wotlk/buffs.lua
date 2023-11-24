@@ -166,6 +166,10 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.by_school.spell_dmg_mod[magic_school.shadow] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.15 - 1.0;
+
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Devouring Plague"], 0.5, 0.0); 
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Shadow Word: Pain"], 0.5, 0.0); 
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Vampiric Touch"], 0.5, 0.0); 
         end,
         filter = buff_filters.priest,
         category = buff_category.class,

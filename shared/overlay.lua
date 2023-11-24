@@ -426,24 +426,24 @@ local spell_cache = {};
 local overlay_label_handler = {
     [icon_stat_display.normal] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%d",
-            (spell_effect.min_noncrit_if_hit + spell_effect.max_noncrit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
+            math.floor(0.5+(spell_effect.min_noncrit_if_hit + spell_effect.max_noncrit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb)));
     end,
     [icon_stat_display.crit] = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.ot_if_crit > 0  then
             frame_overlay:SetText(string.format("%d",
-                (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_crit + spell_effect.absorb));
+                math.floor(0.5+(spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_crit + spell_effect.absorb)));
         elseif spell_effect.min_crit_if_hit ~= 0.0 then
             frame_overlay:SetText(string.format("%d", 
-                (spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb));
+                math.floor(0.5+(spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb)));
         else
             frame_overlay:SetText("");
         end
     end,
     [icon_stat_display.expected] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d", spell_effect.expectation));
+        frame_overlay:SetText(string.format("%d", math.floor(spell_effect.expectation+0.5)));
     end,
     [icon_stat_display.effect_per_sec] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d", spell_effect.effect_per_sec));
+        frame_overlay:SetText(string.format("%d", math.floor(spell_effect.effect_per_sec+0.5)));
     end,
     [icon_stat_display.effect_per_cost] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%.2f", spell_effect.effect_per_cost));
@@ -473,7 +473,7 @@ local overlay_label_handler = {
         frame_overlay:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
     end,
     [icon_stat_display.effect_until_oom] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.0f", spell_effect.effect_until_oom));
+        frame_overlay:SetText(string.format("%d", math.floor(spell_effect.effect_until_oom+0.5)));
     end,
     [icon_stat_display.time_until_oom] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%.1fs", spell_effect.time_until_oom));

@@ -763,7 +763,7 @@ local function spell_info(info, spell, stats, loadout, effects)
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
         if spell.base_id == spell_name_to_id["Life Tap"] then
-            info.mana_restored = spell.base_min + spell.lvl_scaling;
+            info.mana_restored = base_min;
 
             local pts = loadout.talents_table:pts(1, 5);
             info.mana_restored = info.mana_restored * (1.0 + pts*0.1);

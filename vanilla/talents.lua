@@ -822,28 +822,52 @@ local function create_talents()
     end
 end
 
-local function engraving_runes_id()
-    local ids = {};
-    local item_slots = {5, 7, 10};
-    for k, v in pairs(item_slots) do
-        local link = GetInventoryItemLink("player", v);
-        --local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name 
-        if link then
-            local _, _, _, _, _, enchant_id, _, _, _, _, _, _, _, _ = string.find(link,
-                "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
-            --ids[k] = enchant_id;
-            ids[k] = nil;
-        end
-    end
-    return ids
-end
-
 local talents = create_talents();
 local runes = create_runes();
 local wowhead_rune_code_to_id = {};
 -- reverse mapping from wowhead 3 char code to rune spell id
 for k, v in pairs(runes) do
     wowhead_rune_code_to_id[v.wowhead_id] = k; 
+end
+
+local function engraving_runes_id()
+    local ids = {};
+    -- NOTE: order might be important here
+    local item_slots = {5, 10, 7};
+    for k, v in pairs(item_slots) do
+        local link = GetInventoryItemLink("player", v);
+        --local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name 
+        if link then
+            -- Unclear how rune engraving will appear in SoD since other enchants also exist on these slots
+            --local _, _, _, _, _, enchant_id, _, _, _, _, _, _, _, _ = string.find(link,
+            --    "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+            --ids[k] = enchant_id;
+            --ids[k] = nil;
+
+            local _, itr = string.find(link, "item");
+            local itr_end, _ = string.find(link:sub(itr), "|");
+            itr_end = itr_end + itr;
+
+            --print(link:sub(itr, itr_end));
+            while itr <= itr_end do
+                -- try to match any number id's in item part of item string against rune enchant ids
+                local id_start, id_end = string.find(link:sub(itr, itr_end), "%d+");
+                if id_start then 
+                    local id = tonumber(link:sub(itr+id_start-1, itr+id_end-1));
+                    if runes[id] then
+                        ids[k] = id;
+                        break;
+                    end
+                    --print(v..": "..id);
+                    itr = itr + id_end + 1;
+                    
+                else
+                    break;
+                end
+            end
+        end
+    end
+    return ids
 end
 
 local function wowhead_talent_link(code)
@@ -920,17 +944,14 @@ local function wowhead_talent_code()
     local runes_code = "";
 
     local item_rune_ids = engraving_runes_id();
-    -- In order: head, legs, gloves
-    --local primary_rune_prefixes = {"5", "7", "a"};
-    local first_prefix = "0";
-    for i = 1, 3 do
-        if item_rune_ids[i] then
-            runes_code = runes_code..first_rune_prefix..runes[item_rune_ids[i]].wowhead_id;
-        end
-        if item_rune_ids[i] then
-            first_rune_prefix = "";
-        end
 
+    local first_prefix = "";
+    local num_runes = #item_rune_ids;
+    if num_runes > 0 then
+        runes_code = "1";
+    end
+    for k, v in pairs(item_rune_ids) do
+        runes_code = runes_code..runes[v].wowhead_id;
     end
 
     return talent_code.."_"..runes_code;

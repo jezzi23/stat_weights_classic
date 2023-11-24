@@ -42,59 +42,22 @@ local evaluate_spell                            = swc.calc.evaluate_spell;
 
 local rune_ids                                  = swc.talents.rune_ids;
 
-local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
-local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
+local sort_stat_weights                         = swc.tooltip.sort_stat_weights        
+local begin_tooltip_section                     = swc.tooltip.begin_tooltip_section    
+local end_tooltip_section                       = swc.tooltip.end_tooltip_section      
 -------------------------------------------------------------------------------
-local tooltip_export = {};
-
-local tooltip_stat_display = {
-    normal              = bit.lshift(1,1),
-    crit                = bit.lshift(1,2),
-    ot                  = bit.lshift(1,3),
-    ot_crit             = bit.lshift(1,4),
-    expected            = bit.lshift(1,5),
-    effect_per_sec      = bit.lshift(1,6),
-    effect_per_cost     = bit.lshift(1,7),
-    cost_per_sec        = bit.lshift(1,8),
-    stat_weights        = bit.lshift(1,9),
-    more_details        = bit.lshift(1,10),
-    avg_cost            = bit.lshift(1,11),
-    avg_cast            = bit.lshift(1,12),
-    cast_until_oom      = bit.lshift(1,13),
-    cast_and_tap        = bit.lshift(1,14),
-    spell_rank          = bit.lshift(1,15),
-};
-
-
-local function sort_stat_weights(stat_weights, num_weights) 
-    
-    for i = 1, num_weights do
-        local j = i;
-        while j ~= 1 and stat_weights[j].weight > stat_weights[j-1].weight do
-            local tmp = stat_weights[j];
-            stat_weights[j] = stat_weights[j-1];
-            stat_weights[j-1] = tmp;
-            j = j - 1;
-        end
-    end
-end
-
-local function begin_tooltip_section(tooltip, spell_id)
-
-    if sw_frame.settings_frame.clear_original_tooltip then
-        tooltip:ClearLines();
-        local lname = GetSpellInfo(spell_id);
-        tooltip:AddLine(lname);
-    end
-    --tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
-end
-local function end_tooltip_section(tooltip)
-    tooltip:Show();
-end
 
 local stats = {};
 
 local function tooltip_spell_info(tooltip, spell, loadout, effects)
+
+    -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
+    local txt_right = getglobal("GameTooltipTextRight1");
+    if txt_right then
+        txt_right:SetTextColor(0.50196081399918, 0.50196081399918, 0.50196081399918, 1.0);
+        txt_right:SetText("Rank "..spell.rank);
+        txt_right:Show();
+    end
 
     if sw_frame.settings_frame.tooltip_num_checked == 0 or 
         (sw_frame.settings_frame.show_tooltip_only_when_shift and not IsShiftKeyDown()) then
@@ -115,14 +78,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         effect_per_sec = "HPS";
         effect_per_cost = "Heal per Mana";
         cost_per_sec = "Mana per sec";
-        effect_per_sec_per_sp = "HPS (by cast time) per SP";
+        effect_per_sec_per_sp = "Repeated casts HPS per SP";
         sp_name = "Spell power";
     else
         effect = "Damage";
         effect_per_sec = "DPS";
         effect_per_cost = "Damage per Mana";
         cost_per_sec = "Mana per sec";
-        effect_per_sec_per_sp = "DPS (by cast time) per SP";
+        effect_per_sec_per_sp = "Repeated casts DPS per SP";
         sp_name = "Spell power";
     end
 
@@ -131,20 +94,23 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
 
     local clvl_specified = "";
-    if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
-        clvl_specified = string.format(" (clvl: %d)", loadout.lvl);
-    end
-    if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
-        tooltip:AddLine(string.format("Loadout: %s%s | Target: %.1f%% HP",
-                                      loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
-                                      ),
-                        138/256, 134/256, 125/256);
-    else
-        tooltip:AddLine(string.format("Loadout: %s%s | Target: %dx lvl %d, %.1f%% HP, %d Resistance",
-                                      loadout.name, clvl_specified, loadout.unbounded_aoe_targets, loadout.target_lvl,
-                                      loadout.enemy_hp_perc * 100, stats.target_resi
-                                      ),
-                        138/256, 134/256, 125/256);
+
+    if sw_frame.settings_frame.tooltip_loadout_info:GetChecked() then
+        if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
+            clvl_specified = string.format(" (clvl: %d)", loadout.lvl);
+        end
+        if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
+            tooltip:AddLine(string.format("Loadout: %s%s | Target: %.1f%% HP",
+                                          loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
+                                          ),
+                            138/256, 134/256, 125/256);
+        else
+            tooltip:AddLine(string.format("Loadout: %s%s | Target: %dx lvl %d, %.1f%% HP, %d res",
+                                          loadout.name, clvl_specified, loadout.unbounded_aoe_targets, loadout.target_lvl,
+                                          loadout.enemy_hp_perc * 100, stats.target_resi
+                                          ),
+                            138/256, 134/256, 125/256);
+        end
     end
     if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
 
@@ -560,8 +526,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
     end
 
+    if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and
+            bit.band(spell.flags, spell_flags.cd) == 0 then
+    tooltip:AddLine(string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
+    end
+
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
-        tooltip:AddLine("Scenario: Repeated casts", 1, 1, 1);
         tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
         local stat_weights = {};
         stat_weights[1] = {weight = 1.0, str = "SP"};
@@ -600,17 +570,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             end
         end
         tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
-    end
 
-    if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and
-        bit.band(spell.flags, spell_flags.cd) == 0 then
+        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 then
 
-        tooltip:AddLine("Scenario: Cast Until OOM", 1, 1, 1);
-
-        tooltip:AddLine(string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
-        if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
-
-            tooltip:AddLine(string.format("%s per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
+            tooltip:AddLine(string.format("%s until OOM per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
 
             local stat_weights = {};
             stat_weights[1] = {weight = 1.0, str = "SP"};
@@ -631,10 +594,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             sort_stat_weights(stat_weights, num_weights);
             for i = 1, num_weights do
                 if stat_weights[i].weight ~= 0 then
-                    --print(string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str))
                     stat_weights_str = stat_weights_str..string.format(" %.3f %s |", stat_weights[i].weight, stat_weights[i].str);
                 else
-                    --print(string.format("%.3f %s | ", stat_weights[i].weight, stat_weights[i].str))
                     stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
                 end
                 if i == max_weights_per_line then
@@ -644,6 +605,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
         end
     end
+
 
     if sw_frame.settings_frame.tooltip_more_details:GetChecked() then
         tooltip:AddLine(string.format("Spell power: %d direct / %d periodic", stats.spell_power, stats.spell_power_ot));
@@ -688,84 +650,5 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     end
 end
 
-local function append_tooltip_spell_info(is_fake)
-
-    local spell_name, spell_id = GameTooltip:GetSpell();
-    local spell = spells[spell_id];
-
-    local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.settings_frame.tmp_tooltip_overwrite_id:GetText());
-    if tmp_tooltip_overwrite_spell_id and spells[tmp_tooltip_overwrite_spell_id] then
-        local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
-        if not lname then
-            GameTooltip:ClearLines();
-            GameTooltip:AddLine("OVERWRITING TOOLTIP WITH: "..swc.abilities.english_spell_name_to_base_id[spell.base_id]);
-        end
-        spell = spells[tmp_tooltip_overwrite_spell_id];
-        GameTooltip:AddLine("Remove this overwrite spell id from /swc settings or /reload", 1.0, 0.0, 0.0);
-    end
-
-    if not spell then
-        return;
-    end
-
-    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
-
-        local loadout, effects = active_loadout_and_effects();
-        tooltip_spell_info(GameTooltip, spell, loadout, effects);
-    else
-
-        local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
-        tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed);
-
-        if IsShiftKeyDown() and not sw_frame.stat_comparison_frame.spells[spell.base_id] 
-                and bit.band(spells[spell.base_id].flags, spell_flags.mana_regen) == 0 then
-            sw_frame.stat_comparison_frame.spells[spell.base_id] = {
-                name = spell_name
-            };
-
-            swc.core.update_and_display_spell_diffs(loadout, effects, effects_diffed);
-        end
-    end
-end
-
-local function update_tooltip(tooltip)
-
-    --tooltips update dynamically without debug setting
-    if not swc.core.__sw__debug__ and tooltip:IsShown() then
-        local _, id = tooltip:GetSpell();
-
-        -- Workaround: need to set some spell id that exists to get tooltip refreshed when
-        --            looking at custom spell id tooltip
-        local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.settings_frame.tmp_tooltip_overwrite_id:GetText());
-        if tmp_tooltip_overwrite_spell_id and spells[tmp_tooltip_overwrite_spell_id] then
-            tooltip:ClearLines();
-            local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
-            if lname then
-                tooltip:ClearLines();
-                tooltip:SetSpellByID(tmp_tooltip_overwrite_spell_id);
-            else
-                tooltip:SetSpellByID(6603);
-            end
-
-        elseif id and spells[id] then
-            tooltip:ClearLines();
-            tooltip:SetSpellByID(id);
-
-            if (sw_frame.settings_frame.tooltip_num_checked == 0 or 
-                (sw_frame.settings_frame.show_tooltip_only_when_shift and not IsShiftKeyDown()))
-                and sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
-
-                tooltip:AddLine("Spell Rank: "..spells[id].rank, 138/256, 134/256, 125/256);
-                tooltip:Show();
-            end
-        end
-    end
-
-end
-
-tooltip_export.tooltip_stat_display             = tooltip_stat_display;
-tooltip_export.append_tooltip_spell_info        = append_tooltip_spell_info;
-tooltip_export.update_tooltip                   = update_tooltip;
-
-swc.tooltip = tooltip_export;
+swc.tooltip.tooltip_spell_info = tooltip_spell_info;
 

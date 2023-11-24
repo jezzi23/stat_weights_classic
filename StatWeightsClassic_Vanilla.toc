@@ -11,6 +11,7 @@ vanilla/talents.lua
 shared/loadout.lua
 vanilla/loadout.lua
 vanilla/calc.lua
+shared/tooltip.lua
 vanilla/tooltip.lua
 shared/overlay.lua
 shared/settings.lua
