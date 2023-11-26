@@ -844,7 +844,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetScript("OnValueChanged", function(self, val)
         sw_frame.settings_frame.icon_overlay_font_size = val;
 
-        for k, v in pairs(__sw__icon_frames.book) do
+        for k, v in pairs(swc.overlay.spell_book_frames) do
             if v.frame then
                 local spell_name = v.frame.SpellName:GetText();
                 local spell_rank_name = v.frame.SpellSubName:GetText();
@@ -857,7 +857,7 @@ local function create_sw_gui_settings_frame()
                 end
             end
         end
-        for k, v in pairs(__sw__icon_frames.bars) do
+        for k, v in pairs(swc.overlay.action_id_frames) do
             if v.frame and v.frame:IsShown() then
                 local id = v.spell_id;
                 if spells[id] then
@@ -1194,6 +1194,10 @@ local function create_sw_gui_settings_frame()
             self:SetTextColor(1, 0, 0);
         end
     end);
+
+    if swc.core.__sw__test_all_spells then
+        sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetText(pairs(spells)(spells));
+    end
     
 
     sw_frame.settings_frame.tmp_tooltip_overwrite_id_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
@@ -1396,6 +1400,11 @@ local function create_sw_gui_stat_comparison_frame()
     end
 
     sw_frame.stat_comparison_frame.stats.sp.editbox:SetText("1");
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(sw_frame.stat_comparison_frame.stats) do
+            v.editbox:SetText("1");
+        end
+    end
 
     sw_frame.stat_comparison_frame.line_y_offset = ui_y_offset_incr(sw_frame.stat_comparison_frame.line_y_offset);
 

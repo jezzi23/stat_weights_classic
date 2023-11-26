@@ -214,6 +214,13 @@ local spell_flags = {
     alias                   = bit.lshift(1,15),
     hybrid_scaling          = bit.lshift(1,16), -- scales with both ap and sp
     double_crit             = bit.lshift(1,17), -- 2.0 is base crit mod instead of 1.5
+    exception_coef          = bit.lshift(1,18), -- exception to formulaic coef rules
+    hybrid                  = bit.lshift(1,19), -- both healing and dmg, halving coef
+    base_mana_cost          = bit.lshift(1,20), -- ratio of base mana instead of fixed cost
+    no_crit                 = bit.lshift(1,21),
+    sod_rune                = bit.lshift(1,22), -- contains special level scaling
+    unbounded_aoe_direct    = bit.lshift(1,23), -- direct portion has unbounded aoe
+    unbounded_aoe_ot        = bit.lshift(1,24), -- periodic portion has unbounded aoe
 };
 
 local function create_spells()
@@ -6434,7 +6441,7 @@ local function create_spells()
                 cost_base_percent   = 0,
                 flags               = spell_flags.cd,
                 school              = magic_school.nature,
-                coef                = 0.33,
+                coef                = 0.267,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
             },

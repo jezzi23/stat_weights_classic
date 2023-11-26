@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30202
+local version_id = 30203
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -137,8 +137,14 @@ local event_dispatch = {
     end,
     ["PLAYER_LOGIN"] = function(self, msg, msg2, msg3)
 
-        setup_action_bars();
+        swc.core.setup_action_bar_needed = true;
         core.sw_addon_loaded = true;
+
+        if core.__sw__debug__ or core.__sw__use_defaults__ or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
+            for i = 1, 10 do
+                print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
+            end
+        end
     end,
     ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
         if not core.sw_addon_loaded then
@@ -192,16 +198,16 @@ local event_dispatch = {
     --    buffs_update_needed = true;
     --end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
-        if core.sw_addon_loaded  then
-            for k, v in pairs(__sw__icon_frames.bars) do
-                for i = 1, 3 do
-                    if v.overlay_frames[i] then
-                        v.overlay_frames[i]:Hide();
-                    end
-                end
+        --if core.sw_addon_loaded  then
+        --    for k, v in pairs(__sw__icon_frames.bars) do
+        --        for i = 1, 3 do
+        --            if v.overlay_frames[i] then
+        --                v.overlay_frames[i]:Hide();
+        --            end
+        --        end
 
-            end
-        end
+        --    end
+        --end
         core.setup_action_bar_needed = true;
         if bit.band(active_loadout_entry().loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
             core.talents_update_needed = true;
@@ -244,24 +250,46 @@ local event_dispatch = {
 
 core.event_dispatch = event_dispatch;
 
+local timestamp = 0;
+
+local function update() 
+
+    local dt = 1.0/sw_snapshot_loadout_update_freq;
+    local t = GetTime();
+
+    core.addon_running_time = core.addon_running_time + t-timestamp;
+
+    update_tooltip(GameTooltip);
+    update_overlay();
+
+    core.sequence_counter = core.sequence_counter + 1;
+    timestamp = t;
+
+    C_Timer.After(dt, update);
+end
+
 if class_is_supported then
     create_sw_base_gui();
 
-    UIParent:HookScript("OnUpdate", function(self, elapsed)
+    C_Timer.After(1.0, update);
     
-        core.addon_running_time = core.addon_running_time + elapsed;
-        snapshot_time_since_last_update = snapshot_time_since_last_update + elapsed;
+    --local dummy_frame_update = CreateFrame("FRAME");
+    --dummy_frame_update:HookScript("OnUpdate", function(self, elapsed)
+    --
+    --    core.addon_running_time = core.addon_running_time + elapsed;
+    --    snapshot_time_since_last_update = snapshot_time_since_last_update + elapsed;
 
-        if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq then
+    --    if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq then
 
-            update_tooltip(GameTooltip);
-            update_overlay();
+    --        update_tooltip(GameTooltip);
+    --        update_overlay();
 
-            core.sequence_counter = core.sequence_counter + 1;
-            snapshot_time_since_last_update = 0;
-        end
+    --        core.sequence_counter = core.sequence_counter + 1;
+    --        snapshot_time_since_last_update = 0;
+    --    end
 
-    end)
+    --end)
+    
 
     GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, is_fake, ...)
         append_tooltip_spell_info(is_fake);
@@ -383,4 +411,7 @@ SlashCmdList["STAT_WEIGHTS"] = command
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;
+--core.__sw__test_all_codepaths = 1;
+--core.__sw__test_all_spells = 1;
+
 

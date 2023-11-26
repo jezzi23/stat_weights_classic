@@ -1824,6 +1824,17 @@ local function apply_buffs(loadout, effects)
             loadout.beacon = nil
         end
     end
+
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(buffs) do
+            if v then
+                v.apply(loadout, effects, v, true);
+            end
+        end
+        for k, v in pairs(target_buffs) do
+            v.apply(loadout, effects, v);
+        end
+    end
 end
 
 buffs_export.buff_filters = buff_filters;

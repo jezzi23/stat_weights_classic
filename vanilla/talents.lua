@@ -259,7 +259,7 @@ local function create_talents()
             [110] = {
                 apply = function(loadout, effects, pts)
                     -- TODO VANILLA there's more racial priest spells
-                    local instants = spell_names_to_id({"Renew", "Holy Nova", "Devouring Plague", "Shadow Word: Pain", "Mind Flay", "Desperate Prayer"});
+                    local instants = spell_names_to_id({"Renew", "Holy Nova", "Devouring Plague", "Shadow Word: Pain", "Mind Flay", "Desperate Prayer", "Touch of Weakness", "Circle of Healing", "Prayer of Mending", "Shadow Word: Death", "Void Plague", "Shadowguard"});
                     for k, v in pairs(instants) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0);
                     end
@@ -289,6 +289,8 @@ local function create_talents()
                         effects.by_school.spell_dmg_mod_add[magic_school.holy] + pts * 0.01;
                     effects.by_school.spell_dmg_mod_add[magic_school.shadow] =
                         effects.by_school.spell_dmg_mod_add[magic_school.shadow] + pts * 0.01;
+                    effects.by_school.spell_dmg_mod_add[magic_school.arcane] =
+                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] + pts * 0.01;
                     -- TODO VANILLA: %crit per point, unclear if on ability bases or on holy and shadow spells
                 end
             },
@@ -1054,29 +1056,29 @@ local function apply_talents(loadout, effects)
         end
     end
 
-    -- DELETEME
-    --apply everything to test all code paths for runtime errors
-    --for k, v in pairs(runes) do
-    --    loadout.runes[k] = v;
-    --    if v.apply then
-    --        v.apply(loadout, effects, true);
-    --    end
-    --end
-    --for k, v in pairs(talents) do
-    --    for i = 1, 3 do
-    --        for j = 1, 29 do
-    --            if custom_talents then
-    --                custom_talents[i][j] = 5;
-    --            end
-    --            if dynamic_talents then
-    --                dynamic_talents[i][j] = 5;
-    --            end
-    --        end
-    --    end
-    --    if v.apply then
-    --        v.apply(loadout, effects, 5, 5);
-    --    end
-    --end
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(runes) do
+            loadout.runes[k] = v;
+            if v.apply then
+                v.apply(loadout, effects, true);
+            end
+        end
+        for k, v in pairs(talents) do
+            for i = 1, 3 do
+                for j = 1, 29 do
+                    if custom_talents then
+                        custom_talents[i][j] = 5;
+                    end
+                    if dynamic_talents then
+                        dynamic_talents[i][j] = 5;
+                    end
+                end
+            end
+            if v.apply then
+                v.apply(loadout, effects, 3, 3);
+            end
+        end
+    end
 end
 
 talents_export.wowhead_talent_link = wowhead_talent_link

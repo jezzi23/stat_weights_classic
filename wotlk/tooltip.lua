@@ -87,7 +87,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         sp_name = "Spell power";
     end
 
-    begin_tooltip_section(tooltip, spell.base_id);
+    begin_tooltip_section(tooltip, spell);
 
     tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
 

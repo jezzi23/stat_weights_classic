@@ -229,7 +229,7 @@ local buffs_predefined = {
     -- dmf dmg
     [23768] = {
         apply = function(loadout, effects, buff)
-            effects.raw.spell_dmg_mod = effects.raw.spell_dmg_mod + 0.1;
+            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.1;
         end,
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
@@ -264,7 +264,7 @@ local buffs_predefined = {
     -- zg trinket
     [24546] = {
         apply = function(loadout, effects, buff)
-            ensure_exists_and_add(effects.ability.cast_mod_reduce, spell_name_to_id["Greater Heal"], 0.4, 0);
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Greater Heal"], 0.4, 0);
             local heals = spell_names_to_id({"Greater Heal", "Renew", "Prayer of Healing", "Lesser Heal", "Heal", "Flash Heal", "Holy Nova"});
             for k, v in pairs(heals) do
                 ensure_exists_and_add(effects.ability.cost_mod, v, 0.05, 0);
@@ -284,7 +284,7 @@ local buffs_predefined = {
     -- zg trinket
     [24542] = {
         apply = function(loadout, effects, buff)
-            ensure_exists_and_add(effects.ability.cast_mod_reduce, spell_name_to_id["Healing Touch"], 0.4, 0);
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Touch"], 0.4, 0);
             local heals = spell_names_to_id({"Tranquility", "Rejuvenation", "Healing Touch", "Regrowth"});
             for k, v in pairs(heals) do
                 ensure_exists_and_add(effects.ability.cost_mod, v, 0.05, 0);
@@ -367,7 +367,7 @@ local buffs_predefined = {
         category = buff_category.raid,
     },
     -- vengeance
-    [20059] = {
+    [20055] = {
         apply = function(loadout, effects, buff)
 
             effects.by_school.spell_dmg_mod[magic_school.holy] = 
@@ -382,7 +382,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.raw.cost_mod = effects.raw.cost_mod - 0.2;
             effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + 0.2;
-            effects.raw.spell_dmg_mod = effects.raw.spell_dmg_mod + 0.2;
+            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.2;
         end,
         filter = buff_filters.shaman,
         category = buff_category.item,
@@ -622,8 +622,8 @@ local buffs_predefined = {
             if buff.count then
                 stacks = buff.count;
             end
-            effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.15 * stacks;
+            effects.by_school.spell_dmg_mod_add[magic_school.arcane] = 
+                effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.15 * stacks;
 
             ensure_exists_and_add(effects.ability.cost_mod_base, spell_name_to_id["Arcane Blast"], -stacks * 1.75, 0.0); 
 
@@ -725,6 +725,19 @@ local buffs_predefined = {
         filter = buff_filters.caster,
         category = buff_category.raid,
         tooltip = "When applied while inactive, 10% of your spellpower is added as an estimate but should be based on the warlock's"
+    },
+    -- tangled causality
+    [412326] = {
+        apply = function(loadout, effects, buff)
+
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                effects.by_school.spell_dmg_mod[magic_school.fire] - 0.5;
+            effects.by_school.spell_dmg_mod[magic_school.frost] = 
+                effects.by_school.spell_dmg_mod[magic_school.frost] - 0.5;
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "50% reduced fire/frost spell damage",
     },
 };
 
@@ -1191,6 +1204,17 @@ local function apply_buffs(loadout, effects)
             loadout.beacon = true;
         else
             loadout.beacon = nil
+        end
+    end
+
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(buffs) do
+            if v then
+                v.apply(loadout, effects, v, true);
+            end
+        end
+        for k, v in pairs(target_buffs) do
+            v.apply(loadout, effects, v);
         end
     end
 end

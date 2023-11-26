@@ -62,12 +62,16 @@ local function sort_stat_weights(stat_weights, num_weights)
     end
 end
 
-local function begin_tooltip_section(tooltip, spell_id)
+local function begin_tooltip_section(tooltip, spell)
 
     if sw_frame.settings_frame.clear_original_tooltip then
         tooltip:ClearLines();
-        local lname = GetSpellInfo(spell_id);
-        tooltip:AddLine(lname);
+        local lname = GetSpellInfo(spell.base_id);
+        if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
+            tooltip:AddDoubleLine(lname, "Rank "..spell.rank, 1.0, 1.0, 1.0, 0.50196081399918, 0.50196081399918, 0.50196081399918);
+        else
+            tooltip:AddLine(lname, 1.0, 1.0, 1.0);
+        end
     end
     --tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
 end
@@ -75,6 +79,8 @@ local function end_tooltip_section(tooltip)
     tooltip:Show();
 end
 
+local spell_jump_itr = pairs(spells);
+local spell_jump_key = spell_jump_itr(spells);
 
 local function append_tooltip_spell_info(is_fake)
 
@@ -90,6 +96,14 @@ local function append_tooltip_spell_info(is_fake)
         end
         spell = spells[tmp_tooltip_overwrite_spell_id];
         GameTooltip:AddLine("Remove this overwrite spell id from /swc settings or /reload", 1.0, 0.0, 0.0);
+        if swc.core.__sw__test_all_spells then
+
+            spell_jump_key = spell_jump_itr(spells, spell_jump_key);
+            if not spell_jump_key then
+                spell_jump_key = spell_jump_itr(spells);
+            end
+            sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetText(tostring(spell_jump_key));
+        end
     end
 
     if not spell then

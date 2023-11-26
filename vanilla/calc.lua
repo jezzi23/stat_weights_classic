@@ -163,10 +163,16 @@ local function set_alias_spell(spell, loadout)
                 end
             end
         end
+        if not alias_spell then
+            alias_spell = spells[774];
+        end
     elseif spell.base_id == spell_name_to_id["Sunfire (Bear)"] or spell.base_id == spell_name_to_id["Sunfire (Cat)"]  then
         alias_spell = spells[414684];
     elseif spell.base_id == spell_name_to_id["Conflagrate"] then
         alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Immolate"], loadout.lvl)];
+        if not alias_spell then
+            alias_spell = spells[348];
+        end
     end
 
     return alias_spell;
@@ -293,7 +299,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     local cast_mod_mul = 0.0;
 
-    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school] + loadout.spell_dmg_hit_by_school[spell.school];
+    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
+    if spell.base_id == spell_name_to_id["Living Flame"] then
+        stats.extra_hit = stats.extra_hit + effects.by_school.spell_dmg_hit[magic_school.arcane];
+    end
+
     if effects.ability.hit[spell.base_id] then
         stats.extra_hit = stats.extra_hit + effects.ability.hit[spell.base_id];
     end
@@ -424,12 +434,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if loadout.runes[rune_ids.enlightment] then
                 local mana_perc = loadout.mana/math.max(1, loadout.max_mana);
                 if mana_perc > 0.7 then
-                    effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                        effects.by_school.spell_dmg_mod[magic_school.fire] + 0.1;
-                    effects.by_school.spell_dmg_mod[magic_school.arcane] = 
-                        effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.1;
-                    effects.by_school.spell_dmg_mod[magic_school.frost] = 
-                        effects.by_school.spell_dmg_mod[magic_school.frost] + 0.1;
+                    effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.1;
                 elseif mana_perc < 0.3 then
                     effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.1;
                 end
@@ -451,6 +456,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
                 stats.cast_time = 0.9 * stats.cast_time + 0.1 * stats.gcd;
 
+            end
+
+            if spell.base_id == spell_name_to_id["Living Flame"] then
+                effects.by_school.spell_dmg_mod[magic_school.fire] = effects.by_school.spell_dmg_mod[magic_school.fire] +
+                (effects.by_school.spell_dmg_mod[magic_school.arcane] - effects.by_school.spell_dmg_mod[magic_school.fire]);
             end
         end
 
@@ -515,9 +525,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         stats.spell_mod = target_vuln_mod * global_mod
             *
-            (1.0 + spell_dmg_mod_school)
-            *
-            (1.0 + effects.raw.spell_dmg_mod_mul)
+            (1.0 + effects.raw.spell_dmg_mod_mul + spell_dmg_mod_school)
             *
             (1.0 + effects.raw.spell_dmg_mod)
             *
@@ -525,9 +533,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         stats.spell_ot_mod = target_vuln_ot_mod * global_mod
             *
-            (1.0 + spell_dmg_mod_school)
-            *
-            (1.0 + effects.raw.spell_dmg_mod_mul)
+            (1.0 + effects.raw.spell_dmg_mod_mul + spell_dmg_mod_school)
             *
             (1.0 + effects.raw.spell_dmg_mod)
             *
@@ -898,6 +904,9 @@ if class == "SHAMAN" then
     };
 elseif class == "PRIEST" then
     special_abilities = {
+        [spell_name_to_id["Shadowguard"]] = function(spell, info, loadout)
+            info.expectation = 3 * info.expectation_st;
+        end,
         [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
             info.expectation = 5 * info.expectation_st;
         end,

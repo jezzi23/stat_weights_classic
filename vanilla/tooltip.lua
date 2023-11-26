@@ -52,11 +52,13 @@ local stats = {};
 local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
-    local txt_right = getglobal("GameTooltipTextRight1");
-    if txt_right then
-        txt_right:SetTextColor(0.50196081399918, 0.50196081399918, 0.50196081399918, 1.0);
-        txt_right:SetText("Rank "..spell.rank);
-        txt_right:Show();
+    if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
+        local txt_right = getglobal("GameTooltipTextRight1");
+        if txt_right then
+            txt_right:SetTextColor(0.50196081399918, 0.50196081399918, 0.50196081399918, 1.0);
+            txt_right:SetText("Rank "..spell.rank);
+            txt_right:Show();
+        end
     end
 
     if sw_frame.settings_frame.tooltip_num_checked == 0 or 
@@ -89,7 +91,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
         sp_name = "Spell power";
     end
 
-    begin_tooltip_section(tooltip, spell.base_id);
+    begin_tooltip_section(tooltip, spell);
 
     tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
 
@@ -455,10 +457,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
         if eval.spell.expectation ~= eval.spell.expectation_st then
 
-            tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell.expectation_st).." (single effect)",
+            tooltip:AddLine("Expected "..effect..string.format(": %.1f",eval.spell.expectation_st).." (1.00x effect)",
                           255.0/256, 128.0/256, 0);
             local aoe_ratio = eval.spell.expectation/eval.spell.expectation_st;
-            tooltip:AddLine("Total "..effect..string.format(": %.1f (%.2fx effects)", eval.spell.expectation, aoe_ratio),
+            tooltip:AddLine("Total "..effect..string.format(": %.1f (%.2fx effect)", eval.spell.expectation, aoe_ratio),
                             255.0/256, 128.0/256, 0);
         else
             tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell.expectation),

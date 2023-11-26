@@ -1928,6 +1928,30 @@ local function apply_talents(loadout, effects)
             end
         end
     end
+
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(glyphs) do
+            loadout.glyphs[k] = v;
+            if v.apply then
+                v.apply(loadout, effects, true);
+            end
+        end
+        for k, v in pairs(talents) do
+            for i = 1, 3 do
+                for j = 1, 29 do
+                    if custom_talents then
+                        custom_talents[i][j] = 5;
+                    end
+                    if dynamic_talents then
+                        dynamic_talents[i][j] = 5;
+                    end
+                end
+            end
+            if v.apply then
+                v.apply(loadout, effects, 3, 3);
+            end
+        end
+    end
 end
 
 talents_export.glyphs = glyphs;

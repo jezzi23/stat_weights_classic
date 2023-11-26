@@ -505,6 +505,7 @@ local function active_loadout_and_effects()
     effects_add(loadout_entry.final_effects, loadout_entry.talented);
     apply_buffs(loadout_entry.loadout, loadout_entry.final_effects);
 
+
     return loadout_entry.loadout, loadout_entry.final_effects;
 end
 

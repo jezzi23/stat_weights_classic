@@ -491,11 +491,19 @@ local set_bonus_effects = create_set_effects();
 
 local relics = create_relics();
 
-local items = {
-    --[45703] = function(effects)
-    --    effects.raw.cost_flat = effects.raw.cost_flat + 44;
-    --end,
-};
+local function create_items()
+    if class == "PRIEST" then
+        return {
+            [19594] = function(effects)
+                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Power Word: Shield"], 35, 0.0);
+            end,
+        };
+    else
+        return {};
+    end
+end
+
+local items = create_items();
 
 local function detect_sets(loadout)
     for k, v in pairs(set_tiers) do
@@ -526,14 +534,14 @@ local function apply_equipment(loadout, effects)
         relics[relic_id](effects);
     end
 
-    local trinket1 = GetInventoryItemID("player", 13);
-    local trinket2 = GetInventoryItemID("player", 14);
-    if trinket1 and items[trinket1] then
-        items[trinket1](effects);
-    end
-    if trinket2 and items[trinket2] then
-        items[trinket2](effects);
-    end
+    --local trinket1 = GetInventoryItemID("player", 13);
+    --local trinket2 = GetInventoryItemID("player", 14);
+    --if trinket1 and items[trinket1] then
+    --    items[trinket1](effects);
+    --end
+    --if trinket2 and items[trinket2] then
+    --    items[trinket2](effects);
+    --end
     
     for k, v in pairs(loadout.num_set_pieces) do
         if v >= 2 then
@@ -549,6 +557,10 @@ local function apply_equipment(loadout, effects)
     for item = 1, 18 do
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
+            local item_id = GetInventoryItemID("player", i);
+            if item_id and items[item_id] then
+                items[item_id](effects);
+            end
             found_anything = true;
             local item_stats = GetItemStats(item_link);
             if item_stats then
@@ -563,6 +575,24 @@ local function apply_equipment(loadout, effects)
                             effects.by_school.target_res[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
                     end
                 end
+            end
+        end
+    end
+
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(items) do
+            if v then
+                v(effects);
+            end
+        end
+        for _, v in pairs(relics) do
+            if v then
+                v(effects);
+            end
+        end
+        for k, v in pairs(loadout.num_set_pieces) do
+            if set_bonus_effects[k] then
+                set_bonus_effects[k](10, loadout, effects);
             end
         end
     end

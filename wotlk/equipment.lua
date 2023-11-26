@@ -1116,6 +1116,24 @@ local function apply_equipment(loadout, effects)
         end
     end
 
+    if swc.core.__sw__test_all_codepaths then
+        for k, v in pairs(items) do
+            if v then
+                v(effects);
+            end
+        end
+        for _, v in pairs(relics) do
+            if v then
+                v(effects);
+            end
+        end
+        for k, v in pairs(loadout.num_set_pieces) do
+            if set_bonus_effects[k] then
+                set_bonus_effects[k](10, loadout, effects);
+            end
+        end
+    end
+
     return found_anything;
 end
 

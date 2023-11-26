@@ -55,14 +55,15 @@ local simulation_type = {
     cast_until_oom      = 2
 };
 
+local rating_id_to_base = {
+    [CR_HASTE_SPELL] = 10,
+    [CR_CRIT_SPELL] = 14,
+    [CR_HIT_SPELL] = 8
+};
+
 local function get_combat_rating_effect(rating_id, level)
     -- src: https://wowwiki-archive.fandom.com/wiki/Combat_rating_system#Combat_Ratings_formula
     -- base off level 60
-    local rating_id_to_base = {
-        [CR_HASTE_SPELL] = 10,
-        [CR_CRIT_SPELL] = 14,
-        [CR_HIT_SPELL] = 8
-    };
     local rating_per_percentage = 0.0;
     if level >= 70 then
         rating_per_percentage = rating_id_to_base[rating_id] * (41/26) * math.pow(131/63, 0.1*(level-70));
@@ -869,6 +870,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.cost_per_sec = stats.cost / stats.cast_time;
 
     spell = spells[original_spell_id];
+
 end
 
 local function spell_info(info, spell, stats, loadout, effects)

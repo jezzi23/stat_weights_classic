@@ -35,6 +35,7 @@ local cast_until_oom                                = swc.calc.cast_until_oom;
 --------------------------------------------------------------------------------
 local overlay = {};
 
+
 local icon_stat_display = {
     normal                  = bit.lshift(1,1),
     crit                    = bit.lshift(1,2),
@@ -51,6 +52,11 @@ local icon_stat_display = {
 
     show_heal_variant       = bit.lshift(1,20),
 };
+
+local active_overlays = {};
+local action_bar_frame_names = {};
+local action_id_frames = {};
+local spell_book_frames = {};
 
 local function init_frame_overlay(frame_info)
 
@@ -69,7 +75,7 @@ end
 
 local function clear_overlays()
 
-    for k, v in pairs( __sw__icon_frames.bars) do
+    for k, v in pairs(action_id_frames) do
         if v.frame then
             for i = 1, 3 do
                 v.overlay_frames[i]:SetText("");
@@ -77,7 +83,7 @@ local function clear_overlays()
             end
         end
     end
-    for k, v in pairs(__sw__icon_frames.book) do
+    for k, v in pairs(spell_book_frames) do
         if v.frame then
             for i = 1, 3 do
                 v.overlay_frames[i]:SetText("");
@@ -100,10 +106,38 @@ local function action_id_of_button(button)
     end
 end
 
+local function try_register_frame(frame_name)
+    -- creates it if it suddenly exists but not registered
+    local frame = getfenv()[frame_name];
+    if frame then
+        local action_id = action_id_of_button(frame);
+        if not action_id_frames[action_id].frame then
+
+            local action_type, id, _ = GetActionInfo(action_id);
+
+            if action_id then
+                local spell_id = 0;
+                local action_type, id, _ = GetActionInfo(action_id);
+                if action_type == "macro" then
+                     spell_id, _ = GetMacroSpell(id);
+                elseif action_type == "spell" then
+                     spell_id = id;
+                end
+                if not spells[spell_id] then
+                    spell_id = 0;
+                else
+                    active_overlays[action_id] = spell_id;
+                end
+            end
+            action_id_frames[action_id].spell_id = spell_id;
+            action_id_frames[action_id].frame = frame; 
+            init_frame_overlay(action_id_frames[action_id]);
+        end
+    end
+end
+
 local function gather_spell_icons()
 
-    local action_bar_frame_names = {};
-    local spell_book_frames = {};
 
     local index = 1;
     -- gather spell book icons
@@ -188,65 +222,58 @@ local function gather_spell_icons()
         action_bar_addon_name = "Default";
     end
 
-    local action_bar_frames_of_interest = {};
+    for action_id, v in pairs(action_bar_frame_names) do
 
-    for k, v in pairs(action_bar_frame_names) do
+        action_id_frames[action_id] = {};
 
         local frame = getfenv()[v];
         if frame then
 
-            --local action_id = action_id_of_button(frame);
-            action_id = k;
-            if action_id then
-                local spell_id = 0;
-                local action_type, id, _ = GetActionInfo(action_id);
-                if action_type == "macro" then
-                     spell_id, _ = GetMacroSpell(id);
-                elseif action_type == "spell" then
-                     spell_id = id;
-                else
-                    spell_id = 0;
-                end
-                if not spells[spell_id] then
-                    spell_id = 0;
-                end
-
-                action_bar_frames_of_interest[action_id] = {};
-                action_bar_frames_of_interest[action_id].frame = frame; 
-                action_bar_frames_of_interest[action_id].spell_id = spell_id;
-
-                init_frame_overlay(action_bar_frames_of_interest[action_id]);
-
+            local spell_id = 0;
+            local action_type, id, _ = GetActionInfo(action_id);
+            if action_type == "macro" then
+                 spell_id, _ = GetMacroSpell(id);
+            elseif action_type == "spell" then
+                 spell_id = id;
+            else
+                spell_id = 0;
             end
+            if not spells[spell_id] then
+                spell_id = 0;
+            else
+                active_overlays[action_id] = spell_id;
+            end
+
+            action_id_frames[action_id].frame = frame; 
+            action_id_frames[action_id].spell_id = spell_id;
+
+            init_frame_overlay(action_id_frames[action_id]);
         end
     end
-    
-
-    return {
-        bar_names = action_bar_frame_names,
-        bars = action_bar_frames_of_interest,
-        book = spell_book_frames
-    };
 end
 
 local function reassign_overlay_icon_spell(action_id, spell_id, action_button_frame)
 
-    if not spells[spell_id] then
-        spell_id = 0;
-    end
+    if action_id_frames[action_id].frame then
 
-    if __sw__icon_frames.bars[action_id] then
-        __sw__icon_frames.bars[action_id].spell_id = spell_id;
+        if not spells[spell_id] then
+            spell_id = 0;
+        end
+        active_overlays[action_id] = spell_id;
+        action_id_frames[action_id].spell_id = spell_id;
         for i = 1, 3 do
-            __sw__icon_frames.bars[action_id].overlay_frames[i]:SetText("");
-            __sw__icon_frames.bars[action_id].overlay_frames[i]:Hide();
+            action_id_frames[action_id].overlay_frames[i]:SetText("");
+            action_id_frames[action_id].overlay_frames[i]:Hide();
         end
     end
 end
 
 local function reassign_overlay_icon(action_id)
 
-    local spell_id = 0;
+    if action_id > 120 or action_id <= 0 or not action_bar_frame_names[action_id] then
+        return;
+    end
+    try_register_frame(action_bar_frame_names[action_id]); 
     local action_type, id, _ = GetActionInfo(action_id);
     if action_type == "macro" then
         spell_id, _ = GetMacroSpell(id);
@@ -260,16 +287,18 @@ local function reassign_overlay_icon(action_id)
     -- so check if the action slot in bar 1 is the same
     if action_id > 12 then
         local mirrored_bar_id = (action_id-1)%12 + 1;
-        local mirrored_action_button_frame = getfenv()[__sw__icon_frames.bar_names[mirrored_bar_id]];
+        local mirrored_action_button_frame = action_id_frames[mirrored_bar_id].frame;
         local mirrored_action_id = action_id_of_button(mirrored_action_button_frame);
         if mirrored_action_id == action_id then
             -- yep was mirrored, update that as well
             reassign_overlay_icon_spell(mirrored_bar_id, spell_id, mirrored_action_button_frame)
         end
     end
-    local button_frame = getfenv()[__sw__icon_frames.bar_names[action_id]]; 
+    local button_frame = action_id_frames[action_id].frame; 
 
-    reassign_overlay_icon_spell(action_id, spell_id, button_frame)
+    if button_frame then
+        reassign_overlay_icon_spell(action_id, spell_id, button_frame)
+    end
 end
 
 local function on_special_action_bar_changed()
@@ -277,11 +306,11 @@ local function on_special_action_bar_changed()
     for i = 1, 12 do
     
         -- Hopefully the Actionbar host has updated the new action id of its 1-12 action id bar
-        local frame = getfenv()[__sw__icon_frames.bar_names[i]];
+        local frame = action_id_frames[i].frame;
         if frame then
     
             local action_id = action_id_of_button(frame);
-                
+
             local spell_id = 0;
             local action_type, id, _ = GetActionInfo(action_id);
             if action_type == "macro" then
@@ -289,8 +318,11 @@ local function on_special_action_bar_changed()
             elseif action_type == "spell" then
                  spell_id = id;
             end
+            if spells[spell_id] then
+                active_overlays[i] = spell_id;
+            end
 
-            reassign_overlay_icon_spell(action_id, spell_id, getfenv()[__sw__icon_frames.bar_names[action_id]]);
+            --reassign_overlay_icon_spell(action_id, spell_id, action_id_frames[action_id].frame);
             reassign_overlay_icon_spell(i, spell_id, frame);
         end
     end
@@ -404,13 +436,13 @@ local function update_icon_overlay_settings()
     for i = 1, 3 do
 
         if not sw_frame.settings_frame.icon_overlay[i] then
-            for k, v in pairs(__sw__icon_frames.book) do
+            for k, v in pairs(spell_book_frames) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
                 end
             end
-            for k, v in pairs(__sw__icon_frames.bars) do
-                if v.overlay_frames[i] then
+            for k, v in pairs(action_id_frames) do
+                if v.frame then
                     v.overlay_frames[i]:Hide();
                 end
             end
@@ -419,7 +451,7 @@ local function update_icon_overlay_settings()
 end
 
 local function setup_action_bars()
-    __sw__icon_frames = gather_spell_icons();
+    gather_spell_icons();
     update_icon_overlay_settings();
 end
 
@@ -519,6 +551,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     end
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
+
     if spell_cache[spell_id].seq ~= swc.core.sequence_counter then
 
         spell_cache[spell_id].seq = swc.core.sequence_counter;
@@ -552,8 +585,6 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     end
 end
 
-__sw__icon_frames = {};
-
 local function update_spell_icons(loadout, effects)
 
     if swc.core.setup_action_bar_needed then
@@ -565,11 +596,10 @@ local function update_spell_icons(loadout, effects)
         on_special_action_bar_changed();
         swc.core.special_action_bar_changed = false;
     end
-
     -- update spell book icons
     if SpellBookFrame:IsShown() then
 
-        for k, v in pairs(__sw__icon_frames.book) do
+        for k, v in pairs(spell_book_frames) do
 
             if v.frame then
 
@@ -595,7 +625,9 @@ local function update_spell_icons(loadout, effects)
     end
 
     -- update action bar icons
-    for k, v in pairs(__sw__icon_frames.bars) do
+    --for k, v in pairs(action_id_frames) do
+    for k, _ in pairs(active_overlays) do
+        local v = action_id_frames[k];
 
         if v.frame then
 
@@ -603,6 +635,7 @@ local function update_spell_icons(loadout, effects)
             for i = 1, 3 do
                 v.overlay_frames[i]:Hide();
             end
+
             if id ~= 0 and v.frame:IsShown() then
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
@@ -610,12 +643,14 @@ local function update_spell_icons(loadout, effects)
                 else
                     update_spell_icon_frame(v, spells[id], id, loadout, effects);
                 end
+
             end
         end
     end
 end
 
 local function update_overlay()
+
 
     if not sw_frame.settings_frame.icon_overlay_disable:GetChecked() then
 
@@ -628,6 +663,8 @@ local function update_overlay()
     end
 end
 
+overlay.spell_book_frames            = spell_book_frames;
+overlay.action_id_frames             = action_id_frames;
 overlay.setup_action_bars            = setup_action_bars;
 overlay.update_overlay               = update_overlay;
 overlay.icon_stat_display            = icon_stat_display;
