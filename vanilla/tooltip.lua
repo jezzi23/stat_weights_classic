@@ -535,62 +535,30 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
         tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
-        local stat_weights = {};
-        stat_weights[1] = {weight = 1.0, str = "SP"};
-        stat_weights[2] = {weight = eval.infinite_cast.sp_per_crit, str = "Crit"};
-        local num_weights = 2;
-        --if eval.sp_per_int ~= 0 then
-        num_weights = num_weights + 1;
-        stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_int, str = "Int"};
-        --end
-        --if eval.sp_per_spirit ~= 0 then
-        num_weights = num_weights + 1;
-        stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_spirit, str = "Spirit"};
-        --end
-
-        if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-            num_weights = num_weights + 1;
-            stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_hit, str = "Hit"};
-            num_weights = num_weights + 1;
-            stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_pen, str = "Spell Pen"};
-        --    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
-            --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
-        else
-            --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste",eval.sp_per_crit, eval.sp_per_haste), 0.0, 1.0, 0.0);
-        end
-        local stat_weights_str = "|";
-        local max_weights_per_line = 4;
-        sort_stat_weights(stat_weights, num_weights);
-        for i = 1, num_weights do
-            if stat_weights[i].weight ~= 0 then
-                stat_weights_str = stat_weights_str..string.format(" %.3f %s |", stat_weights[i].weight, stat_weights[i].str);
-            else
-                stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
-            end
-            if i == max_weights_per_line and i ~= num_weights then
-                stat_weights_str = stat_weights_str.."\n|";
-            end
-        end
-        tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
-
-        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 then
-
-            tooltip:AddLine(string.format("%s until OOM per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
-
+        if eval.infinite_cast.effect_per_sec_per_sp > 0 then
             local stat_weights = {};
             stat_weights[1] = {weight = 1.0, str = "SP"};
-            stat_weights[2] = {weight = eval.cast_until_oom.sp_per_crit, str = "Crit"};
-            stat_weights[3] = {weight = eval.cast_until_oom.sp_per_int, str = "Int"};
-            stat_weights[4] = {weight = eval.cast_until_oom.sp_per_spirit, str = "Spirit"};
-            stat_weights[5] = {weight = eval.cast_until_oom.sp_per_mp5, str = "MP5"};
-            local num_weights = 5;
+            stat_weights[2] = {weight = eval.infinite_cast.sp_per_crit, str = "Crit"};
+            local num_weights = 2;
+            --if eval.sp_per_int ~= 0 then
+            num_weights = num_weights + 1;
+            stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_int, str = "Int"};
+            --end
+            --if eval.sp_per_spirit ~= 0 then
+            num_weights = num_weights + 1;
+            stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_spirit, str = "Spirit"};
+            --end
 
             if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-                num_weights = 7;
-                stat_weights[6] = {weight = eval.cast_until_oom.sp_per_hit, str = "Hit"};
-                stat_weights[7] = {weight = eval.cast_until_oom.sp_per_pen, str = "Spell Pen"};
+                num_weights = num_weights + 1;
+                stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_hit, str = "Hit"};
+                num_weights = num_weights + 1;
+                stat_weights[num_weights] = {weight = eval.infinite_cast.sp_per_pen, str = "Spell Pen"};
+            --    tooltip:AddLine(sp_name.." per Hit rating: "..string.format("%.3f",eval.sp_per_hit), 0.0, 1.0, 0.0);
+                --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste = %.3f Hit",eval.sp_per_crit, eval.sp_per_haste, eval.sp_per_hit), 0.0, 1.0, 0.0);
+            else
+                --tooltip:AddLine(string.format("1 SP = %.3f Critical = %.3f Haste",eval.sp_per_crit, eval.sp_per_haste), 0.0, 1.0, 0.0);
             end
-
             local stat_weights_str = "|";
             local max_weights_per_line = 4;
             sort_stat_weights(stat_weights, num_weights);
@@ -600,11 +568,47 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                 else
                     stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
                 end
-                if i == max_weights_per_line then
+                if i == max_weights_per_line and i ~= num_weights then
                     stat_weights_str = stat_weights_str.."\n|";
                 end
             end
             tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
+        end
+
+        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 then
+
+            tooltip:AddLine(string.format("%s until OOM per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
+            if eval.cast_until_oom.effect_until_oom_per_sp > 0 then
+                local stat_weights = {};
+                stat_weights[1] = {weight = 1.0, str = "SP"};
+                stat_weights[2] = {weight = eval.cast_until_oom.sp_per_crit, str = "Crit"};
+                stat_weights[3] = {weight = eval.cast_until_oom.sp_per_int, str = "Int"};
+                stat_weights[4] = {weight = eval.cast_until_oom.sp_per_spirit, str = "Spirit"};
+                stat_weights[5] = {weight = eval.cast_until_oom.sp_per_mp5, str = "MP5"};
+                local num_weights = 5;
+
+                if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
+                    num_weights = 7;
+                    stat_weights[6] = {weight = eval.cast_until_oom.sp_per_hit, str = "Hit"};
+                    stat_weights[7] = {weight = eval.cast_until_oom.sp_per_pen, str = "Spell Pen"};
+                end
+
+                local stat_weights_str = "|";
+                local max_weights_per_line = 4;
+                sort_stat_weights(stat_weights, num_weights);
+                for i = 1, num_weights do
+                    if stat_weights[i].weight ~= 0 then
+                        stat_weights_str = stat_weights_str..string.format(" %.3f %s |", stat_weights[i].weight, stat_weights[i].str);
+                    else
+                        stat_weights_str = stat_weights_str..string.format(" %d %s |", 0, stat_weights[i].str);
+                    end
+                    if i == max_weights_per_line then
+                        stat_weights_str = stat_weights_str.."\n|";
+                    end
+                end
+                tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
+            end
+
         end
     end
 

@@ -115,7 +115,6 @@ local non_stackable_effects = {
 local FILL_ME_WITH_KNOWN_VALUES = 0;
 
 --TODO VANILLA: 
---    pala blessing of healing thing
 --    troll beast
 --    divine sacrifice expiration buff id unknown
 local buffs_predefined = {
@@ -173,7 +172,7 @@ local buffs_predefined = {
     [17539] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                effects.raw.spell_power = effects.raw.spell_power + 35;
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 35;
             end
         end,
         filter = buff_filters.caster,
@@ -356,10 +355,10 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
 
             -- TODO VANILLA: active/inactive correctness
+            for i = 1, 5 do
+                effects.by_attribute.stat_mod[i] = effects.by_attribute.stat_mod[i] + 0.1;
+            end
             if inactive then
-                for i = 1, 5 do
-                    effects.by_attribute.stat_mod[i] = effects.by_attribute.stat_mod[i] + 0.1;
-                end
             end
 
         end,
@@ -413,7 +412,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
 
             if inactive then
-                effects.raw.spell_power = effects.raw.spell_power + 150;
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 150;
             end
         end,
         filter = buff_filters.caster,
@@ -739,7 +738,20 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "50% reduced fire/frost spell damage",
     },
+    -- bok
+    [25898] = {
+        apply = function(loadout, effects, buff)
+
+            effects.by_attribute.stat_mod[stat.spirit] = effects.by_attribute.stat_mod[stat.spirit] + 0.1;
+            effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + 0.1;
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.raid,
+        tooltip = "10% stats",
+    },
 };
+
+buffs_predefined[20217] = deep_table_copy(buffs_predefined[25898]);
 
 local target_buffs_predefined = {
     -- amplify magic
@@ -765,7 +777,7 @@ local target_buffs_predefined = {
                 hp = id_to_hp[id] * 1.2;
             end
             effects.raw.healing_power = effects.raw.healing_power + hp;
-            effects.raw.spell_power = effects.raw.spell_power + hp/2;
+            effects.raw.spell_dmg = effects.raw.spell_dmg + hp/2;
 
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),
@@ -795,7 +807,7 @@ local target_buffs_predefined = {
                 hp = id_to_hp[id] * 1.2;
             end
             effects.raw.healing_power = effects.raw.healing_power - hp;
-            effects.raw.spell_power = effects.raw.spell_power - hp/2;
+            effects.raw.spell_dmg = effects.raw.spell_dmg - hp/2;
 
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.hostile),

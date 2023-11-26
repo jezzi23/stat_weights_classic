@@ -219,16 +219,18 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.crit_mod[spell.base_id] then
         extra_crit_mod = extra_crit_mod + effects.ability.crit_mod[spell.base_id];
     end
-    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
-        stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
-        stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
-    else
         stats.crit_mod = stats.crit_mod + 0.5*effects.raw.special_crit_heal_mod;
         if effects.ability.crit_mod[spell.base_id] then
             stats.crit_mod = stats.crit_mod + effects.ability.crit_mod[spell.base_id];
         end
 
+    elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+        stats.crit = 0.0;
+    else 
+        stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
+        stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
     end
 
     local target_vuln_mod = 1.0;
@@ -337,7 +339,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
 
     stats.target_resi = 0;
-    if bit.band(spell.flags, spell_flags.heal) == 0 then
+    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
         -- mod res by school currently used to snapshot equipment and set bonuses
         stats.target_resi = math.max(0, loadout.target_res - effects.by_school.target_res[spell.school]);
     end
@@ -451,29 +453,29 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 stats.cost = loadout.mana;
             end
 
-            if class == "MAGE" and loadout.num_set_pieces[set_tiers.pve_2] >= 8 and
-                     (spell.base_id == spell_name_to_id["Frostbolt"] or spell.base_id == spell_name_to_id["Fireball"]) then
+            if loadout.num_set_pieces[set_tiers.pve_2] >= 8 and
+                 (spell.base_id == spell_name_to_id["Frostbolt"] or spell.base_id == spell_name_to_id["Fireball"]) then
 
                 stats.cast_time = 0.9 * stats.cast_time + 0.1 * stats.gcd;
-
             end
 
             if spell.base_id == spell_name_to_id["Living Flame"] then
                 effects.by_school.spell_dmg_mod[magic_school.fire] = effects.by_school.spell_dmg_mod[magic_school.fire] +
                 (effects.by_school.spell_dmg_mod[magic_school.arcane] - effects.by_school.spell_dmg_mod[magic_school.fire]);
             end
-        end
 
-        if bit.band(loadout.flags, loadout_flags.target_frozen) ~= 0 then
+            if bit.band(loadout.flags, loadout_flags.target_frozen) ~= 0 then
 
-            local pts = loadout.talents_table:pts(3, 13);
+                local pts = loadout.talents_table:pts(3, 13);
 
-            stats.crit = math.max(0.0, math.min(1.0, stats.crit + pts*0.1));
+                stats.crit = math.max(0.0, math.min(1.0, stats.crit + pts*0.1));
 
-            if spell.base_id == spell_name_to_id["Ice Lance"] then
-                target_vuln_mod = target_vuln_mod * 3;
+                if spell.base_id == spell_name_to_id["Ice Lance"] then
+                    target_vuln_mod = target_vuln_mod * 3;
+                end
             end
         end
+
 
     elseif class == "WARLOCK" then
         if spell.base_id == spell_name_to_id["Chaos Bolt"] then
@@ -673,14 +675,9 @@ local function spell_info(info, spell, stats, loadout, effects)
 
     local direct_crit = stats.crit;
 
-    if bit.band(spell_flags.absorb, spell.flags) ~= 0 then
-        direct_crit = 0.0;
-    end
-
     info.min = stats.hit * ((1 - direct_crit) * info.min_noncrit_if_hit + (direct_crit * info.min_crit_if_hit));
     info.max = stats.hit * ((1 - direct_crit) * info.max_noncrit_if_hit + (direct_crit * info.max_crit_if_hit));
 
-    info.absorb = 0.0;
 
     info.ot_if_hit = 0.0;
     info.ot_if_hit_max = 0.0;
@@ -741,6 +738,17 @@ local function spell_info(info, spell, stats, loadout, effects)
         stats.no_alias = nil;
     end
 
+    info.absorb = 0.0;
+    if bit.band(spell_flags.absorb, spell.flags) ~= 0 then
+        info.absorb = info.min_noncrit_if_hit;
+
+        info.min_noncrit_if_hit = 0.0;
+        info.max_noncrit_if_hit = 0.0;
+
+        info.min_crit_if_hit = 0.0;
+        info.max_crit_if_hit = 0.0;
+    end
+
     if special_abilities[original_spell_id] then
         special_abilities[original_spell_id](spell, info, loadout, stats, effects);
     end
@@ -796,7 +804,6 @@ local function spell_info(info, spell, stats, loadout, effects)
         info.effect_per_cost = math.huge;
     end
 end
-
 
 local function spell_info_from_stats(info, stats, spell, loadout, effects)
 
@@ -917,16 +924,6 @@ elseif class == "PRIEST" then
             if loadout.runes[rune_ids.shared_pain] then
                 info.expectation = 3 * info.expectation_st;
             end
-        end,
-        [spell_name_to_id["Power Word: Shield"]] = function(spell, info, loadout)
-
-            info.absorb = info.min_noncrit_if_hit;
-
-            info.min_noncrit_if_hit = 0.0;
-            info.max_noncrit_if_hit = 0.0;
-
-            info.min_crit_if_hit = 0.0;
-            info.max_crit_if_hit = 0.0;
         end,
         [spell_name_to_id["Holy Nova"]] = function(spell, info, loadout)
             if bit.band(spell.flags, spell_flags.heal) ~= 0 then
@@ -1056,6 +1053,11 @@ elseif class == "MAGE" then
     special_abilities = {
         [spell_name_to_id["Mass Regeneration"]] = function(spell, info, loadout)
             info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Mana Shield"]] = function(spell, info, loadout, stats)
+
+            local pts = loadout.talents_table:pts(1, 10);
+            stats.cost = stats.cost + 2*info.absorb*(1.0 - 0.1*pts);
         end,
     };
 else

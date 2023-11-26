@@ -259,10 +259,16 @@ local function create_talents()
             [110] = {
                 apply = function(loadout, effects, pts)
                     -- TODO VANILLA there's more racial priest spells
-                    local instants = spell_names_to_id({"Renew", "Holy Nova", "Devouring Plague", "Shadow Word: Pain", "Mind Flay", "Desperate Prayer", "Touch of Weakness", "Circle of Healing", "Prayer of Mending", "Shadow Word: Death", "Void Plague", "Shadowguard"});
+                    local instants = spell_names_to_id({"Renew", "Holy Nova", "Devouring Plague", "Shadow Word: Pain", "Mind Flay", "Desperate Prayer", "Touch of Weakness", "Circle of Healing", "Prayer of Mending", "Shadow Word: Death", "Void Plague", "Shadowguard", "Power Word: Shield"});
                     for k, v in pairs(instants) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0);
                     end
+                end
+            },
+            [111] = {
+                apply = function(loadout, effects, pts)
+                    
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Mana Burn"], pts * 0.25, 0.0);
                 end
             },
             [112] = {
