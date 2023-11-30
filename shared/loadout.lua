@@ -51,6 +51,7 @@ local function empty_loadout()
         default_target_lvl_diff = 3,
         target_hp_perc_default = 1.0,
         target_res = 0,
+        target_creature_type = "",
         unbounded_aoe_targets = 1,
 
         buffs = {},
@@ -434,6 +435,7 @@ local function dynamic_loadout(loadout)
             loadout.flags = bit.bor(loadout.flags, loadout_flags.target_friendly);
         end
 
+        loadout.target_creature_type = UnitCreatureType("target");
         
         if bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
             local target_lvl = UnitLevel("target");

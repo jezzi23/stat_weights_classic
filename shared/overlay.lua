@@ -258,13 +258,15 @@ local function reassign_overlay_icon_spell(action_id, spell_id, action_button_fr
 
         if not spells[spell_id] then
             spell_id = 0;
+            for i = 1, 3 do
+                action_id_frames[action_id].overlay_frames[i]:SetText("");
+                action_id_frames[action_id].overlay_frames[i]:Hide();
+            end
+            active_overlays[action_id] = nil;
+        else
+            active_overlays[action_id] = spell_id;
         end
-        active_overlays[action_id] = spell_id;
         action_id_frames[action_id].spell_id = spell_id;
-        for i = 1, 3 do
-            action_id_frames[action_id].overlay_frames[i]:SetText("");
-            action_id_frames[action_id].overlay_frames[i]:Hide();
-        end
     end
 end
 
@@ -282,6 +284,7 @@ local function reassign_overlay_icon(action_id)
     else
         spell_id = 0;
     end
+
     -- NOTE: any action_id > 12 we might have mirrored action ids
     -- with Bar 1 due to shapeshifts, and forms taking over Bar 1
     -- so check if the action slot in bar 1 is the same
@@ -507,7 +510,7 @@ local overlay_label_handler = {
         frame_overlay:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
     end,
     [icon_stat_display.effect_until_oom] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d", math.floor(spell_effect.effect_until_oom+0.5)));
+        frame_overlay:SetText(string.format("%.0f", math.floor(spell_effect.effect_until_oom+0.5)));
     end,
     [icon_stat_display.time_until_oom] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%.1fs", spell_effect.time_until_oom));

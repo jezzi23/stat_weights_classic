@@ -378,7 +378,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if pts ~= 0 and spell.base_min ~= 0 then
 
             stats.cast_time = (1.0 - stats.crit) * stats.cast_time +
-                stats.crit * math.max(stats.cast_time * 0.8, stats.gcd);
+                stats.crit * stats.cast_time * 0.8;
         end
 
     elseif class == "PALADIN" then
@@ -824,6 +824,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     -- without mp5
     local spirit = loadout.stats[stat.spirit] + effects.by_attribute.stats[stat.spirit];
 
+    -- TODO VANILLA: verify formula, especially at lower lvls
     local mp2_not_casting = spirit_mana_regen(spirit);
 
     if not calculating_weights then
@@ -832,8 +833,10 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     local mp5 = effects.raw.mp5 + loadout.max_mana*effects.raw.perc_max_mana_as_mp5;
     local mp1_casting = 0.2 * mp5 + 0.5 * mp2_not_casting * effects.raw.regen_while_casting;
 
+    --  don't use dynamic mana regen lua api for now
+    calculating_weights = true;
+
     -- TODO: don't use this when stat comparison is open
-    -- TODO VANILLA: formula seems incorrect
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 and not calculating_weights then
         -- the mana regen calculation is correct, but use GetManaRegen() to detect
         -- niche MP5 sources dynamically
@@ -1172,18 +1175,16 @@ local function evaluate_spell(spell, stats, loadout, effects)
             sp_per_spirit = spell_effect_per_sec_1spirit_delta/(spell_effect_per_sec_1sp_delta),
         };
     end
-    if stats.cost ~= 0 then
-        result.cast_until_oom = {
-            effect_until_oom_per_sp = spell_effect_until_oom_1sp_delta,
+    result.cast_until_oom = {
+        effect_until_oom_per_sp = spell_effect_until_oom_1sp_delta,
 
-            sp_per_crit     = spell_effect_until_oom_1crit_delta/(spell_effect_until_oom_1sp_delta),
-            sp_per_hit      = spell_effect_until_oom_1hit_delta/(spell_effect_until_oom_1sp_delta),
-            sp_per_pen      = spell_effect_until_oom_1pen_delta/(spell_effect_until_oom_1sp_delta),
-            sp_per_int      = spell_effect_until_oom_1int_delta/(spell_effect_until_oom_1sp_delta),
-            sp_per_spirit   = spell_effect_until_oom_1spirit_delta/(spell_effect_until_oom_1sp_delta),
-            sp_per_mp5      = spell_effect_until_oom_1mp5_delta/(spell_effect_until_oom_1sp_delta),
-        };
-    end
+        sp_per_crit     = spell_effect_until_oom_1crit_delta/(spell_effect_until_oom_1sp_delta),
+        sp_per_hit      = spell_effect_until_oom_1hit_delta/(spell_effect_until_oom_1sp_delta),
+        sp_per_pen      = spell_effect_until_oom_1pen_delta/(spell_effect_until_oom_1sp_delta),
+        sp_per_int      = spell_effect_until_oom_1int_delta/(spell_effect_until_oom_1sp_delta),
+        sp_per_spirit   = spell_effect_until_oom_1spirit_delta/(spell_effect_until_oom_1sp_delta),
+        sp_per_mp5      = spell_effect_until_oom_1mp5_delta/(spell_effect_until_oom_1sp_delta),
+    };
 
     return result;
 end

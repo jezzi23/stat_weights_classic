@@ -732,11 +732,11 @@ local function create_sw_gui_settings_frame()
                            "Expected cast time", icon_checkbox_func);
     sw_frame.settings_frame.icon_hit = 
         create_sw_checkbox("sw_icon_hit", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Hit Chance", icon_checkbox_func);  
+                           "Hit chance", icon_checkbox_func);  
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_crit = 
         create_sw_checkbox("sw_icon_crit_chance", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Critical Chance", icon_checkbox_func);  
+                           "Critical chance", icon_checkbox_func);  
     sw_frame.settings_frame.icon_casts_until_oom = 
         create_sw_checkbox("sw_icon_casts_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
                            "Casts until OOM", icon_checkbox_func);  
@@ -1025,7 +1025,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.tooltip_stat_weights = 
         create_sw_checkbox("sw_tooltip_stat_weights", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Stat Weights", tooltip_checkbox_func);
+                            "Stat weights", tooltip_checkbox_func);
     sw_frame.settings_frame.tooltip_avg_cost = 
         create_sw_checkbox("sw_tooltip_avg_cost", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
                             "Expected cost", tooltip_checkbox_func);
@@ -1133,7 +1133,7 @@ local function create_sw_gui_settings_frame()
 
     sw_frame.settings_frame.show_tooltip_only_when_shift_button = 
         create_sw_checkbox("sw_settings_show_tooltip_only_when_shift_button", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "SHIFT to show tooltip", function(self)
+                           "Hold SHIFT to show tooltip", function(self)
         sw_frame.settings_frame.show_tooltip_only_when_shift = self:GetChecked();
     end);
     sw_frame.settings_frame.show_tooltip_only_when_shift = 
@@ -1597,7 +1597,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.loadouts_select_label = sw_frame.loadouts_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.loadouts_select_label:SetFontObject(font);
     sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame.lhs_list, 15, -2);
-    sw_frame.loadouts_frame.loadouts_select_label:SetText("Select Active Loadout");
+    sw_frame.loadouts_frame.loadouts_select_label:SetText("Select active loadout");
     sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     sw_frame.loadouts_frame.loadouts_slider =
@@ -1672,7 +1672,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.export_button =
         CreateFrame("Button", "sw_loadouts_export_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.export_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.export_button:SetText("Create Loadout as a Copy");
+    sw_frame.loadouts_frame.rhs_list.export_button:SetText("Create Loadout as a copy");
     sw_frame.loadouts_frame.rhs_list.export_button:SetSize(170, 25);
     sw_frame.loadouts_frame.rhs_list.export_button:SetScript("OnClick", function(self)
 
@@ -1717,7 +1717,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label = sw_frame.loadouts_frame.rhs_list:CreateFontString(nil, "OVERLAY");
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetFontObject(font);
     sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 15, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Custom talents (Wowhead link)");
+    sw_frame.loadouts_frame.rhs_list.loadout_talent_label:SetText("Talents (Wowhead link)");
 
     y_offset_lhs = y_offset_lhs - 20;
 
@@ -2080,6 +2080,14 @@ local function create_sw_gui_loadout_frame()
 
     local y_offset_rhs = 0;
 
+    sw_frame.loadouts_frame.loadouts_select_label = sw_frame.loadouts_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.loadouts_frame.loadouts_select_label:SetFontObject(font);
+    sw_frame.loadouts_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadouts_frame.rhs_list, 5, -2);
+    sw_frame.loadouts_frame.loadouts_select_label:SetText("Trackable effects");
+    sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    y_offset_rhs = y_offset_rhs - 15;
+
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button = 
         CreateFrame("CheckButton", "sw_loadout_always_apply_buffs_button", sw_frame.loadouts_frame.rhs_list, "ChatConfigCheckButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.always_apply_buffs_button:SetPoint("TOPLEFT", sw_frame.loadouts_frame.rhs_list, 0, y_offset_rhs);
@@ -2297,8 +2305,8 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.self_buffs_slider =
         CreateFrame("Slider", "sw_self_buffs_slider", sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "OptionsSliderTemplate");
     sw_frame.loadouts_frame.self_buffs_slider:SetOrientation('VERTICAL');
-    sw_frame.loadouts_frame.self_buffs_slider:SetPoint("TOPRIGHT", -10, -62);
-    sw_frame.loadouts_frame.self_buffs_slider:SetSize(15, 485);
+    sw_frame.loadouts_frame.self_buffs_slider:SetPoint("TOPRIGHT", -10, -82);
+    sw_frame.loadouts_frame.self_buffs_slider:SetSize(15, 465);
     sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit =
         math.floor(sw_frame.loadouts_frame.self_buffs_slider:GetHeight()/20);
     sw_frame.loadouts_frame.self_buffs_slider:SetMinMaxValues(
@@ -2327,8 +2335,8 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.target_buffs_slider =
         CreateFrame("Slider", "sw_target_buffs_slider", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "OptionsSliderTemplate");
     sw_frame.loadouts_frame.target_buffs_slider:SetOrientation('VERTICAL');
-    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -62);
-    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 485);
+    sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -82);
+    sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 465);
     sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit = 
         math.floor(sw_frame.loadouts_frame.target_buffs_slider:GetHeight()/20);
     sw_frame.loadouts_frame.target_buffs_slider:SetMinMaxValues(

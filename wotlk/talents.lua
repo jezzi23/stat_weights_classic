@@ -1940,10 +1940,10 @@ local function apply_talents(loadout, effects)
             for i = 1, 3 do
                 for j = 1, 29 do
                     if custom_talents then
-                        custom_talents[i][j] = 5;
+                        custom_talents[i][j] = 3;
                     end
                     if dynamic_talents then
-                        dynamic_talents[i][j] = 5;
+                        dynamic_talents[i][j] = 3;
                     end
                 end
             end

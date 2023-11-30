@@ -188,6 +188,9 @@ local function create_runes()
         };
     elseif class == "MAGE" then
         return {
+            [rune_ids.regeneration     ] = { wowhead_id = "56jg"},
+            [rune_ids.fingers_of_frost ] = { wowhead_id = "56jf"},
+            [rune_ids.enlightment      ] = { wowhead_id = "56ra"},
             [rune_ids.burnout] = {
                 apply = function(loadout, effects, inactive)
                     -- 15% spell crit but 1% more base mana cost on crit
@@ -199,21 +202,20 @@ local function create_runes()
                 end,
                 wowhead_id = "56j9"
             },
-            [rune_ids.enlightment      ] = { wowhead_id = "56ra"},
-            [rune_ids.fingers_of_frost ] = { wowhead_id = "56jf"},
-            [rune_ids.regeneration     ] = { wowhead_id = "56jg"},
-            [rune_ids.arcane_blast     ] = { wowhead_id = "a6j8"},
-            [rune_ids.ice_lance        ] = { wowhead_id = "a6ja"},
-            [rune_ids.living_bomb      ] = { wowhead_id = "a6rb"},
             [rune_ids.rewind_time      ] = { wowhead_id = "a6jb"},
-            [rune_ids.arcane_surge     ] = { wowhead_id = "76vd"},
-            [rune_ids.icy_veins        ] = { wowhead_id = "76vc"},
-            [rune_ids.living_flame     ] = { wowhead_id = "76jh"},
+            [rune_ids.living_bomb      ] = { wowhead_id = "a6rb"},
+            [rune_ids.ice_lance        ] = { wowhead_id = "a6ja"},
+            [rune_ids.arcane_blast     ] = { wowhead_id = "a6j8"},
             [rune_ids.mass_regeneration] = { wowhead_id = "76rf"},
+            [rune_ids.living_flame     ] = { wowhead_id = "76jh"},
+            [rune_ids.icy_veins        ] = { wowhead_id = "76vc"},
+            [rune_ids.arcane_surge     ] = { wowhead_id = "76vd"},
         };
 
     elseif class == "WARLOCK" then
         return {
+            [rune_ids.soul_siphon           ] = { wowhead_id = "56mr"},
+            [rune_ids.lake_of_fire          ] = { wowhead_id = "56mz"},
             [rune_ids.demonic_tactics       ] = {
                 apply = function(loadout, effects, inactive)
                     if inactive then
@@ -224,17 +226,15 @@ local function create_runes()
                 end,
                 wowhead_id = "56s8",
             },
-            [rune_ids.lake_of_fire          ] = { wowhead_id = "56mz"},
+            [rune_ids.chaos_bolt            ] = { wowhead_id = "56mn"},
             [rune_ids.master_channeler      ] = { wowhead_id = "56mv"},
-            [rune_ids.soul_siphon           ] = { wowhead_id = "56mr"},
-            [rune_ids.chaos_bolt            ] = { wowhead_id = "a6mn"},
-            [rune_ids.haunt                 ] = { wowhead_id = "a6mk"},
-            [rune_ids.metamorphosis         ] = { wowhead_id = "a6n0"},
             [rune_ids.shadow_bolt_volley    ] = { wowhead_id = "a6my"},
-            [rune_ids.demonic_grace         ] = { wowhead_id = "76vz"},
-            [rune_ids.demonic_pact          ] = { wowhead_id = "76vy"},
-            [rune_ids.everlasting_affliction] = { wowhead_id = "76s6"},
+            [rune_ids.metamorphosis         ] = { wowhead_id = "a6n0"},
+            [rune_ids.haunt                 ] = { wowhead_id = "a6mk"},
             [rune_ids.incinerate            ] = { wowhead_id = "76sb"},
+            [rune_ids.everlasting_affliction] = { wowhead_id = "76s6"},
+            [rune_ids.demonic_pact          ] = { wowhead_id = "76vy"},
+            [rune_ids.demonic_grace         ] = { wowhead_id = "76vz"},
         };
     else
         return {};
@@ -272,9 +272,9 @@ local function create_talents()
                 end
             },
             [112] = {
-                apply = function(loadout, effects, pts)
+                apply = function(loadout, effects, pts, missing_pts)
                     
-                    effects.raw.mana_mod = effects.raw.mana_mod + pts * 0.02;
+                    swc.loadout.add_mana_mod(loadout, effects, missing_pts*0.02, pts*0.02);
                 end
             },
             [114] = {
@@ -343,9 +343,12 @@ local function create_talents()
                 end
             },
             [214] = {
-                apply = function(loadout, effects, pts)
+                apply = function(loadout, effects, pts, missing_pts)
                     effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + pts * 0.05;
                     effects.by_attribute.hp_from_stat_mod[stat.spirit] = effects.by_attribute.hp_from_stat_mod[stat.spirit] + pts * 0.05;
+                    
+                    effects.raw.spell_dmg = effects.raw.spell_dmg + 0.05*missing_pts*loadout.stats[stat.spirit];
+                    effects.raw.healing_power = effects.raw.healing_power + 0.05*missing_pts*loadout.stats[stat.spirit];
                 end
             },
             [215] = {
@@ -419,9 +422,8 @@ local function create_talents()
                 end
             },
             [215] = {
-                apply = function(loadout, effects, pts)
-                    -- dynamic fix
-                    effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + pts * 0.04;
+                apply = function(loadout, effects, pts, missing_pts)
+                    swc.loadout.add_int_mod(loadout, effects, 0.04*missing_pts, 0.04*pts);
                 end
             },
             [303] = {
@@ -466,8 +468,9 @@ local function create_talents()
     elseif class == "PALADIN" then
         return {
             [102] = {
-                apply = function(loadout, effects, pts)
-                    effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + pts * 0.02;
+                apply = function(loadout, effects, pts, missing_pts)
+                    swc.loadout.add_int_mod(loadout, effects, missing_pts*0.02, pts*0.02);
+                      
                 end
             },
             [105] = {
@@ -537,8 +540,8 @@ local function create_talents()
                 end
             },
             [201] = {
-                apply = function(loadout, effects, pts)
-                    effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + pts * 0.01;
+                apply = function(loadout, effects, pts, missing_pts)
+                    swc.loadout.add_mana_mod(loadout, effects, missing_pts*0.01, pts*0.01);
                 end
             },
             [206] = {
@@ -628,9 +631,9 @@ local function create_talents()
                 end
             },
             [114] = {
-                apply = function(loadout, effects, pts)
-                    effects.raw.mana_mod = 
-                        effects.raw.mana_mod + pts*0.02;
+                apply = function(loadout, effects, pts, missing_pts)
+                    swc.loadout.add_mana_mod(loadout, effects, missing_pts*0.02, pts*0.02);
+                    
                 end
             },
             [115] = {
@@ -765,6 +768,7 @@ local function create_talents()
             [203] = {
                 apply = function(loadout, effects, pts)
                     effects.by_attribute.stat_mod[stat.spirit] = effects.by_attribute.stat_mod[stat.spirit] - pts * 0.01;
+                    -- TODO: dynamic mod
                 end
             },
             [204] = {

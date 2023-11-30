@@ -110,6 +110,7 @@ local non_stackable_effects = {
     water_shield                = bit.lshift(1, 9),
     druid_nourish_bonus         = bit.lshift(1, 10),
     bow_mp5                     = bit.lshift(1, 11),
+    bok                         = bit.lshift(1, 12),
 };
 
 local FILL_ME_WITH_KNOWN_VALUES = 0;
@@ -160,8 +161,12 @@ local buffs_predefined = {
     -- zandalari
     [24425] = {
         apply = function(loadout, effects, buff, inactive)
-            for i = 1, 5 do
-                effects.by_attribute.stat_mod[i] = effects.by_attribute.stat_mod[i] + 0.15;
+            if inactive then
+                swc.loadout.add_int_mod(loadout, effects, 0.15, 0.15);
+                swc.loadout.add_spirit_mod(loadout, effects, 0.15, 0.15);
+            else
+                swc.loadout.add_int_mod(loadout, effects, 0.0, 0.15);
+                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.15);
             end
         end,
         filter = buff_filters.caster,
@@ -351,20 +356,47 @@ local buffs_predefined = {
         category = buff_category.class,
     },
     -- bok
-    [20217] = {
+    [25898] = {
         apply = function(loadout, effects, buff, inactive)
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok) == 0 then
 
-            -- TODO VANILLA: active/inactive correctness
-            for i = 1, 5 do
-                effects.by_attribute.stat_mod[i] = effects.by_attribute.stat_mod[i] + 0.1;
-            end
-            if inactive then
-            end
+                if inactive then
+                    swc.loadout.add_int_mod(loadout, effects, 0.1, 0.1);
+                    swc.loadout.add_spirit_mod(loadout, effects, 0.1, 0.1);
+                else
+                    swc.loadout.add_int_mod(loadout, effects, 0.0, 0.1);
+                    swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.1);
+                end
 
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok);
+            end
         end,
         filter = buff_filters.alliance,
         category = buff_category.raid,
+        tooltip = "10% stats"
     },
+    [20217] = {
+        apply = function(loadout, effects, buff, inactive)
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok) == 0 then
+
+                if inactive then
+                    swc.loadout.add_int_mod(loadout, effects, 0.1, 0.1);
+                    swc.loadout.add_spirit_mod(loadout, effects, 0.1, 0.1);
+                else
+                    swc.loadout.add_int_mod(loadout, effects, 0.0, 0.1);
+                    swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.1);
+                end
+
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok);
+            end
+        end,
+        filter = bit.bor(buff_filters.alliance, buff_filters.hidden),
+        category = buff_category.raid,
+        tooltip = "10% stats"
+    },
+
     -- vengeance
     [20055] = {
         apply = function(loadout, effects, buff)
@@ -395,17 +427,6 @@ local buffs_predefined = {
         end,
         filter = buff_filters.priest,
         category = buff_category.item,
-    },
-    -- beast slaying (troll)
-    [20557] = {
-        apply = function(loadout, effects, buff)
-
-            for i = 2, 7 do
-                effects.by_school.target_spell_dmg_taken[i] = effects.by_school.target_spell_dmg_taken[i] + 0.05;
-            end
-        end,
-        filter = buff_filters.troll,
-        category = buff_category.class,
     },
     -- sp flask
     [17628] = {
@@ -726,7 +747,7 @@ local buffs_predefined = {
         tooltip = "When applied while inactive, 10% of your spellpower is added as an estimate but should be based on the warlock's"
     },
     -- tangled causality
-    [412326] = {
+    [432069] = {
         apply = function(loadout, effects, buff)
 
             effects.by_school.spell_dmg_mod[magic_school.fire] = 
@@ -738,20 +759,7 @@ local buffs_predefined = {
         category = buff_category.class,
         tooltip = "50% reduced fire/frost spell damage",
     },
-    -- bok
-    [25898] = {
-        apply = function(loadout, effects, buff)
-
-            effects.by_attribute.stat_mod[stat.spirit] = effects.by_attribute.stat_mod[stat.spirit] + 0.1;
-            effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + 0.1;
-        end,
-        filter = buff_filters.caster,
-        category = buff_category.raid,
-        tooltip = "10% stats",
-    },
 };
-
-buffs_predefined[20217] = deep_table_copy(buffs_predefined[25898]);
 
 local target_buffs_predefined = {
     -- amplify magic
@@ -1096,6 +1104,18 @@ local target_buffs_predefined = {
         category = buff_category.class,
         tooltip = "Beacon is assumed to be up for the entire duration after each Beacon cast",
     },
+    -- beast slaying (troll)
+    [20557] = {
+        apply = function(loadout, effects, buff)
+
+            for i = 2, 7 do
+                effects.by_school.target_spell_dmg_taken[i] = effects.by_school.target_spell_dmg_taken[i] + 0.05;
+            end
+        end,
+        filter = bit.bor(buff_filters.troll, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "5% more damage to beasts (only tracks on english client)",
+    },
 };
 
 local buffs = {};
@@ -1160,6 +1180,11 @@ local function detect_buffs(loadout)
               end
               i = i + 1;
         end
+    end
+    if loadout.target_creature_type == "Beast" then
+        local racial_id = 20557;
+        local lname = GetSpellInfo(racial_id);
+        loadout.dynamic_buffs["target"][lname] = {count = 1, id = racial_id, nil, nil};
     end
 end
 

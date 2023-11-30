@@ -70,6 +70,48 @@ local function effects_diff(loadout, effects, diff)
     end
 end
 
+local function add_mana_mod(loadout, effects, inactive_value, mod_value)
+
+    effects.raw.mana_mod = effects.raw.mana_mod + mod_value-inactive_value;
+
+    local mana_gained = inactive_value * loadout.mana/(1.0 + effects.raw.mana_mod);
+    loadout.mana = loadout.mana + mana_gained;
+
+    effects.raw.mana_mod = effects.raw.mana_mod + inactive_value;
+
+
+end
+local function add_int_mod(loadout, effects, inactive_value, mod_value)
+    effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + mod_value-inactive_value;
+
+    local int_gained = inactive_value * loadout.stats[stat.int]/(1.0 + effects.by_attribute.stat_mod[stat.int]);
+    local crit_rating_gained = int_to_crit_rating(int_gained, loadout.lvl);
+    local mana_gained = int_gained * 15 * (1.0 + effects.raw.mana_mod);
+
+    effects.raw.crit_rating = effects.raw.crit_rating +  crit_rating_gained;
+    loadout.mana = loadout.mana + mana_gained;
+    loadout.max_mana = loadout.max_mana + mana_gained;
+    loadout.stats[stat.int] = loadout.stats[stat.int] + int_gained;
+
+    effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + inactive_value;
+end
+
+local function add_spirit_mod(loadout, effects, inactive_value, mod_value)
+    effects.by_attribute.stat_mod[stat.spirit] = effects.by_attribute.stat_mod[stat.spirit] + mod_value-inactive_value;
+
+    local spirit_gained = inactive_value * loadout.stats[stat.spirit]/(1.0 + effects.by_attribute.stat_mod[stat.spirit]);
+    local sd_gained = spirit_gained * effects.by_attribute.sp_from_stat_mod[stat.spirit];
+    local hp_gained = spirit_gained * effects.by_attribute.hp_from_stat_mod[stat.spirit];
+    effects.raw.spell_dmg = effects.raw.spell_dmg + sd_gained;
+    effects.raw.healing_power = effects.raw.healing_power + hp_gained;
+    loadout.stats[stat.spirit] = loadout.stats[stat.spirit] + spirit_gained;
+
+    effects.by_attribute.stat_mod[stat.spirit] = effects.by_attribute.stat_mod[stat.spirit] + inactive_value;
+end
+
 swc.loadout.int_to_crit_rating =  int_to_crit_rating;
 swc.loadout.effects_diff =  effects_diff;
+swc.loadout.add_mana_mod =  add_mana_mod;
+swc.loadout.add_int_mod =  add_int_mod;
+swc.loadout.add_spirit_mod =  add_spirit_mod;
 
