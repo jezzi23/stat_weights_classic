@@ -1181,7 +1181,7 @@ local function detect_buffs(loadout)
               i = i + 1;
         end
     end
-    if loadout.target_creature_type == "Beast" then
+    if race == "Troll" and loadout.target_creature_type == "Beast" then
         local racial_id = 20557;
         local lname = GetSpellInfo(racial_id);
         loadout.dynamic_buffs["target"][lname] = {count = 1, id = racial_id, nil, nil};

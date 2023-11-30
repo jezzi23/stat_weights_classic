@@ -216,6 +216,7 @@ local spell_flags = {
     sod_rune                = bit.lshift(1,22), -- contains special level scaling
     unbounded_aoe_direct    = bit.lshift(1,23), -- direct portion has unbounded aoe
     unbounded_aoe_ot        = bit.lshift(1,24), -- periodic portion has unbounded aoe
+    periodic_no_coef        = bit.lshift(1,25), -- over time effects that don't scale
 };
 
 local function create_spells()
@@ -553,9 +554,9 @@ local function create_spells()
                 lvl_req             = 1,
                 lvl_max             = 5,
                 lvl_outdated        = 5,
-                flags               = bit.bor(spell_flags.cast_with_ot_dur, spell_flags.exception_coef),
+                flags               = bit.bor(spell_flags.cast_with_ot_dur, spell_flags.periodic_no_coef),
                 school              = magic_school.fire,
-                coef                = 1.0,
+                coef                = 0.0,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.6,
             },
@@ -7517,8 +7518,10 @@ local function spell_coef(spell_info, k)
     local direct_coef = math.min(1.0, math.max(1.5/3.5, spell_info.cast_time/3.5));
     local ot_coef = math.min(1.0, spell_info.over_time_duration/15.0);
 
+    if  bit.band(spell_info.flags, spell_flags.periodic_no_coef) ~= 0  then
+        ot_coef = 0;
 
-    if spell_info.cast_time == spell_info.over_time_duration then
+    elseif spell_info.cast_time == spell_info.over_time_duration then
         ot_coef = direct_coef;
         direct_coef = 0;
     elseif spell_info.base_min > 0 and spell_info.over_time > 0 then
@@ -7725,7 +7728,6 @@ for k, v in pairs(spells) do
     if bit.band(v.flags, spell_flags.sod_rune) ~= 0 then
         lvl_mod = 1.0;
     end
-
     local coef = v.coef;
     local ot_coef = v.over_time_coef;
 
