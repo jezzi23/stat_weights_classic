@@ -425,6 +425,8 @@ local function dynamic_loadout(loadout)
 
     loadout.target_lvl = loadout.default_target_lvl_diff + loadout.lvl;
 
+    loadout.target_creature_type = "";
+
     if UnitExists("target") then
 
         loadout.flags = bit.bor(loadout.flags, loadout_flags.has_target);
