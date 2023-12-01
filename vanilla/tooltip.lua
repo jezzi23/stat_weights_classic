@@ -575,7 +575,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
             tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
         end
 
-        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 then
+        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 and eval.spell.cost_per_sec > 0 then
 
             tooltip:AddLine(string.format("%s until OOM per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
             if eval.cast_until_oom.effect_until_oom_per_sp > 0 then

@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30204
+local version_id = 30205
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -140,6 +140,18 @@ local event_dispatch = {
         swc.core.setup_action_bar_needed = true;
         core.sw_addon_loaded = true;
 
+        if core.expansion_loaded == core.expansions.vanilla and C_Engraving.IsEngravingEnabled then
+            --after fresh login the runes cannot be queried until
+            --character frame has been opened!!!
+            
+            if CharacterFrame then
+                ShowUIPanel(CharacterFrame);
+                if CharacterFrameTab1 then
+                    CharacterFrameTab1:Click();
+                end
+                HideUIPanel(CharacterFrame);
+            end
+        end
         if core.__sw__debug__ or core.__sw__use_defaults__ or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             for i = 1, 10 do
                 print("WARNING: SWC DEBUG TOOLS ARE ON!!!");

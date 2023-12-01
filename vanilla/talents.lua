@@ -135,7 +135,12 @@ local function create_runes()
         };
     elseif class == "DRUID" then
         return {
-            [rune_ids.fury_of_the_stormrage  ] = { wowhead_id = "56pr"},
+            [rune_ids.fury_of_the_stormrage  ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Wrath"], 1.0, 0.0);
+                end,
+                wowhead_id = "56pr"
+            },
             [rune_ids.living_seed            ] = { wowhead_id = "56sz"},
             [rune_ids.survival_of_the_fittest] = { wowhead_id = "56sw"},
             [rune_ids.wild_strikes           ] = { wowhead_id = "56pa"},
@@ -844,37 +849,14 @@ end
 
 local function engraving_runes_id()
     local ids = {};
-    -- NOTE: order might be important here
-    local item_slots = {5, 10, 7};
-    for k, v in pairs(item_slots) do
-        local link = GetInventoryItemLink("player", v);
-        --local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name 
-        if link then
-            -- Unclear how rune engraving will appear in SoD since other enchants also exist on these slots
-            --local _, _, _, _, _, enchant_id, _, _, _, _, _, _, _, _ = string.find(link,
-            --    "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
-            --ids[k] = enchant_id;
-            --ids[k] = nil;
-
-            local _, itr = string.find(link, "item");
-            local itr_end, _ = string.find(link:sub(itr), "|");
-            itr_end = itr_end + itr;
-
-            --print(link:sub(itr, itr_end));
-            while itr <= itr_end do
-                -- try to match any number id's in item part of item string against rune enchant ids
-                local id_start, id_end = string.find(link:sub(itr, itr_end), "%d+");
-                if id_start then 
-                    local id = tonumber(link:sub(itr+id_start-1, itr+id_end-1));
-                    if runes[id] then
-                        ids[k] = id;
-                        break;
-                    end
-                    --print(v..": "..id);
-                    itr = itr + id_end + 1;
-                    
-                else
-                    break;
+    if C_Engraving.IsEngravingEnabled then
+        -- NOTE: order might be important here for wowhead export
+        local item_slots = {5, 10, 7};
+        for k, v in pairs(item_slots) do
+            local rune_slot = C_Engraving.GetRuneForEquipmentSlot(v);
+            if rune_slot then
+                if runes[rune_slot.itemEnchantmentID] then
+                    ids[k] = rune_slot.itemEnchantmentID;
                 end
             end
         end
@@ -916,10 +898,6 @@ local function wowhead_talent_code()
         -- NOTE: GetNumTalents(i) will return 0 on early calls after logging in,
         --       but works fine after reload
         for j = 1, GetNumTalents(i) do
-            -- talent indices are not in left-right, top-to-bottom order
-            -- but rather seemingly random...
-
-
             local _, _, row, column, pts, _, _, _ = GetTalentInfo(i, j);
             talent_table[row][column] = pts;
         end
