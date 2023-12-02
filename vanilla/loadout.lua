@@ -22,10 +22,20 @@
 
 local addon_name, swc = ...;
 
-local stat                              = swc.utils.stat;
+local class                              = swc.utils.class;
+local stat                               = swc.utils.stat;
+
+local class_to_int_to_crit_scaling = {
+    ["WARLOCK"] = 60.6,
+    ["DRUID"]   = 60.0,
+    ["SHAMAN"]  = 59.5,
+    ["MAGE"]    = 59.5,
+    ["PRIEST"]  = 59.2,
+    ["PALADIN"] = 54.0,
+};
 
 local function int_to_crit_rating(int, lvl)
-    return int/60;
+    return int/class_to_int_to_crit_scaling[class];
 end
 
 local function effects_diff(loadout, effects, diff)

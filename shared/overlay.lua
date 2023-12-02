@@ -315,7 +315,13 @@ local function on_special_action_bar_changed()
             local action_id = action_id_of_button(frame);
 
             local spell_id = 0;
-            local action_type, id, _ = GetActionInfo(action_id);
+            local action_type, id;
+            if action_id then
+                action_type, id, _ = GetActionInfo(action_id);
+            else
+                action_type = "";
+                id = 0;
+            end
             if action_type == "macro" then
                  spell_id, _ = GetMacroSpell(id);
             elseif action_type == "spell" then
@@ -500,7 +506,7 @@ local overlay_label_handler = {
     end,
     [icon_stat_display.crit_chance] = function(frame_overlay, spell, spell_effect, stats)
     
-        if stats.crit ~= 0 then
+        if stats.crit ~= 0 and spell_effect.ot_if_crit + spell_effect.min_crit_if_hit > 0 then
             frame_overlay:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
         else 
             frame_overlay:SetText("");

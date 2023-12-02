@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30205
+local version_id = 30206
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -258,9 +258,21 @@ local event_dispatch = {
             core.talents_update_needed = true;
         end
     end,
+    ["ENGRAVING_MODE_CHANGED"] = function(self)
+        core.equipment_update_needed = true;
+    end,
+    ["RUNE_UPDATED"] = function(self)
+        core.equipment_update_needed = true;
+    end,
+};
+
+local event_dispatch_client_exceptions = {
+    ["ENGRAVING_MODE_CHANGED"]      = core.expansions.vanilla,
+    ["RUNE_UPDATED"]                = core.expansions.vanilla,
 };
 
 core.event_dispatch = event_dispatch;
+core.event_dispatch_client_exceptions = event_dispatch_client_exceptions;
 
 local timestamp = 0;
 

@@ -2380,7 +2380,11 @@ local function create_sw_base_gui()
     --sw_frame:RegisterEvent("ACTIONBAR_UPDATE_STATE");
     for k, v in pairs(swc.core.event_dispatch) do
         
-        sw_frame:RegisterEvent(k);
+        if not swc.core.event_dispatch_client_exceptions[k] or
+                swc.core.event_dispatch_client_exceptions[k] == swc.core.expansion_loaded then
+
+            sw_frame:RegisterEvent(k);
+        end
     end
     if class ~= "PALADIN" then
         sw_frame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED");

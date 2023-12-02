@@ -10023,29 +10023,34 @@ for k, v in pairs(spells) do
     local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
     -- rank1 contains some general fields that we write to all ranks
     local rank1_of_spell = localized_spell_names_to_id[name]
-    local spell_data = spells[rank1_of_spell];
+    if not rank1_of_spell then
+        -- in some faulty localizations the spell names may be different between ranks
+        spells[k] = nil;
+    else
+        local spell_data = spells[rank1_of_spell];
 
-    spells_by_rank[rank1_of_spell][v.rank] = k;
+        spells_by_rank[rank1_of_spell][v.rank] = k;
 
-    v.over_time_tick_freq = spell_data.over_time_tick_freq;
-    v.over_time_duration  = spell_data.over_time_duration;
-    v.cast_time           = spell_data.cast_time;
-    v.cost_base_percent   = spell_data.cost_base_percent;
-    v.flags               = spell_data.flags;
-    v.school              = spell_data.school;
-    v.coef                = spell_data.coef;
-    v.over_time_coef      = spell_data.over_time_coef;
-    v.base_id             = rank1_of_spell;
-    if v.healing_version then
-        v.healing_version.over_time_tick_freq = spell_data.healing_version.over_time_tick_freq;
-        v.healing_version.over_time_duration  = spell_data.healing_version.over_time_duration;
-        v.healing_version.cast_time           = spell_data.healing_version.cast_time;
-        v.healing_version.cost_base_percent   = spell_data.healing_version.cost_base_percent;
-        v.healing_version.flags               = spell_data.healing_version.flags;
-        v.healing_version.school              = spell_data.healing_version.school;
-        v.healing_version.coef                = spell_data.healing_version.coef;
-        v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
-        v.healing_version.base_id             = rank1_of_spell;
+        v.over_time_tick_freq = spell_data.over_time_tick_freq;
+        v.over_time_duration  = spell_data.over_time_duration;
+        v.cast_time           = spell_data.cast_time;
+        v.cost_base_percent   = spell_data.cost_base_percent;
+        v.flags               = spell_data.flags;
+        v.school              = spell_data.school;
+        v.coef                = spell_data.coef;
+        v.over_time_coef      = spell_data.over_time_coef;
+        v.base_id             = rank1_of_spell;
+        if v.healing_version then
+            v.healing_version.over_time_tick_freq = spell_data.healing_version.over_time_tick_freq;
+            v.healing_version.over_time_duration  = spell_data.healing_version.over_time_duration;
+            v.healing_version.cast_time           = spell_data.healing_version.cast_time;
+            v.healing_version.cost_base_percent   = spell_data.healing_version.cost_base_percent;
+            v.healing_version.flags               = spell_data.healing_version.flags;
+            v.healing_version.school              = spell_data.healing_version.school;
+            v.healing_version.coef                = spell_data.healing_version.coef;
+            v.healing_version.over_time_coef      = spell_data.healing_version.over_time_coef;
+            v.healing_version.base_id             = rank1_of_spell;
+        end
     end
 end
 

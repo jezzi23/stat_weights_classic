@@ -7585,7 +7585,7 @@ for k, v in pairs(spells) do
             spell_data = spells[rank1_of_spell];
         end
 
-        if not spell_data then
+        if not spell_data or not rank1_of_spell then
             spells[k] = nil;
         else
             spells_by_rank[rank1_of_spell][v.rank] = k;
