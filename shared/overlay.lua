@@ -55,8 +55,10 @@ local icon_stat_display = {
 
 local active_overlays = {};
 local action_bar_frame_names = {};
+local action_id_by_name = {};
 local action_id_frames = {};
 local spell_book_frames = {};
+local action_bar_addon_name = "Default";
 
 local function init_frame_overlay(frame_info)
 
@@ -110,7 +112,7 @@ local function try_register_frame(frame_name)
     -- creates it if it suddenly exists but not registered
     local frame = getfenv()[frame_name];
     if frame then
-        local action_id = action_id_of_button(frame);
+        local action_id = action_id_by_name[frame_name];
         if not action_id_frames[action_id].frame then
 
             local action_type, id, _ = GetActionInfo(action_id);
@@ -139,7 +141,6 @@ end
 local function gather_spell_icons()
 
 
-    local index = 1;
     -- gather spell book icons
     if false then -- check for some common addons if they overrite spellbook frames
 
@@ -158,21 +159,24 @@ local function gather_spell_icons()
     end
 
     -- gather action bar icons
-    index = 1;
+    local index = 1;
     if IsAddOnLoaded("Bartender4") then -- check for some common addons if they overrite spellbook frames
 
         for i = 1, 120 do
             action_bar_frame_names[i] = "BT4Button"..i;
+            action_id_by_name[action_bar_frame_names[i]] = i;
         end
         action_bar_addon_name = "Bartender4";
 
     elseif IsAddOnLoaded("ElvUI") then -- check for some common addons if they overrite spellbook frames
 
-        local elvi_bar_order_to_match_action_ids = {1, 6, 5, 4, 2, 3, 7, 8, 9, 10};
+        --local elvi_bar_order_to_match_action_ids = {1, 6, 5, 4, 2, 3, 7, 8, 9, 10};
+        --local elvi_bar_order_to_match_action_ids = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         for i = 1, 10 do
             for j = 1, 12 do
                 action_bar_frame_names[index] = 
-                    "ElvUI_Bar"..elvi_bar_order_to_match_action_ids[i].."Button"..j;
+                    "ElvUI_Bar"..i.."Button"..j;
+                action_id_by_name[action_bar_frame_names[index]] = index;
 
                 index = index + 1;
             end
@@ -185,10 +189,10 @@ local function gather_spell_icons()
             "ActionButton", "DominosActionButton", "MultiBarRightButton",
             "MultiBarLeftButton", "MultiBarBottomRightButton", "MultiBarBottomLeftButton"
         };
-        index = 1;
         for k, v in pairs(bars) do
             for j = 1, 12 do
                 action_bar_frame_names[index] = v..j;
+                action_id_by_name[action_bar_frame_names[index]] = index;
 
                 index = index + 1;
             end
@@ -197,11 +201,13 @@ local function gather_spell_icons()
         --local dominos_button_index = 13;
         for i = index, 120 do
             action_bar_frame_names[i] = "DominosActionButton"..i;
+            action_id_by_name[action_bar_frame_names[i]] = i;
             --action_bar_frame_names[i] = "DominosActionButton"..dominos_button_index;
             --dominos_button_index = dominos_button_index + 1;
         end
         for i = 13, 24 do
             action_bar_frame_names[i] = "DominosActionButton"..i;
+            action_id_by_name[action_bar_frame_names[i]] = i;
         end
         action_bar_addon_name = "Dominos";
 
@@ -215,6 +221,7 @@ local function gather_spell_icons()
         for k, v in pairs(bars) do
             for j = 1, 12 do
                 action_bar_frame_names[index] = v..j;
+                action_id_by_name[action_bar_frame_names[index]] = index;
 
                 index = index + 1;
             end
@@ -250,6 +257,7 @@ local function gather_spell_icons()
             init_frame_overlay(action_id_frames[action_id]);
         end
     end
+
 end
 
 local function reassign_overlay_icon_spell(action_id, spell_id, action_button_frame)
@@ -271,6 +279,7 @@ local function reassign_overlay_icon_spell(action_id, spell_id, action_button_fr
 end
 
 local function reassign_overlay_icon(action_id)
+
 
     if action_id > 120 or action_id <= 0 or not action_bar_frame_names[action_id] then
         return;
@@ -594,6 +603,8 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     end
 end
 
+local special_action_bar_changed_id = 0;
+
 local function update_spell_icons(loadout, effects)
 
     if swc.core.setup_action_bar_needed then
@@ -601,11 +612,20 @@ local function update_spell_icons(loadout, effects)
         swc.core.setup_action_bar_needed = false;
     end
 
+    --NOTE: sometimes the Action buttons 1-12 haven't been updated
+    --      to reflect the new action id's for forms that change the action bar
+    --      Schedule for this to be executed the next update as well to catch late updates
     if swc.core.special_action_bar_changed then
         on_special_action_bar_changed();
-        swc.core.special_action_bar_changed = false;
+        special_action_bar_changed_id = special_action_bar_changed_id + 1;
+        if special_action_bar_changed_id%2 == 0 then
+            swc.core.special_action_bar_changed = false;
+        end
     end
     -- update spell book icons
+    local current_tab = SpellBookFrame.selectedSkillLine;
+    local num_spells_in_tab = select(4, GetSpellTabInfo(current_tab));
+    local page, page_max = SpellBook_GetCurrentPage(current_tab);
     if SpellBookFrame:IsShown() then
 
         for k, v in pairs(spell_book_frames) do
@@ -620,7 +640,13 @@ local function update_spell_icons(loadout, effects)
                 local spell_rank_name = v.frame.SpellSubName:GetText();
                 local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
 
-                if v.frame:IsShown() and spells[id] then
+                local remaining_spells_in_page = 12;
+                if page == page_max then
+                    remaining_spells_in_page = num_spells_in_tab%12;
+                end
+                local rearranged_k = 1 + 5*(1-k%2) + (k-k%2)/2;
+
+                if v.frame:IsShown() and spells[id] and rearranged_k <= remaining_spells_in_page then
                     local spell_name = GetSpellInfo(id);
                     -- TODO: icon overlay not working for healing version checkbox
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then

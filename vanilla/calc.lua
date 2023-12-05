@@ -595,6 +595,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.cost = stats.cost - resource_refund;
+    stats.cost = math.max(stats.cost, 0);
 
     stats.coef = spell.coef;
     stats.ot_coef = spell.over_time_coef;
@@ -1042,7 +1043,7 @@ elseif class == "WARLOCK" then
         [spell_name_to_id["Shadow Bolt"]] = function(spell, info, loadout)
 
             if loadout.runes[rune_ids.shadow_bolt_volley] then
-                info.expectation = (1 + 0.8 + 0.8*0.8 + 0.8*0.8*0.8 + 0.8*0.8*0.8*0.8) * info.expectation_st;
+                info.expectation = 5 * info.expectation_st;
             end
         end,
     };

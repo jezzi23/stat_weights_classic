@@ -1460,7 +1460,7 @@ local function create_spells()
                 lvl_req             = 0,
                 lvl_max             = 60,
                 lvl_outdated        = 60,
-                cost                = 0.0,
+                cost                = 0.08,
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.exception_coef, spell_flags.sod_rune),
                 school              = magic_school.frost,
                 coef                = 0.143,
@@ -6434,6 +6434,86 @@ local function create_spells()
                 lvl_outdated        = 61,
 				lvl_scaling			= 0.0,
             },
+            -- drain life (master channeler)
+            [403677] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 10,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                cost                = 110,
+                lvl_req             = 14,
+                lvl_max             = 19,
+                lvl_outdated        = 21,
+                flags               = bit.bor(spell_flags.hybrid, spell_flags.cd),
+                school              = magic_school.shadow,
+                coef                = 0.0,
+                over_time_coef      = 0.1430,
+				lvl_scaling			= 0.0,
+				base_id_overwrite	= 403677,
+            },
+            [403685] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 17,
+                rank                = 2,
+                cost                = 170,
+                lvl_req             = 22,
+                lvl_max             = 27,
+                lvl_outdated        = 29,
+				lvl_scaling			= 0.0,
+				base_id_overwrite	= 403677,
+            },
+            [403686] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 29,
+                rank                = 3,
+                cost                = 270,
+                lvl_req             = 30,
+                lvl_max             = 35,
+                lvl_outdated        = 37,
+				lvl_scaling			= 0.0,
+				base_id_overwrite	= 403677,
+            },
+            [403687] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 41,
+                rank                = 4,
+                cost                = 370,
+                lvl_req             = 38,
+                lvl_max             = 43,
+                lvl_outdated        = 45,
+				lvl_scaling			= 0.0,
+				base_id_overwrite	= 403677,
+            },
+            [403688] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 55,
+                rank                = 5,
+                cost                = 480,
+                lvl_req             = 46,
+                lvl_max             = 51,
+                lvl_outdated        = 53,
+				lvl_scaling			= 0.0,
+				base_id_overwrite	= 403677,
+            },
+            [403689] = {
+                base_min            = 0.0,
+                base_max            = 0.0, 
+                over_time           = 71,
+                rank                = 6,
+                cost                = 600,
+                lvl_req             = 54,
+                lvl_max             = 59,
+                lvl_outdated        = 61,
+				lvl_scaling			= 0.0,
+				base_id_overwrite	= 403677,
+            },
             -- drain soul
             [1120] = {
                 base_min            = 0.0,
@@ -7574,15 +7654,22 @@ for k, v in pairs(spells) do
        spells[k] = nil; 
     else
         local rank1_of_spell = nil;
+        local rank1_of_spell_overwritten = nil;
         local spell_data = nil;
         local name, _, _, _, _, _, _ ,_  = GetSpellInfo(k)
         -- rank1 contains some general fields that we write to all ranks
         if not name and bit.band(v.flags, spell_flags.sod_rune) ~= 0 then
             rank1_of_spell = k;
+            rank1_of_spell_overwritten = k;
             spell_data = v;
         else
-            rank1_of_spell = localized_spell_names_to_id[name]
-            spell_data = spells[rank1_of_spell];
+            rank1_of_spell = localized_spell_names_to_id[name];
+            if spells[k].base_id_overwrite then
+                rank1_of_spell_overwritten = spells[k].base_id_overwrite;
+            else
+                rank1_of_spell_overwritten = rank1_of_spell;
+            end
+            spell_data = spells[rank1_of_spell_overwritten];
         end
 
         if not spell_data or not rank1_of_spell then

@@ -233,7 +233,12 @@ local function create_runes()
             },
             [rune_ids.chaos_bolt            ] = { wowhead_id = "56mn"},
             [rune_ids.master_channeler      ] = { wowhead_id = "56mv"},
-            [rune_ids.shadow_bolt_volley    ] = { wowhead_id = "a6my"},
+            [rune_ids.shadow_bolt_volley    ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Bolt"], -0.2, 0.0);
+                end,
+                wowhead_id = "a6my"
+            },
             [rune_ids.metamorphosis         ] = { wowhead_id = "a6n0"},
             [rune_ids.haunt                 ] = { wowhead_id = "a6mk"},
             [rune_ids.incinerate            ] = { wowhead_id = "76sb"},
