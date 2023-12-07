@@ -545,7 +545,7 @@ local overlay_label_handler = {
         frame_overlay:SetText(string.format("%d", stats.cost));
     end,
     [icon_stat_display.avg_cast] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.2f", stats.cast_time));
+        frame_overlay:SetText(string.format("%.1f", stats.cast_time));
     end,
     [icon_stat_display.hit] = function(frame_overlay, spell, spell_effect, stats)
          if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then

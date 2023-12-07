@@ -49,7 +49,7 @@ local end_tooltip_section                       = swc.tooltip.end_tooltip_sectio
 
 local stats = {};
 
-local function tooltip_spell_info(tooltip, spell, loadout, effects)
+local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_tooltip_on)
 
     -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
     if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
@@ -507,15 +507,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
                             255.0/256, 128.0/256, 0);
         end
     end
-    if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
+    if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() and not repeated_tooltip_on then
 
-        if stats.cast_time_nogcd ~= stats.cast_time then
+        if stats.cast_time_nogcd ~= stats.cast_time and not repeated_tooltip_on then
             tooltip:AddLine(string.format("Expected Cast Time: 1.5sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
         else
             tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
         end
     end
-    if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
+    if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() and not repeated_tooltip_on then
         if loadout.lvl ~= UnitLevel("player") and bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
             tooltip:AddLine(string.format("NOTE: Mana cost at custom lvl is inaccurate; roughly estimated",stats.cost), 1.0, 0.0, 0.0);
         end
@@ -524,7 +524,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
     if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
         tooltip:AddLine(effect_per_cost..": "..string.format("%.2f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
     end
-    if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
+    if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() and not repeated_tooltip_on then
         tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
     end
 
@@ -652,7 +652,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects)
 
     if spell.healing_version then
         -- used for holy nova
-        tooltip_spell_info(tooltip, spell.healing_version, loadout, effects);
+        tooltip_spell_info(tooltip, spell.healing_version, loadout, effects, true);
     end
 end
 
