@@ -35,7 +35,9 @@ local class_to_int_to_crit_scaling = {
 };
 
 local function int_to_crit_rating(int, lvl)
-    return int/class_to_int_to_crit_scaling[class];
+    local lvl_60_ratio = int/class_to_int_to_crit_scaling[class];
+
+    return 60 * lvl_60_ratio/lvl;
 end
 
 local function effects_diff(loadout, effects, diff)

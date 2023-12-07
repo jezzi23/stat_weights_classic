@@ -429,8 +429,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 resource_refund = resource_refund + stats.hit*stats.crit * mana_refund;
             end
 
-            if loadout.runes[rune_ids.burnout] then
-                resource_refund = resource_refund - stats.crit * base_mana_pool(loadout.lvl);
+            if loadout.runes[rune_ids.burnout] and spell.base_min ~= 0 then
+                resource_refund = resource_refund - stats.crit * 0.01 * base_mana_pool(loadout.lvl);
             end
 
             if loadout.runes[rune_ids.enlightment] then

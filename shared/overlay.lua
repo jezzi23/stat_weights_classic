@@ -35,7 +35,6 @@ local cast_until_oom                                = swc.calc.cast_until_oom;
 --------------------------------------------------------------------------------
 local overlay = {};
 
-
 local icon_stat_display = {
     normal                  = bit.lshift(1,1),
     crit                    = bit.lshift(1,2),
@@ -59,6 +58,8 @@ local action_id_by_name = {};
 local action_id_frames = {};
 local spell_book_frames = {};
 local action_bar_addon_name = "Default";
+
+local mana_cost_overlay, cast_speed_overlay;
 
 local function init_frame_overlay(frame_info)
 
@@ -108,6 +109,52 @@ local function action_id_of_button(button)
     end
 end
 
+local function spell_cost(spell_id)
+
+    local costs = GetSpellPowerCost(spell_id);
+    if costs then
+        local cost_table = costs[1];
+        if cost_table then
+            if cost_table.cost then
+                return cost_table.cost;
+            else
+                return nil;
+            end
+        end
+    end
+end
+
+local function spell_cast_time(spell_id)
+
+    local cast_time = select(4, GetSpellInfo(spell_id));
+    if cast_time  then
+        if cast_time == 0 then
+            cast_time = nil;
+        else
+            cast_time = cast_time/1000;
+        end
+    end
+    return cast_time;
+end
+
+local function spell_id_of_action(action_id)
+
+    local spell_id = 0;
+    local action_type, id, _ = GetActionInfo(action_id);
+    if action_type == "macro" then
+         spell_id, _ = GetMacroSpell(id);
+    elseif action_type == "spell" then
+         spell_id = id;
+    end
+    if not spells[spell_id] and
+        (mana_cost_overlay and not spell_cost(spell_id)) and
+        (cast_speed_overlay and not spell_cast_time(spell_id)) then
+        spell_id = 0;
+    end
+
+    return spell_id;
+end
+
 local function try_register_frame(frame_name)
     -- creates it if it suddenly exists but not registered
     local frame = getfenv()[frame_name];
@@ -118,22 +165,36 @@ local function try_register_frame(frame_name)
             local action_type, id, _ = GetActionInfo(action_id);
 
             if action_id then
-                local spell_id = 0;
-                local action_type, id, _ = GetActionInfo(action_id);
-                if action_type == "macro" then
-                     spell_id, _ = GetMacroSpell(id);
-                elseif action_type == "spell" then
-                     spell_id = id;
-                end
-                if not spells[spell_id] then
-                    spell_id = 0;
-                else
+
+                local spell_id = spell_id_of_action(action_id);
+                if spell_id ~= 0 then
                     active_overlays[action_id] = spell_id;
                 end
             end
             action_id_frames[action_id].spell_id = spell_id;
             action_id_frames[action_id].frame = frame; 
             init_frame_overlay(action_id_frames[action_id]);
+        end
+    end
+end
+
+local function rescan_action_frames()
+
+    for action_id, v in pairs(action_bar_frame_names) do
+
+        try_register_frame(v); 
+
+        local frame = getfenv()[v];
+        if frame then
+
+            local spell_id = spell_id_of_action(action_id);
+            
+            if spell_id ~= 0 then
+                active_overlays[action_id] = spell_id;
+            end
+
+            action_id_frames[action_id].frame = frame; 
+            action_id_frames[action_id].spell_id = spell_id;
         end
     end
 end
@@ -236,18 +297,9 @@ local function gather_spell_icons()
         local frame = getfenv()[v];
         if frame then
 
-            local spell_id = 0;
-            local action_type, id, _ = GetActionInfo(action_id);
-            if action_type == "macro" then
-                 spell_id, _ = GetMacroSpell(id);
-            elseif action_type == "spell" then
-                 spell_id = id;
-            else
-                spell_id = 0;
-            end
-            if not spells[spell_id] then
-                spell_id = 0;
-            else
+            local spell_id = spell_id_of_action(action_id);
+
+            if spell_id ~= 0 then
                 active_overlays[action_id] = spell_id;
             end
 
@@ -264,8 +316,7 @@ local function reassign_overlay_icon_spell(action_id, spell_id, action_button_fr
 
     if action_id_frames[action_id].frame then
 
-        if not spells[spell_id] then
-            spell_id = 0;
+        if spell_id == 0 then
             for i = 1, 3 do
                 action_id_frames[action_id].overlay_frames[i]:SetText("");
                 action_id_frames[action_id].overlay_frames[i]:Hide();
@@ -285,14 +336,8 @@ local function reassign_overlay_icon(action_id)
         return;
     end
     try_register_frame(action_bar_frame_names[action_id]); 
-    local action_type, id, _ = GetActionInfo(action_id);
-    if action_type == "macro" then
-        spell_id, _ = GetMacroSpell(id);
-    elseif action_type == "spell" then
-         spell_id = id;
-    else
-        spell_id = 0;
-    end
+
+    local spell_id = spell_id_of_action(action_id);
 
     -- NOTE: any action_id > 12 we might have mirrored action ids
     -- with Bar 1 due to shapeshifts, and forms taking over Bar 1
@@ -324,23 +369,13 @@ local function on_special_action_bar_changed()
             local action_id = action_id_of_button(frame);
 
             local spell_id = 0;
-            local action_type, id;
             if action_id then
-                action_type, id, _ = GetActionInfo(action_id);
-            else
-                action_type = "";
-                id = 0;
+                spell_id = spell_id_of_action(action_id);
             end
-            if action_type == "macro" then
-                 spell_id, _ = GetMacroSpell(id);
-            elseif action_type == "spell" then
-                 spell_id = id;
-            end
-            if spells[spell_id] then
+            if spell_id ~= 0 then
                 active_overlays[i] = spell_id;
             end
 
-            --reassign_overlay_icon_spell(action_id, spell_id, action_id_frames[action_id].frame);
             reassign_overlay_icon_spell(i, spell_id, frame);
         end
     end
@@ -348,6 +383,9 @@ local function on_special_action_bar_changed()
 end
 
 local function update_icon_overlay_settings()
+
+    mana_cost_overlay = sw_frame.settings_frame.icon_avg_cost:GetChecked();
+    cast_speed_overlay = sw_frame.settings_frame.icon_avg_cast:GetChecked();
 
     sw_frame.settings_frame.icon_overlay = {};
     
@@ -466,6 +504,9 @@ local function update_icon_overlay_settings()
             end
         end
     end
+
+    active_overlays = {};
+    rescan_action_frames();
 end
 
 local function setup_action_bars()
@@ -622,6 +663,7 @@ local function update_spell_icons(loadout, effects)
             swc.core.special_action_bar_changed = false;
         end
     end
+
     -- update spell book icons
     local current_tab = SpellBookFrame.selectedSkillLine;
     local num_spells_in_tab = select(4, GetSpellTabInfo(current_tab));
@@ -671,7 +713,29 @@ local function update_spell_icons(loadout, effects)
                 v.overlay_frames[i]:Hide();
             end
 
-            if id ~= 0 and v.frame:IsShown() then
+
+            if not spells[id] then
+
+                local overlay_slot = 3;
+                if mana_cost_overlay then
+                    local cost = spell_cost(id);
+                    if cost then
+                        v.overlay_frames[overlay_slot]:SetText(tostring(cost));
+                        v.overlay_frames[overlay_slot]:SetTextColor(0.0, 1.0, 1.0); 
+                        v.overlay_frames[overlay_slot]:Show(); 
+                    end
+                    overlay_slot = 1;
+                end
+                if cast_speed_overlay then
+                    local cast_time = spell_cast_time(id);
+                    if cast_time then
+                        v.overlay_frames[overlay_slot]:SetText(string.format("%.2f", cast_time));
+                        v.overlay_frames[overlay_slot]:SetTextColor(215/256, 83/256, 234/256); 
+                        v.overlay_frames[overlay_slot]:Show(); 
+                    end
+                end
+
+            elseif id ~= 0 and v.frame:IsShown() then
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
                     update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);

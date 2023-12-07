@@ -565,7 +565,7 @@ local buffs_predefined = {
             
             local _, _, _, enchant_id = GetWeaponEnchantInfo();
             if enchant_id ~= 2628 then 
-                effects.raw.spell_dmg = effects.raw.spell_dmg + 125;
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 36;
                 for i = 2, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01;
                 end
@@ -574,6 +574,7 @@ local buffs_predefined = {
         filter = buff_filters.caster,
         category = buff_category.consumes,
         tooltip = "36 spell damage and 1% crit",
+        icon_id = GetItemIcon(20749)
     },
     --  brilliant mana oil
     [25123] = {
@@ -588,7 +589,7 @@ local buffs_predefined = {
         end,
         filter = buff_filters.caster,
         category = buff_category.consumes,
-        tooltip = "12 mp5 and 25 healing power",
+        tooltip = "+12 mp5 and 25 healing power",
         icon_id = GetItemIcon(20748)
     },
     -- demonic sacrifice imp
@@ -758,6 +759,25 @@ local buffs_predefined = {
         filter = buff_filters.mage,
         category = buff_category.class,
         tooltip = "50% reduced fire/frost spell damage",
+    },
+    -- blackfathom mana oil
+    [430585] = {
+        apply = function(loadout, effects, buff, inactive)
+            
+            local _, _, _, enchant_id = GetWeaponEnchantInfo();
+            if enchant_id ~= 7099 then 
+                effects.raw.mp5 = effects.raw.mp5 + 12;
+                if inactive then
+                    for i = 2, 7 do
+                        effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.02;
+                    end
+                end
+            end
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.consumes,
+        tooltip = "+12 mp5 and 2% spell hit",
+        icon_id = GetItemIcon(430409)
     },
 };
 
