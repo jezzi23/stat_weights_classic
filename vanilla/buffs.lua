@@ -704,7 +704,7 @@ local buffs_predefined = {
     -- metamorphosis
     [403789] = {
         apply = function(loadout, effects, buff)
-            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Life Tap"], 1.0, 0.0);    
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 1.0, 0.0);    
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,

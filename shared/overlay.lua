@@ -201,6 +201,7 @@ end
 
 local function gather_spell_icons()
 
+    active_overlays = {};
 
     -- gather spell book icons
     if false then -- check for some common addons if they overrite spellbook frames
@@ -573,7 +574,7 @@ local overlay_label_handler = {
     end,
 };
 
-local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects)
+local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, assume_single_target)
 
     if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
 
@@ -615,7 +616,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
         spell_cache[spell_id].seq = swc.core.sequence_counter;
         stats_for_spell(stats, spell, loadout, effects);
-        spell_info(spell_effect, spell, stats, loadout, effects);
+        spell_info(spell_effect, spell, stats, loadout, effects, assume_single_target);
         cast_until_oom(spell_effect, stats, loadout, effects);
     end
 
@@ -664,6 +665,8 @@ local function update_spell_icons(loadout, effects)
         end
     end
 
+    local assume_single_target = sw_frame.settings_frame.icon_show_single_target_only:GetChecked();
+
     -- update spell book icons
     local current_tab = SpellBookFrame.selectedSkillLine;
     local num_spells_in_tab = select(4, GetSpellTabInfo(current_tab));
@@ -692,9 +695,9 @@ local function update_spell_icons(loadout, effects)
                     local spell_name = GetSpellInfo(id);
                     -- TODO: icon overlay not working for healing version checkbox
                     if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);
+                        update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, assume_single_target);
                     else
-                        update_spell_icon_frame(v, spells[id], id, loadout, effects);
+                        update_spell_icon_frame(v, spells[id], id, loadout, effects, assume_single_target);
                     end
                 end
             end
@@ -738,9 +741,9 @@ local function update_spell_icons(loadout, effects)
             elseif id ~= 0 and v.frame:IsShown() then
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                    update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects);
+                    update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, assume_single_target);
                 else
-                    update_spell_icon_frame(v, spells[id], id, loadout, effects);
+                    update_spell_icon_frame(v, spells[id], id, loadout, effects, assume_single_target);
                 end
 
             end

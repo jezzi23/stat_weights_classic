@@ -67,7 +67,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     stats_for_spell(stats, spell, loadout, effects); 
-    local eval = evaluate_spell(spell, stats, loadout, effects);
+    local eval = evaluate_spell(spell, stats, loadout, effects, IsAltKeyDown());
 
     local effect = "";
     local effect_per_sec = "";
@@ -93,7 +93,19 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     begin_tooltip_section(tooltip, spell);
 
-    tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
+    if tooltip == GameTooltip then
+        tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
+        if sw_frame.stat_comparison_frame:IsShown() and sw_frame:IsShown() then
+            tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
+        end
+    else
+        print("Updating snd tooltip");
+        tooltip:AddLine("BEFORE STAT CHANGES", 1.0, 0.0, 0.0);
+        if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
+            print("cancelled");
+            return;
+        end
+    end
 
     local clvl_specified = "";
 
@@ -462,6 +474,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             local aoe_ratio = eval.spell.expectation/eval.spell.expectation_st;
             tooltip:AddLine("Total "..effect..string.format(": %.1f (%.2fx effect)", eval.spell.expectation, aoe_ratio),
                             255.0/256, 128.0/256, 0);
+            tooltip:AddLine("Hold ALT key to evaluate for 1.0x instead", 1.0, 1.0, 1.0);
         else
             tooltip:AddLine("Expected "..effect..string.format(": %.1f ",eval.spell.expectation),
                             255.0/256, 128.0/256, 0);

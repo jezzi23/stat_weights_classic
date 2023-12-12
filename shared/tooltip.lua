@@ -64,7 +64,7 @@ end
 
 local function begin_tooltip_section(tooltip, spell)
 
-    if sw_frame.settings_frame.clear_original_tooltip then
+    if sw_frame.settings_frame.clear_original_tooltip or tooltip ~= GameTooltip then
         tooltip:ClearLines();
         local lname = GetSpellInfo(spell.base_id);
         if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
@@ -73,7 +73,6 @@ local function begin_tooltip_section(tooltip, spell)
             tooltip:AddLine(lname, 1.0, 1.0, 1.0);
         end
     end
-    --tooltip:AddLine("Stat Weights", 1.0, 153.0/255, 102.0/255);
 end
 local function end_tooltip_section(tooltip)
     tooltip:Show();
@@ -81,6 +80,23 @@ end
 
 local spell_jump_itr = pairs(spells);
 local spell_jump_key = spell_jump_itr(spells);
+
+
+--DELETEME tooltip testing
+CreateFrame( "GameTooltip", "swc_stat_calc_tooltip", nil, "GameTooltipTemplate" );
+swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT" );
+--swc_stat_calc_tooltip:AddFontStrings(
+--    swc_stat_calc_tooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
+--    swc_stat_calc_tooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText")
+--);
+--
+--GameTooltip:RegisterEvent("OnHide");
+
+--end);
+GameTooltip:SetScript("OnHide", function()
+    swc_stat_calc_tooltip:Hide();
+
+end);
 
 local function append_tooltip_spell_info(is_fake)
 
@@ -119,6 +135,9 @@ local function append_tooltip_spell_info(is_fake)
         local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
         swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed);
 
+        swc_stat_calc_tooltip:ClearLines();
+        swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT", 0, -select(2, swc_stat_calc_tooltip:GetSize()));
+        swc.tooltip.tooltip_spell_info(swc_stat_calc_tooltip, spell, loadout, effects);
     end
 end
 
@@ -156,6 +175,13 @@ local function update_tooltip(tooltip)
         elseif id and spells[id] then
             tooltip:ClearLines();
             tooltip:SetSpellByID(id);
+
+            --DELETEME
+            --if sw_frame.stat_comparison_frame:IsShown() then
+            --    swc_stat_calc_tooltip:ClearLines();
+            --    swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_PRESERVE" );
+            --    swc_stat_calc_tooltip:SetSpellByID(id);
+            --end
         end
     end
 end

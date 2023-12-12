@@ -702,7 +702,7 @@ local function create_sw_gui_settings_frame()
         update_icon_overlay_settings();
     end;
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 15;
     sw_frame.settings_frame.icon_normal_effect = 
         create_sw_checkbox("sw_icon_normal_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                            "Normal effect", icon_checkbox_func);
@@ -784,7 +784,11 @@ local function create_sw_gui_settings_frame()
         
     end);
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 10;
+    sw_frame.settings_frame.icon_show_single_target_only = 
+        create_sw_checkbox("sw_icon_show_single_target_only", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Show single target only", nil);  
+
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset);
@@ -849,24 +853,18 @@ local function create_sw_gui_settings_frame()
                 local spell_name = v.frame.SpellName:GetText();
                 local spell_rank_name = v.frame.SpellSubName:GetText();
                 local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
-                if spells[id] then
-                    for i = 1, 3 do
-                        v.overlay_frames[i]:SetFont(
-                            icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
-                    end
+                for i = 1, 3 do
+                    v.overlay_frames[i]:SetFont(
+                        icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
                 end
             end
         end
         for k, v in pairs(swc.overlay.action_id_frames) do
-            if v.frame and v.frame:IsShown() then
-                local id = v.spell_id;
-                if spells[id] then
-                    for i = 1, 3 do
-                        v.overlay_frames[i]:SetFont(
-                            icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
-                    end
+            if v.frame then
+                for i = 1, 3 do
+                    v.overlay_frames[i]:SetFont(
+                        icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
                 end
-
             end
         end
     end);
@@ -964,10 +962,14 @@ local function create_sw_gui_settings_frame()
         sw_frame.settings_frame.icon_old_rank_warning:SetChecked(true);
     end
 
+    if __sw__persistent_data_per_char.settings.icon_show_single_target_only then
+        sw_frame.settings_frame.icon_show_single_target_only:SetChecked(true);
+    end
+
     sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetText(""..sw_snapshot_loadout_update_freq);
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
     sw_frame.settings_frame.tooltip_settings_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.tooltip_settings_label:SetFontObject(font);
@@ -975,7 +977,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.tooltip_settings_label:SetText("Ability Tooltip Display Options");
     sw_frame.settings_frame.tooltip_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 15;
 
     -- tooltip options
     sw_frame.settings_frame.tooltip_num_checked = 0;
@@ -1109,7 +1111,7 @@ local function create_sw_gui_settings_frame()
             sw_frame.settings_frame.tooltip_num_checked = sw_frame.settings_frame.tooltip_num_checked + 1;
         end
     end;
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 25;
     
     sw_frame.settings_frame.tooltip_settings_label_misc = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.tooltip_settings_label_misc:SetFontObject(font);
@@ -1117,7 +1119,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.tooltip_settings_label_misc:SetText("Miscellaneous Settings");
     sw_frame.settings_frame.tooltip_settings_label_misc:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 15;
     sw_frame.settings_frame.libstub_icon_checkbox = 
         create_sw_checkbox("sw_settings_show_minimap_button", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                            "Minimap Icon", function(self) 
@@ -1208,8 +1210,8 @@ local function create_sw_gui_settings_frame()
     if swc.core.expansion_loaded ~= swc.core.expansions.vanilla then
         sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
         sw_frame.settings_frame.tmp_tooltip_overwrite_id:Hide();
+        sw_frame.settings_frame.icon_show_single_target_only:Hide();
     end
-
 end
 
 local function create_sw_gui_stat_comparison_frame()

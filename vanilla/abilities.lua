@@ -2734,7 +2734,7 @@ local function create_spells()
                 lvl_req             = 0,
                 lvl_max             = 60,
                 lvl_outdated        = 60,
-                cost                = 0.21,
+                cost                = 0.56,
                 flags               = bit.bor(spell_flags.aoe, spell_flags.heal, spell_flags.cd, spell_flags.sod_rune, spell_flags.exception_coef, spell_flags.base_mana_cost),
                 school              = magic_school.nature,
                 coef                = 0.0,
@@ -5594,9 +5594,9 @@ local function create_spells()
             },
             -- healing rain
             [415236] = {
-                base_min            = 29.888200,
-                base_max            = 29.888200,
-                over_time           = 0.0,
+                base_min            = 0.0,
+                base_max            = 0.0,
+                over_time           = 29.888200,
                 over_time_tick_freq = 1,
                 over_time_duration  = 10.0, -- duration not confirmed
                 cast_time           = 2.0,

@@ -612,7 +612,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     spell = spells[original_spell_id];
 end
 
-local function spell_info(info, spell, stats, loadout, effects)
+local function spell_info(info, spell, stats, loadout, effects, assume_single_effect)
 
     -- deal with aliasing spells
     local original_spell_id = spell.base_id;
@@ -625,6 +625,10 @@ local function spell_info(info, spell, stats, loadout, effects)
     local base_ot_tick_max = spell.over_time;
     if bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
         base_ot_tick_max = spell.over_time_max;
+    end
+    local num_unbounded_targets = loadout.unbounded_aoe_targets;
+    if assume_single_effect then
+        num_unbounded_targets = 1;
     end
 
     -- level scaling
@@ -717,12 +721,12 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.expectation_direct_st = 0.5 * (info.min + info.max);
     info.expectation_direct = info.expectation_direct_st;
     if bit.band(spell.flags, spell_flags.unbounded_aoe_direct) ~= 0 then
-        info.expectation_direct = info.expectation_direct_st * loadout.unbounded_aoe_targets;
+        info.expectation_direct = info.expectation_direct_st * num_unbounded_targets;
     end
 
     info.expected_ot = info.expected_ot_st;
     if bit.band(spell.flags, spell_flags.unbounded_aoe_ot) ~= 0 then
-        info.expected_ot = info.expected_ot_st * loadout.unbounded_aoe_targets;
+        info.expected_ot = info.expected_ot_st * num_unbounded_targets;
     end
 
     info.expectation_st = (info.expectation_direct_st + info.expected_ot_st) * (1 - stats.target_avg_resi);
@@ -758,6 +762,10 @@ local function spell_info(info, spell, stats, loadout, effects)
     if loadout.beacon then
         -- holy light glyph may have been been applied to expectation
         info.expectation = info.expectation + info.expectation_st;
+    end
+
+    if info.expectation < info.expectation_st or assume_single_effect then
+        info.expectation = info.expectation_st;
     end
 
     info.effect_per_sec = info.expectation/stats.cast_time;
@@ -864,13 +872,14 @@ if class == "SHAMAN" then
     special_abilities = {
         [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
 
+            if loadout.runes[rune_ids.overload] then
+                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+            end
+
             if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
                 info.expectation = (1 + 1.3*0.5 + 1.3*1.3*0.5*0.5) * info.expectation_st;
             else
                 info.expectation = (1 + 0.5 + 0.5*0.5) * info.expectation_st;
-            end
-            if loadout.runes[rune_ids.overload] then
-                info.expectation = (1.0 + 0.33*0.5)*info.expectation;
             end
         end,
         [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
@@ -878,22 +887,24 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
 
+            if loadout.runes[rune_ids.overload] then
+                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+            end
+
             if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
                 info.expectation = (1 + 0.75 + 0.75*0.75) * info.expectation_st;
             else
                 info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
             end
-            -- TODO: does overload proc of first hit or on bounces two?
-            if loadout.runes[rune_ids.overload] then
-                info.expectation = (1.0 + 0.33*0.5)*info.expectation;
-            end
         end,
         [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
+
+            if loadout.runes[rune_ids.overload] then
+                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+            end
+
             if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
                 info.expectation = (1 + 0.2 + 0.2*0.2) * info.expectation_st;
-            end
-            if loadout.runes[rune_ids.overload] then
-                info.expectation = (1.0 + 0.33*0.5)*info.expectation;
             end
         end,
         [spell_name_to_id["Healing Stream Totem"]] = function(spell, info, loadout, stats, effects)
@@ -904,7 +915,7 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout, stats, effects)
             if loadout.runes[rune_ids.overload] then
-                info.expectation = (1.0 + 0.33*0.5)*info.expectation_st;
+                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
             end
         end,
         [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats, effects)
@@ -919,6 +930,9 @@ elseif class == "PRIEST" then
             info.expectation = 3 * info.expectation_st;
         end,
         [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
+            info.expectation = 5 * info.expectation_st;
+        end,
+        [spell_name_to_id["Circle of Healing"]] = function(spell, info, loadout, stats, effects)
             info.expectation = 5 * info.expectation_st;
         end,
         [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout, stats, effects)
@@ -1069,7 +1083,7 @@ else
 end
 
 
-local function evaluate_spell(spell, stats, loadout, effects)
+local function evaluate_spell(spell, stats, loadout, effects, assume_single_effect)
 
     local spell_effect = {};
     local spell_effect_extra_1sp = {};
@@ -1080,7 +1094,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     local spell_effect_extra_1spirit = {};
     local spell_effect_extra_1mp5 = {};
 
-    spell_info(spell_effect, spell, stats, loadout, effects);
+    spell_info(spell_effect, spell, stats, loadout, effects, assume_single_effect);
     cast_until_oom(spell_effect, stats, loadout, effects, true);
 
     local effects_diffed = deep_table_copy(effects);
@@ -1090,7 +1104,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.sp = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1sp, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1sp, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1sp, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.sp = 0;
@@ -1098,7 +1112,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.crit_rating = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1crit, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1crit, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1crit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.crit_rating = 0;
@@ -1106,7 +1120,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.hit_rating = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1hit, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1hit, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1hit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.hit_rating = 0;
@@ -1114,7 +1128,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.spell_pen = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1pen, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1pen, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1pen, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.spell_pen = 0;
@@ -1122,7 +1136,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.stats[stat.int] = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1int, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1int, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1int, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.stats[stat.int] = 0;
@@ -1130,7 +1144,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.stats[stat.spirit] = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1spirit, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1spirit, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1spirit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.stats[stat.spirit] = 0;
@@ -1138,7 +1152,7 @@ local function evaluate_spell(spell, stats, loadout, effects)
     diff.mp5 = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1mp5, spell, spell_stats_diffed, loadout, effects_diffed);
+    spell_info(spell_effect_extra_1mp5, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
     cast_until_oom(spell_effect_extra_1mp5, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.mp5 = 0;
