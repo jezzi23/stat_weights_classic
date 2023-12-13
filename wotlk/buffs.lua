@@ -1767,62 +1767,55 @@ end
 
 local function apply_buffs(loadout, effects)
 
-    -- TODO: some subtle things need to be done here when attributes and percentage mods
-    --       go together through change
-    --local stats_diff_loadout = empty_loadout();
+    for k, v in pairs(loadout.dynamic_buffs["player"]) do
+        if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
+            buffs[k].apply(loadout, effects, v); 
+        end
+    end
+    local target_buffs_applied = {};
+    for k, v in pairs(loadout.dynamic_buffs[loadout.friendly_towards]) do
+        if target_buffs[k] and bit.band(buff_filters.friendly, target_buffs[k].filter) ~= 0 then
+            target_buffs[k].apply(loadout, effects, v); 
+            target_buffs_applied[k] = true;
+        end
+    end
+    if loadout.hostile_towards then
+        for k, v in pairs(loadout.dynamic_buffs[loadout.hostile_towards]) do
+            if target_buffs[k] and bit.band(buff_filters.hostile, target_buffs[k].filter) ~= 0 then
+                target_buffs[k].apply(loadout, effects, v); 
+                target_buffs_applied[k] = true;
+            end
+        end
+    end
+
+    local beacon_duration = 60;
+    if loadout.glyphs[63218] then
+        beacon_duration = 90;
+    end
+ 
+    if class == "PALADIN" and loadout.talents_table:pts(1, 26) and swc.core.beacon_snapshot_time + beacon_duration >= swc.core.addon_running_time then
+        loadout.beacon = true;
+    else
+        loadout.beacon = nil
+    end
+
 
     if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
         for k, v in pairs(loadout.buffs) do
-            -- if dynamically present, some type of buffs must be removed
-            -- as they were already counted for, things like sp, crit
-            if loadout.dynamic_buffs["player"][k] then
-                buffs[k].apply(loadout, effects, loadout.dynamic_buffs["player"][k]);
-            end
-        end
-        -- active buffs must be done first in order to deal with non stackable 
-        -- raid buffs, e.g. moonkin aura and shaman crit buff
-        for k, v in pairs(loadout.buffs) do
-            if not loadout.dynamic_buffs["player"][k] then
+            if not loadout.dynamic_buffs["player"][k] and buffs[k] then
                 buffs[k].apply(loadout, effects, buffs[k], true);
             end
         end
         for k, v in pairs(loadout.target_buffs) do
-            target_buffs[k].apply(loadout, effects, target_buffs[k]);
-        end
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) ~= 0 and loadout.target_buffs["Beacon of Light"] then
-            loadout.beacon = true;
-        else
-            loadout.beacon = nil
-        end
-    else
-        for k, v in pairs(loadout.dynamic_buffs["player"]) do
-            if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
-                buffs[k].apply(loadout, effects, v); 
-            end
-        end
-        for k, v in pairs(loadout.dynamic_buffs[loadout.friendly_towards]) do
-            if target_buffs[k] and bit.band(buff_filters.friendly, target_buffs[k].filter) ~= 0 then
-                target_buffs[k].apply(loadout, effects, v); 
-            end
-        end
-        if loadout.hostile_towards then
-            for k, v in pairs(loadout.dynamic_buffs[loadout.hostile_towards]) do
-                if target_buffs[k] and bit.band(buff_filters.hostile, target_buffs[k].filter) ~= 0 then
-                    target_buffs[k].apply(loadout, effects, v); 
-                end
+            if not target_buffs_applied[k] then
+                target_buffs[k].apply(loadout, effects, target_buffs[k], true);
             end
         end
 
-        local beacon_duration = 60;
-        if loadout.glyphs[63218] then
-            beacon_duration = 90;
-        end
- 
-        if class == "PALADIN" and loadout.talents_table:pts(1, 26) and swc.core.beacon_snapshot_time + beacon_duration >= swc.core.addon_running_time then
+        if class == "PALADIN" and loadout.talents_table:pts(1, 26) ~= 0 and loadout.target_buffs[GetSpellInfo(53563)] then
             loadout.beacon = true;
-        else
-            loadout.beacon = nil
         end
+    else
     end
 
     if swc.core.__sw__test_all_codepaths then

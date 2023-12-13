@@ -93,20 +93,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     begin_tooltip_section(tooltip, spell);
 
-    if tooltip == GameTooltip then
-        tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
-        if sw_frame.stat_comparison_frame:IsShown() and sw_frame:IsShown() then
-            tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
-        end
-    else
-        print("Updating snd tooltip");
-        tooltip:AddLine("BEFORE STAT CHANGES", 1.0, 0.0, 0.0);
-        if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
-            print("cancelled");
-            return;
-        end
-    end
-
     local clvl_specified = "";
 
     if sw_frame.settings_frame.tooltip_loadout_info:GetChecked() then
@@ -126,7 +112,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             138/256, 134/256, 125/256);
         end
     end
-    if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
+    if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() and not repeated_tooltip_on then
 
         local next_rank_str = "";
         local best_rank, highest_rank = best_rank_by_lvl(spell.base_id, loadout.lvl);
@@ -170,7 +156,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     local hit_str = string.format("(%.1f%% hit)", stats.hit*100);
     if stats.target_resi > 0 then
-        hit_str = string.format("(%.1f%% hit, %.1f%% resist)", stats.hit*100, stats.target_avg_resi*100);
+        hit_str = string.format("(%.1f%% hit||%.1f%% resist)", stats.hit*100, stats.target_avg_resi*100);
     end
     if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
         if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
@@ -280,8 +266,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     local effect_min = extra_crit_mod * min_crit_if_hit;
                     local effect_max = extra_crit_mod * max_crit_if_hit;
                     if eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
-                        tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d + %s %d-%d", 
+                        tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d + %s %d-%d", 
                                                       stats.crit*100, 
+                                                      stats.crit_mod,
                                                       math.floor(min_crit_if_hit), 
                                                       math.ceil(max_crit_if_hit),
                                                       effect_type_str,
@@ -290,8 +277,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                        252.0/255, 69.0/255, 3.0/255);
                     elseif eval.spell.min_crit_if_hit ~= 0 then
 
-                        tooltip:AddLine(string.format("Critical (%.2f%%): %d + %s %d", 
+                        tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d + %s %d", 
                                                       stats.crit*100, 
+                                                      stats.crit_mod,
                                                       math.floor(min_crit_if_hit), 
                                                       effect_type_str,
                                                       math.floor(effect_min)),
@@ -301,8 +289,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
                 elseif eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
 
-                    tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d", 
+                    tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d", 
                                                   stats.crit*100, 
+                                                  stats.crit_mod,
                                                   math.floor(eval.spell.min_crit_if_hit), 
                                                   math.ceil(eval.spell.max_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
@@ -350,12 +339,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     end
                 elseif eval.spell.min_crit_if_hit ~= 0 then
 
-                    tooltip:AddLine(string.format("Critical (%.2f%%): %d", 
+                    tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d", 
                                                   stats.crit*100, 
+                                                  stats.crit_mod,
                                                   math.floor(eval.spell.min_crit_if_hit)),
                                    252.0/255, 69.0/255, 3.0/255);
                 end
-
             end
         end
     end
@@ -441,8 +430,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
         if eval.spell.ot_if_crit ~= 0.0 and sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
             if bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                tooltip:AddLine(string.format("Critical (%.2f%%): %d-%d over %.2fs (%d-%d for %d ticks)",
+                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d over %.2fs (%d-%d for %d ticks)",
                                               stats.crit*100, 
+                                              stats.crit_mod,
                                               eval.spell.ot_if_crit, 
                                               eval.spell.ot_if_crit_max, 
                                               eval.spell.ot_duration, 
@@ -452,8 +442,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                            252.0/255, 69.0/255, 3.0/255);
                 
             else
-                tooltip:AddLine(string.format("Critical (%.2f%%): %d over %.2fs (%.1f for %d ticks)",
+                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d over %.2fs (%.1f for %d ticks)",
                                               stats.ot_crit*100, 
+                                              stats.crit_mod,
                                               eval.spell.ot_if_crit, 
                                               eval.spell.ot_duration, 
                                               eval.spell.ot_if_crit/eval.spell.ot_ticks,
@@ -522,8 +513,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() and not repeated_tooltip_on then
 
-        if stats.cast_time_nogcd ~= stats.cast_time and not repeated_tooltip_on then
-            tooltip:AddLine(string.format("Expected Cast Time: 1.5sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
+        if stats.cast_time_nogcd ~= stats.cast_time then
+            tooltip:AddLine(string.format("Expected Cast Time: 1.5 sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
         else
             tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
         end
@@ -543,7 +534,40 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and
             bit.band(spell.flags, spell_flags.cd) == 0 then
-    tooltip:AddLine(string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom));
+
+        tooltip:AddLine(string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom),
+                        232.0/255, 225.0/255, 32.0/255);
+        if loadout.mana ~= eval.spell.mana then
+            tooltip:AddLine(string.format("                                   casting from %d mana", eval.spell.mana),
+                            232.0/255, 225.0/255, 32.0/255);
+    
+        end
+    end
+    if sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
+        
+        if stats.coef > 0 then
+            tooltip:AddLine(string.format("Direct:    %.3f coef * %.3f mod * %d SP = %.1f",
+                                           stats.coef,
+                                           stats.spell_mod,
+                                           stats.spell_power,
+                                           stats.coef*stats.spell_mod*stats.spell_power
+                                          ),
+                            138/256, 134/256, 125/256);
+        end
+        if stats.ot_coef > 0 then
+            tooltip:AddLine(string.format("Periodic: %d ticks * %.3f coef * %.3f mod * %d SP",
+                                           eval.spell.ot_ticks,
+                                           stats.ot_coef,
+                                           stats.spell_ot_mod,
+                                           stats.spell_power_ot
+                                           ),
+                            138/256, 134/256, 125/256);
+            tooltip:AddLine(string.format("            = %d ticks * %.1f = %.1f",
+                                           eval.spell.ot_ticks,
+                                           stats.ot_coef*stats.spell_ot_mod*stats.spell_power_ot,
+                                           stats.ot_coef*stats.spell_ot_mod*stats.spell_power_ot*eval.spell.ot_ticks),
+                            138/256, 134/256, 125/256);
+        end
     end
 
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
@@ -625,15 +649,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
-
-    if sw_frame.settings_frame.tooltip_more_details:GetChecked() then
-        tooltip:AddLine(string.format("Spell power: %d direct / %d periodic", stats.spell_power, stats.spell_power_ot));
-        tooltip:AddLine(string.format("Critical modifier %.5f", stats.crit_mod));
-        tooltip:AddLine(string.format("Coefficient: %.3f direct / %.3f periodic", stats.coef, stats.ot_coef));
-        tooltip:AddLine(string.format("Effect modifier: %.3f direct / %.3f periodic / %.3f base", stats.spell_mod, stats.spell_ot_mod, stats.spell_mod_base));
-        tooltip:AddLine(string.format("Effective coefficient: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod, stats.ot_coef*stats.spell_ot_mod));
-        tooltip:AddLine(string.format("Spell power effect: %.3f direct / %.3f periodic", stats.coef*stats.spell_mod*stats.spell_power, stats.ot_coef*stats.spell_ot_mod*stats.spell_power_ot));
-    end
     -- debug tooltip stuff
     if swc.core.__sw__debug__ then
         tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);

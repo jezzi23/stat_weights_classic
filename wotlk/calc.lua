@@ -399,8 +399,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     elseif class == "DRUID" then
 
-        local pts = loadout.talents_table:pts(3, 25);
-        if pts ~= 0 and spell_name_to_id["Lifebloom"] then
+        local pts = loadout.talents_table:pts(3, 26);
+        if pts ~= 0 and spell.base_id == spell_name_to_id["Lifebloom"] then
             stats.gcd = stats.gcd - pts * 0.02;
         end
 
@@ -712,11 +712,14 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     stats.haste_mod = (1.0 + effects.raw.haste_mod) * (1.0 + haste_from_rating);
 
+    stats.cast_time_nogcd = stats.cast_time/stats.haste_mod;
     stats.cast_time = math.max(stats.cast_time/stats.haste_mod, stats.gcd);
 
     if effects.ability.cast_mod_reduce[spell.base_id] then
         -- final vanilla style reduction but also reduces gcd (rare)
         stats.cast_time = stats.cast_time * (1.0 - effects.ability.cast_mod_reduce[spell.base_id]);
+        stats.cast_time_nogcd = stats.cast_time;
+        stats.gcd = stats.gcd * (1.0 - effects.ability.cast_mod_reduce[spell.base_id]);
     end
 
     -- nature's grace
@@ -732,6 +735,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         local optimizable_cast_time = math.max(stats.cast_time - stats.gcd, 0);
         local effective_haste = math.min(optimizable_cast_time, 0.2*stats.gcd); -- [0;0.2*gcd]%
         
+        stats.cast_time_nogcd = stats.cast_time/(1.0 + effective_haste*uptime);
         stats.cast_time = math.max(stats.cast_time/(1.0 + effective_haste*uptime), stats.gcd);
     end
 
@@ -1085,7 +1089,7 @@ local function spell_info(info, spell, stats, loadout, effects)
     end
     stats.alias = nil;
 
-    if loadout.beacon then
+    if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
         -- holy light glyph may have been been applied to expectation
         info.expectation = info.expectation + info.expectation_st;
     end
@@ -1485,6 +1489,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     end
 
     local resource_loss_per_sec = spell_effect.cost_per_sec - mp1_casting;
+    spell_effect.mana = mana;
 
     if resource_loss_per_sec <= 0 then
         spell_effect.num_casts_until_oom = math.huge;

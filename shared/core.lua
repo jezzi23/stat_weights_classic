@@ -157,6 +157,7 @@ local event_dispatch = {
                 print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
             end
         end
+
     end,
     ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
         if not core.sw_addon_loaded then

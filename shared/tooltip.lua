@@ -40,13 +40,14 @@ local tooltip_stat_display = {
     effect_per_cost     = bit.lshift(1,7),
     cost_per_sec        = bit.lshift(1,8),
     stat_weights        = bit.lshift(1,9),
-    more_details        = bit.lshift(1,10),
+    more_details        = bit.lshift(1,10), -- not used anymore, was not default
     avg_cost            = bit.lshift(1,11),
     avg_cast            = bit.lshift(1,12),
     cast_until_oom      = bit.lshift(1,13),
     cast_and_tap        = bit.lshift(1,14),
     spell_rank          = bit.lshift(1,15),
-    loadout_info        = bit.lshift(1,16),
+    loadout_info        = bit.lshift(1,16), -- negate default
+    sp_effect_calc      = bit.lshift(1,17), -- negate default
 };
 
 local function sort_stat_weights(stat_weights, num_weights) 
@@ -73,6 +74,16 @@ local function begin_tooltip_section(tooltip, spell)
             tooltip:AddLine(lname, 1.0, 1.0, 1.0);
         end
     end
+
+    if tooltip == GameTooltip then
+        tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
+        if sw_frame.stat_comparison_frame:IsShown() and sw_frame:IsShown() then
+            tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
+        end
+    else
+        tooltip:AddLine("BEFORE STAT CHANGES", 1.0, 0.0, 0.0);
+    end
+
 end
 local function end_tooltip_section(tooltip)
     tooltip:Show();
@@ -81,21 +92,15 @@ end
 local spell_jump_itr = pairs(spells);
 local spell_jump_key = spell_jump_itr(spells);
 
-
---DELETEME tooltip testing
 CreateFrame( "GameTooltip", "swc_stat_calc_tooltip", nil, "GameTooltipTemplate" );
 swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT" );
---swc_stat_calc_tooltip:AddFontStrings(
---    swc_stat_calc_tooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
---    swc_stat_calc_tooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText")
---);
---
---GameTooltip:RegisterEvent("OnHide");
-
---end);
-GameTooltip:SetScript("OnHide", function()
+-- TODO: Font of this tooltip appears much bigger even though same font is used?
+swc_stat_calc_tooltip:AddFontStrings(
+    swc_stat_calc_tooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
+    swc_stat_calc_tooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText")
+);
+GameTooltip:HookScript("OnHide", function()
     swc_stat_calc_tooltip:Hide();
-
 end);
 
 local function append_tooltip_spell_info(is_fake)

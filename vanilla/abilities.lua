@@ -1541,8 +1541,8 @@ local function create_spells()
 				lvl_scaling_squared	= 0.161311,
                 lvl_coef            = 0.0,
                 lvl_coef_max        = 0.0,
-				lvl_coef_ot         = 0.54,
-				lvl_coef_ot_max     = 0.54,
+				lvl_coef_ot         = 0.42,
+				lvl_coef_ot_max     = 0.42,
             },
             -- regeneration
             [401417] = {
@@ -1561,12 +1561,12 @@ local function create_spells()
                 school              = magic_school.arcane,
                 coef                = 0.0,
                 over_time_coef      = 0.243,
-				lvl_scaling			= 0.018012,
-				lvl_scaling_squared	= 0.044141,
+				lvl_scaling			= 0.904195,
+				lvl_scaling_squared	= 0.161311,
                 lvl_coef            = 0.0,
                 lvl_coef_max        = 0.0,
-				lvl_coef_ot         = 1.0,
-				lvl_coef_ot_max     = 1.0,
+				lvl_coef_ot         = 0.42,
+				lvl_coef_ot_max     = 0.42,
             },
         };
 
@@ -2638,15 +2638,15 @@ local function create_spells()
                 lvl_req             = 0,
                 lvl_max             = 60,
                 lvl_outdated        = 60,
-                cost                = 0.03,
+                cost                = 0.01,
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.cd, spell_flags.sod_rune),
                 school              = magic_school.arcane,
                 coef                = 0.0, -- TODO: unconfirmed coefs
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.616405,
 				lvl_scaling_squared	= 0.028608,
-                lvl_coef            = 1.35,
-                lvl_coef_max        = 1.65,
+                lvl_coef            = 3.81,
+                lvl_coef_max        = 4.67,
 				lvl_coef_ot         = 0.0,
 				lvl_coef_ot_max     = 0.0,
             },
@@ -4291,8 +4291,8 @@ local function create_spells()
 				lvl_scaling_squared	= 0.039063,
                 lvl_coef            = 0.0,
                 lvl_coef_max        = 0.0,
-				lvl_coef_ot         = 0.39,
-				lvl_coef_ot_max     = 0.39,
+				lvl_coef_ot         = 1.17,
+				lvl_coef_ot_max     = 1.17,
             },
             -- starshards
             [10797] = {

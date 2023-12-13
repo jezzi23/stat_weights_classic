@@ -554,6 +554,7 @@ local function apply_equipment(loadout, effects)
     -- NOTE: shortly after logging in, the equipment querying API won't work
     --       (but does for /reload). Track if we get nothing so we can signal
     --       that equipment scanning needs to be done again on next update
+    loadout.crit_rating = 0;
     for item = 1, 18 do
         local item_link = GetInventoryItemLink("player", item);
         if item_link then

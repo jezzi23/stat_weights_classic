@@ -188,7 +188,7 @@ local buffs_predefined = {
     [22730] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + 10;
+                effects.by_attribute.stats[stat.int] = effects.by_attribute.stats[stat.int] + 10;
             end
         end,
         filter = buff_filters.caster,
@@ -327,7 +327,7 @@ local buffs_predefined = {
     [23271] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                effects.raw.spell_power = 175;
+                effects.raw.spell_power = effects.raw.spell_power + 175;
             end
         end,
         filter = buff_filters.caster,
@@ -337,12 +337,13 @@ local buffs_predefined = {
     [24658] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                effects.raw.spell_power = 204;
-                effects.raw.healing_power = 408;
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 204;
+                effects.raw.healing_power = effects.raw.healing_power + 408;
             end
         end,
         filter = buff_filters.caster,
         category = buff_category.item,
+        icon_id = GetItemIcon(19950)
     },
     -- berserk
     [26635] = {
@@ -467,7 +468,7 @@ local buffs_predefined = {
         category = buff_category.consumes,
     },
     -- bow
-    [17627] = {
+    [25290] = {
         apply = function(loadout, effects, buff)
 
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5) == 0 then
@@ -561,10 +562,9 @@ local buffs_predefined = {
     },
     -- brilliant wizard oil
     [25122] = {
-        apply = function(loadout, effects, buff)
+        apply = function(loadout, effects, buff, inactive)
             
-            local _, _, _, enchant_id = GetWeaponEnchantInfo();
-            if enchant_id ~= 2628 then 
+            if inactive then
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 36;
                 for i = 2, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01;
@@ -580,11 +580,9 @@ local buffs_predefined = {
     [25123] = {
         apply = function(loadout, effects, buff, inactive)
 
-
-            local _, _, _, enchant_id = GetWeaponEnchantInfo();
-            if enchant_id ~= 2629 then 
+            effects.raw.mp5 = effects.raw.mp5 + 12;
+            if inactive then 
                 effects.raw.healing_power = effects.raw.healing_power + 25;
-                effects.raw.mp5 = effects.raw.mp5 + 12;
             end
         end,
         filter = buff_filters.caster,
@@ -764,20 +762,42 @@ local buffs_predefined = {
     [430585] = {
         apply = function(loadout, effects, buff, inactive)
             
-            local _, _, _, enchant_id = GetWeaponEnchantInfo();
-            if enchant_id ~= 7099 then 
-                effects.raw.mp5 = effects.raw.mp5 + 12;
-                if inactive then
-                    for i = 2, 7 do
-                        effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.02;
-                    end
+            effects.raw.mp5 = effects.raw.mp5 + 12;
+            if inactive then
+                for i = 2, 7 do
+                    effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.02;
                 end
             end
+            
         end,
         filter = buff_filters.caster,
         category = buff_category.consumes,
         tooltip = "+12 mp5 and 2% spell hit",
-        icon_id = GetItemIcon(430409)
+        icon_id = GetItemIcon(211848),
+    },
+    -- ashenvale rallying cry
+    [430352] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + 0.05;
+            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.05;
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.world_buffs,
+        tooltip = "5% spell dmg/heal",
+    },
+    -- boon of blackfathom
+    [430947] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + 25;
+                for i = 2, 7 do
+                    effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.03;
+                end
+            end
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.world_buffs,
+        tooltip = "3% spell hit and 25 sp",
     },
 };
 
@@ -1097,8 +1117,8 @@ local target_buffs_predefined = {
     [589] = {
         apply = function(loadout, effects, buff)
             if not buff.src or buff.src == "player" then
-                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Mind Blast"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Mind Flay"], 0.2, 0);
+                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Mind Blast"], 0.5, 0);
+                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Mind Flay"], 0.5, 0);
             end
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.hostile),
@@ -1159,6 +1179,13 @@ for k, v in pairs(target_buffs_predefined) do
     end
 end
 
+-- allows weapon enchant buffs to be registered as buffs
+local wep_enchant_id_to_buff = {
+    [2628] = 25122,
+    [2629] = 25123,
+    [7099] = 430585,
+};
+
 local function detect_buffs(loadout)
 
     loadout.dynamic_buffs = {["player"] = {}, ["target"] = {}, ["mouseover"] = {}};
@@ -1206,62 +1233,60 @@ local function detect_buffs(loadout)
         local lname = GetSpellInfo(racial_id);
         loadout.dynamic_buffs["target"][lname] = {count = 1, id = racial_id, nil, nil};
     end
+    local _, _, _, enchant_id = GetWeaponEnchantInfo();
+    if enchant_id and wep_enchant_id_to_buff[enchant_id] then
+        local lname = GetSpellInfo(wep_enchant_id_to_buff[enchant_id]);
+        loadout.dynamic_buffs["player"][lname] = {count = 1, id = wep_enchant_id_to_buff[enchant_id], nil, nil};
+    end
+
 end
 
 local function apply_buffs(loadout, effects)
 
-    -- TODO: some subtle things need to be done here when attributes and percentage mods
-    --       go together through change
-    --local stats_diff_loadout = empty_loadout();
-
-    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
-        for k, v in pairs(loadout.buffs) do
-            -- if dynamically present, some type of buffs must be removed
-            -- as they were already counted for, things like sp, crit
-            if loadout.dynamic_buffs["player"][k] then
-                buffs[k].apply(loadout, effects, loadout.dynamic_buffs["player"][k]);
+    for k, v in pairs(loadout.dynamic_buffs["player"]) do
+        if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
+            buffs[k].apply(loadout, effects, v); 
+        end
+    end
+    local target_buffs_applied = {};
+    for k, v in pairs(loadout.dynamic_buffs[loadout.friendly_towards]) do
+        if target_buffs[k] and bit.band(buff_filters.friendly, target_buffs[k].filter) ~= 0 then
+            target_buffs[k].apply(loadout, effects, v); 
+            target_buffs_applied[k] = true;
+        end
+    end
+    if loadout.hostile_towards then
+        for k, v in pairs(loadout.dynamic_buffs[loadout.hostile_towards]) do
+            if target_buffs[k] and bit.band(buff_filters.hostile, target_buffs[k].filter) ~= 0 then
+                target_buffs[k].apply(loadout, effects, v); 
+                target_buffs_applied[k] = true;
             end
         end
-        -- active buffs must be done first in order to deal with non stackable 
-        -- raid buffs, e.g. moonkin aura and shaman crit buff
+    end
+
+    local beacon_duration = 60;
+    if class == "PALADIN" and loadout.runes[swc.talents.rune_ids.beacon_of_light] and swc.core.beacon_snapshot_time + beacon_duration >= swc.core.addon_running_time then
+        loadout.beacon = true;
+    else
+        loadout.beacon = nil
+    end
+
+    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
         for k, v in pairs(loadout.buffs) do
             if not loadout.dynamic_buffs["player"][k] and buffs[k] then
                 buffs[k].apply(loadout, effects, buffs[k], true);
             end
         end
         for k, v in pairs(loadout.target_buffs) do
-            target_buffs[k].apply(loadout, effects, target_buffs[k]);
-        end
-        if class == "PALADIN" and loadout.runes[swc.talents.rune_ids.beacon_of_light] and loadout.target_buffs["Beacon of Light"] then
-            loadout.beacon = true;
-        else
-            loadout.beacon = nil
-        end
-    else
-        for k, v in pairs(loadout.dynamic_buffs["player"]) do
-            if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
-                buffs[k].apply(loadout, effects, v); 
-            end
-        end
-        for k, v in pairs(loadout.dynamic_buffs[loadout.friendly_towards]) do
-            if target_buffs[k] and bit.band(buff_filters.friendly, target_buffs[k].filter) ~= 0 then
-                target_buffs[k].apply(loadout, effects, v); 
-            end
-        end
-        if loadout.hostile_towards then
-            for k, v in pairs(loadout.dynamic_buffs[loadout.hostile_towards]) do
-                if target_buffs[k] and bit.band(buff_filters.hostile, target_buffs[k].filter) ~= 0 then
-                    target_buffs[k].apply(loadout, effects, v); 
-                end
+            if not target_buffs_applied[k] then
+                target_buffs[k].apply(loadout, effects, target_buffs[k], true);
             end
         end
 
-        local beacon_duration = 60;
-        if class == "PALADIN" and loadout.runes[swc.talents.rune_ids.beacon_of_light] and swc.core.beacon_snapshot_time + beacon_duration >= swc.core.addon_running_time then
+        if class == "PALADIN" and loadout.runes[swc.talents.rune_ids.beacon_of_light] and loadout.target_buffs[GetSpellInfo(407613)] then
             loadout.beacon = true;
-        else
-            loadout.beacon = nil
         end
+    else
     end
 
     if swc.core.__sw__test_all_codepaths then

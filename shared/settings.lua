@@ -142,8 +142,8 @@ local function save_sw_settings()
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.stat_weights);
     end
-    if sw_frame.settings_frame.tooltip_more_details:GetChecked() then
-        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.more_details);
+    if not sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.sp_effect_calc);
     end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cost);
@@ -153,6 +153,9 @@ local function save_sw_settings()
     end
     if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cast_until_oom);
+    end
+    if not sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.sp_effect_calc);
     end
 
     __sw__persistent_data_per_char.settings.icon_overlay_disable = sw_frame.settings_frame.icon_overlay_disable:GetChecked();

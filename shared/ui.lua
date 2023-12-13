@@ -1043,11 +1043,9 @@ local function create_sw_gui_settings_frame()
         "Assumes you cast a particular ability until you are OOM with no cooldowns.";
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
-    sw_frame.settings_frame.tooltip_more_details = 
-        create_sw_checkbox("sw_tooltip_more_details", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "More details", tooltip_checkbox_func);
-    getglobal(sw_frame.settings_frame.tooltip_more_details:GetName()).tooltip = 
-        "Effective spell power, ability coefficients, % modifiers, crit modifier";
+    sw_frame.settings_frame.tooltip_sp_effect_calc = 
+        create_sw_checkbox("sw_tooltip_sp_effect_calc", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                            "Coef & SP effect calc", tooltip_checkbox_func);
     --if class == "WARLOCK" then    
     --    sw_frame.settings_frame.tooltip_cast_and_tap = 
     --        create_sw_checkbox("sw_tooltip_cast_and_tap", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
@@ -1088,8 +1086,8 @@ local function create_sw_gui_settings_frame()
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.stat_weights) ~= 0 then
         sw_frame.settings_frame.tooltip_stat_weights:SetChecked(true);
     end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.more_details) ~= 0 then
-        sw_frame.settings_frame.tooltip_more_details:SetChecked(true);
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.sp_effect_calc) == 0 then
+        sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(true);
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cost) ~= 0 then
         sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);

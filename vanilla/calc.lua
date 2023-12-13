@@ -301,7 +301,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     local cast_mod_mul = 0.0;
 
-    stats.extra_hit = effects.by_school.spell_dmg_hit[spell.school];
+    stats.extra_hit = loadout.spell_dmg_hit_by_school[spell.school] + effects.by_school.spell_dmg_hit[spell.school];
     if spell.base_id == spell_name_to_id["Living Flame"] then
         stats.extra_hit = stats.extra_hit + effects.by_school.spell_dmg_hit[magic_school.arcane];
     end
@@ -759,7 +759,7 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
     end
     stats.alias = nil;
 
-    if loadout.beacon then
+    if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
         -- holy light glyph may have been been applied to expectation
         info.expectation = info.expectation + info.expectation_st;
     end
@@ -854,6 +854,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     end
 
     local resource_loss_per_sec = spell_effect.cost_per_sec - mp1_casting;
+    spell_effect.mana = mana;
 
     if resource_loss_per_sec <= 0 then
         spell_effect.num_casts_until_oom = math.huge;
@@ -873,7 +874,7 @@ if class == "SHAMAN" then
         [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
 
             if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
             end
 
             if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
@@ -888,7 +889,7 @@ if class == "SHAMAN" then
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
 
             if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
             end
 
             if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
@@ -900,7 +901,7 @@ if class == "SHAMAN" then
         [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
 
             if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
             end
 
             if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
@@ -915,12 +916,12 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout, stats, effects)
             if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.33*0.5)*info.expectation_st;
+                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
             end
         end,
         [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats, effects)
             if loadout.runes[rune_ids.overload] then
-                info.expectation = (1.0 + 0.33*0.5)*info.expectation_st;
+                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
             end
         end,
     };

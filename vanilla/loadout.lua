@@ -41,12 +41,10 @@ local function int_to_crit_rating(int, lvl)
 end
 
 local function effects_diff(loadout, effects, diff)
-    -- TODO: mp5 from int scaling too
 
     --for i = 1, 5 do
     --    effects.stats[i] = loadout.stats[i] + diff.stats[i] * (1 + effects.by_attribute.stat_mod[i]);
     --end
-    -- TODO: outdated stuff here, mana and int crit formula need figuring out
 
     --loadout.mana = loadout.mana + 
     --             (15*diff.stats[stat.int]*(1 + effects.by_attribute.stat_mod[stat.int]*effects.raw.mana_mod));
