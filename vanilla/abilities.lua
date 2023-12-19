@@ -2639,9 +2639,9 @@ local function create_spells()
                 lvl_max             = 60,
                 lvl_outdated        = 60,
                 cost                = 0.01,
-                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.cd, spell_flags.sod_rune),
+                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.cd, spell_flags.sod_rune, spell_flags.exception_coef),
                 school              = magic_school.arcane,
-                coef                = 0.0, -- TODO: unconfirmed coefs
+                coef                = 1.0,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.616405,
 				lvl_scaling_squared	= 0.028608,

@@ -617,22 +617,14 @@ local buffs_predefined = {
         filter = buff_filters.priest,
         category = buff_category.class,
     },
-    ---- fury of the stormrage
-    --[FILL_ME_WITH_KNOWN_VALUES] = {
-    --    apply = function(loadout, effects, buff)
-    --        ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id("Wrath"), 1.00, 0);
-    --    end,
-    --    filter = buff_filters.druid,
-    --    category = buff_category.class,
-    --},
     ---- fury of the stormrage proc
-    --[FILL_ME_WITH_KNOWN_VALUES] = {
-    --    apply = function(loadout, effects, buff)
-    --        ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id("Healing Touch"), 1.00, 0);
-    --    end,
-    --    filter = buff_filters.druid,
-    --    category = buff_category.class,
-    --},
+    [414800] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Touch"], 1.00, 0);
+        end,
+        filter = buff_filters.druid,
+        category = buff_category.class,
+    },
     --arcane blast
     [400573] = {
         apply = function(loadout, effects, buff)
@@ -643,6 +635,9 @@ local buffs_predefined = {
             end
             effects.by_school.spell_dmg_mod_add[magic_school.arcane] = 
                 effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.15 * stacks;
+            -- arcane blast is exempt from damage increase
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Arcane Blast"], -0.15 * stacks, 0.0); 
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Living Flame"], 0.15 * stacks, 0.0); 
 
             ensure_exists_and_add(effects.ability.cost_mod_base, spell_name_to_id["Arcane Blast"], -stacks * 1.75, 0.0); 
 
@@ -789,7 +784,7 @@ local buffs_predefined = {
     [430947] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                effects.raw.spell_power = effects.raw.spell_power + 25;
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 25;
                 for i = 2, 7 do
                     effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.03;
                 end
