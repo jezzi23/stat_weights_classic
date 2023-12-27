@@ -368,6 +368,19 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                               (1.5*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
                                               eval.spell.ot_ticks), 
                                 232.0/255, 225.0/255, 32.0/255);
+            elseif spell.base_id == spell_name_to_id["Starshards"] then
+                local dmg_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
+                local dmg_wo_sp = (eval.spell.ot_if_hit - dmg_from_sp);
+                tooltip:AddLine(string.format("%s %s: %d over %.2fs (%.1f-%.1f-%.1f for %d ticks)",
+                                              effect,
+                                              hit_str,
+                                              eval.spell.ot_if_hit, 
+                                              eval.spell.ot_duration, 
+                                              ((2/3)*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
+                                              eval.spell.ot_if_hit/eval.spell.ot_ticks,
+                                              ((4/3)*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
+                                              eval.spell.ot_ticks), 
+                                232.0/255, 225.0/255, 32.0/255);
             elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
                 tooltip:AddLine(string.format("%s %s: %d-%d over %.2fs (%d-%d for %d ticks)",
                                               effect,
@@ -571,7 +584,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
-        tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
+        tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f, weighing",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
         if eval.infinite_cast.effect_per_sec_per_sp > 0 then
             local stat_weights = {};
             stat_weights[1] = {weight = 1.0, str = "SP"};
@@ -614,7 +627,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
         if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 and eval.spell.cost_per_sec > 0 then
 
-            tooltip:AddLine(string.format("%s until OOM per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
+            tooltip:AddLine(string.format("%s until OOM per SP: %.3f, weighing", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
             if eval.cast_until_oom.effect_until_oom_per_sp > 0 then
                 local stat_weights = {};
                 stat_weights[1] = {weight = 1.0, str = "SP"};

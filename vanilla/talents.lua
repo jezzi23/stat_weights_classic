@@ -706,7 +706,7 @@ local function create_talents()
             [304] = {
                 apply = function(loadout, effects, pts)
                     effects.by_school.spell_crit_mod[magic_school.frost] = 
-                        effects.by_school.spell_crit_mod[magic_school.frost] + pts*0.5/3;
+                        effects.by_school.spell_crit_mod[magic_school.frost] + pts*0.1;
                 end
             },
             [308] = {
@@ -856,7 +856,7 @@ local function engraving_runes_id()
     local ids = {};
     if C_Engraving.IsEngravingEnabled then
         -- NOTE: order might be important here for wowhead export
-        local item_slots = {5, 10, 7};
+        local item_slots = {5, 7, 10};
         for k, v in pairs(item_slots) do
             local rune_slot = C_Engraving.GetRuneForEquipmentSlot(v);
             if rune_slot then
@@ -940,9 +940,7 @@ local function wowhead_talent_code()
 
     local item_rune_ids = engraving_runes_id();
 
-    local first_prefix = "";
-    local num_runes = #item_rune_ids;
-    if num_runes > 0 then
+    if next(item_rune_ids) then
         runes_code = "1";
     end
     for k, v in pairs(item_rune_ids) do

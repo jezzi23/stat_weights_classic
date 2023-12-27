@@ -662,7 +662,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
-        tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
+        tooltip:AddLine(effect_per_sec_per_sp..": "..string.format("%.3f, weighing",eval.infinite_cast.effect_per_sec_per_sp), 0.0, 1.0, 0.0);
         local stat_weights = {};
         stat_weights[1] = {weight = 1.0, str = "SP"};
         stat_weights[2] = {weight = eval.infinite_cast.sp_per_crit, str = "Crit"};
@@ -704,7 +704,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             bit.band(spell.flags, spell_flags.cd) == 0 then
 
 
-            tooltip:AddLine(string.format("%s until OOM per SP: %.3f", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
+            tooltip:AddLine(string.format("%s until OOM per SP: %.3f, weighing", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
 
             local stat_weights = {};
             stat_weights[1] = {weight = 1.0, str = "SP"};
