@@ -256,6 +256,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.spell_ot_mod = 1.0;
     stats.flat_addition = 0;
     stats.spell_mod_base = 1.0; -- modifier than only works on spell base
+    stats.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul;
+    stats.regen_while_casting = effects.raw.regen_while_casting;
+    local spell_dmg_mod_school_add = effects.by_school.spell_dmg_mod_add[spell.school];
+
     local resource_refund = effects.raw.resource_refund;
 
     if not effects.ability.effect_mod[spell.base_id] then
@@ -278,6 +282,30 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
 
     stats.gcd = 1.5;
+    if spell.base_id == spell_name_to_id["Shoot"] then
+        local wand_perc_active = 1.0 + effects.ability.effect_mod[spell.base_id];
+        local wand_perc_spec = 1.0;
+        
+        if class == "PRIEST" then
+            wand_perc_spec = wand_perc_spec + loadout.talents_table:pts(1, 2) * 0.05;
+        elseif class == "MAGE" then
+            wand_perc_spec = wand_perc_spec + loadout.talents_table:pts(1, 4) * 0.125;
+        end
+
+        local wand_speed, wand_min, wand_max, bonus, _,  perc = UnitRangedDamage("player");
+        stats.gcd = 0.5;
+        if wand_speed ~= 0 then
+            spell.cast_time = wand_speed;
+            spell.base_min = (wand_min/(perc*wand_perc_active) - bonus) * wand_perc_spec;
+            spell.base_max = (wand_max/(perc*wand_perc_active) - bonus) * wand_perc_spec;
+        else
+            spell.cast_time = 0;
+            spell.base_min = 0;
+            spell.base_max = 0;
+        end
+        spell_dmg_mod_school_add = spell_dmg_mod_school_add - effects.ability.effect_mod[spell.base_id];
+        -- could put modifiers at 0 for Shoot and just use the api %
+    end
 
     local cost_mod_base = effects.raw.cost_mod_base;
     if effects.ability.cost_mod_base[spell.base_id] then
@@ -436,9 +464,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if loadout.runes[rune_ids.enlightment] then
                 local mana_perc = loadout.mana/math.max(1, loadout.max_mana);
                 if mana_perc > 0.7 then
-                    effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.1;
+                    stats.spell_dmg_mod_mul = stats.spell_dmg_mod_mul + 0.1;
                 elseif mana_perc < 0.3 then
-                    effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.1;
+                    stats.regen_while_casting = stats.regen_while_casting + 0.1;
                 end
             end
 
@@ -460,6 +488,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
 
             if spell.base_id == spell_name_to_id["Living Flame"] then
+                -- TODO: don't change effects here
                 effects.by_school.spell_dmg_mod[magic_school.fire] = effects.by_school.spell_dmg_mod[magic_school.fire] +
                 (effects.by_school.spell_dmg_mod[magic_school.arcane] - effects.by_school.spell_dmg_mod[magic_school.fire]);
             end
@@ -523,11 +552,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
         target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
 
         local spell_dmg_mod_school = effects.by_school.spell_dmg_mod[spell.school];
-        local spell_dmg_mod_school_add = effects.by_school.spell_dmg_mod_add[spell.school];
 
         stats.spell_mod = target_vuln_mod * global_mod
             *
-            (1.0 + effects.raw.spell_dmg_mod_mul + spell_dmg_mod_school)
+            (1.0 + stats.spell_dmg_mod_mul + spell_dmg_mod_school)
             *
             (1.0 + effects.raw.spell_dmg_mod)
             *
@@ -535,7 +563,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         stats.spell_ot_mod = target_vuln_ot_mod * global_mod
             *
-            (1.0 + effects.raw.spell_dmg_mod_mul + spell_dmg_mod_school)
+            (1.0 + stats.spell_dmg_mod_mul + spell_dmg_mod_school)
             *
             (1.0 + effects.raw.spell_dmg_mod)
             *
@@ -806,9 +834,10 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
             -- evocate, innervate
             local spirit = loadout.stats[stat.spirit] + effects.by_attribute.stats[stat.spirit];
             -- calculate as mana that you would not have gotten if you were casting other spells
-            info.mana_restored = 0.5*spirit_mana_regen(spirit) *
-                (1.0 - effects.raw.regen_while_casting) *
-                spell.base_min * math.max(stats.cast_time, spell.over_time_duration);
+            local mp5 = effects.raw.mp5 + loadout.max_mana*effects.raw.perc_max_mana_as_mp5;
+            info.mana_restored = 0.2 * mp5 +
+                0.5*spirit_mana_regen(spirit) *
+                (1.0 + spell.base_min) * math.max(stats.cast_time, spell.over_time_duration);
         end
         info.effect_per_cost = math.huge;
     end
@@ -840,7 +869,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
         mp2_not_casting = math.ceil(mp2_not_casting);
     end
     local mp5 = effects.raw.mp5 + loadout.max_mana*effects.raw.perc_max_mana_as_mp5;
-    local mp1_casting = 0.2 * mp5 + 0.5 * mp2_not_casting * effects.raw.regen_while_casting;
+    local mp1_casting = 0.2 * mp5 + 0.5 * mp2_not_casting * stats.regen_while_casting;
 
     --  don't use dynamic mana regen lua api for now
     calculating_weights = true;

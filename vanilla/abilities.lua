@@ -23,7 +23,6 @@
 local _, class = UnitClass("player");
 local _, race = UnitRace("player");
 
--- TODO VANILLA: Life drain sod weirdness
 local function spell_name_to_ids()
     if class == "MAGE" then
         return {
@@ -167,6 +166,9 @@ end
 local spell_name_to_id = spell_name_to_ids();
 if race == "BloodElf" then
     spell_name_to_id["Arcane Torrent"] = 28730;
+end
+if class == "WARLOCK" or class == "MAGE" or class == "PRIEST" then
+    spell_name_to_id["Shoot"] = 5019;
 end
 
 local localized_spell_names_to_id = {};
@@ -7644,8 +7646,29 @@ end
 
 local spells = create_spells();
 
+if class == "WARLOCK" or class == "MAGE" or class == "PRIEST" then
+    spells[5019] = {
+        base_min            = 0,
+        base_max            = 0,
+        over_time           = 0.0,
+        over_time_tick_freq = 0,
+        over_time_duration  = 0.0,
+        cast_time           = 0.0,
+        rank                = 1,
+        cost                = 0,
+        lvl_req             = 1,
+        lvl_max             = 1,
+        lvl_outdated        = 60,
+        flags               = spell_flags.exception_coef,
+        school              = magic_school.physical,
+        coef                = 0.0,
+        over_time_coef      = 0.0,
+	    lvl_scaling			= 0,
+    };
+end
+
 local spells_by_rank = {};
-for k, v in pairs(spell_name_to_ids()) do
+for k, v in pairs(spell_name_to_id) do
     spells_by_rank[v] = {};
 end
 

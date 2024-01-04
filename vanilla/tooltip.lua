@@ -100,12 +100,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             clvl_specified = string.format(" (clvl: %d)", loadout.lvl);
         end
         if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal, spell_flags.mana_regen)) ~= 0 then
-            tooltip:AddLine(string.format("Loadout: %s%s | Target: %.1f%% HP",
+            tooltip:AddLine(string.format("%s%s | Target: %.0f%% HP",
                                           loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
                                           ),
                             138/256, 134/256, 125/256);
         else
-            tooltip:AddLine(string.format("Loadout: %s%s | Target: %dx lvl %d, %.1f%% HP, %d res",
+            tooltip:AddLine(string.format("%s%s | Target: %dx | LVL %d | %.0f%% HP | %d RES",
                                           loadout.name, clvl_specified, loadout.unbounded_aoe_targets, loadout.target_lvl,
                                           loadout.enemy_hp_perc * 100, stats.target_resi
                                           ),
@@ -143,12 +143,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                       math.max(stats.cast_time, spell.over_time_duration)
                                       ),
                         0, 1, 1);
-
-        if class == "MAGE" or class == "DRUID" then
-            tooltip:AddLine(string.format("Calculated as mana that you would not otherwise had gotten while casting other spells."),
-                            0, 1, 1);
-
-        end
+        tooltip:AddLine(string.format("Mana per sec: %.1f",
+                                      math.ceil(eval.spell.mana_restored/math.max(stats.cast_time, spell.over_time_duration))
+                                      ),
+                        0, 1, 1);
 
         end_tooltip_section(tooltip);
         return;
@@ -545,8 +543,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
     end
 
-    if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and
-            bit.band(spell.flags, spell_flags.cd) == 0 then
+    if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() then
 
         tooltip:AddLine(string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom, eval.spell.num_casts_until_oom, eval.spell.time_until_oom),
                         232.0/255, 225.0/255, 32.0/255);
@@ -625,7 +622,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
         end
 
-        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 and eval.spell.cost_per_sec > 0 then
+        if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and eval.spell.cost_per_sec > 0 then
 
             tooltip:AddLine(string.format("%s until OOM per SP: %.3f, weighing", effect, eval.cast_until_oom.effect_until_oom_per_sp), 0.0, 1.0, 0.0);
             if eval.cast_until_oom.effect_until_oom_per_sp > 0 then
@@ -658,7 +655,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 end
                 tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
             end
-
         end
     end
 

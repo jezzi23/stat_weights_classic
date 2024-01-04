@@ -200,7 +200,7 @@ local function create_runes()
                 apply = function(loadout, effects, inactive)
                     -- 15% spell crit but 1% more base mana cost on crit
                     if inactive then
-                        for i = 2, 7 do
+                        for i = 1, 7 do
                             effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.15;
                         end
                     end
@@ -224,7 +224,7 @@ local function create_runes()
             [rune_ids.demonic_tactics       ] = {
                 apply = function(loadout, effects, inactive)
                     if inactive then
-                        for i = 2, 7 do
+                        for i = 1, 7 do
                             effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.1;
                         end
                     end
@@ -254,6 +254,12 @@ end
 local function create_talents()
     if class == "PRIEST" then
         return {
+            [102] = {
+                apply = function(loadout, effects, pts, missing_pts)
+
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shoot"], (pts-missing_pts) * 0.05, 0);
+                end
+            },
             -- improved power word shield
             [105] = {
                 apply = function(loadout, effects, pts)
@@ -616,7 +622,7 @@ local function create_talents()
             [101] = {
                 apply = function(loadout, effects, pts)
 
-                    for i = 2, 7 do
+                    for i = 1, 7 do
                         effects.by_school.target_res[i] = 
                             effects.by_school.target_res[i] + pts * 5;
                     end
@@ -627,6 +633,12 @@ local function create_talents()
 
                     effects.by_school.spell_dmg_hit[magic_school.arcane] = 
                         effects.by_school.spell_dmg_hit[magic_school.arcane] + pts * 0.02;
+                end
+            },
+            [104] = {
+                apply = function(loadout, effects, pts, missing_pts)
+
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shoot"], (pts-missing_pts) * 0.125, 0);
                 end
             },
             [108] = {

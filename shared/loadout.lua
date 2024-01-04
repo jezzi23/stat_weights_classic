@@ -403,7 +403,7 @@ local function dynamic_loadout(loadout)
         loadout.hit_rating = GetCombatRating(CR_HIT_SPELL);
     end
 
-    for i = 2, 7 do
+    for i = 1, 7 do
         loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
     end
     local ap_src1, ap_src2, ap_src3 = UnitAttackPower("player");
@@ -445,6 +445,10 @@ local function dynamic_loadout(loadout)
             local target_lvl = UnitLevel("target");
             if target_lvl == -1 then
                 loadout.target_lvl = loadout.lvl + 3;
+                -- SOD seems to put bosses at level +2, assume that for lvl 1-50
+                if loadout.lvl <= 50 and swc.core.expansion_loaded == swc.core.expansions.vanilla then
+                    loadout.target_lvl = loadout.lvl + 2;
+                end
             else
                 loadout.target_lvl = target_lvl;
             end

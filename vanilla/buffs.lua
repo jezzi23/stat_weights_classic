@@ -123,7 +123,7 @@ local buffs_predefined = {
     [22888] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                for i = 2, 7 do
+                for i = 1, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.1;
                 end
             end
@@ -146,7 +146,7 @@ local buffs_predefined = {
     [15366] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                for i = 2, 7 do
+                for i = 1, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.05;
                 end
                 for i = 1, 5 do
@@ -508,7 +508,7 @@ local buffs_predefined = {
 
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.moonkin_crit) == 0 then
                 if inactive then
-                    for i = 2, 7 do
+                    for i = 1, 7 do
                         effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.03;
                     end
                 end
@@ -566,7 +566,7 @@ local buffs_predefined = {
             
             if inactive then
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 36;
-                for i = 2, 7 do
+                for i = 1, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01;
                 end
             end
@@ -721,7 +721,7 @@ local buffs_predefined = {
     [425463] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                for i = 2, 7 do
+                for i = 1, 7 do
                     effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.3;
                 end
             end
@@ -759,7 +759,7 @@ local buffs_predefined = {
             
             effects.raw.mp5 = effects.raw.mp5 + 12;
             if inactive then
-                for i = 2, 7 do
+                for i = 1, 7 do
                     effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.02;
                 end
             end
@@ -785,7 +785,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 25;
-                for i = 2, 7 do
+                for i = 1, 7 do
                     effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.03;
                 end
             end
@@ -952,7 +952,7 @@ local target_buffs_predefined = {
     -- nightfall
     [23605] = {
         apply = function(loadout, effects, buff)
-            for i = 2, 7 do
+            for i = 1, 7 do
                 effects.by_school.target_spell_dmg_taken[i] =
                     effects.by_school.target_spell_dmg_taken[i] + 0.15;
             end
@@ -1143,7 +1143,7 @@ local target_buffs_predefined = {
     [20557] = {
         apply = function(loadout, effects, buff)
 
-            for i = 2, 7 do
+            for i = 1, 7 do
                 effects.by_school.target_spell_dmg_taken[i] = effects.by_school.target_spell_dmg_taken[i] + 0.05;
             end
         end,
