@@ -797,7 +797,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.settings_frame.y_offset);
-    sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetText("Hz (less means lower CPU usage)");
+    sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetText("Hz (higher = more responsive overlay)");
 
     sw_frame.settings_frame.icon_settings_update_freq_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.settings_frame, "InputBoxTemplate");
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetPoint("TOPLEFT", 120, sw_frame.settings_frame.y_offset + 3);
