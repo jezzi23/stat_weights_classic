@@ -2501,6 +2501,7 @@ local function load_sw_ui()
         -- load defaults
         __sw__persistent_data_per_char.loadouts = {};
         __sw__persistent_data_per_char.loadouts.loadouts_list = {};
+
         __sw__persistent_data_per_char.loadouts.loadouts_list[1] = {};
         __sw__persistent_data_per_char.loadouts.loadouts_list[1].loadout = empty_loadout();
         default_loadout(__sw__persistent_data_per_char.loadouts.loadouts_list[1].loadout);
@@ -2512,6 +2513,20 @@ local function load_sw_ui()
         empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[1].final_effects);
         __sw__persistent_data_per_char.loadouts.active_loadout = 1;
         __sw__persistent_data_per_char.loadouts.num_loadouts = 1;
+
+        -- add secondary PVP loadout with lvl diff of 0 by default
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2] = {};
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout = empty_loadout();
+        default_loadout(__sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout);
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout.default_target_lvl_diff = 0;
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout.name = "PVP";
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2].equipped = {};
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2].talented = {};
+        __sw__persistent_data_per_char.loadouts.loadouts_list[2].final_effects = {};
+        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[2].equipped);
+        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[2].talented);
+        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[2].final_effects);
+        __sw__persistent_data_per_char.loadouts.num_loadouts = 2;
     end
 
     sw_frame.loadouts_frame.lhs_list.loadouts = {};
