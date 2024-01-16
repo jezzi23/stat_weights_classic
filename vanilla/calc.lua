@@ -479,6 +479,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 -- unclear if dmg bonus is applied on spell power or not
                 stats.spell_mod_base =  stats.spell_mod_base + 3*loadout.mana/math.max(1, loadout.max_mana);
                 stats.cost = loadout.mana;
+                cost_mod = 1.0;
             end
 
             if loadout.num_set_pieces[set_tiers.pve_2] >= 8 and

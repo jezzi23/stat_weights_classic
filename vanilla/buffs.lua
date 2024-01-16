@@ -198,12 +198,12 @@ local buffs_predefined = {
     -- power infusion
     [10060] = {
         apply = function(loadout, effects, buff)
-            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + 0.2;
-            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.2;
+            effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.2 - 1.0;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.2 - 1.0;
         end,
         filter = buff_filters.caster,
         category = buff_category.raid,
-        tooltip = "20% spell dmg/heal (fom priest)",
+        tooltip = "20% spell dmg/heal (from priest)",
     },
     --arcane power
     [12042] = {
@@ -233,7 +233,7 @@ local buffs_predefined = {
     -- dmf dmg
     [23768] = {
         apply = function(loadout, effects, buff)
-            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.1;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.1 - 1.0;
         end,
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
@@ -413,8 +413,8 @@ local buffs_predefined = {
     [23734] = {
         apply = function(loadout, effects, buff)
             effects.raw.cost_mod = effects.raw.cost_mod - 0.2;
-            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + 0.2;
-            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.2;
+            effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.2 - 1.0;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.2 - 1.0;
         end,
         filter = buff_filters.shaman,
         category = buff_category.item,
@@ -773,8 +773,8 @@ local buffs_predefined = {
     -- ashenvale rallying cry
     [430352] = {
         apply = function(loadout, effects, buff)
-            effects.raw.spell_heal_mod_mul = effects.raw.spell_heal_mod_mul + 0.05;
-            effects.raw.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul + 0.05;
+            effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.05 - 1.0;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.05 - 1.0;
         end,
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
