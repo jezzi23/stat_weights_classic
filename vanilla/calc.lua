@@ -464,7 +464,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if loadout.runes[rune_ids.enlightment] then
                 local mana_perc = loadout.mana/math.max(1, loadout.max_mana);
                 if mana_perc > 0.7 then
-                    stats.spell_dmg_mod_mul = stats.spell_dmg_mod_mul + 0.1;
+                    stats.spell_dmg_mod_mul = (1.0 + stats.spell_dmg_mod_mul) * 1.1 - 1.0;
                 elseif mana_perc < 0.3 then
                     stats.regen_while_casting = stats.regen_while_casting + 0.1;
                 end
@@ -870,6 +870,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
         mp2_not_casting = math.ceil(mp2_not_casting);
     end
     local mp5 = effects.raw.mp5 + loadout.max_mana*effects.raw.perc_max_mana_as_mp5;
+    
     local mp1_casting = 0.2 * mp5 + 0.5 * mp2_not_casting * stats.regen_while_casting;
 
     --  don't use dynamic mana regen lua api for now

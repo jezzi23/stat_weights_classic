@@ -116,7 +116,7 @@ local function spell_cost(spell_id)
         local cost_table = costs[1];
         if cost_table then
             if cost_table.cost then
-                return cost_table.cost;
+                return cost_table.cost, cost_table.name;
             else
                 return nil;
             end
@@ -129,7 +129,8 @@ local function spell_cast_time(spell_id)
     local cast_time = select(4, GetSpellInfo(spell_id));
     if cast_time  then
         if cast_time == 0 then
-            cast_time = nil;
+            --cast_time = nil;
+            cast_time = 1.5;
         else
             cast_time = cast_time/1000;
         end
@@ -385,7 +386,7 @@ end
 
 local function update_icon_overlay_settings()
 
-    mana_cost_overlay = sw_frame.settings_frame.icon_avg_cost:GetChecked();
+    mana_cost_overlay = sw_frame.settings_frame.icon_avg_cost:GetChecked() or sw_frame.settings_frame.icon_casts_until_oom:GetChecked() or sw_frame.settings_frame.icon_time_until_oom:GetChecked();
     cast_speed_overlay = sw_frame.settings_frame.icon_avg_cast:GetChecked();
 
     sw_frame.settings_frame.icon_overlay = {};
@@ -508,6 +509,7 @@ local function update_icon_overlay_settings()
 
     active_overlays = {};
     rescan_action_frames();
+    on_special_action_bar_changed();
 end
 
 local function setup_action_bars()
@@ -543,10 +545,18 @@ local overlay_label_handler = {
         frame_overlay:SetText(string.format("%.2f", spell_effect.effect_per_cost));
     end,
     [icon_stat_display.avg_cost] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d", stats.cost));
+        if stats.cost >= 0 then
+            frame_overlay:SetText(string.format("%d", stats.cost));
+        else
+            frame_overlay:SetText("");
+        end
     end,
     [icon_stat_display.avg_cast] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.1f", stats.cast_time));
+        if stats.cast_time > 0 then
+            frame_overlay:SetText(string.format("%.1f", stats.cast_time));
+        else
+            frame_overlay:SetText("");
+        end
     end,
     [icon_stat_display.hit] = function(frame_overlay, spell, spell_effect, stats)
          if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -564,13 +574,23 @@ local overlay_label_handler = {
         end
     end,
     [icon_stat_display.casts_until_oom] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
+
+        if spell_effect.num_casts_until_oom >= 0 then
+            frame_overlay:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
+        else
+            frame_overlay:SetText("");
+        end
+
     end,
     [icon_stat_display.effect_until_oom] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%.0f", math.floor(spell_effect.effect_until_oom+0.5)));
     end,
     [icon_stat_display.time_until_oom] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.1fs", spell_effect.time_until_oom));
+        if spell_effect.time_until_oom >= 0 then
+            frame_overlay:SetText(string.format("%.1fs", spell_effect.time_until_oom));
+        else
+            frame_overlay:SetText("");
+        end
     end,
 };
 
@@ -645,6 +665,69 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     end
 end
 
+-- for spells that are not evaluated but cast time & mana cost can be extracted from lua api
+-- to be displayed as overlays
+local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects)
+
+    local cost, resource_name = spell_cost(spell_id);
+    if not cost then
+        cost = -1.0;
+    end
+    local cast_time = spell_cast_time(spell_id);
+
+    if not spell_cache[spell_id] then
+        spell_cache[spell_id] = {};
+        spell_cache[spell_id].dmg = {};
+    end
+    local spell_variant = spell_cache[spell_id].dmg;
+    if not spell_variant.seq then
+
+        spell_variant.seq = -1;
+        spell_variant.stats = {};
+        spell_variant.spell_effect = {};
+    end
+    local spell_effect = spell_variant.spell_effect;
+    local stats = spell_variant.stats;
+
+    if spell_cache[spell_id].seq ~= swc.core.sequence_counter then
+        spell_cache[spell_id].seq = swc.core.sequence_counter;
+        -- fill dummy stats
+        stats.cost = cost;
+        stats.cast_time = cast_time;
+        stats.regen_while_casting = effects.raw.regen_while_casting;
+        spell_effect.cost_per_sec = cost/cast_time;
+        spell_effect.expectation = 0
+        cast_until_oom(spell_effect, stats, loadout, effects);
+        -- hack to display non mana cost as mana but don't show "until oom" if rage/energy etc
+        if resource_name ~= "MANA" then
+            stats.cast_time = 0.0;
+            spell_effect.time_until_oom = -1;
+            spell_effect.num_casts_until_oom = -1;
+        end
+    end
+
+    if sw_num_icon_overlay_fields_active > 0 then
+        for i = 1, 3 do
+            
+            if sw_frame.settings_frame.icon_overlay[i] and 
+                bit.band(sw_frame.settings_frame.icon_overlay[i].label_type,
+                         bit.bor(icon_stat_display.avg_cost,
+                                 icon_stat_display.avg_cast,
+                                 icon_stat_display.casts_until_oom,
+                                 icon_stat_display.time_until_oom)) ~= 0 then
+
+                overlay_label_handler[sw_frame.settings_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
+                                                          sw_frame.settings_frame.icon_overlay[i].color[2], 
+                                                          sw_frame.settings_frame.icon_overlay[i].color[3]);
+
+                frame_info.overlay_frames[i]:Show();
+            end
+        end
+    end
+end
+
 local special_action_bar_changed_id = 0;
 
 local function update_spell_icons(loadout, effects)
@@ -691,13 +774,21 @@ local function update_spell_icons(loadout, effects)
                 end
                 local rearranged_k = 1 + 5*(1-k%2) + (k-k%2)/2;
 
-                if v.frame:IsShown() and spells[id] and rearranged_k <= remaining_spells_in_page then
-                    local spell_name = GetSpellInfo(id);
-                    -- TODO: icon overlay not working for healing version checkbox
-                    if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                        update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, assume_single_target);
+                if v.frame:IsShown() and rearranged_k <= remaining_spells_in_page then
+                    
+                    if not spells[id] then
+
+                        if mana_cost_overlay or cast_speed_overlay then
+
+                            update_non_evaluated_spell(v, id, loadout, effects);
+                        end
                     else
-                        update_spell_icon_frame(v, spells[id], id, loadout, effects, assume_single_target);
+                        -- TODO: icon overlay not working for healing version checkbox
+                        if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                            update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, assume_single_target);
+                        else
+                            update_spell_icon_frame(v, spells[id], id, loadout, effects, assume_single_target);
+                        end
                     end
                 end
             end
@@ -719,23 +810,9 @@ local function update_spell_icons(loadout, effects)
 
             if not spells[id] then
 
-                local overlay_slot = 3;
-                if mana_cost_overlay then
-                    local cost = spell_cost(id);
-                    if cost then
-                        v.overlay_frames[overlay_slot]:SetText(tostring(cost));
-                        v.overlay_frames[overlay_slot]:SetTextColor(0.0, 1.0, 1.0); 
-                        v.overlay_frames[overlay_slot]:Show(); 
-                    end
-                    overlay_slot = 1;
-                end
-                if cast_speed_overlay then
-                    local cast_time = spell_cast_time(id);
-                    if cast_time then
-                        v.overlay_frames[overlay_slot]:SetText(string.format("%.2f", cast_time));
-                        v.overlay_frames[overlay_slot]:SetTextColor(215/256, 83/256, 234/256); 
-                        v.overlay_frames[overlay_slot]:Show(); 
-                    end
+                if mana_cost_overlay or cast_speed_overlay then
+
+                    update_non_evaluated_spell(v, id, loadout, effects);
                 end
 
             elseif id ~= 0 and v.frame:IsShown() then
