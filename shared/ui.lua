@@ -671,6 +671,96 @@ local function create_sw_checkbox(name, parent, line_pos_index, y_offset, text, 
     return checkbox_frame;
 end
 
+local function create_sw_spell_id_viewer()
+
+    sw_frame.spell_id_viewer_editbox = CreateFrame("EditBox", "sw_spell_id_viewer_editbox", sw_frame, "InputBoxTemplate");
+    sw_frame.spell_id_viewer_editbox:SetPoint("TOPLEFT", sw_frame, 10, -7);
+    sw_frame.spell_id_viewer_editbox:SetText("");
+    sw_frame.spell_id_viewer_editbox:SetSize(90, 10);
+    sw_frame.spell_id_viewer_editbox:SetAutoFocus(false);
+
+    local tooltip_overwrite_editbox = function(self)
+        local txt = self:GetText();
+        if txt == "" then
+            sw_frame.spell_id_viewer_editbox_label:Show();
+        else
+            sw_frame.spell_id_viewer_editbox_label:Hide();
+        end
+        local id = tonumber(txt);
+        if GetSpellInfo(id) then
+            self:SetTextColor(0, 1, 0);
+        else
+            self:SetTextColor(1, 0, 0);
+        end
+        self:ClearFocus();
+    end
+
+    sw_frame.spell_id_viewer_editbox:SetScript("OnEnterPressed", tooltip_overwrite_editbox);
+    sw_frame.spell_id_viewer_editbox:SetScript("OnEscapePressed", tooltip_overwrite_editbox);
+    sw_frame.spell_id_viewer_editbox:SetScript("OnEditFocusLost", tooltip_overwrite_editbox);
+    sw_frame.spell_id_viewer_editbox:SetScript("OnTextChanged", function(self)
+        local txt = self:GetText();
+        if txt == "" then
+            sw_frame.spell_id_viewer_editbox_label:Show();
+        else
+            sw_frame.spell_id_viewer_editbox_label:Hide();
+        end
+        local id = tonumber(txt);
+        if GetSpellInfo(id) then
+            self:SetTextColor(0, 1, 0);
+        else
+            self:SetTextColor(1, 0, 0);
+            id = 0;
+        end
+
+        if id == 0 then
+            sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(5));
+        else
+            sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(id));
+        end
+        GameTooltip:SetOwner(sw_frame.spell_icon, "ANCHOR_BOTTOMRIGHT");
+        GameTooltip:SetSpellByID(id);
+    end);
+
+    if swc.core.__sw__test_all_spells then
+        sw_frame.spell_id_viewer_editbox:SetText(pairs(spells)(spells));
+    end
+    
+
+    sw_frame.spell_id_viewer_editbox_label = sw_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.spell_id_viewer_editbox_label:SetFontObject(font);
+    sw_frame.spell_id_viewer_editbox_label:SetText("SPELL ID VIEWER");
+    sw_frame.spell_id_viewer_editbox_label:SetPoint("TOPLEFT", sw_frame, 9, -7);
+
+    sw_frame.spell_icon = CreateFrame("Frame", "__swc_custom_spell_id", sw_frame);
+    sw_frame.spell_icon:SetSize(15, 15);
+    sw_frame.spell_icon:SetPoint("TOPLEFT", sw_frame, 101, -5);
+    local tex = sw_frame.spell_icon:CreateTexture(nil);
+    tex:SetAllPoints(sw_frame.spell_icon);
+    tex:SetTexture(GetSpellTexture(5));
+    sw_frame.spell_icon_tex = tex;
+
+    local tooltip_viewer_on = function(self)
+        local txt = sw_frame.spell_id_viewer_editbox:GetText();
+        local id = tonumber(txt);
+        if txt == "" then
+            id = 5; 
+        elseif not id then
+            id = 0;
+        end
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
+        GameTooltip:SetSpellByID(id);
+        GameTooltip:Show();
+    end
+    local tooltip_viewer_off = function(self)
+        GameTooltip:Hide();
+    end
+
+    sw_frame.spell_icon:SetScript("OnEnter", tooltip_viewer_on);
+    sw_frame.spell_icon:SetScript("OnLeave", tooltip_viewer_off);
+
+
+end
 local function create_sw_gui_settings_frame()
 
     sw_frame.settings_frame:SetWidth(370);
@@ -1155,59 +1245,7 @@ local function create_sw_gui_settings_frame()
         sw_frame.settings_frame.clear_original_tooltip
     );
 
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id = CreateFrame("EditBox", "sw_settings_overwrite_tooltip", sw_frame.settings_frame, "InputBoxTemplate");
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetPoint("TOPLEFT", sw_frame.settings_frame, 200, sw_frame.settings_frame.y_offset-5);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetText("");
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetSize(170, 15);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetAutoFocus(false);
-
-    local tooltip_overwrite_editbox = function(self)
-        local txt = self:GetText();
-        if txt == "" then
-            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Show();
-        else
-            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
-        end
-        local id = tonumber(txt);
-        if id and spells[id] then
-            self:SetTextColor(0, 1, 0);
-        else
-            self:SetTextColor(1, 0, 0);
-        end
-        self:ClearFocus();
-    end
-
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnEnterPressed", tooltip_overwrite_editbox);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnEscapePressed", tooltip_overwrite_editbox);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnEditFocusLost", tooltip_overwrite_editbox);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetScript("OnTextChanged", function(self)
-        local txt = self:GetText();
-        if txt == "" then
-            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Show();
-        else
-            sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
-        end
-        local id = tonumber(txt);
-        if id and spells[id] then
-            self:SetTextColor(0, 1, 0);
-        else
-            self:SetTextColor(1, 0, 0);
-        end
-    end);
-
-    if swc.core.__sw__test_all_spells then
-        sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetText(pairs(spells)(spells));
-    end
-    
-
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:SetFontObject(font);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:SetPoint("TOPLEFT", 202, sw_frame.settings_frame.y_offset-8);
-    sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:SetText("SPELL ID TOOLTIP OVERWRITE");
-
     if swc.core.expansion_loaded ~= swc.core.expansions.vanilla then
-        sw_frame.settings_frame.tmp_tooltip_overwrite_id_label:Hide();
-        sw_frame.settings_frame.tmp_tooltip_overwrite_id:Hide();
         sw_frame.settings_frame.icon_show_single_target_only:Hide();
     end
 end
@@ -2396,13 +2434,15 @@ local function create_sw_base_gui()
 
     sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.title:SetFontObject(font)
-    sw_frame.title:SetText("Stat Weights Classic");
-    sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 11, 0);
+    sw_frame.title:SetText("Stat Weights Classic v"..swc.core.version);
+    sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 50, 0);
 
     sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
         swc.core.event_dispatch[event](self, msg, msg2, msg3);
         end
     );
+
+    create_sw_spell_id_viewer();
     
     sw_frame.tab1 = CreateFrame("Button", "__sw_settings_button", sw_frame, "UIPanelButtonTemplate"); 
 
@@ -2476,7 +2516,6 @@ local function load_sw_ui()
             end,
             OnTooltipShow = function(tooltip)
                 tooltip:AddLine(swc.core.sw_addon_name..": Version "..swc.core.version);
-                tooltip:AddLine("Left/Right click: Toggle addon frame");
                 tooltip:AddLine("This icon can be removed in the addon's settings tab");
                 tooltip:AddLine("More info about this addon at:");
                 tooltip:AddLine("https://www.curseforge.com/wow/addons/stat-weights-classic");

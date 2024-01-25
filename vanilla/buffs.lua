@@ -1064,8 +1064,8 @@ local target_buffs_predefined = {
     [403501] = {
         apply = function(loadout, effects, buff)
             if not buff.src or buff.src == "player" then
-                effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
-                    effects.by_school.target_spell_dmg_taken[magic_school.shadow] + 0.2;
+                effects.by_school.target_spell_dmg_taken_ot[magic_school.shadow] =
+                    effects.by_school.target_spell_dmg_taken_ot[magic_school.shadow] + 0.2;
             end
             if loadout.runes[swc.talents.rune_ids.soul_siphon] then
                 ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Drain Soul"], 0.06, 0);

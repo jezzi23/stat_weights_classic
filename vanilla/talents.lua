@@ -323,9 +323,9 @@ local function create_talents()
                 end
             },
             [203] = {
-                apply = function(loadout, effects, pts, missing_pts)
+                apply = function(loadout, effects, pts)
                     effects.by_school.spell_crit[magic_school.holy] = 
-                        effects.by_school.spell_crit[magic_school.holy] + 0.01 * missing_pts;
+                        effects.by_school.spell_crit[magic_school.holy] + 0.01 * pts;
                 end
             },
             [205] = {
@@ -500,9 +500,9 @@ local function create_talents()
             },
             -- TODO VANILLA: Pom improvement in buffs
             [113] = {
-                apply = function(loadout, effects, pts, missing_pts)
+                apply = function(loadout, effects, pts)
                     effects.by_school.spell_crit[magic_school.holy] = 
-                        effects.by_school.spell_crit[magic_school.holy] + missing_pts * 0.01;
+                        effects.by_school.spell_crit[magic_school.holy] + pts * 0.01;
                 end
             },
         };

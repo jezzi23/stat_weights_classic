@@ -550,7 +550,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     else 
 
         target_vuln_mod = target_vuln_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
-        target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
+        target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school] + effects.by_school.target_spell_dmg_taken_ot[spell.school]);
 
         local spell_dmg_mod_school = effects.by_school.spell_dmg_mod[spell.school];
 
@@ -808,7 +808,7 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
     info.cost_per_sec = stats.cost/stats.cast_time;
     info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
     if bit.band(spell.flags, spell_flags.cast_with_ot_dur) ~= 0 then
-        info.effect_per_dur = info.expectation/math.max(info.ot_duration + stats.cast_time);
+        info.effect_per_dur = info.expectation/info.ot_duration;
     else
         info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
     end

@@ -3006,7 +3006,7 @@ local function create_spells()
                 lvl_req             = 30,
                 lvl_max             = 39,
                 lvl_outdated        = 39,
-                flags               = bit.bor(spell_flags.heal, spell_flags.aoe, spell_flags.cast_with_ot_dur, spell_flags.over_time_range),
+                flags               = bit.bor(spell_flags.heal, spell_flags.aoe, spell_flags.over_time_range),
                 school              = magic_school.holy,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 1.3,

@@ -108,25 +108,6 @@ local function append_tooltip_spell_info(is_fake)
     local spell_name, spell_id = GameTooltip:GetSpell();
     local spell = spells[spell_id];
 
-    local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.settings_frame.tmp_tooltip_overwrite_id:GetText());
-    if tmp_tooltip_overwrite_spell_id and spells[tmp_tooltip_overwrite_spell_id] then
-        local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
-        if not lname then
-            GameTooltip:ClearLines();
-            GameTooltip:AddLine("OVERWRITING TOOLTIP WITH: "..swc.abilities.english_spell_name_to_base_id[spell.base_id]);
-        end
-        spell = spells[tmp_tooltip_overwrite_spell_id];
-        GameTooltip:AddLine("Remove this overwrite spell id from /swc settings or /reload", 1.0, 0.0, 0.0);
-        if swc.core.__sw__test_all_spells then
-
-            spell_jump_key = spell_jump_itr(spells, spell_jump_key);
-            if not spell_jump_key then
-                spell_jump_key = spell_jump_itr(spells);
-            end
-            sw_frame.settings_frame.tmp_tooltip_overwrite_id:SetText(tostring(spell_jump_key));
-        end
-    end
-
     if not spell then
         return;
     end
@@ -148,6 +129,15 @@ end
 
 local function update_tooltip(tooltip)
 
+
+    if swc.core.__sw__test_all_spells and sw_frame:IsShown() then
+
+        spell_jump_key = spell_jump_itr(spells, spell_jump_key);
+        if not spell_jump_key then
+            spell_jump_key = spell_jump_itr(spells);
+        end
+        sw_frame.spell_id_viewer_editbox:SetText(tostring(spell_jump_key));
+    end
     --tooltips update dynamically without debug setting
     if not swc.core.__sw__debug__ and tooltip:IsShown() then
         local spell_name, id = tooltip:GetSpell();
@@ -166,8 +156,8 @@ local function update_tooltip(tooltip)
 
         -- Workaround: need to set some spell id that exists to get tooltip refreshed when
         --            looking at custom spell id tooltip
-        local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.settings_frame.tmp_tooltip_overwrite_id:GetText());
-        if tmp_tooltip_overwrite_spell_id and spells[tmp_tooltip_overwrite_spell_id] then
+        if swc.core.__sw__test_all_spells and spells[tmp_tooltip_overwrite_spell_id] then
+            local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.spell_id_viewer_editbox:GetText());
             tooltip:ClearLines();
             local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
             if lname then
@@ -176,17 +166,12 @@ local function update_tooltip(tooltip)
             else
                 tooltip:SetSpellByID(6603);
             end
+        end
 
-        elseif id and spells[id] then
+        if id and spells[id] then
             tooltip:ClearLines();
             tooltip:SetSpellByID(id);
 
-            --DELETEME
-            --if sw_frame.stat_comparison_frame:IsShown() then
-            --    swc_stat_calc_tooltip:ClearLines();
-            --    swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_PRESERVE" );
-            --    swc_stat_calc_tooltip:SetSpellByID(id);
-            --end
         end
     end
 end

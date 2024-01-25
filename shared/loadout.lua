@@ -83,11 +83,12 @@ local function empty_effects(effects)
 
     effects.by_school = {};
     effects.by_school.spell_dmg_hit = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.spell_dmg_mod = {0, 0, 0, 0, 0, 0, 0}; -- mul
-    effects.by_school.spell_dmg_mod_add = {0, 0, 0, 0, 0, 0, 0}; --add
+    effects.by_school.spell_dmg_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.spell_dmg_mod_add = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.spell_crit = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.spell_crit_mod = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_spell_dmg_taken = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.target_spell_dmg_taken_ot = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_mod_res= {0, 0, 0, 0, 0, 0, 0};
 
