@@ -422,7 +422,8 @@ local function dynamic_loadout(loadout)
         bit.band(loadout.flags, bit.band(bit.bnot(loadout_flags.has_target),
                                          bit.bnot(loadout_flags.target_snared),
                                          bit.bnot(loadout_flags.target_frozen),
-                                         bit.bnot(loadout_flags.target_friendly)));
+                                         bit.bnot(loadout_flags.target_friendly),
+                                         bit.bnot(loadout_flags.target_pvp)));
     loadout.enemy_hp_perc = loadout.target_hp_perc_default;
     loadout.friendly_hp_perc = loadout.target_hp_perc_default;
 
@@ -438,6 +439,8 @@ local function dynamic_loadout(loadout)
 
         if UnitIsFriend("player", "target") then
             loadout.flags = bit.bor(loadout.flags, loadout_flags.target_friendly);
+        elseif UnitIsPlayer("target") then
+            loadout.flags = bit.bor(loadout.flags, loadout_flags.target_pvp);
         end
 
         loadout.target_creature_type = UnitCreatureType("target");

@@ -70,6 +70,8 @@ local loadout_flags = {
     target_friendly                     = bit.lshift(1, 7),
     always_max_mana                     = bit.lshift(1, 8),
     custom_lvl                          = bit.lshift(1, 9),
+    target_pvp                          = bit.lshift(1, 10),
+    
 };
 
 

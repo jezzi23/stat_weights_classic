@@ -153,8 +153,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     local hit_str = string.format("(%.1f%% hit)", stats.hit*100);
-    if stats.target_resi > 0 then
-        hit_str = string.format("(%.1f%% hit||%.1f%% resist)", stats.hit*100, stats.target_avg_resi*100);
+    if stats.target_avg_resi > 0 then
+        hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit*100, stats.target_avg_resi*100);
     end
     if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
         if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
@@ -349,6 +349,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     if eval.spell.ot_if_hit ~= 0 and sw_frame.settings_frame.tooltip_normal_ot:GetChecked() then
 
+        if bit.band(spell.flags, spell_flags.dot_resi_penetrate) ~= 0 and stats.target_avg_resi > 0 then 
+            hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit*100, stats.target_avg_resi*10);
+        end
         -- round over time num for niceyness
         local ot = tonumber(string.format("%.0f", eval.spell.ot_if_hit));
 

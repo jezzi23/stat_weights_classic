@@ -766,11 +766,12 @@ local function update_spell_icons(loadout, effects)
 
                 local spell_name = v.frame.SpellName:GetText();
                 local spell_rank_name = v.frame.SpellSubName:GetText();
+                
                 local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
 
                 local remaining_spells_in_page = 12;
                 if page == page_max then
-                    remaining_spells_in_page = num_spells_in_tab%12;
+                    remaining_spells_in_page = 1 + (num_spells_in_tab-1)%12;
                 end
                 local rearranged_k = 1 + 5*(1-k%2) + (k-k%2)/2;
 

@@ -62,12 +62,16 @@ local function get_combat_rating_effect(rating_id, level)
     return 1;
 end
 
-local function spell_hit(lvl, lvl_target, hit)
+local function spell_hit(lvl, lvl_target, hit, pvp)
 
-    base_hit = 0;
+    local base_hit = 0;
+    local each_lvl_miss = 0.11;
+    if pvp then
+        each_lvl_miss = 0.07;
+    end
 
     if lvl_target - lvl > 2 then
-        base_hit =  0.94 - 0.11 * (lvl_target - lvl - 2);
+        base_hit =  0.94 - each_lvl_miss * (lvl_target - lvl - 2);
     else
         base_hit = 0.96 - 0.01 * (lvl_target - lvl);
     end
@@ -75,12 +79,24 @@ local function spell_hit(lvl, lvl_target, hit)
     return math.max(0.01, math.min(0.99, base_hit + hit));
 end
 
+local function npc_lvl_resi_base(self_lvl, target_lvl)
+    -- higher lvl npcs always have impenetrable base resistance for non binary spells
+    return math.floor(self_lvl * math.max(0, target_lvl - self_lvl) * 2/15);
+end
+
 local function target_avg_magical_res(self_lvl, target_res)
-    return math.min(0.75, 0.75 * (target_res/(self_lvl * 5)))
+    return math.min(0.75, 0.75 * (target_res/(math.max(self_lvl * 5, 100))))
+end
+
+local function target_avg_magical_mitigation_non_binary(self_lvl, target_res)
+    -- adjusted according to @src: https://royalgiraffe.github.io/resist-guide
+    local resi_to_cap_ratio = target_res/(math.max(self_lvl * 5, 100));
+    local beyond_half_resist_falloff = (3/16) * math.max(0, resi_to_cap_ratio - 2/3);
+    return math.min(0.75, 0.75 * resi_to_cap_ratio - beyond_half_resist_falloff)
 end
 
 -- base mana doesn't seem to follow a formula
--- use some rough estimate when using a custom level
+-- use some rough estimate when using a custom level by interpolating between
 local lvl_20_mana_bracket = {
     ["DRUID"] =     { start = 50,   per_lvl = (329-50)/19},
     ["MAGE"] =      { start = 100,  per_lvl = (343-100)/19},
@@ -329,6 +345,28 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     local cast_mod_mul = 0.0;
 
+    stats.target_resi = 0;
+    stats.target_avg_resi = 0;
+
+    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
+        -- mod res by school currently used to snapshot equipment and set bonuses
+        stats.target_resi = math.min(loadout.lvl*5,
+                                     math.max(0, loadout.target_res - effects.by_school.target_res[spell.school]));
+
+        if bit.band(spell.flags, spell_flags.binary) ~= 0 then
+            stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
+        else
+
+            local base_resi = 0;
+            if bit.band(loadout.flags, loadout_flags.target_pvp) == 0 then
+                base_resi = npc_lvl_resi_base(loadout.lvl, loadout.target_lvl);
+            end
+            stats.target_resi = math.min(loadout.lvl*5,
+                                         math.max(base_resi, loadout.target_res - effects.by_school.target_res[spell.school] + base_resi));
+            stats.target_avg_resi = target_avg_magical_mitigation_non_binary(loadout.lvl, stats.target_resi);
+        end
+    end
+
     stats.extra_hit = loadout.spell_dmg_hit_by_school[spell.school] + effects.by_school.spell_dmg_hit[spell.school];
     if spell.base_id == spell_name_to_id["Living Flame"] then
         stats.extra_hit = stats.extra_hit + effects.by_school.spell_dmg_hit[magic_school.arcane];
@@ -342,9 +380,20 @@ local function stats_for_spell(stats, spell, loadout, effects)
     local hit_from_rating = 0.01 * (loadout.hit_rating + effects.raw.hit_rating)/hit_rating_per_perc
     stats.extra_hit = stats.extra_hit + hit_from_rating;
 
-    stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit);
+    local target_is_pvp = bit.band(loadout.flags, loadout_flags.target_pvp) ~= 0;
+    stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit, target_is_pvp);
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
         stats.hit = 1.0;
+    elseif bit.band(spell.flags, spell_flags.binary) ~= 0 then
+        -- @src: https://royalgiraffe.github.io/resist-guide
+        -- binary spells will have lower hit chance against higher resistances
+        -- rather than partial resists
+        local base_hit = spell_hit(loadout.lvl, loadout.target_lvl, 0.0, target_is_pvp);
+        stats.hit = math.min(0.99,
+                            base_hit * (1.0 - stats.target_avg_resi) + stats.extra_hit);
+                             
+        
+        stats.target_avg_resi = 0.0;
     else
         stats.hit = math.min(0.99, stats.hit);
     end
@@ -365,14 +414,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
-
-    stats.target_resi = 0;
-    if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-        -- mod res by school currently used to snapshot equipment and set bonuses
-        stats.target_resi = math.max(0, loadout.target_res - effects.by_school.target_res[spell.school]);
-    end
-
-    stats.target_avg_resi = target_avg_magical_res(loadout.lvl, stats.target_resi);
 
 
     if class == "PRIEST" then
@@ -758,8 +799,15 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
         info.expected_ot = info.expected_ot_st * num_unbounded_targets;
     end
 
-    info.expectation_st = (info.expectation_direct_st + info.expected_ot_st) * (1 - stats.target_avg_resi);
-    info.expectation = (info.expectation_direct + info.expected_ot) * (1 - stats.target_avg_resi);
+    local dot_resi_penetration = 1.0;
+    if bit.band(spell.flags, spell_flags.dot_resi_penetrate) ~= 0 then
+        dot_resi_penetration = 0.1;
+    end
+
+    info.expectation_st = info.expectation_direct_st * (1 - stats.target_avg_resi) +
+                          info.expected_ot_st * (1 - stats.target_avg_resi*dot_resi_penetration);
+    info.expectation = info.expectation_direct * (1 - stats.target_avg_resi) +
+                       info.expected_ot * (1 - stats.target_avg_resi*dot_resi_penetration);
 
     if original_spell_id ~= spell.base_id then
         -- using alias for swiftmend/conflagrate

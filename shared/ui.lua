@@ -706,7 +706,7 @@ local function create_sw_spell_id_viewer()
             sw_frame.spell_id_viewer_editbox_label:Hide();
         end
         local id = tonumber(txt);
-        if GetSpellInfo(id) then
+        if id and id <= bit.lshift(1, 31) and GetSpellInfo(id) then
             self:SetTextColor(0, 1, 0);
         else
             self:SetTextColor(1, 0, 0);
@@ -1917,7 +1917,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnEditFocusLost", editbox_lvl);
     sw_frame.loadouts_frame.rhs_list.level_editbox:SetScript("OnTextChanged", function(self)
         -- silently try to apply valid changes but don't panic while focus is on
-        local lvl_diff = tonumber(txt);
+        local lvl_diff = tonumber(self:GetText());
         local loadout = active_loadout();
         if lvl_diff and lvl_diff == math.floor(lvl_diff) and loadout.lvl + lvl_diff >= 1 and loadout.lvl + lvl_diff <= 83 then
 

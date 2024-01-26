@@ -666,16 +666,6 @@ local buffs_predefined = {
         filter = buff_filters.mage,
         category = buff_category.class,
     },
-    -- flame shock (lava burst crit)
-    [8050] = {
-        apply = function(loadout, effects, buff)
-
-            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lava Burst"], 1.0, 0.0);    
-        end,
-        filter = bit.bor(buff_filters.shaman, buff_filters.hostile),
-        category = buff_category.class,
-        tooltip = "Lava Burst 100% crit chance",
-    },
     -- water shield
     [408510] = {
         apply = function(loadout, effects, buff)
@@ -1150,6 +1140,16 @@ local target_buffs_predefined = {
         filter = bit.bor(buff_filters.troll, buff_filters.hostile),
         category = buff_category.class,
         tooltip = "5% more damage to beasts (only tracks on english client)",
+    },
+    -- flame shock (lava burst crit)
+    [8050] = {
+        apply = function(loadout, effects, buff)
+
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lava Burst"], 1.0, 0.0);    
+        end,
+        filter = bit.bor(buff_filters.shaman, buff_filters.hostile),
+        category = buff_category.class,
+        tooltip = "Lava Burst 100% crit chance",
     },
 };
 
