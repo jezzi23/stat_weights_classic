@@ -115,15 +115,15 @@ local function append_tooltip_spell_info(is_fake)
     if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
 
         local loadout, effects = active_loadout_and_effects();
-        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects);
+        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects, nil, spell_id);
     else
 
         local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
-        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed);
+        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed, nil, spell_id);
 
         swc_stat_calc_tooltip:ClearLines();
         swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT", 0, -select(2, swc_stat_calc_tooltip:GetSize()));
-        swc.tooltip.tooltip_spell_info(swc_stat_calc_tooltip, spell, loadout, effects);
+        swc.tooltip.tooltip_spell_info(swc_stat_calc_tooltip, spell, loadout, effects, nil, spell_id);
     end
 end
 

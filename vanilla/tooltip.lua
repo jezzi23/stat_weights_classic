@@ -32,6 +32,8 @@ local magic_school                              = swc.abilities.magic_school;
 
 local loadout_flags                             = swc.utils.loadout_flags;
 local class                                     = swc.utils.class;
+local spell_cost                                = swc.utils.spell_cost;
+local spell_cast_time                           = swc.utils.spell_cast_time;
 
 local set_tiers                                 = swc.equipment.set_tiers;
 
@@ -49,7 +51,7 @@ local end_tooltip_section                       = swc.tooltip.end_tooltip_sectio
 
 local stats = {};
 
-local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_tooltip_on)
+local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_tooltip_on, spell_id)
 
     -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
     if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
@@ -527,17 +529,24 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() and not repeated_tooltip_on then
 
-        if stats.cast_time_nogcd ~= stats.cast_time then
-            tooltip:AddLine(string.format("Expected Cast Time: 1.5 sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
-        else
-            tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
+        local tooltip_cast = spell_cast_time(spell_id);
+        if not tooltip_cast or tooltip_cast ~= stats.cast_time then
+            if stats.cast_time_nogcd ~= stats.cast_time then
+                tooltip:AddLine(string.format("Expected Cast Time: 1.5 sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
+            else
+                tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
+            end
         end
+
     end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() and not repeated_tooltip_on then
         if loadout.lvl ~= UnitLevel("player") and bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
             tooltip:AddLine(string.format("NOTE: Mana cost at custom lvl is inaccurate; roughly estimated",stats.cost), 1.0, 0.0, 0.0);
         end
-        tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
+        local tooltip_cost = spell_cost(spell_id);
+        if not tooltip_cost or tooltip_cost ~= stats.cost then
+            tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
+        end
     end
     if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
         tooltip:AddLine(effect_per_cost..": "..string.format("%.2f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
@@ -692,7 +701,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     if spell.healing_version then
         -- used for holy nova
-        tooltip_spell_info(tooltip, spell.healing_version, loadout, effects, true);
+        tooltip_spell_info(tooltip, spell.healing_version, loadout, effects, true, spell_id);
     end
 end
 

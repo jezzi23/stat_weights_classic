@@ -6531,7 +6531,7 @@ local function create_spells()
                 lvl_req             = 10,
                 lvl_max             = 23,
                 lvl_outdated        = 23,
-                flags               = 0,
+                flags               = bit.bor(spell_flags.binary, spell_flags.channel_missable),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0.4290,

@@ -74,6 +74,35 @@ local loadout_flags = {
     
 };
 
+local function spell_cost(spell_id)
+
+    local costs = GetSpellPowerCost(spell_id);
+    if costs then
+        local cost_table = costs[1];
+        if cost_table then
+            if cost_table.cost then
+                return cost_table.cost, cost_table.name;
+            else
+                return nil;
+            end
+        end
+    end
+end
+
+local function spell_cast_time(spell_id)
+
+    local cast_time = select(4, GetSpellInfo(spell_id));
+    if cast_time  then
+        if cast_time == 0 then
+            --cast_time = nil;
+            cast_time = 1.5;
+        else
+            cast_time = cast_time/1000;
+        end
+    end
+    return cast_time;
+end
+
 
 utils.ensure_exists_and_mul = ensure_exists_and_mul;
 utils.ensure_exists_and_add = ensure_exists_and_add;
@@ -86,6 +115,8 @@ utils.deep_table_copy = deep_table_copy;
 utils.stat = stat;
 utils.stat_ids_in_ui = stat_ids_in_ui;
 utils.loadout_flags = loadout_flags;
+utils.spell_cost = spell_cost;
+utils.spell_cast_time = spell_cast_time;
 
 local addon_name, swc = ...;
 swc.utils = utils;

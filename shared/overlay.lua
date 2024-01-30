@@ -23,6 +23,9 @@
 
 local addon_name, swc = ...;
 
+local spell_cost                                    = swc.utils.spell_cost;
+local spell_cast_time                               = swc.utils.spell_cast_time;
+
 local spells                                        = swc.abilities.spells;
 local spell_flags                                   = swc.abilities.spell_flags;
 
@@ -107,35 +110,6 @@ local function action_id_of_button(button)
         -- Dominos seems to set GetAttribute function for the 1-6 default blizz bars
         return button:GetAttribute("action");
     end
-end
-
-local function spell_cost(spell_id)
-
-    local costs = GetSpellPowerCost(spell_id);
-    if costs then
-        local cost_table = costs[1];
-        if cost_table then
-            if cost_table.cost then
-                return cost_table.cost, cost_table.name;
-            else
-                return nil;
-            end
-        end
-    end
-end
-
-local function spell_cast_time(spell_id)
-
-    local cast_time = select(4, GetSpellInfo(spell_id));
-    if cast_time  then
-        if cast_time == 0 then
-            --cast_time = nil;
-            cast_time = 1.5;
-        else
-            cast_time = cast_time/1000;
-        end
-    end
-    return cast_time;
 end
 
 local function spell_id_of_action(action_id)
@@ -620,12 +594,12 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         spell_cache[spell_id].heal = {};
     end
     local spell_variant = spell_cache[spell_id].dmg;
-    if bit.band(spell.flags, spell_flags.heal) then
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
         spell_variant = spell_cache[spell_id].heal;
     end
-    if not spell_variant.seq then
+    if not spell_cache[spell_id].seq then
 
-        spell_variant.seq = -1;
+        spell_cache[spell_id].seq = -1;
         spell_variant.stats = {};
         spell_variant.spell_effect = {};
     end
@@ -853,4 +827,7 @@ overlay.reassign_overlay_icon        = reassign_overlay_icon;
 overlay.clear_overlays               = clear_overlays;
 
 swc.overlay = overlay;
+
+__swc_spell_cache = spell_cache;
+print(spell_cache, __swc_spell_cache);
 

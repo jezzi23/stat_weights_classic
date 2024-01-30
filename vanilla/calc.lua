@@ -22,6 +22,7 @@
 
 local addon_name, swc = ...;
 
+
 local spells                            = swc.abilities.spells;
 local spell_name_to_id                  = swc.abilities.spell_name_to_id;
 local spell_names_to_id                 = swc.abilities.spell_names_to_id;
@@ -36,6 +37,8 @@ local loadout_flags                     = swc.utils.loadout_flags;
 local class                             = swc.utils.class;
 local deep_table_copy                   = swc.utils.deep_table_copy;
 local loadout_flags                     = swc.utils.loadout_flags;
+local spell_cost                        = swc.utils.spell_cost;
+local spell_cast_time                   = swc.utils.spell_cast_time;
 
 local effects_zero_diff                 = swc.loadout.effects_zero_diff;
 local effects_diff                      = swc.loadout.effects_diff;
