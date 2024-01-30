@@ -124,6 +124,7 @@ local function empty_effects(effects)
     effects.raw.cost_mod_base = 0;
     effects.raw.cost_flat = 0;
     effects.raw.resource_refund = 0;
+    effects.raw.added_physical_spell_crit = 0;
 
     effects.raw.haste_rating = 0;
     effects.raw.crit_rating = 0;

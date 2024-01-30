@@ -103,6 +103,16 @@ local function spell_cast_time(spell_id)
     return cast_time;
 end
 
+local function add_all_spell_crit(effects, amount, inactive)
+    if inactive then
+        for i = 1, 7 do
+            effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + amount;
+        end
+    else
+        effects.raw.added_physical_spell_crit = effects.raw.added_physical_spell_crit + amount;
+    end
+end
+
 
 utils.ensure_exists_and_mul = ensure_exists_and_mul;
 utils.ensure_exists_and_add = ensure_exists_and_add;
@@ -117,6 +127,7 @@ utils.stat_ids_in_ui = stat_ids_in_ui;
 utils.loadout_flags = loadout_flags;
 utils.spell_cost = spell_cost;
 utils.spell_cast_time = spell_cast_time;
+utils.add_all_spell_crit = add_all_spell_crit;
 
 local addon_name, swc = ...;
 swc.utils = utils;

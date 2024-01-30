@@ -27,6 +27,7 @@ local ensure_exists_and_mul         = swc.utils.ensure_exists_and_mul;
 local class                         = swc.utils.class;
 local race                          = swc.utils.race;
 local stat                          = swc.utils.stat;
+local add_all_spell_crit            = swc.utils.add_all_spell_crit;
 
 local magic_school                  = swc.abilities.magic_school;
 local spell_name_to_id              = swc.abilities.spell_name_to_id;
@@ -199,11 +200,7 @@ local function create_runes()
             [rune_ids.burnout] = {
                 apply = function(loadout, effects, inactive)
                     -- 15% spell crit but 1% more base mana cost on crit
-                    if inactive then
-                        for i = 1, 7 do
-                            effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.15;
-                        end
-                    end
+                    add_all_spell_crit(effects, 0.15, inactive);
                 end,
                 wowhead_id = "56j9"
             },
@@ -223,11 +220,7 @@ local function create_runes()
             [rune_ids.lake_of_fire          ] = { wowhead_id = "56mz"},
             [rune_ids.demonic_tactics       ] = {
                 apply = function(loadout, effects, inactive)
-                    if inactive then
-                        for i = 1, 7 do
-                            effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.1;
-                        end
-                    end
+                    add_all_spell_crit(effects, 0.1, inactive);
                 end,
                 wowhead_id = "56s8",
             },
@@ -605,8 +598,9 @@ local function create_talents()
             },
             [311] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    for i = 2,7 do
-                        effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + missing_pts * 0.02;
+                    -- TODO: Is this affecting active GetSpellCritChance nature school??
+                    for k, v in pairs(spell_names_to_id({"Lightning Shield", "Healing Wave", "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Chain Heal"})) do
+                        ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
                     end
                 end
             },
@@ -671,6 +665,7 @@ local function create_talents()
                     for i = 2,7 do
                         effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01 * missing_pts;
                     end
+                    effects.raw.added_physical_spell_crit = effects.raw.added_physical_spell_crit + (pts-missing_pts)*0.01;
                 end
             },
             [201] = {

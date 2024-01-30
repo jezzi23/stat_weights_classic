@@ -34,10 +34,26 @@ local class_to_int_to_crit_scaling = {
     ["PALADIN"] = 54.0,
 };
 
-local function int_to_crit_rating(int, lvl)
-    local lvl_60_ratio = int/class_to_int_to_crit_scaling[class];
+local class_to_base_crit = {
+    ["WARLOCK"] = 1.7,
+    ["DRUID"]   = 1.8,
+    ["SHAMAN"]  = 2.3,
+    ["MAGE"]    = 0.2,
+    ["PRIEST"]  = 0.8,
+    ["PALADIN"] = 3.5,
+};
 
-    return 60 * lvl_60_ratio/lvl;
+local function int_to_crit_rating(int, loadout, effects)
+    if loadout.lvl == 60 then
+        return int/class_to_int_to_crit_scaling[class];
+    elseif loadout.lvl == UnitLevel("player") then
+        local _, intellect = UnitStat("player", 4);
+        local ratio = intellect/(GetSpellCritChance(1)-class_to_base_crit[class]-effects.raw.added_physical_spell_crit*100);
+        return int/ratio;
+    else
+        -- rough estimate
+        return 60 * int/class_to_int_to_crit_scaling[class]/loadout.lvl;
+    end
 end
 
 local function effects_diff(loadout, effects, diff)
@@ -64,7 +80,7 @@ local function effects_diff(loadout, effects, diff)
     effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
     effects.raw.mp5 = effects.raw.mp5 + diff.stats[stat.int] * (1 + effects.by_attribute.stat_mod[stat.int]) * effects.raw.mp5_from_int_mod;
 
-    local crit_rating_from_int = int_to_crit_rating(diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]), loadout.lvl);
+    local crit_rating_from_int = int_to_crit_rating(diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]), loadout, effects);
 
     effects.raw.mana = effects.raw.mana + (diff.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]) * 15)*(1.0 + effects.raw.mana_mod);
 
@@ -95,7 +111,7 @@ local function add_int_mod(loadout, effects, inactive_value, mod_value)
     effects.by_attribute.stat_mod[stat.int] = effects.by_attribute.stat_mod[stat.int] + mod_value-inactive_value;
 
     local int_gained = inactive_value * loadout.stats[stat.int]/(1.0 + effects.by_attribute.stat_mod[stat.int]);
-    local crit_rating_gained = int_to_crit_rating(int_gained, loadout.lvl);
+    local crit_rating_gained = int_to_crit_rating(int_gained, loadout, effects);
     local mana_gained = int_gained * 15 * (1.0 + effects.raw.mana_mod);
 
     effects.raw.crit_rating = effects.raw.crit_rating +  crit_rating_gained;
@@ -119,7 +135,6 @@ local function add_spirit_mod(loadout, effects, inactive_value, mod_value)
     effects.by_attribute.stat_mod[stat.spirit] = effects.by_attribute.stat_mod[stat.spirit] + inactive_value;
 end
 
-swc.loadout.int_to_crit_rating =  int_to_crit_rating;
 swc.loadout.effects_diff =  effects_diff;
 swc.loadout.add_mana_mod =  add_mana_mod;
 swc.loadout.add_int_mod =  add_int_mod;

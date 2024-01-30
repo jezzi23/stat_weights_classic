@@ -30,6 +30,7 @@ local class                         = swc.utils.class;
 local race                          = swc.utils.race;
 local faction                       = swc.utils.faction;
 local loadout_flags                 = swc.utils.loadout_flags;
+local add_all_spell_crit            = swc.utils.add_all_spell_crit;
 
 local magic_school                  = swc.abilities.magic_school;
 local spell_name_to_id              = swc.abilities.spell_name_to_id;
@@ -122,11 +123,7 @@ local buffs_predefined = {
     -- onyxia
     [22888] = {
         apply = function(loadout, effects, buff, inactive)
-            if inactive then
-                for i = 1, 7 do
-                    effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.1;
-                end
-            end
+            add_all_spell_crit(effects, 0.1, inactive);
         end,
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
@@ -146,13 +143,12 @@ local buffs_predefined = {
     [15366] = {
         apply = function(loadout, effects, buff, inactive)
             if inactive then
-                for i = 1, 7 do
-                    effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.05;
-                end
                 for i = 1, 5 do
                     effects.by_attribute.stats[i] = effects.by_attribute.stats[i] + 15;
                 end
             end
+
+            add_all_spell_crit(effects, 0.05, inactive);
         end,
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
@@ -507,11 +503,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
 
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.moonkin_crit) == 0 then
-                if inactive then
-                    for i = 1, 7 do
-                        effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.03;
-                    end
-                end
+                add_all_spell_crit(effects, 0.03, inactive);
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.moonkin_crit);
             end
@@ -566,10 +558,9 @@ local buffs_predefined = {
             
             if inactive then
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 36;
-                for i = 1, 7 do
-                    effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.01;
-                end
             end
+
+            add_all_spell_crit(effects, 0.01, inactive);
         end,
         filter = buff_filters.caster,
         category = buff_category.consumes,
@@ -710,11 +701,8 @@ local buffs_predefined = {
     -- demonic grace
     [425463] = {
         apply = function(loadout, effects, buff, inactive)
-            if inactive then
-                for i = 1, 7 do
-                    effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + 0.3;
-                end
-            end
+
+            add_all_spell_crit(effects, 0.3, inactive);
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,
@@ -783,6 +771,25 @@ local buffs_predefined = {
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
         tooltip = "3% spell hit and 25 sp",
+    },
+    -- bgs berserking buff
+    [23505] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.3 - 1.0;
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.world_buffs,
+        tooltip = "30% dmg",
+    },
+    -- sod arcane power
+    [430952] = {
+        apply = function(loadout, effects, buff, inactive)
+            add_all_spell_crit(effects, 0.01, inactive);
+        end,
+        filter = buff_filters.mage,
+        category = buff_category.class,
+        tooltip = "1% spell crit chance",
+        icon_id = GetItemIcon(211957),
     },
 };
 
