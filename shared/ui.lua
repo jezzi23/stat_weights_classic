@@ -679,6 +679,7 @@ local function create_sw_spell_id_viewer()
     sw_frame.spell_id_viewer_editbox:SetSize(90, 10);
     sw_frame.spell_id_viewer_editbox:SetAutoFocus(false);
 
+
     local tooltip_overwrite_editbox = function(self)
         local txt = self:GetText();
         if txt == "" then
@@ -687,13 +688,15 @@ local function create_sw_spell_id_viewer()
             sw_frame.spell_id_viewer_editbox_label:Hide();
         end
         local id = tonumber(txt);
-        if GetSpellInfo(id) then
+        if GetSpellInfo(id) or spells[id] then
             self:SetTextColor(0, 1, 0);
         else
             self:SetTextColor(1, 0, 0);
         end
         self:ClearFocus();
     end
+
+    sw_frame.spell_viewer_invalid_spell_id = 204;
 
     sw_frame.spell_id_viewer_editbox:SetScript("OnEnterPressed", tooltip_overwrite_editbox);
     sw_frame.spell_id_viewer_editbox:SetScript("OnEscapePressed", tooltip_overwrite_editbox);
@@ -705,8 +708,11 @@ local function create_sw_spell_id_viewer()
         else
             sw_frame.spell_id_viewer_editbox_label:Hide();
         end
+        if spell_name_to_id[txt] then
+            self:SetText(tostring(spell_name_to_id[txt]));
+        end
         local id = tonumber(txt);
-        if id and id <= bit.lshift(1, 31) and GetSpellInfo(id) then
+        if id and id <= bit.lshift(1, 31) and (GetSpellInfo(id) or spells[id]) then
             self:SetTextColor(0, 1, 0);
         else
             self:SetTextColor(1, 0, 0);
@@ -714,12 +720,19 @@ local function create_sw_spell_id_viewer()
         end
 
         if id == 0 then
-            sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(5));
+            sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(265));
+        elseif not GetSpellInfo(id) then
+            sw_frame.spell_icon_tex:SetTexture(135791);
         else
             sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(id));
         end
         GameTooltip:SetOwner(sw_frame.spell_icon, "ANCHOR_BOTTOMRIGHT");
-        GameTooltip:SetSpellByID(id);
+        if not GetSpellInfo(id) and spells[id] then
+
+            GameTooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
+        else
+            GameTooltip:SetSpellByID(id);
+        end
     end);
 
     if swc.core.__sw__test_all_spells then
@@ -737,19 +750,25 @@ local function create_sw_spell_id_viewer()
     sw_frame.spell_icon:SetPoint("TOPLEFT", sw_frame, 101, -5);
     local tex = sw_frame.spell_icon:CreateTexture(nil);
     tex:SetAllPoints(sw_frame.spell_icon);
-    tex:SetTexture(GetSpellTexture(5));
+    tex:SetTexture(GetSpellTexture(265));
     sw_frame.spell_icon_tex = tex;
+
 
     local tooltip_viewer_on = function(self)
         local txt = sw_frame.spell_id_viewer_editbox:GetText();
         local id = tonumber(txt);
         if txt == "" then
-            id = 5; 
+            id = 265; 
         elseif not id then
             id = 0;
         end
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
-        GameTooltip:SetSpellByID(id);
+        if not GetSpellInfo(id) and spells[id] then
+
+            GameTooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
+        else
+            GameTooltip:SetSpellByID(id);
+        end
         GameTooltip:Show();
     end
     local tooltip_viewer_off = function(self)
@@ -1555,20 +1574,10 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_lname, buff_inf
     buffs_table[index] = {};
     buffs_table[index].checkbutton = CreateFrame("CheckButton", "loadout_apply_buffs_"..buff_lname, parent_frame, "ChatConfigCheckButtonTemplate");
     buffs_table[index].checkbutton.buff_info = buff_info.filter;
+    buffs_table[index].checkbutton.buff_category = buff_info.category;
     buffs_table[index].checkbutton.buff_lname = buff_lname;
     buffs_table[index].checkbutton.buff_type = buff_type;
-    local buff_name_max_len = 25;
-    if buff_info.name then
-        -- overwrite name if its bad for display
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_info.name:sub(1, buff_name_max_len));
-    else
-        getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(buff_lname:sub(1, buff_name_max_len));
-    end
-    local buff_text_colors = {
-
-    };
     local category_txt = "";
-    local checkbutton_txt = getglobal(buffs_table[index].checkbutton:GetName() .. 'Text');
     local rgb = {};
     if buff_info.category == buff_category.class  then
         category_txt = "CLASS: ";
@@ -1577,19 +1586,24 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_lname, buff_inf
         category_txt = "RAID: ";
         rgb = {103/255, 52/255, 235/255};
     elseif buff_info.category == buff_category.consumes  then
-        category_txt = "CONSUMES: ";
+        category_txt = "CONSUME: ";
         rgb = {225/255, 235/255, 52/255};
     elseif buff_info.category == buff_category.item  then
-        category_txt = "ITEM EFFECT: ";
+        category_txt = "ITEM: ";
         rgb = {0/255, 204/255, 255/255};
     elseif buff_info.category == buff_category.world_buffs  then
-        category_txt = "WORLD BUFF: ";
+        category_txt = "WORLD: ";
         rgb = {0/255, 153/255, 51/255};
     end
-    checkbutton_txt:SetTextColor(rgb[1], rgb[2], rgb[3]);
-    if buff_info.tooltip then
-        getglobal(buffs_table[index].checkbutton:GetName()).tooltip = category_txt..buff_info.tooltip;
+    local buff_name_max_len = 25;
+    category_txt = "";
+    local name_appear =  category_txt..buff_lname;
+    if buff_info.name then
+        name_appear =  category_txt..buff_info.name;
     end
+    getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(name_appear:sub(1, buff_name_max_len));
+    local checkbutton_txt = getglobal(buffs_table[index].checkbutton:GetName() .. 'Text');
+    checkbutton_txt:SetTextColor(rgb[1], rgb[2], rgb[3]);
     buffs_table[index].checkbutton:SetScript("OnClick", func);
 
     buffs_table[index].icon = CreateFrame("Frame", "loadout_apply_buffs_icon_"..buff_lname, parent_frame);
@@ -1601,6 +1615,15 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_lname, buff_inf
     else
         tex:SetTexture(GetSpellTexture(buff_info.id));
     end
+
+    buffs_table[index].checkbutton:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
+        GameTooltip:SetSpellByID(buff_info.id);
+        GameTooltip:Show();
+    end);
+    buffs_table[index].checkbutton:SetScript("OnLeave", function(self)
+        GameTooltip:Hide();
+    end);
 
     buffs_table.num_buffs = index;
 
@@ -1702,6 +1725,9 @@ local function create_sw_gui_loadout_frame()
 
         sw_frame.loadouts_frame.lhs_list.active_loadout = sw_frame.loadouts_frame.lhs_list.num_loadouts;
 
+        swc.core.talents_update_needed = true;
+        swc.core.equipment_update_needed = true;
+
         update_loadouts_lhs();
     end);
 
@@ -1710,7 +1736,7 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.rhs_list.export_button =
         CreateFrame("Button", "sw_loadouts_export_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.export_button:SetPoint("BOTTOMLEFT", sw_frame.loadouts_frame.lhs_list, 10, y_offset_lhs);
-    sw_frame.loadouts_frame.rhs_list.export_button:SetText("Create Loadout as a copy");
+    sw_frame.loadouts_frame.rhs_list.export_button:SetText("Create loadout as a copy");
     sw_frame.loadouts_frame.rhs_list.export_button:SetSize(170, 25);
     sw_frame.loadouts_frame.rhs_list.export_button:SetScript("OnClick", function(self)
 
@@ -2311,11 +2337,12 @@ local function create_sw_gui_loadout_frame()
     local sorted_buffs_by_name = {};
     for k, v in pairs(buffs) do
         if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-            table.insert(sorted_buffs_by_name, k);
+            table.insert(sorted_buffs_by_name, {k, v.category});
         end
     end
-    table.sort(sorted_buffs_by_name);
+    table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
     for _, k in ipairs(sorted_buffs_by_name) do
+        k = k[1];
         local v = buffs[k];
         create_loadout_buff_checkbutton(
             sw_frame.loadouts_frame.rhs_list.buffs, k, v, "self", 
@@ -2328,11 +2355,12 @@ local function create_sw_gui_loadout_frame()
     sorted_buffs_by_name = {};
     for k, v in pairs(target_buffs) do
         if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-            table.insert(sorted_buffs_by_name, k);
+            table.insert(sorted_buffs_by_name, {k, v.category});
         end
     end
-    table.sort(sorted_buffs_by_name);
+    table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
     for _, k in ipairs(sorted_buffs_by_name) do
+        local k = k[1];
         local v = target_buffs[k];
         create_loadout_buff_checkbutton(
             sw_frame.loadouts_frame.rhs_list.target_buffs, k, v, "target_buffs", 
@@ -2519,6 +2547,7 @@ local function load_sw_ui()
                 tooltip:AddLine("This icon can be removed in the addon's settings tab");
                 tooltip:AddLine("More info about this addon at:");
                 tooltip:AddLine("https://www.curseforge.com/wow/addons/stat-weights-classic");
+                tooltip:AddLine("Factory reset: /swc reset");
             end,
         });
         if libstub_icon then

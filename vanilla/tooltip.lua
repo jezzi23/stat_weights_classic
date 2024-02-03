@@ -37,6 +37,8 @@ local spell_cast_time                           = swc.utils.spell_cast_time;
 
 local set_tiers                                 = swc.equipment.set_tiers;
 
+local is_buff_up                                = swc.buffs.is_buff_up;
+
 local stats_for_spell                           = swc.calc.stats_for_spell;
 local spell_info                                = swc.calc.spell_info;
 local cast_until_oom                            = swc.calc.cast_until_oom;
@@ -47,6 +49,7 @@ local rune_ids                                  = swc.talents.rune_ids;
 local sort_stat_weights                         = swc.tooltip.sort_stat_weights        
 local begin_tooltip_section                     = swc.tooltip.begin_tooltip_section    
 local end_tooltip_section                       = swc.tooltip.end_tooltip_section      
+
 -------------------------------------------------------------------------------
 
 local stats = {};
@@ -93,7 +96,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         sp_name = "Spell power";
     end
 
-    begin_tooltip_section(tooltip, spell);
+    begin_tooltip_section(tooltip, spell, spell_id);
 
     local clvl_specified = "";
 
@@ -145,8 +148,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                       math.max(stats.cast_time, spell.over_time_duration)
                                       ),
                         0, 1, 1);
+        if spell.over_time_tick_freq > 1 then
+            tooltip:AddLine(string.format("Mana per tick: %.1f",
+                                          spell.over_time_tick_freq*math.ceil(eval.spell.mana_restored)/
+                                          math.max(stats.cast_time, spell.over_time_duration)
+                                          ),
+                            0, 1, 1);
+        end
         tooltip:AddLine(string.format("Mana per sec: %.1f",
-                                      math.ceil(eval.spell.mana_restored/math.max(stats.cast_time, spell.over_time_duration))
+                                      eval.spell.mana_restored/math.max(stats.cast_time, spell.over_time_duration)
                                       ),
                         0, 1, 1);
 
@@ -259,6 +269,22 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         effect_type_str = "seeds";
                         extra_crit_mod = 0.3;
                     end
+                elseif class == "PALADIN" then
+                    if is_buff_up(loadout, "player", GetSpellInfo(426159)) and bit.band(spell.flags, spell_flags.heal) ~= 0 then
+                        effect_type_str = "sheaths";
+                        extra_crit_mod = 0.6;
+                    end
+                elseif class == "PRIEST" then
+                    if loadout.runes[rune_ids.divine_aegis] and bit.band(spell_flags.heal, spell.flags) ~= 0 then
+                        effect_type_str = "absorbs";
+                        extra_crit_mod = 0.3;
+                    end
+                elseif class == "SHAMAN" and loadout.runes[rune_ids.ancestral_awakening] and 
+                        (spell.base_id == spell_name_to_id["Healing Wave"] or
+                         spell.base_id == spell_name_to_id["Lesser Healing Wave"]) then
+
+                    effect_type_str = "awakens";
+                    extra_crit_mod = 0.3;
                 end
                 if effect_type_str and eval.spell.min_crit_if_hit ~= 0 then
                     local min_crit_if_hit = eval.spell.min_crit_if_hit/(1 + extra_crit_mod);
@@ -351,8 +377,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     if eval.spell.ot_if_hit ~= 0 and sw_frame.settings_frame.tooltip_normal_ot:GetChecked() then
 
-        if bit.band(spell.flags, spell_flags.dot_resi_penetrate) ~= 0 and stats.target_avg_resi > 0 then 
-            hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit*100, stats.target_avg_resi*10);
+        if stats.target_avg_resi_dot > 0 then 
+            hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit*100, stats.target_avg_resi_dot*100);
         end
         -- round over time num for niceyness
         local ot = tonumber(string.format("%.0f", eval.spell.ot_if_hit));
@@ -491,24 +517,31 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
+
+        local crit_into_periodic = 0.0;
+        if class == "MAGE" and spell.school == magic_school.fire and
+            loadout.talents_table:pts(2, 3) ~= 0 and eval.spell.min_crit_if_hit ~= 0 then
+
+            crit_into_periodic = 0.08 * loadout.talents_table:pts(2, 3);
+        elseif class == "PALADIN" and is_buff_up(loadout, "player", GetSpellInfo(426159)) and
+            bit.band(spell.flags, spell_flags.heal) ~= 0  then
+            crit_into_periodic = 0.6;
+        end
+
         local direct_to_periodic_str = "";
-        if eval.spell.expected_ot ~= 0 and eval.spell.expectation_direct ~= 0 then
+        if  eval.spell.expectation_direct ~= 0 and (eval.spell.expected_ot ~= 0 or crit_into_periodic ~= 0.0) then
+
             local direct_ratio = eval.spell.expectation_direct/(eval.spell.expectation_direct + eval.spell.expected_ot);
 
-            local ignite_pts = loadout.talents_table:pts(2, 3);
-            if class == "MAGE" and spell.school == magic_school.fire and
-                    ignite_pts ~= 0 and eval.spell.min_crit_if_hit ~= 0 then
-
-                local extra_crit_mod = 0.08 * ignite_pts;
-
+            if crit_into_periodic ~= 0.0 then
                 local crit_portion_expectation = eval.spell.expectation_direct -
                     (eval.spell.expectation_direct/eval.spell.expectation_direct_st)*
                         (1.0-stats.crit)*stats.hit*(1 - stats.target_avg_resi)*0.5*(eval.spell.min_noncrit_if_hit+eval.spell.max_noncrit_if_hit);
-                local ignite_expectation = extra_crit_mod * crit_portion_expectation/(1.0 + extra_crit_mod);
-                
+                local ignite_expectation = crit_into_periodic * crit_portion_expectation/(1.0 + crit_into_periodic);
                 
                 direct_ratio = (eval.spell.expectation_direct-ignite_expectation)/(eval.spell.expectation_direct + eval.spell.expected_ot);
             end
+
             direct_to_periodic_str = string.format(" (%.1f%% direct | %.1f%% periodic)", direct_ratio*100, (1.0-direct_ratio)*100);
         end
         if eval.spell.effect_per_sec ~= eval.spell.effect_per_dur then
@@ -539,20 +572,22 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
 
     end
-    if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() and not repeated_tooltip_on then
-        if loadout.lvl ~= UnitLevel("player") and bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
-            tooltip:AddLine(string.format("NOTE: Mana cost at custom lvl is inaccurate; roughly estimated",stats.cost), 1.0, 0.0, 0.0);
-        end
-        local tooltip_cost = spell_cost(spell_id);
-        if not tooltip_cost or tooltip_cost ~= stats.cost then
+    local tooltip_cost = spell_cost(spell_id);
+    if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
+        if not tooltip_cost or tooltip_cost ~= stats.cost or not repeated_tooltip_on then
+            if loadout.lvl ~= UnitLevel("player") and bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
+                tooltip:AddLine(string.format("NOTE: Mana cost at custom lvl may be inaccurate; roughly estimated",stats.cost), 1.0, 0.0, 0.0);
+            end
             tooltip:AddLine(string.format("Expected Cost: %.1f",stats.cost), 0.0, 1.0, 1.0);
         end
     end
     if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
         tooltip:AddLine(effect_per_cost..": "..string.format("%.2f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
     end
-    if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() and not repeated_tooltip_on then
-        tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
+    if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
+        if not tooltip_cost or tooltip_cost ~= stats.cost or not repeated_tooltip_on then
+            tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
+        end
     end
 
     if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() then

@@ -37,7 +37,7 @@ local spells                        = swc.abilities.spells;
 local talents_export = {};
 
 local rune_ids = {
-    --priest
+    --priest p1
     serendipity                     = 6932,
     strength_of_soul                = 6936,
     twisted_faith                   = 7024,
@@ -50,7 +50,21 @@ local rune_ids = {
     power_word_barrier              = 7023,
     prayer_of_mending               = 6740,
     shared_pain                     = 6746,
-    --druid
+    -- p2
+    empowered_renew                 = 7026,
+    mind_spike                      = 7110,
+    renewed_hope                    = 7027,
+    dispersion                      = 7029,
+    pain_suppression                = 6747,
+    rolling_with_the_punches        = 6714,
+    spirit_of_the_redeemer          = 7028,
+    -- px
+    despair                         = 7112,
+    surge_of_light                  = 7111,
+    void_zone                       = 7113,
+    divine_aegis                    = 7109,
+    shadowfiend                     = 6751,
+    --druid p1
     fury_of_the_stormrage           = 6872,
     living_seed                     = 6975,
     survival_of_the_fittest         = 6972,
@@ -63,7 +77,20 @@ local rune_ids = {
     savage_roar                     = 6863,
     skull_bash                      = 6971,
     starsurge                       = 7011,
-    --paladin
+    -- p2
+    berserk                         = 7012,
+    eclipse                         = 7106,
+    nourish                         = 6870,
+    dreamstate                      = 6871,
+    king_of_the_jungle              = 7013,
+    survival_instincts              = 6859,
+    -- px
+    efflorescene                    = 7105,
+    improved_frenzied_regeneration  = 6861,
+    gale_winds                      = 7104,
+    gore                            = 7102,
+    improved_barkskin               = 7103,
+    --paladin p1
     aegis                           = 7041,
     divine_storm                    = 6850,
     horn_of_lordaeron               = 7040,
@@ -76,7 +103,21 @@ local rune_ids = {
     exorcist                        = 6965,
     inspiration_exemplar            = 6857,
     rebuke                          = 7042,
-    --shaman
+    -- p2
+    enlightened_judgements          = 7049,
+    infusion_of_light               = 7051,
+    sheath_of_light                 = 7050,
+    guarded_by_the_light            = 6963,
+    sacred_shield                   = 6960,
+    the_art_of_war                  = 6966,
+    -- px
+    improved_hammer_of_wrath        = 7091,
+    purifying_power                 = 7090,
+    fanaticism                      = 7088,
+    improved_sanctuary              = 7092,
+    lights_grace                    = 7087,
+    wrath                           = 7089,
+    --shaman p1
     dual_wield_specialization       = 6874,
     healing_rain                    = 6984,
     overload                        = 6878,
@@ -89,7 +130,15 @@ local rune_ids = {
     earth_shield                    = 6880,
     shamanistic_rage                = 7030,
     way_of_earth                    = 6886,
-    --mage
+    -- p2
+    fire_nova                       = 6873,
+    maelstrom_weapon                = 6879,
+    power_surge                     = 6980,
+    ancestral_awakening             = 7048,
+    decoy_totem                     = 7047,
+    spirit_of_the_alpha             = 6882,
+    two_handed_mastery              = 7224,
+    --mage p1
     burnout                         = 6729,
     enlightment                     = 6922,
     fingers_of_frost                = 6735,
@@ -102,7 +151,21 @@ local rune_ids = {
     icy_veins                       = 7020,
     living_flame                    = 6737,
     mass_regeneration               = 6927,
-    --warlock
+    -- p2
+    frostfire_bolt                  = 6732,
+    hot_streak                      = 6724,
+    missile_barrage                 = 6733,
+    spellfrost_bolt                 = 6930,
+    brain_freeze                    = 0, -- MISSING
+    chronostatic_preservation       = 7022,
+    -- px
+    balefire_bolt                   = 7097,
+    displacement                    = 7096,
+    molten_armor                    = 7095,
+    deep_freeze                     = 7093,
+    temporal_anomaly                = 7094,
+    spell_power                     = 6921,
+    --warlock p1
     demonic_tactics                 = 6952,
     lake_of_fire                    = 6815,
     master_channeler                = 6811,
@@ -115,40 +178,75 @@ local rune_ids = {
     demonic_pact                    = 7038,
     everlasting_affliction          = 6950,
     incinerate                      = 6955,
+    -- p2
+    grimoire_of_synergy             = 7054,
+    invocation                      = 7053,
+    shadow_and_flame                = 7056,
+    dance_of_the_wicked             = 6957,
+    demonic_knowledge               = 6953,
+    shadowflame                     = 7057,
+    -- px
+    immolation_aura                 = 7118,
+    summon_felguard                 = 7117,
+    unstable_affliction             = 7116,
+    backdraft                       = 7115,
+    pandemic                        = 7114,
 };    
 
 -- maps rune engraving enchant id to effect and wowhead's encoding
 local function create_runes()
     if class == "PRIEST" then
         return {
-            [rune_ids.serendipity       ] = { wowhead_id = "56rm"},
-            [rune_ids.strength_of_soul  ] = { wowhead_id = "56rr"},
-            [rune_ids.twisted_faith     ] = { wowhead_id = "56vg"},
-            [rune_ids.void_plague       ] = { wowhead_id = "56vh"},
-            [rune_ids.circle_of_healing ] = { wowhead_id = "a6jy"},
-            [rune_ids.mind_sear         ] = { wowhead_id = "a6rp"},
-            [rune_ids.penance           ] = { wowhead_id = "a6k0"},
-            [rune_ids.shadow_word_death ] = { wowhead_id = "a6jn"},
-            [rune_ids.homunculi         ] = { wowhead_id = "76jr"},
-            [rune_ids.power_word_barrier] = { wowhead_id = "76vf"},
-            [rune_ids.prayer_of_mending ] = { wowhead_id = "76jm"},
-            [rune_ids.shared_pain       ] = { wowhead_id = "76jt"},
+            -- p1
+            [rune_ids.serendipity               ] = { wowhead_id = "56rm"},
+            [rune_ids.strength_of_soul          ] = { wowhead_id = "56rr"},
+            [rune_ids.twisted_faith             ] = { wowhead_id = "56vg"},
+            [rune_ids.void_plague               ] = { wowhead_id = "56vh"},
+            [rune_ids.circle_of_healing         ] = { wowhead_id = "a6jy"},
+            [rune_ids.mind_sear                 ] = { wowhead_id = "a6rp"},
+            [rune_ids.penance                   ] = { wowhead_id = "a6k0"},
+            [rune_ids.shadow_word_death         ] = { wowhead_id = "a6jn"},
+            [rune_ids.homunculi                 ] = { wowhead_id = "76jr"},
+            [rune_ids.power_word_barrier        ] = { wowhead_id = "76vf"},
+            [rune_ids.prayer_of_mending         ] = { wowhead_id = "76jm"},
+            [rune_ids.shared_pain               ] = { wowhead_id = "76jt"},
+            -- p2
+            [rune_ids.empowered_renew           ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Renew"], 0.15, 0.0);
+                end,
+                wowhead_id = "66vj"
+            },
+            [rune_ids.mind_spike                ] = { wowhead_id = "66y6"},
+            [rune_ids.renewed_hope              ] = { wowhead_id = "66vk"},
+            [rune_ids.dispersion                ] = { wowhead_id = "86vn"},
+            [rune_ids.pain_suppression          ] = { wowhead_id = "86jv"},
+            [rune_ids.spirit_of_the_redeemer    ] = { wowhead_id = "86vm"},
+            -- px
+            [rune_ids.divine_aegis              ] = { wowhead_id = "16y5"},
+            [rune_ids.despair                   ] = { wowhead_id = "96y8"},
+            [rune_ids.surge_of_light            ] = { wowhead_id = "96y7"},
+            [rune_ids.void_zone                 ] = { wowhead_id = "96y9"},
+            [rune_ids.pain_suppression          ] = { wowhead_id = "86jv"},
+            [rune_ids.spirit_of_the_redeemer    ] = { wowhead_id = "86vm"},
+            [rune_ids.shadowfiend               ] = { wowhead_id = "76jz"},
         };
     elseif class == "DRUID" then
         return {
-            [rune_ids.fury_of_the_stormrage  ] = {
+            -- p1
+            [rune_ids.fury_of_the_stormrage         ] = {
                 apply = function(loadout, effects)
                     ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Wrath"], 1.0, 0.0);
                 end,
                 wowhead_id = "56pr"
             },
-            [rune_ids.living_seed            ] = { wowhead_id = "56sz"},
-            [rune_ids.survival_of_the_fittest] = { wowhead_id = "56sw"},
-            [rune_ids.wild_strikes           ] = { wowhead_id = "56pa"},
-            [rune_ids.lacerate               ] = { wowhead_id = "a6sx"},
-            [rune_ids.mangle                 ] = { wowhead_id = "a6pm"},
-            [rune_ids.sunfire                ] = { wowhead_id = "a6t0"},
-            [rune_ids.wild_growth            ] = { wowhead_id = "a6pc"},
+            [rune_ids.living_seed                   ] = { wowhead_id = "56sz"},
+            [rune_ids.survival_of_the_fittest       ] = { wowhead_id = "56sw"},
+            [rune_ids.wild_strikes                  ] = { wowhead_id = "56pa"},
+            [rune_ids.lacerate                      ] = { wowhead_id = "a6sx"},
+            [rune_ids.mangle                        ] = { wowhead_id = "a6pm"},
+            [rune_ids.sunfire                       ] = { wowhead_id = "a6t0"},
+            [rune_ids.wild_growth                   ] = { wowhead_id = "a6pc"},
             [rune_ids.lifebloom] = {
                 apply = function(loadout, effects)
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Rejuvenation"], 0.5, 0.0);
@@ -156,47 +254,116 @@ local function create_runes()
                 end,
                 wowhead_id = "76ph"
             },
-            [rune_ids.savage_roar            ] = { wowhead_id = "76pf"},
-            [rune_ids.skull_bash             ] = { wowhead_id = "76sv"},
-            [rune_ids.starsurge              ] = { wowhead_id = "76v3"},
-
+            [rune_ids.savage_roar                   ] = { wowhead_id = "76pf"},
+            [rune_ids.skull_bash                    ] = { wowhead_id = "76sv"},
+            [rune_ids.starsurge                     ] = { wowhead_id = "76v3"},
+            -- p2
+            [rune_ids.berserk                       ] = { wowhead_id = "66v4"},
+            [rune_ids.eclipse                       ] = { wowhead_id = "66y2"},
+            [rune_ids.nourish                       ] = { wowhead_id = "66pp"},
+            [rune_ids.dreamstate                    ] = { wowhead_id = "86pq"},
+            [rune_ids.king_of_the_jungle            ] = { wowhead_id = "86v5"},
+            [rune_ids.survival_instincts            ] = { wowhead_id = "86pb"},
+            -- px
+            [rune_ids.gale_winds                    ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 1.0, 0.0);
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Hurricane"], 0.2, 0.0);
+                end,
+                wowhead_id = "16y0"
+            },
+            [rune_ids.gore                          ] = { wowhead_id = "16xy"},
+            [rune_ids.improved_barkskin             ] = { wowhead_id = "16xz"},
+            [rune_ids.efflorescene                  ] = { wowhead_id = "96y1"},
+            [rune_ids.improved_frenzied_regeneration] = { wowhead_id = "96pd"},
         };
     elseif class == "PALADIN" then
         return {
+            -- p1
+            [rune_ids.aegis                         ] = { wowhead_id = "56w1"},
+            [rune_ids.divine_storm                  ] = { wowhead_id = "56p2"},
+            [rune_ids.horn_of_lordaeron             ] = { wowhead_id = "56w0"},
+            [rune_ids.seal_of_martyrdom             ] = { wowhead_id = "56p3"},
+            [rune_ids.beacon_of_light               ] = { wowhead_id = "a6nv"},
+            [rune_ids.crusader_strike               ] = { wowhead_id = "a6nx"},
+            [rune_ids.hand_of_reckoning             ] = { wowhead_id = "a6nw"},
+            [rune_ids.avengers_shield               ] = { wowhead_id = "76p6"},
+            [rune_ids.rebuke                        ] = { wowhead_id = "76p8"},
+            [rune_ids.exorcist                      ] = { wowhead_id = "76sn"},
+            [rune_ids.inspiration_exemplar          ] = { wowhead_id = "76p9"},
+            [rune_ids.divine_sacrifice              ] = { wowhead_id = "76w2"},
+            -- p2
+            [rune_ids.enlightened_judgements        ] = {
+                apply = function(loadout, effects, inactive)
+                    -- unclear if this appears in GetSpellHitModifier ingame
+                    if inactive then
+                        for i = 1, 7 do
+                            effects.by_school.spell_dmg_hit[i] = effects.by_school.spell_dmg_hit[i] + 0.17;
+                        end
+                    end
+                end,
+                wowhead_id = "66w9"
+            },
+            [rune_ids.infusion_of_light             ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Holy Shock"], 0.2, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_only_heal, spell_name_to_id["Holy Shock"], -0.2, 0.0);
+                end,
+                wowhead_id = "66wb"
+            },
+            [rune_ids.sheath_of_light               ] = { wowhead_id = "66wa"},
+            [rune_ids.guarded_by_the_light          ] = { wowhead_id = "86sk"},
+            [rune_ids.sacred_shield                 ] = { wowhead_id = "86sg"},
+            [rune_ids.the_art_of_war                ] = { wowhead_id = "86sp"},
+            -- px
+            [rune_ids.fanaticism                    ] = { wowhead_id = "16xg"},
+            [rune_ids.improved_sanctuary            ] = { wowhead_id = "16xm"},
+            [rune_ids.lights_grace                  ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.5, 0.0);
+                end,
+                wowhead_id = "16xf"
+            },
 
-            [rune_ids.aegis               ] = { wowhead_id = "56w1"},
-            [rune_ids.divine_storm        ] = { wowhead_id = "56p2"},
-            [rune_ids.horn_of_lordaeron   ] = { wowhead_id = "56w0"},
-            [rune_ids.seal_of_martyrdom   ] = { wowhead_id = "56p3"},
-            [rune_ids.beacon_of_light     ] = { wowhead_id = "a6nv"},
-            [rune_ids.crusader_strike     ] = { wowhead_id = "a6nx"},
-            [rune_ids.hand_of_reckoning   ] = { wowhead_id = "a6nw"},
-            [rune_ids.avengers_shield     ] = { wowhead_id = "76p6"},
-            [rune_ids.rebuke              ] = { wowhead_id = "76p8"},
-            [rune_ids.exorcist            ] = { wowhead_id = "76sn"},
-            [rune_ids.inspiration_exemplar] = { wowhead_id = "76p9"},
-            [rune_ids.divine_sacrifice    ] = { wowhead_id = "76w2"},
+            [rune_ids.wrath                         ] = { wowhead_id = "16xh"},
+            [rune_ids.improved_hammer_of_wrath      ] = { wowhead_id = "96xk"},
+            [rune_ids.purifying_power               ] = { wowhead_id = "96xj"},
         };
     elseif class == "SHAMAN" then
         return {
-            [rune_ids.dual_wield_specialization] = { wowhead_id = "56pt"},
-            [rune_ids.healing_rain             ] = { wowhead_id = "56t8"},
-            [rune_ids.overload                 ] = { wowhead_id = "56py"},
-            [rune_ids.shield_mastery           ] = { wowhead_id = "56pw"},
-            [rune_ids.lava_burst               ] = { wowhead_id = "a6q3"},
-            [rune_ids.lava_lash                ] = { wowhead_id = "a6q4"},
-            [rune_ids.molten_blast             ] = { wowhead_id = "a6vq"},
-            [rune_ids.water_shield             ] = { wowhead_id = "a6pv"},
-            [rune_ids.ancestral_guidance       ] = { wowhead_id = "76px"},
-            [rune_ids.earth_shield             ] = { wowhead_id = "76q0"},
-            [rune_ids.shamanistic_rage         ] = { wowhead_id = "76vp"},
-            [rune_ids.way_of_earth             ] = { wowhead_id = "76q6"},
+            -- p1
+            [rune_ids.dual_wield_specialization     ] = { wowhead_id = "56pt"},
+            [rune_ids.healing_rain                  ] = { wowhead_id = "56t8"},
+            [rune_ids.overload                      ] = { wowhead_id = "56py"},
+            [rune_ids.shield_mastery                ] = { wowhead_id = "56pw"},
+            [rune_ids.lava_burst                    ] = { wowhead_id = "a6q3"},
+            [rune_ids.lava_lash                     ] = { wowhead_id = "a6q4"},
+            [rune_ids.molten_blast                  ] = { wowhead_id = "a6vq"},
+            [rune_ids.water_shield                  ] = { wowhead_id = "a6pv"},
+            [rune_ids.ancestral_guidance            ] = { wowhead_id = "76px"},
+            [rune_ids.earth_shield                  ] = { wowhead_id = "76q0"},
+            [rune_ids.shamanistic_rage              ] = { wowhead_id = "76vp"},
+            [rune_ids.way_of_earth                  ] = { wowhead_id = "76q6"},
+            -- p2
+            [rune_ids.two_handed_mastery            ] = { wowhead_id = "571r"},
+            [rune_ids.fire_nova                     ] = { wowhead_id = "66ps"},
+            [rune_ids.maelstrom_weapon              ] = { wowhead_id = "66pz"},
+            [rune_ids.power_surge                   ] = {
+                apply = function(loadout, effects)
+                    effects.raw.mp5_from_int_mod = effects.raw.mp5_from_int_mod + 0.15;
+                end,
+                wowhead_id = "66t4"
+            },
+            [rune_ids.ancestral_awakening           ] = { wowhead_id = "86w8"},
+            [rune_ids.decoy_totem                   ] = { wowhead_id = "86w7"},
+            [rune_ids.spirit_of_the_alpha           ] = { wowhead_id = "86q2"},
         };
     elseif class == "MAGE" then
         return {
-            [rune_ids.regeneration     ] = { wowhead_id = "56jg"},
-            [rune_ids.fingers_of_frost ] = { wowhead_id = "56jf"},
-            [rune_ids.enlightment      ] = { wowhead_id = "56ra"},
+            -- p1
+            [rune_ids.regeneration                  ] = { wowhead_id = "56jg"},
+            [rune_ids.fingers_of_frost              ] = { wowhead_id = "56jf"},
+            [rune_ids.enlightment                   ] = { wowhead_id = "56ra"},
             [rune_ids.burnout] = {
                 apply = function(loadout, effects, inactive)
                     -- 15% spell crit but 1% more base mana cost on crit
@@ -204,40 +371,77 @@ local function create_runes()
                 end,
                 wowhead_id = "56j9"
             },
-            [rune_ids.rewind_time      ] = { wowhead_id = "a6jb"},
-            [rune_ids.living_bomb      ] = { wowhead_id = "a6rb"},
-            [rune_ids.ice_lance        ] = { wowhead_id = "a6ja"},
-            [rune_ids.arcane_blast     ] = { wowhead_id = "a6j8"},
-            [rune_ids.mass_regeneration] = { wowhead_id = "76rf"},
-            [rune_ids.living_flame     ] = { wowhead_id = "76jh"},
-            [rune_ids.icy_veins        ] = { wowhead_id = "76vc"},
-            [rune_ids.arcane_surge     ] = { wowhead_id = "76vd"},
+            [rune_ids.rewind_time                   ] = { wowhead_id = "a6jb"},
+            [rune_ids.living_bomb                   ] = { wowhead_id = "a6rb"},
+            [rune_ids.ice_lance                     ] = { wowhead_id = "a6ja"},
+            [rune_ids.arcane_blast                  ] = { wowhead_id = "a6j8"},
+            [rune_ids.mass_regeneration             ] = { wowhead_id = "76rf"},
+            [rune_ids.living_flame                  ] = { wowhead_id = "76jh"},
+            [rune_ids.icy_veins                     ] = { wowhead_id = "76vc"},
+            [rune_ids.arcane_surge                  ] = { wowhead_id = "76vd"},
+            -- p2
+            [rune_ids.frostfire_bolt                ] = { wowhead_id = "66jc"},
+            [rune_ids.hot_streak                    ] = { wowhead_id = "66j4"},
+            [rune_ids.missile_barrage               ] = { wowhead_id = "66jd"},
+            [rune_ids.spellfrost_bolt               ] = { wowhead_id = "66rj"},
+            [rune_ids.brain_freeze                  ] = { wowhead_id = "86j5"},
+            [rune_ids.chronostatic_preservation     ] = { wowhead_id = "86ve"},
+            [rune_ids.spell_power                   ] = {
+                apply = function(loadout, effects)
+
+                    for i = 1, 7 do
+                        effects.by_school.spell_crit_mod[i] = 
+                            effects.by_school.spell_crit_mod[i] + 0.25;
+                    end
+                end,
+                wowhead_id = "86r9"
+            },
+            -- px
+            [rune_ids.deep_freeze                   ] = { wowhead_id = "16xn"},
+            [rune_ids.temporal_anomaly              ] = { wowhead_id = "16xp"},
+            [rune_ids.balefire_bolt                 ] = { wowhead_id = "96xs"},
+            [rune_ids.displacement                  ] = { wowhead_id = "96xr"},
+            [rune_ids.molten_armor                  ] = { wowhead_id = "96xq"},
         };
 
     elseif class == "WARLOCK" then
         return {
-            [rune_ids.soul_siphon           ] = { wowhead_id = "56mr"},
-            [rune_ids.lake_of_fire          ] = { wowhead_id = "56mz"},
-            [rune_ids.demonic_tactics       ] = {
+            -- p1
+            [rune_ids.soul_siphon                   ] = { wowhead_id = "56mr"},
+            [rune_ids.lake_of_fire                  ] = { wowhead_id = "56mz"},
+            [rune_ids.demonic_tactics               ] = {
                 apply = function(loadout, effects, inactive)
                     add_all_spell_crit(effects, 0.1, inactive);
                 end,
                 wowhead_id = "56s8",
             },
-            [rune_ids.chaos_bolt            ] = { wowhead_id = "56mn"},
-            [rune_ids.master_channeler      ] = { wowhead_id = "56mv"},
-            [rune_ids.shadow_bolt_volley    ] = {
+            [rune_ids.chaos_bolt                    ] = { wowhead_id = "56mn"},
+            [rune_ids.master_channeler              ] = { wowhead_id = "56mv"},
+            [rune_ids.shadow_bolt_volley            ] = {
                 apply = function(loadout, effects)
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Bolt"], -0.2, 0.0);
                 end,
                 wowhead_id = "a6my"
             },
-            [rune_ids.metamorphosis         ] = { wowhead_id = "a6n0"},
-            [rune_ids.haunt                 ] = { wowhead_id = "a6mk"},
-            [rune_ids.incinerate            ] = { wowhead_id = "76sb"},
-            [rune_ids.everlasting_affliction] = { wowhead_id = "76s6"},
-            [rune_ids.demonic_pact          ] = { wowhead_id = "76vy"},
-            [rune_ids.demonic_grace         ] = { wowhead_id = "76vz"},
+            [rune_ids.metamorphosis                 ] = { wowhead_id = "a6n0"},
+            [rune_ids.haunt                         ] = { wowhead_id = "a6mk"},
+            [rune_ids.incinerate                    ] = { wowhead_id = "76sb"},
+            [rune_ids.everlasting_affliction        ] = { wowhead_id = "76s6"},
+            [rune_ids.demonic_pact                  ] = { wowhead_id = "76vy"},
+            [rune_ids.demonic_grace                 ] = { wowhead_id = "76vz"},
+            -- p2
+            [rune_ids.grimoire_of_synergy           ] = { wowhead_id = "66we"},
+            [rune_ids.invocation                    ] = { wowhead_id = "66wd"},
+            [rune_ids.shadow_and_flame              ] = { wowhead_id = "66wg"},
+            [rune_ids.dance_of_the_wicked           ] = { wowhead_id = "86sd"},
+            [rune_ids.demonic_knowledge             ] = { wowhead_id = "86s9"},
+            [rune_ids.shadowflame                   ] = { wowhead_id = "86wh"},
+            -- px
+            [rune_ids.backdraft                     ] = { wowhead_id = "16yb"},
+            [rune_ids.pandemic                      ] = { wowhead_id = "16ya"},
+            [rune_ids.immolation_aura               ] = { wowhead_id = "96ye"},
+            [rune_ids.summon_felguard               ] = { wowhead_id = "96yd"},
+            [rune_ids.unstable_affliction           ] = { wowhead_id = "96yc"},
         };
     else
         return {};
@@ -267,7 +471,6 @@ local function create_talents()
             },
             [110] = {
                 apply = function(loadout, effects, pts)
-                    -- TODO VANILLA there's more racial priest spells
                     local instants = spell_names_to_id({"Renew", "Holy Nova", "Devouring Plague", "Shadow Word: Pain", "Mind Flay", "Desperate Prayer", "Touch of Weakness", "Circle of Healing", "Prayer of Mending", "Shadow Word: Death", "Void Plague", "Shadowguard", "Power Word: Shield"});
                     for k, v in pairs(instants) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0);
@@ -289,24 +492,12 @@ local function create_talents()
             [114] = {
                 apply = function(loadout, effects, pts)
                     
-                    -- TODO VANILLA: mana burn
-                    -- TODO VANILLA: make separate spell dmg mod for hybrids like holy nova
-                    local offensives = spell_names_to_id({"Smite", "Mind Blast", "Holy Fire", "Holy Nova", "Shadow Word: Pain", "Mind Flay", "Starshards"});
+                    local offensives = spell_names_to_id({"Smite", "Mind Blast", "Holy Fire", "Holy Nova", "Shadow Word: Pain", "Mind Flay", "Starshards", "Mana Burn"});
                     for k, v in pairs(offensives) do
                         ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
                         ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
                     end
-                end
-            },
-            [116] = {
-                apply = function(loadout, effects, pts)
-                    effects.by_school.spell_dmg_mod_add[magic_school.holy] =
-                        effects.by_school.spell_dmg_mod_add[magic_school.holy] + pts * 0.01;
-                    effects.by_school.spell_dmg_mod_add[magic_school.shadow] =
-                        effects.by_school.spell_dmg_mod_add[magic_school.shadow] + pts * 0.01;
-                    effects.by_school.spell_dmg_mod_add[magic_school.arcane] =
-                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] + pts * 0.01;
-                    -- TODO VANILLA: %crit per point, unclear if on ability bases or on holy and shadow spells
+                    ensure_exists_and_add(effects.ability.effect_mod_only_heal, spell_name_to_id["Holy Nova"], -pts * 0.01, 0.0);
                 end
             },
             [202] = {
@@ -416,7 +607,7 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation", "Starsurge"});
+                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation", "Starsurge", "Nourish"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.03, 0);
                     end
@@ -437,8 +628,8 @@ local function create_talents()
             },
             [303] = {
                 apply = function(loadout, effects, pts)
-                    local ht = spell_name_to_id["Healing Touch"];
-                    ensure_exists_and_add(effects.ability.cast_mod, ht, pts * 0.1, 0);
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Healing Touch"], pts * 0.1, 0);
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], pts * 0.1, 0);
                 end
             },
             [306] = {
@@ -450,7 +641,7 @@ local function create_talents()
             },
             [309] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Healing Touch", "Tranquility"});
+                    local abilities = spell_names_to_id({"Healing Touch", "Tranquility", "Nourish"});
                     
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0);
@@ -493,9 +684,10 @@ local function create_talents()
             },
             -- TODO VANILLA: Pom improvement in buffs
             [113] = {
-                apply = function(loadout, effects, pts)
+                apply = function(loadout, effects, pts, missing_pts)
+                    -- TODO: verify is this is added as all school crit
                     effects.by_school.spell_crit[magic_school.holy] = 
-                        effects.by_school.spell_crit[magic_school.holy] + pts * 0.01;
+                        effects.by_school.spell_crit[magic_school.holy] + missing_pts * 0.01;
                 end
             },
         };
@@ -724,11 +916,10 @@ local function create_talents()
             },
             [312] = {
                 apply = function(loadout, effects, pts)
-                    local frost_spells = spell_names_to_id({"Frostbolt", "Frost Nova", "Blizzard", "Cone of Cold", "Ice Barrier", "Ice Ward", "Ice Lance"});
+                    local frost_spells = spell_names_to_id({"Frostbolt", "Frost Nova", "Blizzard", "Cone of Cold", "Ice Barrier", "Ice Ward", "Ice Lance", "Spellfrost Bolt", "Frostfire Bolt", "Deep Freeze"});
                     for k, v in pairs(frost_spells) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.05, 0.0);
                     end
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostbolt"], pts * 0.01, 0.0);
                 end
             },
             [313] = {
@@ -748,7 +939,7 @@ local function create_talents()
             [101] = {
                 apply = function(loadout, effects, pts)
 
-                    local affl_abilities = spell_names_to_id({"Corruption", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul", "Curse of Doom", "Siphon Life", "Haunt"});
+                    local affl_abilities = spell_names_to_id({"Corruption", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul", "Curse of Doom", "Siphon Life", "Haunt", "Unstable Affliction"});
                     for k, v in pairs(affl_abilities) do
                         ensure_exists_and_add(effects.ability.hit, v, pts * 0.02, 0.0); 
                     end
@@ -794,10 +985,9 @@ local function create_talents()
                 end
             },
             -- TODO VANILLA: demo pet stuff demonic sacrifice talent and master demonologist
-            -- TODO VANILLA: improved shadow bolt estimate thingy
             [302] = {
                 apply = function(loadout, effects, pts)
-                    local destr = spell_names_to_id({"Rain of Fire", "Hellfire", "Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate"});
+                    local destr = spell_names_to_id({"Rain of Fire", "Hellfire", "Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate", "Shadowflame"});
                     for k, v in pairs(destr) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.01, 0.0); 
                     end
@@ -812,7 +1002,7 @@ local function create_talents()
             },
             [307] = {
                 apply = function(loadout, effects, pts)
-                    local destr = spell_names_to_id({"Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate"});
+                    local destr = spell_names_to_id({"Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate", "Shadowflame"});
                     for k, v in pairs(destr) do
                         ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0); 
                     end
@@ -833,7 +1023,7 @@ local function create_talents()
             },
             [314] = {
                 apply = function(loadout, effects, pts)
-                    local destr = spell_names_to_id({"Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate"});
+                    local destr = spell_names_to_id({"Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate", "Shadowflame" });
                     for k, v in pairs(destr) do
                         ensure_exists_and_add(effects.ability.crit_mod, v, pts*0.5, 0.0); 
                     end
@@ -863,15 +1053,23 @@ local function engraving_runes_id()
     local ids = {};
     if C_Engraving.IsEngravingEnabled then
         -- NOTE: order might be important here for wowhead export
-        local item_slots = {5, 7, 10};
-        for k, v in pairs(item_slots) do
-            local rune_slot = C_Engraving.GetRuneForEquipmentSlot(v);
+        local item_slots = {1, 5, 6, 7, 8, 9, 10};
+        for k = 1, 16 do
+            local rune_slot = C_Engraving.GetRuneForEquipmentSlot(k);
             if rune_slot then
                 if runes[rune_slot.itemEnchantmentID] then
                     ids[k] = rune_slot.itemEnchantmentID;
                 end
             end
         end
+        --for k, v in pairs(item_slots) do
+        --    local rune_slot = C_Engraving.GetRuneForEquipmentSlot(v);
+        --    if rune_slot then
+        --        if runes[rune_slot.itemEnchantmentID] then
+        --            ids[k] = rune_slot.itemEnchantmentID;
+        --        end
+        --    end
+        --end
     end
     return ids
 end
@@ -987,9 +1185,7 @@ local function talent_table(wowhead_code)
     local runes_table = {};
     if wowhead_code:sub(i, i) == "_" then
         i = i + 2;
-        for k = 1, 3 do
-            -- runes start with 5 for chest, 7 for legs, "a" (10) for gloves
-            -- followed by 3 id characters
+        while wowhead_code:sub(i, i + 3) ~= "" do
             local rune_code = wowhead_code:sub(i, i + 3);
             if rune_code ~= "" then
                 local rune_id = wowhead_rune_code_to_id[rune_code];
@@ -1000,6 +1196,20 @@ local function talent_table(wowhead_code)
             else
                 break;
             end
+        end
+        for k = 1, 3 do
+            -- runes start with 5 for chest, 7 for legs, "a" (10) for gloves
+            -- followed by 3 id characters
+            --local rune_code = wowhead_code:sub(i, i + 3);
+            --if rune_code ~= "" then
+            --    local rune_id = wowhead_rune_code_to_id[rune_code];
+            --    if rune_id then
+            --        runes_table[rune_id] = runes[rune_id];
+            --    end
+            --    i = i + 4;
+            --else
+            --    break;
+            --end
 
         end
     end

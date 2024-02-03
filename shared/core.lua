@@ -314,7 +314,6 @@ if class_is_supported then
     --    end
 
     --end)
-    
 
     GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, is_fake, ...)
         append_tooltip_spell_info(is_fake);
@@ -422,7 +421,7 @@ local function command(msg, editbox)
             ReloadUI();
 
         else
-            sw_activate_tab(3);
+            sw_activate_tab(2);
         end
     end
 end
@@ -438,5 +437,4 @@ SlashCmdList["STAT_WEIGHTS"] = command
 --core.__sw__use_defaults__ = 1;
 --core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;
-
 

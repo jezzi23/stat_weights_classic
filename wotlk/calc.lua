@@ -983,15 +983,6 @@ local function spell_info(info, spell, stats, loadout, effects)
     info.min_crit_if_hit = info.min_noncrit_if_hit * stats.crit_mod;
     info.max_crit_if_hit = info.max_noncrit_if_hit * stats.crit_mod;
 
-    -- TODO: Looks like min is ceiled and max is floored
-    --       do this until we know any better!
-
-    --min_noncrit_if_hit = math.ceil(min_noncrit_if_hit);
-    --max_noncrit_if_hit = math.ceil(max_noncrit_if_hit);
-
-    --min_crit_if_hit = math.ceil(min_crit_if_hit);
-    --max_crit_if_hit = math.ceil(max_crit_if_hit);
-    
     local direct_crit = stats.crit;
 
     if bit.band(spell_flags.absorb, spell.flags) ~= 0 then

@@ -65,18 +65,36 @@ end
 
 local function begin_tooltip_section(tooltip, spell)
 
-    if sw_frame.settings_frame.clear_original_tooltip or tooltip ~= GameTooltip then
-        tooltip:ClearLines();
-        local lname = GetSpellInfo(spell.base_id);
-        if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
-            tooltip:AddDoubleLine(lname, "Rank "..spell.rank, 1.0, 1.0, 1.0, 0.50196081399918, 0.50196081399918, 0.50196081399918);
-        else
-            tooltip:AddLine(lname, 1.0, 1.0, 1.0);
+    
+    if sw_frame.settings_frame.clear_original_tooltip or tooltip ~= GameTooltip or not GetSpellInfo(spell.base_id) then
+        local txt_left = getglobal("GameTooltipTextLeft1");
+        if txt_left then
+
+            local lname = GetSpellInfo(spell.base_id);
+            if not lname then
+                lname = ""..spell.base_id;
+            end
+            txt_left:SetTextColor(1.0, 1.0, 1.0, 1.0);
+            txt_left:SetText(lname);
+            txt_left:Show();
         end
     end
+    --if sw_frame.settings_frame.clear_original_tooltip or tooltip ~= GameTooltip then
+    --if tooltip ~= GameTooltip then
+    --    tooltip:ClearLines();
+    --    local lname = GetSpellInfo(spell.base_id);
+    --    if not lname then
+    --        lname = ""..spell_id;
+    --    end
+    --    if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
+    --        tooltip:AddDoubleLine(lname, "Rank "..spell.rank, 1.0, 1.0, 1.0, 0.50196081399918, 0.50196081399918, 0.50196081399918);
+    --    else
+    --        tooltip:AddLine(lname, 1.0, 1.0, 1.0);
+    --    end
+    --end
 
     if tooltip == GameTooltip then
-        tooltip:AddLine("Stat Weights Classic", 1, 1, 1);
+        tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
         if sw_frame.stat_comparison_frame:IsShown() and sw_frame:IsShown() then
             tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
         end
@@ -103,29 +121,9 @@ GameTooltip:HookScript("OnHide", function()
     swc_stat_calc_tooltip:Hide();
 end);
 
-local function append_tooltip_spell_info(is_fake)
 
-    local spell_name, spell_id = GameTooltip:GetSpell();
-    local spell = spells[spell_id];
-
-    if not spell then
-        return;
-    end
-
-    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
-
-        local loadout, effects = active_loadout_and_effects();
-        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects, nil, spell_id);
-    else
-
-        local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
-        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed, nil, spell_id);
-
-        swc_stat_calc_tooltip:ClearLines();
-        swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT", 0, -select(2, swc_stat_calc_tooltip:GetSize()));
-        swc.tooltip.tooltip_spell_info(swc_stat_calc_tooltip, spell, loadout, effects, nil, spell_id);
-    end
-end
+local spell_id_of_cleared_tooltip = 0;
+local clear_tooltip_refresh_id = 463;
 
 local function update_tooltip(tooltip)
 
@@ -156,23 +154,65 @@ local function update_tooltip(tooltip)
 
         -- Workaround: need to set some spell id that exists to get tooltip refreshed when
         --            looking at custom spell id tooltip
-        if swc.core.__sw__test_all_spells and spells[tmp_tooltip_overwrite_spell_id] then
-            local tmp_tooltip_overwrite_spell_id = tonumber(sw_frame.spell_id_viewer_editbox:GetText());
-            tooltip:ClearLines();
-            local lname, _, _, _, _, _, _ ,_  = GetSpellInfo(tmp_tooltip_overwrite_spell_id);
-            if lname then
+        
+        --if id ~= clear_tooltip_refresh_id then
+        if spells[id] or id == clear_tooltip_refresh_id or id == sw_frame.spell_viewer_invalid_spell_id then
+            if  id ~= clear_tooltip_refresh_id then
+                spell_id_of_cleared_tooltip = id;
+            end
+            if id == sw_frame.spell_viewer_invalid_spell_id then
+                tooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
+            elseif sw_frame.settings_frame.clear_original_tooltip then
+                if (not sw_frame.settings_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
+                    tooltip:SetSpellByID(clear_tooltip_refresh_id);
+                else
+                    tooltip:SetSpellByID(spell_id_of_cleared_tooltip);
+                end
+            elseif id then
                 tooltip:ClearLines();
-                tooltip:SetSpellByID(tmp_tooltip_overwrite_spell_id);
-            else
-                tooltip:SetSpellByID(6603);
+                tooltip:SetSpellByID(id);
+
             end
         end
 
-        if id and spells[id] then
-            tooltip:ClearLines();
-            tooltip:SetSpellByID(id);
+    end
+end
 
+local function append_tooltip_spell_info(is_fake)
+
+    local spell_name, spell_id = GameTooltip:GetSpell();
+
+    if spell_id == clear_tooltip_refresh_id then
+        spell_id = spell_id_of_cleared_tooltip;
+    elseif spell_id == sw_frame.spell_viewer_invalid_spell_id then
+        spell_id = tonumber(sw_frame.spell_id_viewer_editbox:GetText());
+    elseif sw_frame.settings_frame.clear_original_tooltip and (not sw_frame.settings_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
+        if spells[spell_id] then
+            spell_id_of_cleared_tooltip = spell_id;
+            GameTooltip:ClearLines();
+            GameTooltip:SetSpellByID(clear_tooltip_refresh_id);
+            return;
         end
+    end
+
+    local spell = spells[spell_id];
+
+    if not spell then
+        return;
+    end
+
+    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
+
+        local loadout, effects = active_loadout_and_effects();
+        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects, nil, spell_id);
+    else
+
+        local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui();
+        swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects_diffed, nil, spell_id);
+
+        swc_stat_calc_tooltip:ClearLines();
+        swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT", 0, -select(2, swc_stat_calc_tooltip:GetSize()));
+        swc.tooltip.tooltip_spell_info(swc_stat_calc_tooltip, spell, loadout, effects, nil, spell_id);
     end
 end
 

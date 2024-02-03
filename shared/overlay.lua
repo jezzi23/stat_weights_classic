@@ -654,9 +654,9 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
         spell_cache[spell_id].dmg = {};
     end
     local spell_variant = spell_cache[spell_id].dmg;
-    if not spell_variant.seq then
+    if not spell_cache[spell_id].seq then
 
-        spell_variant.seq = -1;
+        spell_cache[spell_id].seq = -1;
         spell_variant.stats = {};
         spell_variant.spell_effect = {};
     end
@@ -749,7 +749,7 @@ local function update_spell_icons(loadout, effects)
                 end
                 local rearranged_k = 1 + 5*(1-k%2) + (k-k%2)/2;
 
-                if v.frame:IsShown() and rearranged_k <= remaining_spells_in_page then
+                if id and v.frame:IsShown() and rearranged_k <= remaining_spells_in_page then
                     
                     if not spells[id] then
 
@@ -829,5 +829,4 @@ overlay.clear_overlays               = clear_overlays;
 swc.overlay = overlay;
 
 __swc_spell_cache = spell_cache;
-print(spell_cache, __swc_spell_cache);
 

@@ -295,11 +295,12 @@ local function create_set_effects()
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.03, 0.0);
                 end
             end,
             [set_tiers.pve_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 4 then
-                    local spells = spell_names_to_id({"Healing Touch", "Regrowth", "Rejuvenation", "Tranquility"});
+                    local spells = spell_names_to_id({"Healing Touch", "Regrowth", "Rejuvenation", "Tranquility", "Nourish"});
                     for k, v in pairs(spells) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, 0.03, 0.0);
                     end
@@ -471,9 +472,11 @@ local function create_relics()
             end,
             [23197] = function(effects)
                 ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Moonfire"], 0.17, 0.0);
+                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Sunfire"], 0.17, 0.0);
             end,
             [22399] = function(effects)
                 ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Healing Touch"], 0.15, 0.0);
+                ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], 0.15, 0.0);
             end,
             [23004] = function(effects)
                 ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Healing Touch"], 25, 0.0);

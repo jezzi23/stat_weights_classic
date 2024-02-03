@@ -142,8 +142,7 @@ local function empty_effects(effects)
     effects.ability.effect_mod_base = {};
     effects.ability.cast_mod = {}; -- flat before mul
     effects.ability.cast_mod_mul = {}; -- after flat
-     -- works like wow classic cast time reductiond, also may reduce gcd (used for backdraft)
-    effects.ability.cast_mod_reduce = {};
+    effects.ability.cast_mod_reduce = {}; -- only for channels
     effects.ability.extra_ticks = {};
     effects.ability.cost_mod = {}; -- last, multiplied
     effects.ability.cost_flat = {}; -- second, additive
@@ -158,6 +157,7 @@ local function empty_effects(effects)
     effects.ability.coef_mod = {};
     effects.ability.coef_ot_mod = {};
     effects.ability.effect_ot_mod = {};
+    effects.ability.effect_mod_only_heal = {};
     effects.ability.vuln_mod = {};
     effects.ability.vuln_ot_mod = {};
 
@@ -410,6 +410,7 @@ local function dynamic_loadout(loadout)
     end
     local ap_src1, ap_src2, ap_src3 = UnitAttackPower("player");
     loadout.attack_power = ap_src1 + ap_src2 + ap_src3;
+    loadout.melee_crit = GetCritChance()*0.01;
 
 
     loadout.player_name = UnitName("player"); 
