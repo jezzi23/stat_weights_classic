@@ -705,7 +705,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local ele_abilities = spell_names_to_id({"Earth Shock", "Frost Shock", "Flame Shock", "Lightning Bolt", "Chain Lightning"});
                     for k, v in pairs(ele_abilities) do
-                        ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.01, 0.0);
+                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
                     end
                 end
             },

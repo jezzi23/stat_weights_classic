@@ -622,7 +622,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         tooltip:AddLine(effect_per_cost..": "..string.format("%.2f",eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
     end
     if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() and not repeated_tooltip_on then
-        tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f / + %.1f", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
+        tooltip:AddLine(cost_per_sec..": "..string.format("- %.1f out | + %.1f in", eval.spell.cost_per_sec, eval.spell.mp1), 0.0, 1.0, 1.0);
     end
     if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and bit.band(spell.flags, spell_flags.cd) == 0 then
 

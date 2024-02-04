@@ -972,6 +972,14 @@ local buffs_predefined = {
         filter = buff_filters.druid,
         category = buff_category.class,
     },
+    -- berserking
+    [23505] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.3 - 1.0;
+        end,
+        filter = buff_filters.caster,
+        category = buff_category.world_buffs,
+    },
 };
 
 
