@@ -2696,7 +2696,7 @@ local function create_spells()
                 flags               = bit.bor(spell_flags.cd, spell_flags.heal, spell_flags.alias, spell_flags.exception_coef, spell_flags.base_mana_cost, spell_flags.sod_rune),
                 school              = magic_school.nature,
                 coef                = 0.0,
-                over_time_coef      = 0.0,
+                over_time_coef      = 0.08,
 				lvl_scaling			= 0.606705,
 				lvl_scaling_squared	= 0.167780,
                 lvl_coef            = 0.0,
@@ -5157,7 +5157,7 @@ local function create_spells()
                 lvl_max             = 60,
                 lvl_outdated        = 60,
                 cost                = 0.12,
-                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune),
+                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.multi_school),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
@@ -5167,6 +5167,8 @@ local function create_spells()
                 lvl_coef_max        = 1.29,
 				lvl_coef_ot         = 0.0,
 				lvl_coef_ot_max     = 0.0,
+				multi_school        = {magic_school.frost},
+
             },
             -- dispersion (dummy values to comply with template)
             [425294] = {

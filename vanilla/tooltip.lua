@@ -259,32 +259,21 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             if stats.crit ~= 0 then
                 local effect_type_str = nil;
                 local extra_crit_mod = 0;
-                local pts = 0;
-                if class == "MAGE" and spell.school == magic_school.fire and loadout.talents_table:pts(2, 3) ~= 0 then
-                    pts = loadout.talents_table:pts(2, 3);
-                    effect_type_str = "ignites"
-                    extra_crit_mod = 0.08 * pts;
-                elseif class == "DRUID" then
-                    if loadout.runes[rune_ids.living_seed] and bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                        effect_type_str = "seeds";
-                        extra_crit_mod = 0.3;
-                    end
-                elseif class == "PALADIN" then
-                    if is_buff_up(loadout, "player", GetSpellInfo(426159)) and bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                        effect_type_str = "sheaths";
-                        extra_crit_mod = 0.6;
-                    end
-                elseif class == "PRIEST" then
-                    if loadout.runes[rune_ids.divine_aegis] and bit.band(spell_flags.heal, spell.flags) ~= 0 then
-                        effect_type_str = "absorbs";
-                        extra_crit_mod = 0.3;
-                    end
-                elseif class == "SHAMAN" and loadout.runes[rune_ids.ancestral_awakening] and 
-                        (spell.base_id == spell_name_to_id["Healing Wave"] or
-                         spell.base_id == spell_name_to_id["Lesser Healing Wave"]) then
+                if stats.extra_crit_mod_mul then
+                    extra_crit_mod = stats.extra_crit_mod_mul;
 
-                    effect_type_str = "awakens";
-                    extra_crit_mod = 0.3;
+                    if class == "MAGE" then
+                        effect_type_str = "ignites"
+                    elseif class == "DRUID" then
+                        effect_type_str = "seeds";
+                    elseif class == "PALADIN" then
+                        effect_type_str = "sheaths";
+                    elseif class == "PRIEST" then
+                        effect_type_str = "absorbs";
+                    elseif class == "SHAMAN" then
+                        effect_type_str = "awakens";
+                    end
+
                 end
                 if effect_type_str and eval.spell.min_crit_if_hit ~= 0 then
                     local min_crit_if_hit = eval.spell.min_crit_if_hit/(1 + extra_crit_mod);
@@ -519,13 +508,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
 
         local crit_into_periodic = 0.0;
-        if class == "MAGE" and spell.school == magic_school.fire and
-            loadout.talents_table:pts(2, 3) ~= 0 and eval.spell.min_crit_if_hit ~= 0 then
-
-            crit_into_periodic = 0.08 * loadout.talents_table:pts(2, 3);
-        elseif class == "PALADIN" and is_buff_up(loadout, "player", GetSpellInfo(426159)) and
-            bit.band(spell.flags, spell_flags.heal) ~= 0  then
-            crit_into_periodic = 0.6;
+        if stats.extra_crit_mod_mul and (class == "MAGE" or class == "PALADIN") then
+            crit_into_periodic = stats.extra_crit_mod_mul;
         end
 
         local direct_to_periodic_str = "";

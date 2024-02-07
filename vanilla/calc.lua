@@ -347,10 +347,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     if bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
-        stats.cost = math.floor(math.floor(original_base_cost * base_mana_pool(loadout.lvl)-effects.raw.cost_flat) * (1.0 - cost_mod_base));
-    else
-        stats.cost = math.floor((original_base_cost - effects.raw.cost_flat)) * (1.0 - cost_mod_base);
+        original_base_cost = original_base_cost * base_mana_pool(loadout.lvl)
     end
+    stats.cost = math.floor((original_base_cost - effects.raw.cost_flat)) * (1.0 - cost_mod_base);
     
     if effects.ability.cost_flat[spell.base_id] then
         stats.cost = stats.cost - effects.ability.cost_flat[spell.base_id];
@@ -468,7 +467,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if bit.band(spell_flags.heal, spell.flags) ~= 0 then
             if loadout.runes[rune_ids.divine_aegis]  then
 
-                stats.crit_mod = stats.crit_mod * 1.3;
+                stats.extra_crit_mod_mul = 0.3;
+                stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
         else
             if loadout.runes[rune_ids.despair] then
@@ -492,8 +492,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
             -- looks like seeds will work on lifebloom in sod
             if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0)
                 or spell.base_id == spell_name_to_id["Rejuvenation"] or spell.base_id == spell_name_to_id["Swiftmend"] then
-                -- living seed
-                stats.crit_mod = stats.crit_mod * 1.3;
+                stats.extra_crit_mod_mul = 0.3;
+                stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
         end
         if loadout.runes[rune_ids.lifebloom] and
@@ -519,7 +519,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
 
             if is_buff_up(loadout, "player", GetSpellInfo(426159)) and spell.base_min ~= 0 then
-                stats.crit_mod = stats.crit_mod * 1.6;
+
+                stats.extra_crit_mod_mul = 0.6;
+                stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
         else
             if loadout.runes[rune_ids.wrath] then
@@ -552,7 +554,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
             end
             if loadout.runes[rune_ids.ancestral_awakening] then
 
-                stats.crit_mod = stats.crit_mod * 1.3;
+                stats.extra_crit_mod_mul = 0.3;
+                stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
         end
     elseif class == "MAGE" then
@@ -590,7 +593,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
             -- ignite
             local pts = loadout.talents_table:pts(2, 3);
             if pts ~= 0 and spell.school == magic_school.fire then
-                stats.crit_mod = stats.crit_mod * (1.0 + pts * 0.08);
+                -- % ignite double dips in % multipliers
+                local double_dip = (1.0 + stats.spell_dmg_mod_mul) * (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]);
+                stats.extra_crit_mod_mul = (pts * 0.08)*double_dip;
+                stats.crit_mod = stats.crit_mod * (1.0 + stats.extra_crit_mod_mul);
             end
             if spell.base_id == spell_name_to_id["Arcane Surge"] then
                 stats.cost = loadout.mana;
@@ -689,7 +695,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         target_vuln_mod = target_vuln_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
 
-
         local spell_dmg_mod_school_ot = spell_dmg_mod_school;
         local spell_dmg_mod_school_add_ot = spell_dmg_mod_school_add;
         if bit.band(spell.flags, spell_flags.special_periodic_school) ~= 0 then
@@ -702,7 +707,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         end
 
 
-        -- TODO: unkown how double dipping works with e.g. curse of elements
+        -- TODO: unknown how double dipping works with e.g. curse of elements
         if bit.band(spell.flags, spell_flags.multi_school) ~= 0 then
             for _, v in pairs(spell.multi_school) do
                 spell_dmg_mod_school = (1.0 + spell_dmg_mod_school) * (1.0 + effects.by_school.spell_dmg_mod[v] - effects.by_school.spell_dmg_mod[magic_school.physical]) - 1.0;
@@ -750,6 +755,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
     stats.spell_dmg = loadout.spell_dmg + loadout.spell_dmg_by_school[spell.school] +
             effects.raw.spell_dmg + effects.raw.spell_power;
 
+    if bit.band(spell.flags, spell_flags.multi_school) ~= 0 then
+        for _, v in pairs(spell.multi_school) do
+            stats.spell_dmg = stats.spell_dmg + (loadout.spell_dmg_by_school[spell.school] - loadout.spell_dmg);
+        end
+    end
+
     stats.spell_heal = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
     stats.attack_power = loadout.attack_power;
     if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
@@ -766,7 +777,13 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.sp[spell.base_id] then
         stats.spell_power = stats.spell_power + effects.ability.sp[spell.base_id];
     end
-    stats.spell_power_ot = stats.spell_power;
+    if bit.band(spell.flags, spell_flags.special_periodic_school) ~= 0 then
+        stats.spell_power_ot = loadout.spell_dmg + loadout.spell_dmg_by_school[spell.multi_school[1]] +
+                effects.raw.spell_dmg + effects.raw.spell_power;
+    else
+        stats.spell_power_ot = stats.spell_power;
+    end
+
     if effects.ability.sp_ot[spell.base_id] then
         stats.spell_power_ot = stats.spell_power_ot + effects.ability.sp_ot[spell.base_id];
     end

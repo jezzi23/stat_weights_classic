@@ -382,6 +382,7 @@ local function dynamic_loadout(loadout)
         for i = 2, 7 do
             loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_dmg;
         end
+        loadout.spell_dmg_by_school[1] = loadout.spell_dmg;
         -- right after load GetSpellHitModifier seems to sometimes returns a nil.... so check first I guess
        local spell_hit = 0;
        -- Why is this returning 7 times the actual hit??

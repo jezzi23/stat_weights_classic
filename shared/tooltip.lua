@@ -110,13 +110,29 @@ end
 local spell_jump_itr = pairs(spells);
 local spell_jump_key = spell_jump_itr(spells);
 
-CreateFrame( "GameTooltip", "swc_stat_calc_tooltip", nil, "GameTooltipTemplate" );
+CreateFrame("GameTooltip", "swc_stat_calc_tooltip", nil, "GameTooltipTemplate" );
 swc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT" );
 -- TODO: Font of this tooltip appears much bigger even though same font is used?
 swc_stat_calc_tooltip:AddFontStrings(
-    swc_stat_calc_tooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
-    swc_stat_calc_tooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText")
+--    --swc_stat_calc_tooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipTextSmall"),
+--    --swc_stat_calc_tooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipTextSmall")
+--
+    swc_stat_calc_tooltip:CreateFontString("$parentHeaderText", nil, "GameTooltipHeaderText"),
+    swc_stat_calc_tooltip:CreateFontString("$parentText", nil, "GameTooltipText"),
+    swc_stat_calc_tooltip:CreateFontString("$parentTextSmall", nil, "GameTooltipTextSmall")
+    --swc_stat_calc_tooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText")
 );
+--
+
+swc_stat_calc_tooltipHeaderText:SetFont(GameTooltipHeaderText:GetFont())
+swc_stat_calc_tooltipText:SetFont(GameTooltipText:GetFont())
+swc_stat_calc_tooltipTextSmall:SetFont(GameTooltipTextSmall:GetFont())
+--swc_stat_calc_tooltip
+--for _, v in pairs({GameTooltipHeaderText, GameTooltipText GameTooltipTextSmall}) do
+--for _, v in pairs({GameTooltipHeaderText, GameTooltipText GameTooltipTextSmall}) do
+--    local fnt, sz = 
+--end
+
 GameTooltip:HookScript("OnHide", function()
     swc_stat_calc_tooltip:Hide();
 end);

@@ -46,6 +46,8 @@ local set_tiers = {
     pve_3            = 9,
     pvp_1            = 10,
     pvp_2            = 11,
+    sod_p2_anyclass  = 12,
+    sod_p2_class     = 13,
 };
 
 local function create_sets()
@@ -102,6 +104,11 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_3;
         end
         set_tier_ids[23064] = set_tiers.pve_3;
+
+        set_tier_ids[213312] = set_tiers.sod_p2_class;
+        set_tier_ids[213331] = set_tiers.sod_p2_class;
+        set_tier_ids[213342] = set_tiers.sod_p2_class;
+
     elseif class == "SHAMAN" then
         -- t1
         for i = 16837, 16844 do
@@ -148,6 +155,10 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_3;
         end
         set_tier_ids[23065] = set_tiers.pve_3;
+
+        set_tier_ids[213315] = set_tiers.sod_p2_class;
+        set_tier_ids[213334] = set_tiers.sod_p2_class;
+        set_tier_ids[213338] = set_tiers.sod_p2_class;
 
     elseif class == "WARLOCK" then
         for i = 16803, 16810 do
@@ -235,15 +246,25 @@ local function create_sets()
         set_tier_ids[19827] = set_tiers.pve_2_5_0;
         set_tier_ids[19826] = set_tiers.pve_2_5_0;
         set_tier_ids[19825] = set_tiers.pve_2_5_0;
+
+        set_tier_ids[216486] = set_tiers.sod_p2_class;
+        set_tier_ids[216485] = set_tiers.sod_p2_class;
+        set_tier_ids[216484] = set_tiers.sod_p2_class;
     end
+
+    set_tier_ids[213310] = set_tiers.sod_p2_anyclass;
+    set_tier_ids[213337] = set_tiers.sod_p2_anyclass;
+    set_tier_ids[213328] = set_tiers.sod_p2_anyclass;
 
     return set_tier_ids;
 end
 
 local function create_set_effects() 
 
+    local set_effects = nil;
+
     if class == "PRIEST" then
-        return {
+        set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Flash Heal"], 0.1, 0.0);
@@ -275,7 +296,7 @@ local function create_set_effects()
         };
 
     elseif class == "DRUID" then
-        return {
+        set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
                     ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Thorns"], 4, 0.0);
@@ -306,10 +327,17 @@ local function create_set_effects()
                     end
                 end
             end,
+            [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
+                if num_pieces >= 3 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.02, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.02, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.02, 0.0);
+                end
+            end,
         };
 
     elseif class == "SHAMAN" then
-        return {
+        set_effects =  {
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
                     effects.raw.mp5 = effects.raw.mp5 + 4;
@@ -347,10 +375,15 @@ local function create_set_effects()
                     end
                 end
             end,
+            [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
+                if num_pieces >= 3 then
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.2, 0.0);
+                end
+            end,
         };
 
     elseif class == "WARLOCK" then
-        return {
+        set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], 0.15, 0.0);
@@ -394,7 +427,7 @@ local function create_set_effects()
 
 
     elseif class == "MAGE" then
-        return {
+        set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
                     for i = 2,7 do
@@ -417,7 +450,7 @@ local function create_set_effects()
 
     elseif class == "PALADIN" then
         -- TODO VANILLA: Tier3 holy power buff tracking
-        return {
+        set_effects = {
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
                     effects.raw.mp5 = effects.raw.mp5 + 4;
@@ -426,8 +459,20 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.1, 0.0);
                 end
             end,
+            [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
+                if num_pieces >= 3 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.02, 0.0);
+                end
+            end,
         };
     end
+    set_effects[set_tiers.sod_p2_anyclass] = function(num_pieces, loadout, effects)
+        if num_pieces >= 3 then
+            effects.raw.mp5 = effects.raw.mp5 + 7;
+        end
+    end;
+
+    return set_effects;
 end 
 
 

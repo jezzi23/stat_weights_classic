@@ -26,14 +26,31 @@ local class                              = swc.utils.class;
 local stat                               = swc.utils.stat;
 
 local class_to_int_to_crit_scaling = {
-    ["WARLOCK"] = 60.6,
-    ["DRUID"]   = 60.0,
-    ["SHAMAN"]  = 59.5,
-    ["MAGE"]    = 59.5,
-    ["PRIEST"]  = 59.2,
-    ["PALADIN"] = 54.0,
+    [60] = {
+        ["WARLOCK"] = 60.6061,
+        ["DRUID"]   = 59.8802,
+        ["SHAMAN"]  = 59.1716,
+        ["MAGE"]    = 59.5238,
+        ["PRIEST"]  = 59.5238,
+        ["PALADIN"] = 59.8802,
+    },
+    [25] = {
+        ["WARLOCK"] = 23.3100,
+        ["DRUID"]   = 23.4192,
+        ["SHAMAN"]  = 23.6967,
+        ["MAGE"]    = 21.0526,
+        ["PRIEST"]  = 21.8818,
+        ["PALADIN"] = 28.0112
+    },
+    [1] = {
+        ["WARLOCK"] =  6.6667,
+        ["DRUID"]   =  6.8729,
+        ["SHAMAN"]  =  7.7760,
+        ["MAGE"]    =  5.2083,
+        ["PRIEST"]  =  5.2383,
+        ["PALADIN"] = 13.3333,
+    },
 };
-
 local class_to_base_crit = {
     ["WARLOCK"] = 1.7,
     ["DRUID"]   = 1.8,
@@ -44,16 +61,40 @@ local class_to_base_crit = {
 };
 
 local function int_to_crit_rating(int, loadout, effects)
-    if loadout.lvl == 60 then
-        return int/class_to_int_to_crit_scaling[class];
-    elseif loadout.lvl == UnitLevel("player") then
-        local _, intellect = UnitStat("player", 4);
-        local ratio = intellect/(GetSpellCritChance(1)-class_to_base_crit[class]-effects.raw.added_physical_spell_crit*100);
-        return int/ratio;
+
+    local upper = 0;
+    local lower = 0;
+    if loadout.lvl >= 60 then
+        upper = 60;
+        lower = 25;
+    elseif loadout.lvl >= 50 then
+        upper = 60;
+        lower = 25;
+    elseif loadout.lvl >= 40 then
+        upper = 60;
+        lower = 25;
+    elseif loadout.lvl >= 26 and loadout.lvl == UnitLevel("player") then
+        upper = 0;
+    elseif loadout.lvl >= 25 then
+        upper = 60;
+        lower = 25;
+    elseif loadout.lvl >= 2 and loadout.lvl == UnitLevel("player") then
+        upper = 0;
     else
-        -- rough estimate
-        return 60 * int/class_to_int_to_crit_scaling[class]/loadout.lvl;
+        upper = 25;
+        lower = 1;
     end
+    if upper == 0 then
+        -- this only works when equipment doesn't give % crit
+        local _, intellect = UnitStat("player", 4);
+        ratio = intellect/(GetSpellCritChance(1)-class_to_base_crit[class]-effects.raw.added_physical_spell_crit*100);
+    else
+        -- interpolate between brackets
+        ratio = (loadout.lvl-lower) * (class_to_int_to_crit_scaling[upper][class] - class_to_int_to_crit_scaling[lower][class])/(upper-lower)
+            + class_to_int_to_crit_scaling[lower][class];
+    end
+
+    return int/ratio;
 end
 
 local function effects_diff(loadout, effects, diff)

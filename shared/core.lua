@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30213;
+local version_id = 30214;
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -338,7 +338,7 @@ if InterfaceOptions_AddCategory then
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("Stats Weights Classic - Version"..core.version);
+    str:SetText("Stats Weights Classic - Version "..core.version);
 
     y_offset = y_offset - 15;
 
@@ -355,6 +355,14 @@ if InterfaceOptions_AddCategory then
     str:SetText("Author: jezzi23");
 
     y_offset = y_offset - 30;
+
+    if not class_is_supported then
+        str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+        str:SetFontObject(font);
+        str:SetPoint("TOPLEFT", x_offset, y_offset);
+        str:SetText("This addon only loads for caster classes. Sorry!");
+        return;
+    end
 
     addon_interface_panel.open_sw_frame_button = 
         CreateFrame("Button", "sw_addon_interface_open_frame_button", addon_interface_panel, "UIPanelButtonTemplate"); 
@@ -380,28 +388,36 @@ if InterfaceOptions_AddCategory then
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/sw");
+    str:SetText("/swc");
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/sw conf");
+    str:SetText("/swc conf");
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/sw loadouts");
+    str:SetText("/swc loadouts");
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/sw stat");
+    str:SetText("/swc calc");
+
+    y_offset = y_offset - 15;
+    x_offset = x_offset - 15;
+
+    str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
+    str:SetFontObject(font);
+    str:SetPoint("TOPLEFT", x_offset, y_offset);
+    str:SetText("Hard reset: /swc reset");
     
 end
 

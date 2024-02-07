@@ -61,7 +61,11 @@ local buff_filters = {
     alliance    = bit.lshift(1,14),
 
     -- hidden buffs to deal with, not toggled
-    hidden        = bit.lshift(1,15),
+    hidden      = bit.lshift(1,15),
+
+    sod         = bit.lshift(1,16),
+    sod_p1_only = bit.lshift(1,17),
+    sod_p2_only = bit.lshift(1,18),
 };
 
 local buff_category = {
@@ -597,7 +601,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Touch"], 1.00, 0);
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Nourish"], 1.00, 0);
         end,
-        filter = buff_filters.druid,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
     },
     --arcane blast
@@ -616,7 +620,7 @@ local buffs_predefined = {
 
             effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + 0.15 * stacks;
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- fingers of frost
@@ -624,7 +628,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             loadout.flags = bit.bor(loadout.flags, loadout_flags.target_frozen);
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
 
@@ -635,7 +639,7 @@ local buffs_predefined = {
             effects.raw.haste_mod = effects.raw.haste_mod + 0.2;
 
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- water shield
@@ -643,7 +647,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.raw.perc_max_mana_as_mp5 = effects.raw.perc_max_mana_as_mp5 + 0.01;
         end,
-        filter = buff_filters.shaman,
+        filter = bit.bor(buff_filters.shaman, buff_filters.sod),
         category = buff_category.class,
     },
     -- incinerate
@@ -652,7 +656,7 @@ local buffs_predefined = {
             effects.by_school.spell_dmg_mod[magic_school.fire] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.25 - 1.0;
         end,
-        filter = buff_filters.warlock,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- metamorphosis
@@ -660,7 +664,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 1.0, 0.0);    
         end,
-        filter = buff_filters.warlock,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- serendipity
@@ -675,7 +679,7 @@ local buffs_predefined = {
                 ensure_exists_and_add(effects.ability.cast_mod_mul, v, c*0.2, 0.0);    
             end
         end,
-        filter = buff_filters.priest,
+        filter = bit.bor(buff_filters.priest, buff_filters.sod),
         category = buff_category.class,
     },
     -- demonic grace
@@ -684,7 +688,7 @@ local buffs_predefined = {
 
             add_all_spell_crit(effects, 0.3, inactive);
         end,
-        filter = buff_filters.warlock,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- demonic pact
@@ -694,7 +698,7 @@ local buffs_predefined = {
                 effects.raw.spell_power = effects.raw.spell_power + math.max(0.1*effects.raw.spell_power, loadout.lvl/2);
             end
         end,
-        filter = buff_filters.caster,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.raid,
     },
     -- tangled causality
@@ -706,7 +710,7 @@ local buffs_predefined = {
             effects.by_school.spell_dmg_mod[magic_school.frost] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.frost]) * 0.5 - 1.0;
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- blackfathom mana oil
@@ -721,7 +725,7 @@ local buffs_predefined = {
             end
             
         end,
-        filter = buff_filters.caster,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p1_only),
         category = buff_category.consumes,
         icon_id = GetItemIcon(211848),
     },
@@ -731,7 +735,7 @@ local buffs_predefined = {
             effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.05 - 1.0;
             effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.05 - 1.0;
         end,
-        filter = buff_filters.caster,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p1_only),
         category = buff_category.world_buffs,
     },
     -- boon of blackfathom
@@ -744,7 +748,7 @@ local buffs_predefined = {
                 end
             end
         end,
-        filter = buff_filters.caster,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p1_only),
         category = buff_category.world_buffs,
     },
     -- sod arcane power
@@ -752,7 +756,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             add_all_spell_crit(effects, 0.01, inactive);
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
         icon_id = GetItemIcon(211957),
     },
@@ -765,7 +769,7 @@ local buffs_predefined = {
                 end
             end
         end,
-        filter = buff_filters.paladin,
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.class,
     },
     -- sheath of light
@@ -775,7 +779,7 @@ local buffs_predefined = {
                 effects.raw.spell_power = effects.raw.spell_power + loadout.attack_power * 0.3;
             end
         end,
-        filter = buff_filters.paladin,
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.class,
     },
     -- guarded by the light
@@ -783,7 +787,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.raw.spell_heal_mod = effects.raw.spell_heal_mod - 0.5;
         end,
-        filter = buff_filters.paladin,
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.class,
     },
     -- fanaticism
@@ -795,7 +799,7 @@ local buffs_predefined = {
                     effects.by_school.spell_crit[magic_school.holy] + 0.18;
             end
         end,
-        filter = buff_filters.paladin,
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.class,
     },
     -- mind spike
@@ -810,7 +814,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Mind Blast"], c*0.3, 0);
             
         end,
-        filter = buff_filters.priest,
+        filter = bit.bor(buff_filters.priest, buff_filters.sod),
         category = buff_category.class,
     },
     -- surge of light
@@ -819,7 +823,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Smite"], 1.0, 0);
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Flash Heal"], 1.0, 0);
         end,
-        filter = buff_filters.priest,
+        filter = bit.bor(buff_filters.priest, buff_filters.sod),
         category = buff_category.class,
     },
     -- maelstrom weapon
@@ -837,7 +841,7 @@ local buffs_predefined = {
             end
             
         end,
-        filter = buff_filters.shaman,
+        filter = bit.bor(buff_filters.shaman, buff_filters.sod),
         category = buff_category.class,
     },
     -- power surge
@@ -848,7 +852,7 @@ local buffs_predefined = {
             end
             
         end,
-        filter = buff_filters.shaman,
+        filter = bit.bor(buff_filters.shaman, buff_filters.sod),
         category = buff_category.class,
     },
     -- hot streak
@@ -857,7 +861,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Pyroblast"], 1.0, 0);
             
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- missile barrage
@@ -867,7 +871,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Arcane Missiles"], 1.0, 0);
             
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- brain freeze
@@ -879,7 +883,7 @@ local buffs_predefined = {
                 ensure_exists_and_add(effects.ability.cost_mod, v, 1.0, 0);
             end
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- balefire bolt
@@ -895,7 +899,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Balefire Bolt"], c*0.1, 0);
             
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- molten armor
@@ -903,7 +907,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             add_all_spell_crit(effects, 0.05, inactive);
         end,
-        filter = buff_filters.mage,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
     -- grimoire of synergy
@@ -911,7 +915,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.05 - 1.0;
         end,
-        filter = buff_filters.warlock,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- shadow and flame
@@ -923,7 +927,7 @@ local buffs_predefined = {
             effects.by_school.spell_dmg_mod[magic_school.shadow] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.1 - 1.0;
         end,
-        filter = buff_filters.warlock,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- backdraft
@@ -931,7 +935,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.raw.haste_mod = effects.raw.haste_mod + 0.3;
         end,
-        filter = buff_filters.warlock,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- eclipse: solar
@@ -945,7 +949,7 @@ local buffs_predefined = {
             end
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], c*0.3, 0);
         end,
-        filter = buff_filters.druid,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
     },
     -- eclipse: lunar
@@ -960,7 +964,7 @@ local buffs_predefined = {
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], c*0.3, 0);
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], c*0.3, 0);
         end,
-        filter = buff_filters.druid,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
     },
     -- dreamstate
@@ -969,7 +973,7 @@ local buffs_predefined = {
 
             effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.5;
         end,
-        filter = buff_filters.druid,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
     },
     -- berserking
@@ -979,6 +983,63 @@ local buffs_predefined = {
         end,
         filter = buff_filters.caster,
         category = buff_category.world_buffs,
+    },
+    [429868] = {
+        apply = function(loadout, effects, buff)
+
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.1 - 1.0;
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod, buff_filters.sod_p1_only),
+        category = buff_category.item,
+    },
+    -- spark of inspiration
+    [438536] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + 42;
+            end
+
+            add_all_spell_crit(effects, 0.04, inactive);
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        category = buff_category.world_buffs,
+    },
+    -- mildly irradiated
+    [435973] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + 35;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        category = buff_category.item,
+    },
+    -- coin flip
+    [437698] = {
+        apply = function(loadout, effects, buff, inactive)
+            add_all_spell_crit(effects, 0.03, inactive);
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        category = buff_category.item,
+    },
+    -- hyperconductive shock
+    [437362] = {
+        apply = function(loadout, effects, buff, inactive)
+            effects.raw.haste_mod = effects.raw.haste_mod + 0.2;
+        end,
+        filter = bit.bor(buff_filters.shaman, buff_filters.paladin, buff_filters.sod_p2_only),
+        category = buff_category.item,
+    },
+    -- charged inspiration
+    [437327] = {
+        apply = function(loadout, effects, buff, inactive)
+            effects.raw.cost_mod = effects.raw.cost_mod + 0.5;
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + 50;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        category = buff_category.item,
     },
 };
 
@@ -1116,7 +1177,7 @@ local target_buffs_predefined = {
             effects.by_school.target_spell_dmg_taken[magic_school.frost] =
                 (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.frost]) * (1.0 + id_to_mod[id]) - 1.0;
         end,
-        filter = bit.bor(buff_filters.mage, buff_filters.warlock, buff_filters.shaman, buff_filters.hostile),
+        filter = bit.bor(buff_filters.caster, buff_filters.hostile),
         category = buff_category.raid,
     },
     -- winters chill
@@ -1133,7 +1194,7 @@ local target_buffs_predefined = {
                 effects.by_school.spell_crit[magic_school.frost] + c * 0.02;
 
         end,
-        filter = bit.bor(buff_filters.mage, buff_filters.shaman, buff_filters.hostile),
+        filter = bit.bor(buff_filters.mage, buff_filters.shaman, buff_filters.priest, buff_filters.hostile),
         category = buff_category.raid,
     },
     -- nightfall
@@ -1364,7 +1425,7 @@ local target_buffs_predefined = {
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
             end
         end,
-        filter = buff_filters.druid,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
     },
 };
