@@ -261,7 +261,7 @@ end
 
 local function create_set_effects() 
 
-    local set_effects = nil;
+    local set_effects = {};
 
     if class == "PRIEST" then
         set_effects = {
