@@ -2002,14 +2002,13 @@ local function create_spells()
 				lvl_scaling			= 0.0,
             },
             -- tranquility
-            -- TODO VANILLA: ot scale flag?
             [740] = {
                 base_min            = 0,
                 base_max            = 0,
                 over_time           = 94,
                 over_time_tick_freq = 2,
                 over_time_duration  = 10,
-                cast_time           = 8,
+                cast_time           = 10,
                 rank                = 1,
                 cost                = 375,
                 lvl_req             = 30,

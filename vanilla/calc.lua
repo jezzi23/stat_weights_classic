@@ -265,6 +265,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
         stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
     end
+    stats.extra_crit_mod_mul = nil;
 
     local target_vuln_mod = 1.0;
     local target_vuln_ot_mod = 1.0;
