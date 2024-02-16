@@ -469,14 +469,6 @@ local function create_talents()
                     effects.raw.regen_while_casting = effects.raw.regen_while_casting + pts * 0.05;
                 end
             },
-            [110] = {
-                apply = function(loadout, effects, pts)
-                    local instants = spell_names_to_id({"Renew", "Holy Nova", "Devouring Plague", "Shadow Word: Pain", "Mind Flay", "Desperate Prayer", "Touch of Weakness", "Circle of Healing", "Prayer of Mending", "Shadow Word: Death", "Void Plague", "Shadowguard", "Power Word: Shield"});
-                    for k, v in pairs(instants) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.02, 0.0);
-                    end
-                end
-            },
             [111] = {
                 apply = function(loadout, effects, pts)
                     
@@ -491,13 +483,11 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    
-                    local offensives = spell_names_to_id({"Smite", "Mind Blast", "Holy Fire", "Holy Nova", "Shadow Word: Pain", "Mind Flay", "Starshards", "Mana Burn"});
-                    for k, v in pairs(offensives) do
-                        ensure_exists_and_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
-                        ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
-                    end
-                    ensure_exists_and_add(effects.ability.effect_mod_only_heal, spell_name_to_id["Holy Nova"], -pts * 0.01, 0.0);
+
+                    effects.by_school.spell_dmg_mod_add[magic_school.shadow] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.shadow] + 0.01 * pts;
+                    effects.by_school.spell_dmg_mod_add[magic_school.holy] = 
+                        effects.by_school.spell_dmg_mod_add[magic_school.holy] + 0.01 * pts;
                 end
             },
             [202] = {
@@ -916,10 +906,8 @@ local function create_talents()
             },
             [312] = {
                 apply = function(loadout, effects, pts)
-                    local frost_spells = spell_names_to_id({"Frostbolt", "Frost Nova", "Blizzard", "Cone of Cold", "Ice Barrier", "Ice Ward", "Ice Lance", "Spellfrost Bolt", "Frostfire Bolt", "Deep Freeze"});
-                    for k, v in pairs(frost_spells) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.05, 0.0);
-                    end
+                    effects.by_school.cost_mod[magic_school.frost] = 
+                        effects.by_school.cost_mod[magic_school.frost] + 0.05 * pts;
                 end
             },
             [313] = {
@@ -936,15 +924,6 @@ local function create_talents()
 
     elseif class == "WARLOCK" then
         return {
-            [101] = {
-                apply = function(loadout, effects, pts)
-
-                    local affl_abilities = spell_names_to_id({"Corruption", "Curse of Agony", "Death Coil", "Drain Life", "Drain Soul", "Curse of Doom", "Siphon Life", "Haunt", "Unstable Affliction"});
-                    for k, v in pairs(affl_abilities) do
-                        ensure_exists_and_add(effects.ability.hit, v, pts * 0.02, 0.0); 
-                    end
-                end
-            },
             [102] = {
                 apply = function(loadout, effects, pts)
                     -- TODO VANILLA: is this capped at 1.0 or 1.5 effectively?
@@ -984,28 +963,11 @@ local function create_talents()
                     ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Health Funnel"], pts*0.1, 0.0); 
                 end
             },
-            -- TODO VANILLA: demo pet stuff demonic sacrifice talent and master demonologist
-            [302] = {
-                apply = function(loadout, effects, pts)
-                    local destr = spell_names_to_id({"Rain of Fire", "Hellfire", "Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate", "Shadowflame"});
-                    for k, v in pairs(destr) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.01, 0.0); 
-                    end
-                end
-            },
             [303] = {
                 apply = function(loadout, effects, pts)
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Shadow Bolt"], pts*0.1, 0.0); 
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], pts*0.1, 0.0); 
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Soul Fire"], pts*0.4, 0.0); 
-                end
-            },
-            [307] = {
-                apply = function(loadout, effects, pts)
-                    local destr = spell_names_to_id({"Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate", "Shadowflame"});
-                    for k, v in pairs(destr) do
-                        ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0); 
-                    end
                 end
             },
             [311] = {
@@ -1019,14 +981,6 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], pts*0.05, 0.0); 
                     ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], -pts*0.05, 0.0); 
-                end
-            },
-            [314] = {
-                apply = function(loadout, effects, pts)
-                    local destr = spell_names_to_id({"Shadow Bolt", "Immolate", "Soul Fire", "Shadowburn", "Searing Pain", "Conflagrate", "Shadow Cleave", "Chaos Bolt", "Incinerate", "Shadowflame" });
-                    for k, v in pairs(destr) do
-                        ensure_exists_and_add(effects.ability.crit_mod, v, pts*0.5, 0.0); 
-                    end
                 end
             },
             [315] = {

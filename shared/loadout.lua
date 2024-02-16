@@ -91,6 +91,7 @@ local function empty_effects(effects)
     effects.by_school.target_spell_dmg_taken_ot = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_mod_res= {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.cost_mod = {0, 0, 0, 0, 0, 0, 0};
 
     effects.by_attribute =  {};
     effects.by_attribute.stats = {0, 0, 0, 0, 0};

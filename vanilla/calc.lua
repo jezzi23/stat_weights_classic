@@ -355,10 +355,17 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.cost_flat[spell.base_id] then
         stats.cost = stats.cost - effects.ability.cost_flat[spell.base_id];
     end
-    local cost_mod = 1 - effects.raw.cost_mod;
+    local cost_mod = 1 - effects.raw.cost_mod - effects.by_school.cost_mod[spell.school];
 
     if effects.ability.cost_mod[spell.base_id] then
         cost_mod = cost_mod - effects.ability.cost_mod[spell.base_id]
+    end
+
+    if bit.band(spell.flags, spell_flags.multi_school) ~= 0 then
+        for _, v in pairs(spell.multi_school) do
+            
+            cost_mod = cost_mod - effects.by_school.cost_mod[v];
+        end
     end
 
     local cast_mod_mul = 0.0;
@@ -428,6 +435,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
     local hit_from_rating = 0.01 * (loadout.hit_rating + effects.raw.hit_rating)/hit_rating_per_perc
     stats.extra_hit = stats.extra_hit + hit_from_rating;
 
+    if bit.band(spell.flags, spell_flags.affliction) ~= 0 then
+        stats.extra_hit = stats.extra_hit + loadout.talents_table:pts(1, 1) * 0.02;
+    end
+
     local target_is_pvp = bit.band(loadout.flags, loadout_flags.target_pvp) ~= 0;
     stats.hit = spell_hit(loadout.lvl, loadout.target_lvl, stats.extra_hit, target_is_pvp);
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
@@ -448,10 +459,10 @@ local function stats_for_spell(stats, spell, loadout, effects)
     end
 
     stats.cast_time = spell.cast_time;
-    if effects.ability.cast_mod[spell.base_id] then
-
-        stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
+    if not effects.ability.cast_mod[spell.base_id] then
+        effects.ability.cast_mod[spell.base_id] = 0.0;
     end
+    stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
     
     local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
     local haste_from_rating = 0.01 * max(0.0, loadout.haste_rating + effects.raw.haste_rating) / haste_rating_per_perc;
@@ -471,11 +482,17 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 stats.extra_crit_mod_mul = 0.3;
                 stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
+        elseif bit.band(spell_flags.absorb, spell.flags) ~= 0 then
         else
             if loadout.runes[rune_ids.despair] then
                 stats.ot_crit = stats.crit;
             end
+            stats.crit = math.min(1.0, stats.crit + loadout.talents_table:pts(1, 14) * 0.01);
         end
+        if bit.band(spell.flags, spell_flags.instant) ~= 0 then
+            cost_mod = cost_mod - loadout.talents_table:pts(1, 10) * 0.02;
+        end
+
     elseif class == "DRUID" then
 
         if (spell.base_id == spell_name_to_id["Healing Touch"] or spell.base_id == spell_name_to_id["Nourish"])
@@ -505,10 +522,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
         -- nature's grace
         local pts = loadout.talents_table:pts(1, 13);
-        if pts ~= 0 and spell.base_min ~= 0 then
+        if pts ~= 0 and spell.cast_time ~= spell.over_time_duration and bit.band(spell_flags.instant, spell.flags) == 0 and cast_reduction  < 1.0 then
 
-            stats.cast_time = (1.0 - stats.crit) * stats.cast_time +
-                stats.crit * stats.cast_time * 0.8;
+            stats.gcd = stats.gcd - 0.5;
+
+            stats.cast_time = spell.cast_time - effects.ability.cast_mod[spell.base_id] - 0.5*stats.crit;
+            stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
         end
 
     elseif class == "PALADIN" then
@@ -631,8 +650,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.target_avg_resi = 0.0;
         end
 
-        if loadout.runes[rune_ids.dance_of_the_wicked] and spell.base_min ~= 0 then
-            resource_refund = resource_refund + stats.crit * 0.02 * loadout.max_mana;
+        if bit.band(spell.flags, spell_flags.destruction) ~= 0 then
+            cost_mod = cost_mod - loadout.talents_table:pts(3, 2) * 0.01;
+            stats.crit = math.min(1.0, stats.crit + loadout.talents_table:pts(3, 7) * 0.01);
+            stats.crit_mod = stats.crit_mod + loadout.talents_table:pts(3, 14) * 0.5;
+            
         end
         if loadout.runes[rune_ids.pandemic] and 
             (spell.base_id == spell_name_to_id["Corruption"] or
@@ -643,6 +665,9 @@ local function stats_for_spell(stats, spell, loadout, effects)
              spell.base_id == spell_name_to_id["Siphon Life"]) then
 
             stats.ot_crit = stats.crit;
+        end
+        if loadout.runes[rune_ids.dance_of_the_wicked] and spell.base_min ~= 0 then
+            resource_refund = resource_refund + stats.crit * 0.02 * loadout.max_mana;
         end
     end
 

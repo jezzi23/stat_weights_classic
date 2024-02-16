@@ -306,6 +306,12 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.by_school.spell_dmg_mod[magic_school.shadow] = 
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.15 - 1.0;
+
+            if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+                effects.by_school.cost_mod[magic_school.shadow] = 
+                    effects.by_school.cost_mod[magic_school.shadow] + 0.5;
+
+            end
         end,
         filter = buff_filters.priest,
         category = buff_category.class,
@@ -802,21 +808,6 @@ local buffs_predefined = {
         filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.class,
     },
-    -- mind spike
-    [431655] = {
-        apply = function(loadout, effects, buff)
-            local c = 0;
-            if buff.count then
-                c = buff.count
-            else
-                c = 3;
-            end
-            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Mind Blast"], c*0.3, 0);
-            
-        end,
-        filter = bit.bor(buff_filters.priest, buff_filters.sod),
-        category = buff_category.class,
-    },
     -- surge of light
     [431666] = {
         apply = function(loadout, effects, buff)
@@ -941,13 +932,8 @@ local buffs_predefined = {
     -- eclipse: solar
     [408250] = {
         apply = function(loadout, effects, buff)
-            local c = 0;
-            if buff.count then
-                c = buff.count
-            else
-                c = 4;
-            end
-            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], c*0.3, 0);
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.3, 0);
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.3, 0);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
@@ -955,14 +941,7 @@ local buffs_predefined = {
     -- eclipse: lunar
     [408255] = {
         apply = function(loadout, effects, buff)
-            local c = 0;
-            if buff.count then
-                c = buff.count
-            else
-                c = 4;
-            end
-            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], c*0.3, 0);
-            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], c*0.3, 0);
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Starfire"], 1.0, 0);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
@@ -1040,6 +1019,14 @@ local buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
         category = buff_category.item,
+    },
+    -- starsurge
+    [417157] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Starfire"], 0.8, 0);
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
+        category = buff_category.class,
     },
 };
 
@@ -1405,7 +1392,7 @@ local target_buffs_predefined = {
         category = buff_category.class,
     },
     -- dreamstate
-    [17364] = {
+    [437132] = {
         apply = function(loadout, effects, buff)
             effects.by_school.target_spell_dmg_taken[magic_school.nature] =
                 (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
@@ -1425,7 +1412,22 @@ local target_buffs_predefined = {
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
             end
         end,
-        filter = bit.bor(buff_filters.druid, buff_filters.sod),
+        filter = bit.bor(buff_filters.druid, buff_filters.sod, buff_filters.friendly),
+        category = buff_category.class,
+    },
+    -- mind spike
+    [431655] = {
+        apply = function(loadout, effects, buff)
+            local c = 0;
+            if buff.count then
+                c = buff.count
+            else
+                c = 3;
+            end
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Mind Blast"], c*0.3, 0);
+            
+        end,
+        filter = bit.bor(buff_filters.priest, buff_filters.sod, buff_filters.hostile),
         category = buff_category.class,
     },
 };

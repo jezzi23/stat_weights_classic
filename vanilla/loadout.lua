@@ -34,6 +34,14 @@ local class_to_int_to_crit_scaling = {
         ["PRIEST"]  = 59.5238,
         ["PALADIN"] = 59.8802,
     },
+    [40] = {
+        ["WARLOCK"] = 38.1679,
+        ["DRUID"]   = 38.4615,
+        ["SHAMAN"]  = 38.1679,
+        ["MAGE"]    = 36.2319,
+        ["PRIEST"]  = 37.1747,
+        ["PALADIN"] = 40.6504,
+    },
     [25] = {
         ["WARLOCK"] = 23.3100,
         ["DRUID"]   = 23.4192,
@@ -66,17 +74,15 @@ local function int_to_crit_rating(int, loadout, effects)
     local lower = 0;
     if loadout.lvl >= 60 then
         upper = 60;
-        lower = 25;
+        lower = 40;
     elseif loadout.lvl >= 50 then
         upper = 60;
-        lower = 25;
+        lower = 40;
     elseif loadout.lvl >= 40 then
         upper = 60;
-        lower = 25;
-    elseif loadout.lvl >= 26 and loadout.lvl == UnitLevel("player") then
-        upper = 0;
+        lower = 40;
     elseif loadout.lvl >= 25 then
-        upper = 60;
+        upper = 40;
         lower = 25;
     elseif loadout.lvl >= 2 and loadout.lvl == UnitLevel("player") then
         upper = 0;

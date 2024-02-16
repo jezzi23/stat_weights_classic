@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30216;
+local version_id = 30217;
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -66,6 +66,16 @@ local client_build_version = GetBuildInfo();
 core.expansion_loaded = tonumber(client_build_version:sub(1,1));
 
 core.sw_addon_loaded = false;
+
+core.client_deviation_flags = {
+    sod = bit.lshift(1,0)
+};
+
+core.client_deviation = 0;
+
+if C_Engraving and C_Engraving.IsEngravingEnabled() then
+    core.client_deviation = bit.bor(core.client_deviation, core.client_deviation_flags.sod);
+end
 
 local action_bar_addon_name = nil;
 local spell_book_addon_name = nil;
