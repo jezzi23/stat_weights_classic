@@ -1023,13 +1023,24 @@ local buffs_predefined = {
     -- starsurge
     [417157] = {
         apply = function(loadout, effects, buff)
-            ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Starfire"], 0.8, 0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfire"], 0.8, 0);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
     },
+    -- enlightenment
+    [412326] = {
+        apply = function(loadout, effects, buff)
+            if buff.id == 412326 then
+                effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.1 - 1.0;
+            elseif buff.id == 412325 then
+                effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.1;
+            end
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
+        category = buff_category.class,
+    },
 };
-
 
 local target_buffs_predefined = {
     -- amplify magic

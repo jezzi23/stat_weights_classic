@@ -61,8 +61,24 @@ local action_id_by_name = {};
 local action_id_frames = {};
 local spell_book_frames = {};
 local action_bar_addon_name = "Default";
+local externally_registered_spells = {};
 
 local mana_cost_overlay, cast_speed_overlay;
+
+function __swc_register_spell(spell_id)
+    if spells[spell_id] then
+        if not externally_registered_spells[spell_id] then
+            externally_registered_spells[spell_id] = 0;
+        end
+        externally_registered_spells[spell_id] = externally_registered_spells[spell_id] + 1;
+    end
+end
+
+function __swc_unregister_spell(spell_id)
+    if spells[spell_id] and externally_registered_spells[spell_id] then
+        externally_registered_spells[spell_id] = math.max(0, externally_registered_spells[spell_id] - 1);
+    end
+end
 
 local function init_frame_overlay(frame_info)
 
@@ -568,25 +584,7 @@ local overlay_label_handler = {
     end,
 };
 
-local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, assume_single_target)
-
-    if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
-
-        frame_info.overlay_frames[1]:SetPoint("TOP", 1, -3);
-        frame_info.overlay_frames[2]:SetPoint("CENTER", 1, -1.5);
-        frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
-
-        frame_info.overlay_frames[1]:SetText("OLD");
-        frame_info.overlay_frames[2]:SetText("RANK");
-        frame_info.overlay_frames[3]:SetText("!!!");
-
-        for i = 1, 3 do
-            frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255); 
-            frame_info.overlay_frames[i]:Show();
-        end
-        
-        return;
-    end
+local function cache_spell(spell, spell_id, loadout, effects, assume_single_target)
 
     if not spell_cache[spell_id] then
         spell_cache[spell_id] = {};
@@ -613,6 +611,31 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         spell_info(spell_effect, spell, stats, loadout, effects, assume_single_target);
         cast_until_oom(spell_effect, stats, loadout, effects);
     end
+
+    return spell_effect, stats;
+end
+
+local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, assume_single_target)
+
+    if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
+
+        frame_info.overlay_frames[1]:SetPoint("TOP", 1, -3);
+        frame_info.overlay_frames[2]:SetPoint("CENTER", 1, -1.5);
+        frame_info.overlay_frames[3]:SetPoint("BOTTOM", 1, 0);
+
+        frame_info.overlay_frames[1]:SetText("OLD");
+        frame_info.overlay_frames[2]:SetText("RANK");
+        frame_info.overlay_frames[3]:SetText("!!!");
+
+        for i = 1, 3 do
+            frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255); 
+            frame_info.overlay_frames[i]:Show();
+        end
+        
+        return;
+    end
+
+    local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, assume_single_target);
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
 
@@ -770,6 +793,7 @@ local function update_spell_icons(loadout, effects)
         end
     end
 
+
     -- update action bar icons
     --for k, v in pairs(action_id_frames) do
     for k, _ in pairs(active_overlays) do
@@ -805,15 +829,25 @@ end
 
 local function update_overlay()
 
+    local loadout, effects = nil
+    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
+        loadout, effects = active_loadout_and_effects();
+    else
+        loadout, _, effects = active_loadout_and_effects_diffed_from_ui()
+    end
+
+    for k, count in pairs(externally_registered_spells) do
+        if count > 0 then
+            if spells[k].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                cache_spell(spells[k].healing_version, k, loadout, effects, assume_single_target);
+            else
+                cache_spell(spells[k], k, loadout, effects, assume_single_target);
+            end
+        end
+    end
 
     if not sw_frame.settings_frame.icon_overlay_disable:GetChecked() then
-
-        if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
-            update_spell_icons(active_loadout_and_effects());
-        else
-            local loadout, effects, effects_diffed = active_loadout_and_effects_diffed_from_ui()
-            update_spell_icons(loadout, effects_diffed);
-        end
+        update_spell_icons(loadout, effects);
     end
 end
 

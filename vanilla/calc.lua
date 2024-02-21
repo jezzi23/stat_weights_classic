@@ -273,7 +273,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if effects.ability.vuln_mod[spell.base_id] then
 
         if loadout.runes[rune_ids.soul_siphon] then
-            target_vuln_mod = target_vuln_mod * (1.0 + math.max(0.18, effects.ability.vuln_mod[spell.base_id]));
+            target_vuln_mod = target_vuln_mod * (1.0 + math.min(0.18, effects.ability.vuln_mod[spell.base_id]));
         else
             target_vuln_mod = target_vuln_mod * (1.0 + effects.ability.vuln_mod[spell.base_id]);
         end
@@ -601,15 +601,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 resource_refund = resource_refund - stats.crit * 0.01 * base_mana_pool(loadout.lvl);
             end
 
-            if loadout.runes[rune_ids.enlightment] then
-                local mana_perc = loadout.mana/math.max(1, loadout.max_mana);
-                if mana_perc > 0.7 then
-                    stats.spell_dmg_mod_mul = (1.0 + stats.spell_dmg_mod_mul) * 1.1 - 1.0;
-                elseif mana_perc < 0.3 then
-                    stats.regen_while_casting = stats.regen_while_casting + 0.1;
-                end
-            end
-
             -- ignite
             local pts = loadout.talents_table:pts(2, 3);
             if pts ~= 0 and spell.school == magic_school.fire then
@@ -783,7 +774,8 @@ local function stats_for_spell(stats, spell, loadout, effects)
 
     if bit.band(spell.flags, spell_flags.multi_school) ~= 0 then
         for _, v in pairs(spell.multi_school) do
-            stats.spell_dmg = stats.spell_dmg + (loadout.spell_dmg_by_school[spell.school] - loadout.spell_dmg);
+
+            stats.spell_dmg = stats.spell_dmg + loadout.spell_dmg_by_school[v];
         end
     end
 
