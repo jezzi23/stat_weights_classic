@@ -509,7 +509,7 @@ local function stats_for_spell(stats, spell, loadout, effects)
             -- looks like seeds will work on lifebloom in sod
             if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0)
                 or spell.base_id == spell_name_to_id["Rejuvenation"] or spell.base_id == spell_name_to_id["Swiftmend"] then
-                stats.extra_crit_mod_mul = 0.3;
+                stats.extra_crit_mod_mul = 0.5;
                 stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
         end
