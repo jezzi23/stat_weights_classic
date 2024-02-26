@@ -65,7 +65,7 @@ local externally_registered_spells = {};
 
 local mana_cost_overlay, cast_speed_overlay;
 
-function __swc_register_spell(spell_id)
+swc.ext.register_spell = function(spell_id)
     if spells[spell_id] then
         if not externally_registered_spells[spell_id] then
             externally_registered_spells[spell_id] = 0;
@@ -74,7 +74,7 @@ function __swc_register_spell(spell_id)
     end
 end
 
-function __swc_unregister_spell(spell_id)
+swc.ext.unregister_spell = function(spell_id)
     if spells[spell_id] and externally_registered_spells[spell_id] then
         externally_registered_spells[spell_id] = math.max(0, externally_registered_spells[spell_id] - 1);
     end
@@ -595,18 +595,18 @@ local function cache_spell(spell, spell_id, loadout, effects, assume_single_targ
     if bit.band(spell.flags, spell_flags.heal) ~= 0 then
         spell_variant = spell_cache[spell_id].heal;
     end
-    if not spell_cache[spell_id].seq then
+    if not spell_variant.seq then
 
-        spell_cache[spell_id].seq = -1;
+        spell_variant.seq = -1;
         spell_variant.stats = {};
         spell_variant.spell_effect = {};
     end
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
 
-    if spell_cache[spell_id].seq ~= swc.core.sequence_counter then
+    if spell_variant.seq ~= swc.core.sequence_counter then
 
-        spell_cache[spell_id].seq = swc.core.sequence_counter;
+        spell_variant.seq = swc.core.sequence_counter;
         stats_for_spell(stats, spell, loadout, effects);
         spell_info(spell_effect, spell, stats, loadout, effects, assume_single_target);
         cast_until_oom(spell_effect, stats, loadout, effects);
@@ -677,17 +677,18 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
         spell_cache[spell_id].dmg = {};
     end
     local spell_variant = spell_cache[spell_id].dmg;
-    if not spell_cache[spell_id].seq then
+    --if not spell_cache[spell_id].seq then
+    if not spell_variant.seq then
 
-        spell_cache[spell_id].seq = -1;
+        spell_variant.seq = -1;
         spell_variant.stats = {};
         spell_variant.spell_effect = {};
     end
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
 
-    if spell_cache[spell_id].seq ~= swc.core.sequence_counter then
-        spell_cache[spell_id].seq = swc.core.sequence_counter;
+    if spell_variant.seq ~= swc.core.sequence_counter then
+        spell_variant.seq = swc.core.sequence_counter;
         -- fill dummy stats
         stats.cost = cost;
         stats.cast_time = cast_time;
@@ -838,10 +839,9 @@ local function update_overlay()
 
     for k, count in pairs(externally_registered_spells) do
         if count > 0 then
-            if spells[k].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+            cache_spell(spells[k], k, loadout, effects, assume_single_target);
+            if spells[k].healing_version then
                 cache_spell(spells[k].healing_version, k, loadout, effects, assume_single_target);
-            else
-                cache_spell(spells[k], k, loadout, effects, assume_single_target);
             end
         end
     end
@@ -862,5 +862,5 @@ overlay.clear_overlays               = clear_overlays;
 
 swc.overlay = overlay;
 
-__swc_spell_cache = spell_cache;
+swc.ext.spell_cache = spell_cache;
 

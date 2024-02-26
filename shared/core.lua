@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30218;
+local version_id = 30219;
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -87,6 +87,7 @@ core.talents_update_needed = true;
 core.equipment_update_needed = true;
 core.special_action_bar_changed = true;
 core.setup_action_bar_needed = true;
+core.addon_message_on_update = false;
 
 core.sequence_counter = 0;
 core.addon_running_time = 0;
@@ -101,6 +102,8 @@ local function class_supported()
        utils.class == "SHAMAN" or utils.class == "DRUID" or utils.class == "PALADIN";
 end
 local class_is_supported = class_supported();
+
+local addon_msg_swc_id = "__SWC"
 
 local event_dispatch = {
     ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, msg, msg2, msg3)
@@ -162,6 +165,7 @@ local event_dispatch = {
                 HideUIPanel(CharacterFrame);
             end
         end
+        C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_swc_id)
         if core.__sw__debug__ or core.__sw__use_defaults__ or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             for i = 1, 10 do
                 print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
@@ -277,6 +281,7 @@ local event_dispatch = {
     end,
 };
 
+
 local event_dispatch_client_exceptions = {
     ["ENGRAVING_MODE_CHANGED"]      = core.expansions.vanilla,
     ["RUNE_UPDATED"]                = core.expansions.vanilla,
@@ -285,17 +290,29 @@ local event_dispatch_client_exceptions = {
 core.event_dispatch = event_dispatch;
 core.event_dispatch_client_exceptions = event_dispatch_client_exceptions;
 
+
 local timestamp = 0;
+
+local pname = UnitName("player");
 
 local function update() 
 
     local dt = 1.0/sw_snapshot_loadout_update_freq;
+
+    if core.__sw__test_all_spells then
+        dt = 1.0/60;
+    end
+
     local t = GetTime();
 
     core.addon_running_time = core.addon_running_time + t-timestamp;
 
     update_tooltip(GameTooltip);
     update_overlay();
+
+    if core.addon_message_on_update then
+        C_ChatInfo.SendAddonMessage(addon_msg_swc_id, "UPDATE_TRIGGER", "WHISPER", pname);
+    end
 
     core.sequence_counter = core.sequence_counter + 1;
     timestamp = t;
@@ -458,6 +475,15 @@ SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
 SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
+
+swc.ext.enable_addon_message_on_update = function()
+    core.addon_message_on_update = true;
+end
+swc.ext.disable_addon_message_on_update = function()
+    core.addon_message_on_update = false;
+end
+
+__SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;

@@ -131,6 +131,8 @@ local function spell_name_to_ids()
             ["Healing Rain"]                = 415236,
             ["Lava Burst"]                  = 408490,
             ["Shamanistic Rage"]            = 425336,
+            ["Earth Shield"]                = 408514,
+
         };
     elseif class == "PALADIN" then
         return {
@@ -2792,7 +2794,7 @@ local function create_spells()
                 lvl_req             = 0,
                 lvl_max             = 60,
                 lvl_outdated        = 60,
-                cost                = 0.28,
+                cost                = 0.14,
                 flags               = bit.bor(spell_flags.heal, spell_flags.base_mana_cost, spell_flags.exception_coef, spell_flags.sod_rune, spell_flags.instant),
                 school              = magic_school.nature,
                 coef                = 0.274,
@@ -2936,7 +2938,7 @@ local function create_spells()
                 lvl_req             = 0,
                 lvl_max             = 60,
                 lvl_outdated        = 60,
-                cost                = 0.36,
+                cost                = 0.26,
                 flags               = bit.bor(spell_flags.heal, spell_flags.sod_rune, spell_flags.base_mana_cost, spell_flags.exception_coef),
                 school              = magic_school.nature,
                 coef                = 0.357,
@@ -4721,10 +4723,10 @@ local function create_spells()
                 lvl_max             = 60,
                 lvl_outdated        = 60,
                 cost                = 0.13,
-                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.exception_coef, spell_flags.cd, spell_flags.dot_resi_penetrate, spell_flags.instant),
+                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.cd, spell_flags.dot_resi_penetrate, spell_flags.instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
-                over_time_coef      = 0.2,
+                over_time_coef      = 0,
 				lvl_scaling			= 0.635108,
 				lvl_scaling_squared	= 0.039063,
                 lvl_coef            = 0.0,
@@ -6243,7 +6245,7 @@ local function create_spells()
                 base_max            = 0.0,
                 over_time           = 29.888200,
                 over_time_tick_freq = 1,
-                over_time_duration  = 10.0, -- duration not confirmed
+                over_time_duration  = 10.0,
                 cast_time           = 2.0,
                 rank                = 1,
                 lvl_req             = 0,
@@ -6289,7 +6291,7 @@ local function create_spells()
             [425336] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 0.0,
+                over_time           = 0.05,
                 over_time_tick_freq = 1,
                 over_time_duration  = 15.0,
                 cast_time           = 1.5,
@@ -6303,6 +6305,30 @@ local function create_spells()
                 coef                = 0.0,
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.0,
+            },
+            -- earth shield
+            [408514] = {
+                base_min            = 29.888200,
+                base_max            = 29.888200,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
+                cast_time           = 0.0,
+                rank                = 1,
+                lvl_req             = 0,
+                lvl_max             = 60,
+                lvl_outdated        = 60,
+                cost                = 0.05,
+                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.heal, spell_flags.sod_rune, spell_flags.exception_coef),
+                school              = magic_school.nature,
+                coef                = 0.54, -- unclear
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.690312,
+				lvl_scaling_squared	= 0.136267,
+                lvl_coef            = 0.55, -- unclear
+                lvl_coef_max        = 0.55,
+				lvl_coef_ot         = 0.0,
+				lvl_coef_ot_max     = 0.0,
             },
         };
     elseif class == "PALADIN" then
@@ -6805,20 +6831,25 @@ local function create_spells()
             [412019] = {
                 base_min            = 0,
                 base_max            = 0,
-                over_time           = 500,
+                over_time           = 38.258376,
                 over_time_tick_freq = 6.0,
                 over_time_duration  = 30.0,
                 cast_time           = 1.5,
                 rank                = 1,
-                lvl_req             = 1,
-                lvl_max             = 1,
-                lvl_outdated        = 1,
+                lvl_req             = 0,
+                lvl_max             = 60,
+                lvl_outdated        = 60,
                 cost                = 0.12,
-                flags               = bit.bor(spell_flags.absorb, spell_flags.base_mana_cost),
+                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.absorb, spell_flags.sod_rune, spell_flags.exception_coef),
                 school              = magic_school.holy,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
-				lvl_scaling			= 0.0,
+				lvl_scaling			= 0.904195,
+				lvl_scaling_squared	= 0.161311,
+                lvl_coef            = 0.0,
+                lvl_coef_max        = 0.0,
+				lvl_coef_ot         = 0.36,
+				lvl_coef_ot_max     = 0.36,
             },
         };
 
@@ -7828,7 +7859,6 @@ local function create_spells()
 				lvl_scaling			= 0.0,
             },
             -- inferno
-            -- TODO: how does this scale??
             [1122] = {
                 base_min            = 200,
                 base_max            = 200, 
@@ -7860,10 +7890,10 @@ local function create_spells()
                 lvl_req             = 12,
                 lvl_max             = 0,
                 lvl_outdated        = 19,
-                flags               = bit.bor(spell_flags.heal, spell_flags.cd),
+                flags               = bit.bor(spell_flags.heal, spell_flags.cd, spell_flags.exception_coef),
                 school              = magic_school.shadow,
                 coef                = 0.0,
-                over_time_coef      = 0.548,
+                over_time_coef      = 0.0,
 				lvl_scaling			= 5,
             },
             [3698] = {

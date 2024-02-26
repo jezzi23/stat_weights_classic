@@ -339,7 +339,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
             spell.base_max = 0;
         end
         spell_dmg_mod_school_add = spell_dmg_mod_school_add - effects.ability.effect_mod[spell.base_id];
-        -- could put modifiers at 0 for Shoot and just use the api %
     end
 
     local cost_mod_base = effects.raw.cost_mod_base;
@@ -1040,16 +1039,9 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
             if stats.crit == 1.0 then
                 info.mana_restored = 2*info.mana_restored;
             end
-        elseif spell.base_id == spell_name_to_id["Shamanistic Rage"] then
-
-            info.mana_restored =
-                math.max(0.15*stats.attack_power,
-                         0.1*stats.spell_dmg,
-                         0.06*stats.spell_heal) *
-                spell.over_time_duration/spell.over_time_tick_freq;
         elseif spell.base_id == spell_name_to_id["Mana Tide Totem"] then
             info.mana_restored = spell.over_time * spell.over_time_duration/spell.over_time_tick_freq;
-        elseif spell.base_id == spell_name_to_id["Dispersion"] or spell.base_id == spell_name_to_id["Shadowfiend"] then
+        elseif spell.base_id == spell_name_to_id["Dispersion"] or spell.base_id == spell_name_to_id["Shadowfiend"] or spell.base_id == spell_name_to_id["Shamanistic Rage"]then
             info.mana_restored = spell.over_time * loadout.max_mana * spell.over_time_duration/spell.over_time_tick_freq;
         else
             -- evocate, innervate
@@ -1173,6 +1165,9 @@ if class == "SHAMAN" then
             if loadout.runes[rune_ids.overload] then
                 info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
             end
+        end,
+        [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
+            info.expectation = 9 * info.expectation_st;
         end,
     };
 elseif class == "PRIEST" then

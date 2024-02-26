@@ -131,4 +131,5 @@ utils.add_all_spell_crit = add_all_spell_crit;
 
 local addon_name, swc = ...;
 swc.utils = utils;
+swc.ext = {};
 

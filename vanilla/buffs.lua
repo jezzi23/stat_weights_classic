@@ -506,6 +506,22 @@ local buffs_predefined = {
         filter = buff_filters.caster,
         category = buff_category.raid,
     },
+    -- moonkin form
+    [24858] = {
+        apply = function(loadout, effects, buff, inactive)
+
+            if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+                ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Moonfire"], 0.5, 0);
+                ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Sunfire"], 0.5, 0);
+
+                ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Moonfire"], 0.5, 0);
+                ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Sunfire"], 0.5, 0);
+
+            end
+        end,
+        filter = buff_filters.druid,
+        category = buff_category.class,
+    },
     -- mana spring
     [10497] = {
         apply = function(loadout, effects, buff)
@@ -1439,6 +1455,16 @@ local target_buffs_predefined = {
             
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.sod, buff_filters.hostile),
+        category = buff_category.class,
+    },
+    -- sacred shield
+    [412019] = {
+        apply = function(loadout, effects, buff)
+
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.5, 0);
+
+        end,
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod, buff_filters.friendly),
         category = buff_category.class,
     },
 };
