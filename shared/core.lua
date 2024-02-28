@@ -295,21 +295,15 @@ local timestamp = 0;
 
 local pname = UnitName("player");
 
-local function update() 
+local function main_update() 
 
     local dt = 1.0/sw_snapshot_loadout_update_freq;
-
-    if core.__sw__test_all_spells then
-        dt = 1.0/60;
-    end
 
     local t = GetTime();
 
     core.addon_running_time = core.addon_running_time + t-timestamp;
 
-    update_tooltip(GameTooltip);
     update_overlay();
-
     if core.addon_message_on_update then
         C_ChatInfo.SendAddonMessage(addon_msg_swc_id, "UPDATE_TRIGGER", "WHISPER", pname);
     end
@@ -317,13 +311,26 @@ local function update()
     core.sequence_counter = core.sequence_counter + 1;
     timestamp = t;
 
-    C_Timer.After(dt, update);
+    C_Timer.After(dt, update_overlay);
+end
+
+local function refresh_tooltip() 
+
+    local dt = 0.1;
+    if core.__sw__test_all_spells then
+        dt = 0.01;
+    end
+
+    update_tooltip(GameTooltip);
+
+    C_Timer.After(dt, refresh_tooltip);
 end
 
 if class_is_supported then
     create_sw_base_gui();
 
-    C_Timer.After(1.0, update);
+    C_Timer.After(1.0, main_update);
+    C_Timer.After(1.0, refresh_tooltip);
     
     --local dummy_frame_update = CreateFrame("FRAME");
     --dummy_frame_update:HookScript("OnUpdate", function(self, elapsed)
@@ -451,7 +458,7 @@ end
 local function command(msg, editbox)
     if class_is_supported then
         if msg == "print" then
-            print_loadout(active_loadout_and_effects());
+            --print_loadout(active_loadout_and_effects());
         elseif msg == "loadout" or msg == "loadouts" then
             sw_activate_tab(2);
         elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then

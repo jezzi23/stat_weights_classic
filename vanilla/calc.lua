@@ -61,6 +61,12 @@ local simulation_type = {
     cast_until_oom      = 2
 };
 
+local evaluation_flags = {
+    assume_single_effect = bit.lshift(1, 1),
+    isolate_periodic     = bit.lshift(1, 2),
+    isolate_direct       = bit.lshift(1, 3),
+};
+
 local function get_combat_rating_effect(rating_id, level)
     -- for vanilla, treat rating as same as percentage
     return 1;
@@ -265,7 +271,11 @@ local function stats_for_spell(stats, spell, loadout, effects)
         stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
         stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
     end
+
     stats.extra_crit_mod_mul = nil;
+    stats.crit_into_periodic = nil;
+    stats.direct_into_periodic = nil;
+    stats.direct_into_direct = nil;
 
     local target_vuln_mod = 1.0;
     local target_vuln_ot_mod = 1.0;
@@ -537,10 +547,20 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 resource_refund = resource_refund + stats.crit * pts*0.2 * original_base_cost;
             end
 
-            if is_buff_up(loadout, "player", GetSpellInfo(426159)) and spell.base_min ~= 0 then
+            if is_buff_up(loadout, "player", GetSpellInfo(426159), true) and spell.base_min ~= 0 then
 
-                stats.extra_crit_mod_mul = 0.6;
-                stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
+                stats.crit_into_periodic = 0.6;
+                stats.crit_into_periodic_freq = 3;
+                stats.crit_into_periodic_ticks = 4;
+                stats.crit_into_periodic_description = "Sheath";
+            end
+            if spell.base_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, GetSpellInfo(412019), false) then
+
+                stats.direct_into_periodic = 1.0;
+                stats.direct_into_periodic_freq = 1;
+                stats.direct_into_periodic_ticks = 12;
+                stats.direct_into_periodic_description = "Extra";
+                stats.direct_into_periodic_utilization = 1.0;
             end
         else
             if loadout.runes[rune_ids.wrath] then
@@ -577,6 +597,16 @@ local function stats_for_spell(stats, spell, loadout, effects)
                 stats.crit_mod = stats.crit_mod * (1 + stats.extra_crit_mod_mul);
             end
         end
+        if loadout.runes[rune_ids.overload] and (spell.base_id == spell_name_to_id["Chain Heal"] or
+                                                 spell.base_id == spell_name_to_id["Chain Lightning"] or
+                                                 spell.base_id == spell_name_to_id["Healing Wave"] or
+                                                 spell.base_id == spell_name_to_id["Lightning Bolt"] or
+                                                 spell.base_id == spell_name_to_id["Lava Burst"]) then
+
+            stats.direct_into_direct = 0.5;
+            stats.direct_into_direct_description = "Overload 50% chance";
+            stats.direct_into_direct_utilization = 0.5;
+        end
     elseif class == "MAGE" then
 
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -605,8 +635,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
             if pts ~= 0 and spell.school == magic_school.fire then
                 -- % ignite double dips in % multipliers
                 local double_dip = (1.0 + stats.spell_dmg_mod_mul) * (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]);
-                stats.extra_crit_mod_mul = (pts * 0.08)*double_dip;
-                stats.crit_mod = stats.crit_mod * (1.0 + stats.extra_crit_mod_mul);
+
+                stats.crit_into_periodic = (pts * 0.08)*double_dip;
+                stats.crit_into_periodic_freq = 2;
+                stats.crit_into_periodic_ticks = 2;
+                stats.crit_into_periodic_description = "Ignite";
+                --stats.crit_mod = stats.crit_mod * (1.0 + stats.extra_crit_mod_mul);
             end
             if spell.base_id == spell_name_to_id["Arcane Surge"] then
                 stats.cost = loadout.mana;
@@ -667,7 +701,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
         if effects.ability.cast_mod_reduce[spell.base_id] then
             stats.cast_time = stats.cast_time * (1.0 - effects.ability.cast_mod_reduce[spell.base_id]);
         end
-        
     end
 
     stats.cast_time_nogcd = stats.cast_time;
@@ -841,32 +874,130 @@ local function stats_for_spell(stats, spell, loadout, effects)
     spell = spells[original_spell_id];
 end
 
-local function calc_expectation(info, spell, stats, num_unbounded_targets)
+local function add_extra_spell_effects(info, stats)
+
+    info.num_extra_periodic_effects = 0;
+    
+    if stats.crit_into_periodic then 
+        info.num_extra_periodic_effects = info.num_extra_periodic_effects + 1;
+        local i = info.num_extra_periodic_effects;
+
+        info["ot_if_hit"     ..i] = 0;
+        info["ot_if_hit_max" ..i] = 0;
+        info["ot_if_crit"    ..i] = stats.crit_into_periodic * info.min_crit_if_hit;
+        info["ot_if_crit_max"..i] = stats.crit_into_periodic * info.max_crit_if_hit;
+        info["ot_ticks"      ..i] = stats.crit_into_periodic_ticks;
+        info["ot_freq"       ..i] = stats.crit_into_periodic_freq;
+        info["ot_duration"   ..i] = stats.crit_into_periodic_ticks * stats.crit_into_periodic_freq;
+        info["ot_description"..i] = stats.crit_into_periodic_description;
+        info["ot_crit"       ..i] = stats.crit;
+        info["ot_utilization"..i] = 1.0;
+    end
+    if stats.direct_into_periodic then 
+        info.num_extra_periodic_effects = info.num_extra_periodic_effects + 1;
+        local i = info.num_extra_periodic_effects;
+
+        info["ot_if_hit"     ..i] = stats.direct_into_periodic * info.min_noncrit_if_hit;
+        info["ot_if_hit_max" ..i] = stats.direct_into_periodic * info.max_noncrit_if_hit;
+        info["ot_if_crit"    ..i] = stats.direct_into_periodic * info.min_crit_if_hit;
+        info["ot_if_crit_max"..i] = stats.direct_into_periodic * info.max_crit_if_hit;
+        info["ot_ticks"      ..i] = stats.direct_into_periodic_ticks;
+        info["ot_freq"       ..i] = stats.direct_into_periodic_freq;
+        info["ot_duration"   ..i] = stats.direct_into_periodic_ticks * stats.direct_into_periodic_freq;
+        info["ot_description"..i] = stats.direct_into_periodic_description;
+        info["ot_crit"       ..i] = stats.crit;
+        info["ot_utilization"..i] = stats.direct_into_periodic_utilization;
+    end
+
+    info.total_ot_if_hit      = info.ot_if_hit;
+    info.total_ot_if_hit_max  = info.ot_if_hit_max;
+    info.total_ot_if_crit     = info.ot_if_crit;
+    info.total_ot_if_crit_max = info.ot_if_crit_max;
+    for i = 1, info.num_extra_periodic_effects do
+        local p = info["ot_utilization"..i];
+        info.total_ot_if_hit      = info.total_ot_if_hit      + p*info["ot_if_hit"..i];
+        info.total_ot_if_hit_max  = info.total_ot_if_hit_max  + p*info["ot_if_hit_max"..i];
+        info.total_ot_if_crit     = info.total_ot_if_crit     + p*info["ot_if_crit"..i];
+        info.total_ot_if_crit_max = info.total_ot_if_crit_max + p*info["ot_if_crit_max"..i];
+    end
+
+    info.num_extra_direct_effects = 0;
+
+    if stats.direct_into_direct then
+
+        info.num_extra_direct_effects = info.num_extra_direct_effects + 1;
+        local i = info.num_extra_direct_effects;
+
+        info["min_noncrit_if_hit"..i] = stats.direct_into_direct * info.min_noncrit_if_hit;
+        info["max_noncrit_if_hit"..i] = stats.direct_into_direct * info.max_noncrit_if_hit;
+        info["min_crit_if_hit"   ..i] = stats.direct_into_direct * info.min_crit_if_hit;
+        info["max_crit_if_hit"   ..i] = stats.direct_into_direct * info.max_crit_if_hit;
+        info["direct_description"..i] = stats.direct_into_direct_description;
+        info["direct_utilization"..i] = stats.direct_into_direct_utilization;
+    end
+
+    info.total_min_noncrit_if_hit      = info.min_noncrit_if_hit;
+    info.total_max_noncrit_if_hit      = info.max_noncrit_if_hit;
+    info.total_min_crit_if_hit         = info.min_crit_if_hit;
+    info.total_max_crit_if_hit         = info.max_crit_if_hit;
+    for i = 1, info.num_extra_direct_effects do
+        local p = info["direct_utilization"..i];
+        info.total_min_noncrit_if_hit  = info.total_min_noncrit_if_hit + p*info["min_noncrit_if_hit"..i];
+        info.total_max_noncrit_if_hit  = info.total_max_noncrit_if_hit + p*info["max_noncrit_if_hit"..i];
+        info.total_min_crit_if_hit     = info.total_min_crit_if_hit    + p*info["min_crit_if_hit"..i];
+        info.total_max_crit_if_hit     = info.total_max_crit_if_hit    + p*info["max_crit_if_hit"..i];
+    end
+end
+
+local function calc_expectation(info, spell, stats, loadout, num_unbounded_targets)
     if not num_unbounded_targets then
         num_unbounded_targets = 1;
     end
 
-    local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
-    info.expected_ot_st = stats.hit * expected_ot_if_hit;
+    -- direct
+    local expected_direct_if_hit = (1 - stats.crit) * 0.5 * (info.min_noncrit_if_hit + info.max_noncrit_if_hit) +
+        stats.crit * 0.5 * (info.min_crit_if_hit + info.max_crit_if_hit);
 
-    info.expectation_direct_st = 0.5 * (info.min + info.max);
+    for i = 1, info.num_extra_direct_effects do
+        expected_direct_if_hit = expected_direct_if_hit + info["direct_utilization"..i] *
+            ((1.0 - stats.crit) * 0.5 * (info["min_noncrit_if_hit"..i] + info["max_noncrit_if_hit"..i]) +
+            stats.crit * 0.5 * (info["min_crit_if_hit"..i] + info["max_crit_if_hit"..i]));
+    end
+
+    info.expectation_direct_st = stats.hit * expected_direct_if_hit * (1 - stats.target_avg_resi);
     info.expectation_direct = info.expectation_direct_st;
     if bit.band(spell.flags, spell_flags.unbounded_aoe_direct) ~= 0 then
         info.expectation_direct = info.expectation_direct_st * num_unbounded_targets;
     end
+
+    -- over time
+    local expected_ot_if_hit = (1.0 - stats.ot_crit) * 0.5 * (info.ot_if_hit + info.ot_if_hit_max) + stats.ot_crit * 0.5 * (info.ot_if_crit + info.ot_if_crit_max);
+
+    for i = 1, info.num_extra_periodic_effects do
+        expected_ot_if_hit = expected_ot_if_hit + info["ot_utilization"..i] *
+            ((1.0 - info["ot_crit"..i]) * 0.5 * (info["ot_if_hit"..i] + info["ot_if_hit_max"..i]) +
+            info["ot_crit"..i] * 0.5 * (info["ot_if_crit"..i] + info["ot_if_crit_max"..i]));
+    end
+
+    info.expected_ot_st = stats.hit * expected_ot_if_hit * (1 - stats.target_avg_resi_dot);
 
     info.expected_ot = info.expected_ot_st;
     if bit.band(spell.flags, spell_flags.unbounded_aoe_ot) ~= 0 then
         info.expected_ot = info.expected_ot_st * num_unbounded_targets;
     end
 
-    info.expectation_st = info.expectation_direct_st * (1 - stats.target_avg_resi) +
-                          info.expected_ot_st * (1 - stats.target_avg_resi_dot);
-    info.expectation = info.expectation_direct * (1 - stats.target_avg_resi) +
-                       info.expected_ot * (1 - stats.target_avg_resi_dot);
+    -- combine
+    info.expectation_st = info.expectation_direct_st + info.expected_ot_st
+    info.expectation = info.expectation_direct + info.expected_ot
+
+    if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
+        info.expectation = info.expectation + info.expectation_direct_st;
+    end
 end
 
-local function spell_info(info, spell, stats, loadout, effects, assume_single_effect)
+local function spell_info(info, spell, stats, loadout, effects, eval_flags)
+
+    eval_flags = eval_flags or 0;
 
     -- deal with aliasing spells
     local original_spell_id = spell.base_id;
@@ -881,7 +1012,7 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
         base_ot_tick_max = spell.over_time_max;
     end
     local num_unbounded_targets = loadout.unbounded_aoe_targets;
-    if assume_single_effect then
+    if bit.band(eval_flags, evaluation_flags.assume_single_effect) ~= 0 then
         num_unbounded_targets = 1;
     end
 
@@ -933,12 +1064,6 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
     info.min_crit_if_hit = info.min_noncrit_if_hit * stats.crit_mod;
     info.max_crit_if_hit = info.max_noncrit_if_hit * stats.crit_mod;
 
-    local direct_crit = stats.crit;
-
-    info.min = stats.hit * ((1 - direct_crit) * info.min_noncrit_if_hit + (direct_crit * info.min_crit_if_hit));
-    info.max = stats.hit * ((1 - direct_crit) * info.max_noncrit_if_hit + (direct_crit * info.max_crit_if_hit));
-
-
     info.ot_if_hit = 0.0;
     info.ot_if_hit_max = 0.0;
     info.ot_if_crit = 0.0;
@@ -959,12 +1084,14 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
             info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
             info.ot_if_crit_max = info.ot_if_hit_max * stats.crit_mod;
         else
-            info.ot_if_crit = 0;
-            info.ot_if_crit_max = 0;
+            info.ot_if_crit = info.ot_if_hit;
+            info.ot_if_crit_max = info.ot_if_hit_max;
         end
     end
 
-    calc_expectation(info, spell, stats, num_unbounded_targets);
+    add_extra_spell_effects(info, stats);
+
+    calc_expectation(info, spell, stats, loadout, num_unbounded_targets);
 
     if original_spell_id ~= spell.base_id then
         -- using alias for swiftmend/conflagrate
@@ -993,25 +1120,41 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
     end
     stats.alias = nil;
 
-    if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
-        -- holy light glyph may have been been applied to expectation
-        info.expectation = info.expectation + info.expectation_st;
+    if bit.band(eval_flags, evaluation_flags.isolate_periodic) ~= 0 then
+        info.expectation_st = info.expectation_st - info.expectation_direct_st;
+        info.expectation = info.expectation - info.expectation_direct;
+
+        info.expectation_direct_st = 0;
+        info.expectation_direct = 0;
+
+    elseif bit.band(eval_flags, evaluation_flags.isolate_direct) ~= 0 then
+        
+
+        info.expectation_st = info.expectation_st - info.expected_ot_st;
+        info.expectation = info.expectation - info.expected_ot;
+
+        info.expected_ot_st = 0;
+        info.expected_ot = 0;
     end
 
-    if info.expectation < info.expectation_st or assume_single_effect then
+    if info.expectation < info.expectation_st or bit.band(eval_flags, evaluation_flags.assume_single_effect) ~= 0 then
         info.expectation = info.expectation_st;
+        info.expected_ot = info.expected_ot_st;
+        info.expectation_direct = info.expectation_direct_st
     end
 
     -- soul drain, life drain, mind flay are all casts that can only miss on the entire channel itself
     -- 1.5 sec gcd is always implied which is the only penalty for misses
     if bit.band(spell.flags, spell_flags.channel_missable) ~= 0 then
 
-        --local channel_ratio_time_lost_to_miss = 1 - (info.ot_duration - stats.gcd)/info.ot_duration;
-        --info.expected_ot_st = expected_ot_if_hit - (1 - stats.hit) * channel_ratio_time_lost_to_miss * expected_ot_if_hit;
         local cast_time_avoided_by_miss = info.ot_duration - stats.gcd;
 
         stats.cast_time = stats.cast_time - cast_time_avoided_by_miss * (1.0 - stats.hit);
         stats.cast_time_nogcd = stats.cast_time;
+
+        info.longest_ot_duration = stats.cast_time;
+    else
+        info.longest_ot_duration = info.ot_duration;
     end
 
     info.effect_per_sec = info.expectation/stats.cast_time;
@@ -1024,10 +1167,14 @@ local function spell_info(info, spell, stats, loadout, effects, assume_single_ef
 
     info.cost_per_sec = stats.cost/stats.cast_time;
     info.ot_duration = info.ot_duration + stats.ot_extra_ticks * info.ot_freq;
-    if bit.band(spell.flags, spell_flags.cast_with_ot_dur) ~= 0 then
-        info.effect_per_dur = info.expectation/info.ot_duration;
-    else
-        info.effect_per_dur = info.expectation/math.max(info.ot_duration, stats.cast_time);
+
+    for i = 1, info.num_extra_periodic_effects do
+        info.longest_ot_duration = math.max(info.longest_ot_duration, info["ot_duration"..i]);
+    end
+    info.effect_per_dur = 0;
+    if info.longest_ot_duration ~= 0 then
+
+        info.effect_per_dur = info.expected_ot/info.longest_ot_duration;
     end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
@@ -1111,91 +1258,85 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     end
 end
 
+local function add_expectation_direct_st(info, num_to_add)
+
+    local added = info.expectation_direct_st * num_to_add;
+    info.expectation_direct = info.expectation_direct + added;
+    info.expectation = info.expectation + added;
+end
+
+local function add_expectation_ot_st(info, num_to_add)
+
+    local added = info.expected_ot_st * num_to_add;
+    info.expected_ot = info.expected_ot + added;
+    info.expectation = info.expectation + added;
+end
+
 if class == "SHAMAN" then
     special_abilities = {
         [spell_name_to_id["Chain Heal"]] = function(spell, info, loadout)
 
-            if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
-            end
-
             if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-                info.expectation = (1 + 1.3*0.5 + 1.3*1.3*0.5*0.5) * info.expectation_st;
+                add_expectation_direct_st(info, 1.3*0.5 + 1.3*1.3*0.5*0.5);
             else
-                info.expectation = (1 + 0.5 + 0.5*0.5) * info.expectation_st;
+                add_expectation_direct_st(info, 0.5 + 0.5*0.5);
             end
         end,
         [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
+            add_expectation_direct_st(info, 2);
         end,
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
 
-            if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
-            end
-
             if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
-                info.expectation = (1 + 0.75 + 0.75*0.75) * info.expectation_st;
+                add_expectation_direct_st(info, 0.75 + 0.75*0.75);
             else
-                info.expectation = (1 + 0.7 + 0.7*0.7) * info.expectation_st;
+                add_expectation_direct_st(info, 0.7 + 0.7*0.7);
             end
         end,
         [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
 
-            if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
-            end
-
             if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
-                info.expectation = (1 + 0.2 + 0.2*0.2) * info.expectation_st;
+                add_expectation_direct_st(info, 0.2 + 0.2*0.2);
             end
         end,
         [spell_name_to_id["Healing Stream Totem"]] = function(spell, info, loadout, stats, effects)
-            info.expectation = 5 * info.expectation_st;
+
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Healing Rain"]] = function(spell, info, loadout, stats, effects)
-            info.expectation = 5 * info.expectation_st;
-        end,
-        [spell_name_to_id["Lightning Bolt"]] = function(spell, info, loadout, stats, effects)
-            if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
-            end
-        end,
-        [spell_name_to_id["Lava Burst"]] = function(spell, info, loadout, stats, effects)
-            if loadout.runes[rune_ids.overload] then
-                info.expectation_st = (1.0 + 0.5*0.5)*info.expectation_st;
-            end
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
-            info.expectation = 9 * info.expectation_st;
+            add_expectation_direct_st(info, 8);
         end,
     };
 elseif class == "PRIEST" then
     special_abilities = {
         [spell_name_to_id["Shadowguard"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
+
+            add_expectation_direct_st(info, 2);
         end,
         [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_direct_st(info, 4);
         end,
         [spell_name_to_id["Circle of Healing"]] = function(spell, info, loadout, stats, effects)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_direct_st(info, 4);
         end,
         [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout, stats, effects)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_direct_st(info, 4);
         end,
         [spell_name_to_id["Shadow Word: Pain"]] = function(spell, info, loadout, stats, effects)
             if loadout.runes[rune_ids.shared_pain] then
-                info.expectation = 3 * info.expectation_st;
+                add_expectation_ot_st(info, 2);
             end
         end,
         [spell_name_to_id["Holy Nova"]] = function(spell, info, loadout)
             if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-                info.expectation = 5 * info.expectation_st;
+                add_expectation_direct_st(info, 4);
             end
         end,
         [spell_name_to_id["Lightwell"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Greater Heal"]] = function(spell, info, loadout, stats, effects)
             if loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
@@ -1220,7 +1361,7 @@ elseif class == "PRIEST" then
 
             end
 
-            calc_expectation(info, spell, stats);
+            calc_expectation(info, spell, stats, loadout);
         end,
         [spell_name_to_id["Renew"]] = function(spell, info, loadout, stats, effects)
             if loadout.runes[rune_ids.empowered_renew] then
@@ -1233,14 +1374,14 @@ elseif class == "PRIEST" then
                 info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
                 info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
 
-                calc_expectation(info, spell, stats);
+                calc_expectation(info, spell, stats, loadout);
             end
         end
     };
 elseif class == "DRUID" then
     special_abilities = {
         [spell_name_to_id["Tranquility"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Swiftmend"]] = function(spell, info, loadout, stats)
 
@@ -1274,7 +1415,7 @@ elseif class == "DRUID" then
             info.ot_freq = 0.0;
         end,
         [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_ot_st(info, 4);
         end,
     };
 elseif class == "WARLOCK" then
@@ -1311,25 +1452,25 @@ elseif class == "WARLOCK" then
             info.expectation = info.expectation_st;
         end,
         [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout, stats, effects)
-            info.expectation = 3 * info.expectation_st;
+            add_expectation_direct_st(info, 2);
         end,
         [spell_name_to_id["Shadow Bolt"]] = function(spell, info, loadout)
 
             if loadout.runes[rune_ids.shadow_bolt_volley] then
-                info.expectation = 5 * info.expectation_st;
+                add_expectation_direct_st(info, 4);
             end
         end,
     };
 elseif class == "PALADIN" then
     special_abilities = {
         [spell_name_to_id["Avenger's Shield"]] = function(spell, info, loadout)
-            info.expectation = 3 * info.expectation_st;
+            add_expectation_direct_st(info, 2);
         end,
     };
 elseif class == "MAGE" then
     special_abilities = {
         [spell_name_to_id["Mass Regeneration"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Mana Shield"]] = function(spell, info, loadout, stats)
 
@@ -1337,7 +1478,7 @@ elseif class == "MAGE" then
             stats.cost = stats.cost + 2*info.absorb*(1.0 - 0.1*pts);
         end,
         [spell_name_to_id["Temporal Anomaly"]] = function(spell, info, loadout)
-            info.expectation = 5 * info.expectation_st;
+            add_expectation_direct_st(info, 4);
         end,
     };
 else
@@ -1345,7 +1486,7 @@ else
 end
 
 
-local function evaluate_spell(spell, stats, loadout, effects, assume_single_effect)
+local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     local spell_effect = {};
     local spell_effect_extra_1sp = {};
@@ -1356,7 +1497,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     local spell_effect_extra_1spirit = {};
     local spell_effect_extra_1mp5 = {};
 
-    spell_info(spell_effect, spell, stats, loadout, effects, assume_single_effect);
+    spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
     cast_until_oom(spell_effect, stats, loadout, effects, true);
 
     local effects_diffed = deep_table_copy(effects);
@@ -1366,7 +1507,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.sp = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1sp, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1sp, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1sp, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.sp = 0;
@@ -1374,7 +1515,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.crit_rating = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1crit, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1crit, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1crit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.crit_rating = 0;
@@ -1382,7 +1523,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.hit_rating = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1hit, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1hit, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1hit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.hit_rating = 0;
@@ -1390,7 +1531,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.spell_pen = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1pen, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1pen, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1pen, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.spell_pen = 0;
@@ -1398,7 +1539,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.stats[stat.int] = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1int, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1int, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1int, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.stats[stat.int] = 0;
@@ -1406,7 +1547,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.stats[stat.spirit] = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1spirit, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1spirit, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1spirit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.stats[stat.spirit] = 0;
@@ -1414,7 +1555,7 @@ local function evaluate_spell(spell, stats, loadout, effects, assume_single_effe
     diff.mp5 = 1;
     effects_diff(loadout, effects_diffed, diff);
     stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
-    spell_info(spell_effect_extra_1mp5, spell, spell_stats_diffed, loadout, effects_diffed, assume_single_effect);
+    spell_info(spell_effect_extra_1mp5, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1mp5, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
     diff.mp5 = 0;
@@ -1485,6 +1626,7 @@ local function spell_diff(spell_normal, spell_diffed, sim_type)
 end
 
 calc.simulation_type              = simulation_type;
+calc.evaluation_flags             = evaluation_flags;
 calc.stats_for_spell              = stats_for_spell;
 calc.spell_info                   = spell_info;
 calc.cast_until_oom               = cast_until_oom;

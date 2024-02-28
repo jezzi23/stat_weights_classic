@@ -271,11 +271,11 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
     for random_rank, v in pairs(frame.spells) do
 
         -- best rank
-        local k = best_rank_by_lvl(spells[random_rank].base_id, loadout.lvl);
-        if k == 0 then
-            k = random_rank;
-        end
-        
+        --local k = best_rank_by_lvl(spells[random_rank].base_id, loadout.lvl);
+        --if not k then
+        --    k = random_rank;
+        --end
+        local k = random_rank;
 
         stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
         stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);

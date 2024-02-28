@@ -79,19 +79,6 @@ local function begin_tooltip_section(tooltip, spell)
             txt_left:Show();
         end
     end
-    --if sw_frame.settings_frame.clear_original_tooltip or tooltip ~= GameTooltip then
-    --if tooltip ~= GameTooltip then
-    --    tooltip:ClearLines();
-    --    local lname = GetSpellInfo(spell.base_id);
-    --    if not lname then
-    --        lname = ""..spell_id;
-    --    end
-    --    if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
-    --        tooltip:AddDoubleLine(lname, "Rank "..spell.rank, 1.0, 1.0, 1.0, 0.50196081399918, 0.50196081399918, 0.50196081399918);
-    --    else
-    --        tooltip:AddLine(lname, 1.0, 1.0, 1.0);
-    --    end
-    --end
 
     if tooltip == GameTooltip then
         tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
@@ -157,10 +144,10 @@ local function update_tooltip(tooltip)
         local spell_name, id = tooltip:GetSpell();
 
         if spells[id] and IsControlKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
-                not sw_frame.stat_comparison_frame.spells[spells[id].base_id] and
+                not sw_frame.stat_comparison_frame.spells[id] and
                 bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
 
-            sw_frame.stat_comparison_frame.spells[spells[id].base_id] = {
+            sw_frame.stat_comparison_frame.spells[id] = {
                 name = spell_name
             };
 
@@ -170,8 +157,6 @@ local function update_tooltip(tooltip)
 
         -- Workaround: need to set some spell id that exists to get tooltip refreshed when
         --            looking at custom spell id tooltip
-        
-        --if id ~= clear_tooltip_refresh_id then
         if spells[id] or id == clear_tooltip_refresh_id or id == sw_frame.spell_viewer_invalid_spell_id then
             if  id ~= clear_tooltip_refresh_id then
                 spell_id_of_cleared_tooltip = id;

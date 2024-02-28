@@ -1620,13 +1620,11 @@ local function apply_buffs(loadout, effects)
     end
 end
 
-local function is_buff_up(loadout, unit, buff_name)
-    if unit == "player" then
+local function is_buff_up(loadout, unit, buff_name, is_self)
+    if is_self then
         return loadout.dynamic_buffs[unit][buff_name] ~= nil or (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_name]);
-    elseif unit == "target" then
-        return loadout.dynamic_buffs[unit][buff_name] ~= nil or (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_name]);
     else
-        return false;
+        return loadout.dynamic_buffs[unit][buff_name] ~= nil or (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_name]);
     end
 end
 

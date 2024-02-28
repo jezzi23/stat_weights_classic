@@ -512,15 +512,14 @@ local spell_cache = {};
 local overlay_label_handler = {
     [icon_stat_display.normal] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%d",
-            math.floor(0.5+(spell_effect.min_noncrit_if_hit + spell_effect.max_noncrit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb)));
+            math.floor(0.5+0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) +
+                           0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb)));
     end,
     [icon_stat_display.crit] = function(frame_overlay, spell, spell_effect, stats)
-        if spell_effect.ot_if_crit > 0  then
-            frame_overlay:SetText(string.format("%d",
-                math.floor(0.5+(spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_crit + spell_effect.absorb)));
-        elseif spell_effect.min_crit_if_hit ~= 0.0 then
+        if stats.crit > 0 then
             frame_overlay:SetText(string.format("%d", 
-                math.floor(0.5+(spell_effect.min_crit_if_hit + spell_effect.max_crit_if_hit)/2 + spell_effect.ot_if_hit + spell_effect.absorb)));
+                math.floor(0.5+0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
+                               0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max) + spell_effect.absorb)));
         else
             frame_overlay:SetText("");
         end
@@ -584,7 +583,7 @@ local overlay_label_handler = {
     end,
 };
 
-local function cache_spell(spell, spell_id, loadout, effects, assume_single_target)
+local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
 
     if not spell_cache[spell_id] then
         spell_cache[spell_id] = {};
@@ -608,14 +607,14 @@ local function cache_spell(spell, spell_id, loadout, effects, assume_single_targ
 
         spell_variant.seq = swc.core.sequence_counter;
         stats_for_spell(stats, spell, loadout, effects);
-        spell_info(spell_effect, spell, stats, loadout, effects, assume_single_target);
+        spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
         cast_until_oom(spell_effect, stats, loadout, effects);
     end
 
     return spell_effect, stats;
 end
 
-local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, assume_single_target)
+local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, eval_flags)
 
     if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
 
@@ -635,7 +634,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         return;
     end
 
-    local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, assume_single_target);
+    local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, eval_flags);
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
 
@@ -728,7 +727,7 @@ end
 
 local special_action_bar_changed_id = 0;
 
-local function update_spell_icons(loadout, effects)
+local function update_spell_icons(loadout, effects, eval_flags)
 
     if swc.core.setup_action_bar_needed then
         setup_action_bars();
@@ -745,8 +744,6 @@ local function update_spell_icons(loadout, effects)
             swc.core.special_action_bar_changed = false;
         end
     end
-
-    local assume_single_target = sw_frame.settings_frame.icon_show_single_target_only:GetChecked();
 
     -- update spell book icons
     local current_tab = SpellBookFrame.selectedSkillLine;
@@ -784,9 +781,9 @@ local function update_spell_icons(loadout, effects)
                     else
                         -- TODO: icon overlay not working for healing version checkbox
                         if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                            update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, assume_single_target);
+                            update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
                         else
-                            update_spell_icon_frame(v, spells[id], id, loadout, effects, assume_single_target);
+                            update_spell_icon_frame(v, spells[id], id, loadout, effects, eval_flags);
                         end
                     end
                 end
@@ -818,9 +815,9 @@ local function update_spell_icons(loadout, effects)
             elseif id ~= 0 and v.frame:IsShown() then
 
                 if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
-                    update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, assume_single_target);
+                    update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
                 else
-                    update_spell_icon_frame(v, spells[id], id, loadout, effects, assume_single_target);
+                    update_spell_icon_frame(v, spells[id], id, loadout, effects, eval_flags);
                 end
 
             end
@@ -837,17 +834,22 @@ local function update_overlay()
         loadout, _, effects = active_loadout_and_effects_diffed_from_ui()
     end
 
+    local eval_flags = 0;
+    if sw_frame.settings_frame.icon_show_single_target_only:GetChecked() then
+        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
+    end
+
     for k, count in pairs(externally_registered_spells) do
         if count > 0 then
             cache_spell(spells[k], k, loadout, effects, assume_single_target);
             if spells[k].healing_version then
-                cache_spell(spells[k].healing_version, k, loadout, effects, assume_single_target);
+                cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
             end
         end
     end
 
     if not sw_frame.settings_frame.icon_overlay_disable:GetChecked() then
-        update_spell_icons(loadout, effects);
+        update_spell_icons(loadout, effects, eval_flags);
     end
 end
 
