@@ -65,6 +65,7 @@ local evaluation_flags = {
     assume_single_effect = bit.lshift(1, 1),
     isolate_periodic     = bit.lshift(1, 2),
     isolate_direct       = bit.lshift(1, 3),
+    offhand              = bit.lshift(1, 4),
 };
 
 local function get_combat_rating_effect(rating_id, level)
@@ -204,7 +205,9 @@ local function set_alias_spell(spell, loadout)
     return alias_spell;
 end
 
-local function stats_for_spell(stats, spell, loadout, effects)
+local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
+
+    eval_flags = eval_flags or 0;
 
     local original_base_cost = spell.cost;
     local original_spell_id = spell.base_id;
@@ -350,7 +353,6 @@ local function stats_for_spell(stats, spell, loadout, effects)
         end
         spell_dmg_mod_school_add = spell_dmg_mod_school_add - effects.ability.effect_mod[spell.base_id];
     end
-
     local cost_mod_base = effects.raw.cost_mod_base;
     if effects.ability.cost_mod_base[spell.base_id] then
         cost_mod_base = cost_mod_base + effects.ability.cost_mod_base[spell.base_id];
@@ -359,11 +361,12 @@ local function stats_for_spell(stats, spell, loadout, effects)
     if bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
         original_base_cost = original_base_cost * base_mana_pool(loadout.lvl)
     end
-    stats.cost = math.floor((original_base_cost - effects.raw.cost_flat)) * (1.0 - cost_mod_base);
-    
+    local cost_flat = effects.raw.cost_flat;
     if effects.ability.cost_flat[spell.base_id] then
-        stats.cost = stats.cost - effects.ability.cost_flat[spell.base_id];
+        cost_flat = cost_flat + effects.ability.cost_flat[spell.base_id];
     end
+    stats.cost = math.floor((original_base_cost - cost_flat)) * (1.0 - cost_mod_base);
+    
     local cost_mod = 1 - effects.raw.cost_mod - effects.by_school.cost_mod[spell.school];
 
     if effects.ability.cost_mod[spell.base_id] then
@@ -607,6 +610,28 @@ local function stats_for_spell(stats, spell, loadout, effects)
             stats.direct_into_direct_description = "Overload 50% chance";
             stats.direct_into_direct_utilization = 0.5;
         end
+
+        if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 then
+
+            local mh_speed, oh_speed = UnitAttackSpeed("player");
+            oh_speed = 6.0;
+            local wep_speed = mh_speed;
+            if bit.band(eval_flags, swc.calc.evaluation_flags.offhand) ~= 0 then
+                if oh_speed then
+                    wep_speed = oh_speed;
+                end
+            end
+            spell.over_time_tick_freq = wep_speed;
+            -- scaling should change with weapon base speed not current attack speed
+            -- but there is no easy way to get it
+            if spell.base_id == spell_name_to_id["Flametongue Weapon"] then
+                stats.spell_mod_base = stats.spell_mod_base * 0.25*(math.max(1.0, math.min(4.0, wep_speed)));
+            elseif spell.base_id == spell_name_to_id["Frostbrand Weapon"] then
+                local min_proc_chance = 0.15;
+                stats.hit = stats.hit * (min_proc_chance * math.max(1.0, math.min(4.0, wep_speed)));
+            end
+        end
+
     elseif class == "MAGE" then
 
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -1047,6 +1072,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         base_ot_tick_max = base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable;
     end
 
+
     info.ot_freq = spell.over_time_tick_freq;
     info.ot_duration = spell.over_time_duration;
 
@@ -1100,7 +1126,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         stats.alias = spell.base_id;
         spell = spells[original_spell_id];
         stats.no_alias = true;
-        stats_for_spell(stats, spell, loadout, effects);
+        stats_for_spell(stats, spell, loadout, effects, eval_flags);
         stats.no_alias = nil;
     end
 
@@ -1202,10 +1228,10 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
     end
 end
 
-local function spell_info_from_stats(info, stats, spell, loadout, effects)
+local function spell_info_from_stats(info, stats, spell, loadout, effects, eval_flags)
 
-    stats_for_spell(stats, spell, loadout, effects);
-    spell_info(info, spell, stats, loadout, effects);
+    stats_for_spell(stats, spell, loadout, effects, eval_flags);
+    spell_info(info, spell, stats, loadout, effects, eval_flags);
 end
 
 local function cast_until_oom(spell_effect, stats, loadout, effects, calculating_weights)
@@ -1506,7 +1532,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.sp = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1sp, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1sp, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
@@ -1514,7 +1540,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.crit_rating = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1crit, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1crit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
@@ -1522,7 +1548,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.hit_rating = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1hit, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1hit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
@@ -1530,7 +1556,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.spell_pen = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1pen, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1pen, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
@@ -1538,7 +1564,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.stats[stat.int] = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1int, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1int, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
@@ -1546,7 +1572,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.stats[stat.spirit] = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1spirit, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1spirit, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);
@@ -1554,7 +1580,7 @@ local function evaluate_spell(spell, stats, loadout, effects, eval_flags)
 
     diff.mp5 = 1;
     effects_diff(loadout, effects_diffed, diff);
-    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed);
+    stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
     spell_info(spell_effect_extra_1mp5, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
     cast_until_oom(spell_effect_extra_1mp5, spell_stats_diffed, loadout, effects_diffed, true);
     effects_diffed = deep_table_copy(effects);

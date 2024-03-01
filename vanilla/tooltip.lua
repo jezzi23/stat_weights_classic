@@ -71,10 +71,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         return;
     end
 
-    stats_for_spell(stats, spell, loadout, effects); 
     local eval_flags = 0;
     if IsAltKeyDown() then
         eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
+        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.offhand);
     end
     
     if IsControlKeyDown() then
@@ -87,6 +87,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
+    stats_for_spell(stats, spell, loadout, effects, eval_flags); 
     local eval = evaluate_spell(spell, stats, loadout, effects, eval_flags);
 
     local effect = "";
@@ -196,7 +197,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                    math.floor(eval.spell.min_noncrit_if_hit), 
                                                    math.ceil(eval.spell.max_noncrit_if_hit)),
                                      232.0/255, 225.0/255, 32.0/255);
-                    if spell.base_id == spell_name_to_id["Chain Lightning"] then
+                    if spell.base_id == spell_name_to_id["Chain Lightning"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.7;
@@ -224,7 +225,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                   math.ceil(eval.spell.max_noncrit_if_hit)),
                                     232.0/255, 225.0/255, 32.0/255);
 
-                    if spell.base_id == spell_name_to_id["Chain Heal"] then
+                    if spell.base_id == spell_name_to_id["Chain Heal"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.5;
@@ -350,7 +351,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                               math.ceil(eval.spell.max_crit_if_hit)),
                                252.0/255, 69.0/255, 3.0/255);
 
-                if spell.base_id == spell_name_to_id["Chain Heal"] then
+                if spell.base_id == spell_name_to_id["Chain Heal"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
                     local bounce_str = "     + ";
                     local bounces = 2;
                     local falloff = 0.5;
@@ -369,7 +370,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                            falloff*math.ceil(eval.spell.max_crit_if_hit));
                     tooltip:AddLine(bounce_str, 252.0/255, 69.0/255, 3.0/255);
 
-                elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
+                elseif spell.base_id == spell_name_to_id["Chain Lightning"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
                     local bounce_str = "     + ";
                     local bounces = 2;
                     local falloff = 0.7;
@@ -543,7 +544,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
 
     if sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
-        if stats.ot_crit ~= 0.0 then
+        if stats.ot_crit ~= 0.0 and eval.spell.ot_if_crit ~= 0 then
             if eval.spell.ot_if_crit ~= eval.spell.ot_if_crit_max then
                 tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d over %.2fs (%d-%d for %d ticks)",
                                               stats.crit*100, 
@@ -681,7 +682,7 @@ end
         local tooltip_cast = spell_cast_time(spell_id);
         if not tooltip_cast or tooltip_cast ~= stats.cast_time then
             if stats.cast_time_nogcd ~= stats.cast_time then
-                tooltip:AddLine(string.format("Expected Cast Time: 1.5 sec (%.3f but gcd capped)", stats.cast_time_nogcd), 215/256, 83/256, 234/256);
+                tooltip:AddLine(string.format("Expected Cast Time: %.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd), 215/256, 83/256, 234/256);
             else
                 tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215/256, 83/256, 234/256);
             end
@@ -838,6 +839,10 @@ end
     if evaluation_options ~= "" then
         --tooltip:AddLine("Hold key to isolate: "..evaluation_options, 1.0, 1.0, 1.0);
         tooltip:AddLine("To isolate: Hold "..evaluation_options, 1.0, 1.0, 1.0);
+    end
+    if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, swc.calc.evaluation_flags.offhand) == 0 then
+        tooltip:AddLine("Hold ALT key to show for offhand", 1.0, 1.0, 1.0);
+
     end
 
     -- debug tooltip stuff

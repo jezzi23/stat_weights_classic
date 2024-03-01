@@ -509,6 +509,9 @@ local function create_relics()
             [23005] = function(effects)
                 ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Lesser Healing Wave"], 10, 0.0);
             end,
+            [215436] = function(effects)
+                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Flame Shock"], 10, 0.0);
+            end,
         };
     elseif class == "DRUID" then
         return {
@@ -525,6 +528,9 @@ local function create_relics()
             end,
             [23004] = function(effects)
                 ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Healing Touch"], 25, 0.0);
+            end,
+            [216490] = function(effects)
+                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.02, 0.0);
             end,
         };
     else 

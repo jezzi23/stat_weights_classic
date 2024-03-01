@@ -606,7 +606,7 @@ local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
     if spell_variant.seq ~= swc.core.sequence_counter then
 
         spell_variant.seq = swc.core.sequence_counter;
-        stats_for_spell(stats, spell, loadout, effects);
+        stats_for_spell(stats, spell, loadout, effects, eval_flags);
         spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
         cast_until_oom(spell_effect, stats, loadout, effects);
     end

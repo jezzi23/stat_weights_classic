@@ -597,7 +597,7 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation", "Starsurge", "Nourish"});
+                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.03, 0);
                     end
@@ -738,6 +738,12 @@ local function create_talents()
             [206] = {
                 apply = function(loadout, effects, pts)
                     ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Lightning Shield"], pts * 0.05, 0.0);
+                end
+            },
+            [213] = {
+                apply = function(loadout, effects, pts)
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Flametongue Weapon"], pts * 0.05, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Frostbrand Weapon"], pts * 0.05, 0.0);
                 end
             },
             [301] = {
