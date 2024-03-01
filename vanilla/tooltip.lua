@@ -159,7 +159,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
-        tooltip:AddLine(string.format("Restores %d mana over %.2f sec for yourself.",
+        tooltip:AddLine(string.format("Restores %d mana over %.1f sec for yourself.",
                                       math.ceil(eval.spell.mana_restored),
                                       math.max(stats.cast_time, spell.over_time_duration)
                                       ),
@@ -279,7 +279,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                               math.floor(eval.spell["min_noncrit_if_hit"..i]), 
                                               math.ceil(eval.spell["max_noncrit_if_hit"..i])),
                                 232.0/255, 225.0/255, 32.0/255);
-            else
+            elseif eval.spell["min_noncrit_if_hit"..i] ~= 0 then
                 tooltip:AddLine(string.format("%s: %.1f",
                                               eval.spell["direct_description"..i],
                                               eval.spell["min_noncrit_if_hit"..i]),
@@ -433,7 +433,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 if spell.base_id == spell_name_to_id["Curse of Agony"] then
                     local dmg_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                     local dmg_wo_sp = (eval.spell.ot_if_hit - dmg_from_sp);
-                    tooltip:AddLine(string.format("%s %s: %.1f over %.2fs (%.1f-%.1f-%.1f for %d ticks)",
+                    tooltip:AddLine(string.format("%s %s: %.1f over %.1fs (%.1f-%.1f-%.1f every %.1fs x %d)",
                                                   effect,
                                                   hit_str,
                                                   eval.spell.ot_if_hit, 
@@ -441,12 +441,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                   (0.5*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
                                                   eval.spell.ot_if_hit/eval.spell.ot_ticks,
                                                   (1.5*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
-                                                  eval.spell.ot_ticks), 
+                                                  eval.spell.ot_freq, 
+                                                  eval.spell.ot_ticks),
                                     232.0/255, 225.0/255, 32.0/255);
                 elseif spell.base_id == spell_name_to_id["Starshards"] then
                     local dmg_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                     local dmg_wo_sp = (eval.spell.ot_if_hit - dmg_from_sp);
-                    tooltip:AddLine(string.format("%s %s: %.1f over %.2fs (%.1f-%.1f-%.1f for %d ticks)",
+                    tooltip:AddLine(string.format("%s %s: %.1f over %.1fs (%.1f-%.1f-%.1f every %.1fs x %d)",
                                                   effect,
                                                   hit_str,
                                                   eval.spell.ot_if_hit, 
@@ -454,10 +455,11 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                   ((2/3)*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
                                                   eval.spell.ot_if_hit/eval.spell.ot_ticks,
                                                   ((4/3)*dmg_wo_sp + dmg_from_sp)/eval.spell.ot_ticks,
+                                                  eval.spell.ot_freq,
                                                   eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                    tooltip:AddLine(string.format("%s %s: %d-%d over %.2fs (%d-%d for %d ticks)",
+                    tooltip:AddLine(string.format("%s %s: %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                                                   effect,
                                                   hit_str,
                                                   math.floor(eval.spell.ot_if_hit),
@@ -465,15 +467,17 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                   eval.spell.ot_duration, 
                                                   math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks),
                                                   math.ceil(eval.spell.ot_if_hit_max/eval.spell.ot_ticks),
+                                                  eval.spell.ot_freq,
                                                   eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 else
-                    tooltip:AddLine(string.format("%s %s: %.1f over %.2fs (%.1f for %d ticks)",
+                    tooltip:AddLine(string.format("%s %s: %.1f over %.1fs (%.1f every %.1fs x %d)",
                                                   effect,
                                                   hit_str,
                                                   eval.spell.ot_if_hit, 
                                                   eval.spell.ot_duration, 
                                                   eval.spell.ot_if_hit/eval.spell.ot_ticks,
+                                                  eval.spell.ot_freq, 
                                                   eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 end
@@ -482,7 +486,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 if spell.base_id == spell_name_to_id["Wild Growth"] then
                     local heal_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                     local heal_wo_sp = (eval.spell.ot_if_hit - heal_from_sp);
-                    tooltip:AddLine(string.format("%s: %.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %d ticks)",
+                    tooltip:AddLine(string.format("%s: %.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %d)",
                                                   effect,
                                                   eval.spell.ot_if_hit, 
                                                   eval.spell.ot_duration, 
@@ -492,61 +496,66 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                   (( 0*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
                                                   ((-1*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
                                                   ((-2*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
-                                                  ((-3*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks
-                                                  ), 
+                                                  ((-3*0.1425 + 1.0)*heal_wo_sp + heal_from_sp)/eval.spell.ot_ticks,
+                                                  eval.spell.ot_freq,
+                                                  eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
-                     tooltip:AddLine(string.format("%s: %d-%d over %.2fs (%d-%d for %d ticks)",
+                     tooltip:AddLine(string.format("%s: %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                                                    effect,
                                                    math.floor(eval.spell.ot_if_hit),
                                                    math.ceil(eval.spell.ot_if_hit_max), 
                                                    eval.spell.ot_duration, 
                                                    math.floor(eval.spell.ot_if_hit/eval.spell.ot_ticks),
                                                    math.ceil(eval.spell.ot_if_hit_max/eval.spell.ot_ticks),
-                                                   eval.spell.ot_ticks), 
+                                                  eval.spell.ot_freq,
+                                                  eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 else
-                     tooltip:AddLine(string.format("%s: %.1f over %.2fs (%.1f for %d ticks)",
+                     tooltip:AddLine(string.format("%s: %.1f over %.1fs (%.1f every %.1fs x %d)",
                                                    effect,
                                                    eval.spell.ot_if_hit, 
                                                    eval.spell.ot_duration, 
                                                    eval.spell.ot_if_hit_max/eval.spell.ot_ticks,
+                                                   eval.spell.ot_freq,
                                                    eval.spell.ot_ticks), 
                                     232.0/255, 225.0/255, 32.0/255);
                 end
             end
-            for i = 1, eval.spell.num_extra_periodic_effects do
+        end
+        for i = 1, eval.spell.num_extra_periodic_effects do
 
-                if eval.spell["ot_if_hit"..i] ~= 0.0 then
-                    if eval.spell["ot_if_hit"..i] ~= eval.spell["ot_if_hit_max"..i] then
-                        tooltip:AddLine(string.format("%s: %d-%d over %.2fs (%d-%d for %d ticks)",
-                                                      eval.spell["ot_description"..i], 
-                                                      math.floor(eval.spell["ot_if_hit"..i]), 
-                                                      math.ceil(eval.spell["ot_if_hit_max"..i]), 
-                                                      eval.spell["ot_duration"..i], 
-                                                      math.floor(eval.spell["ot_if_hit"..i]/eval.spell["ot_ticks"..i]),
-                                                      math.ceil(eval.spell["ot_if_hit_max"..i]/eval.spell["ot_ticks"..i]),
-                                                      eval.spell["ot_ticks"..i]), 
-                                   232.0/255, 225.0/255, 32.0/255);
-                    else
-                        tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.2fs (%.1f for %d ticks)",
-                                                      eval.spell["ot_description"..i], 
-                                                      stats.crit*100, 
-                                                      eval.spell["ot_if_hit"..i], 
-                                                      eval.spell["ot_duration"..i], 
-                                                      eval.spell["ot_if_hit"..i]/eval.spell["ot_ticks"..i],
-                                                      eval.spell["ot_ticks"..i]), 
-                                   232.0/255, 225.0/255, 32.0/255);
-                    end
-                end
+            if eval.spell["ot_if_hit"..i] ~= 0.0 then
+                if eval.spell["ot_if_hit"..i] ~= eval.spell["ot_if_hit_max"..i] then
+                    tooltip:AddLine(string.format("%s: %d-%d over %.1fs (%d-%d every %.1fs x %d)",
+                                                  eval.spell["ot_description"..i], 
+                                                  math.floor(eval.spell["ot_if_hit"..i]), 
+                                                  math.ceil(eval.spell["ot_if_hit_max"..i]), 
+                                                  eval.spell["ot_duration"..i], 
+                                                  math.floor(eval.spell["ot_if_hit"..i]/eval.spell["ot_ticks"..i]),
+                                                  math.ceil(eval.spell["ot_if_hit_max"..i]/eval.spell["ot_ticks"..i]),
+                                                  eval.spell["ot_freq"..i], 
+                                                  eval.spell["ot_ticks"..i]), 
+                               232.0/255, 225.0/255, 32.0/255);
+                else
+                    tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.1fs (%.1f every %.1fs x %d)",
+                                                  eval.spell["ot_description"..i], 
+                                                  stats.crit*100, 
+                                                  eval.spell["ot_if_hit"..i], 
+                                                  eval.spell["ot_duration"..i], 
+                                                  eval.spell["ot_if_hit"..i]/eval.spell["ot_ticks"..i],
+                                                  eval.spell["ot_freq"..i], 
+                                                  eval.spell["ot_ticks"..i]), 
+                               232.0/255, 225.0/255, 32.0/255);
             end
         end
+    end
 
 
     if sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
         if stats.ot_crit ~= 0.0 and eval.spell.ot_if_crit ~= 0 then
             if eval.spell.ot_if_crit ~= eval.spell.ot_if_crit_max then
-                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d over %.2fs (%d-%d for %d ticks)",
+                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                                               stats.crit*100, 
                                               stats.crit_mod,
                                               math.floor(eval.spell.ot_if_crit), 
@@ -554,16 +563,18 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                               eval.spell.ot_duration, 
                                               math.floor(eval.spell.ot_if_crit/eval.spell.ot_ticks),
                                               math.ceil(eval.spell.ot_if_crit_max/eval.spell.ot_ticks),
+                                              eval.spell.ot_freq, 
                                               eval.spell.ot_ticks), 
                            252.0/255, 69.0/255, 3.0/255);
                 
             else
-                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f over %.2fs (%.1f for %d ticks)",
+                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f over %.1fs (%.1f every %.1fs x %d)",
                                               stats.ot_crit*100, 
                                               stats.crit_mod,
                                               eval.spell.ot_if_crit, 
                                               eval.spell.ot_duration, 
                                               eval.spell.ot_if_crit/eval.spell.ot_ticks,
+                                              eval.spell.ot_freq, 
                                               eval.spell.ot_ticks), 
                            252.0/255, 69.0/255, 3.0/255);
             end
@@ -573,7 +584,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         for i = 1, eval.spell.num_extra_periodic_effects do
             if eval.spell["ot_crit"..i] ~= 0.0 then
                 if eval.spell["ot_if_crit"..i] ~= eval.spell["ot_if_crit_max"..i] then
-                    tooltip:AddLine(string.format("%s (%.2f%%): %d-%d over %.2fs (%d-%d for %d ticks)",
+                    tooltip:AddLine(string.format("%s (%.2f%%): %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                                                   eval.spell["ot_description"..i], 
                                                   stats.crit*100, 
                                                   math.floor(eval.spell["ot_if_crit"..i]), 
@@ -581,15 +592,17 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                   eval.spell["ot_duration"..i], 
                                                   math.floor(eval.spell["ot_if_crit"..i]/eval.spell["ot_ticks"..i]),
                                                   math.ceil(eval.spell["ot_if_crit_max"..i]/eval.spell["ot_ticks"..i]),
+                                                  eval.spell["ot_freq"..i], 
                                                   eval.spell["ot_ticks"..i]), 
                                252.0/255, 69.0/255, 3.0/255);
                 else
-                    tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.2fs (%.1f for %d ticks)",
+                    tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.1fs (%.1f every %.1fs x %d)",
                                                   eval.spell["ot_description"..i], 
                                                   stats.crit*100, 
                                                   eval.spell["ot_if_crit"..i], 
                                                   eval.spell["ot_duration"..i], 
                                                   eval.spell["ot_if_crit"..i]/eval.spell["ot_ticks"..i],
+                                                  eval.spell["ot_freq"..i], 
                                                   eval.spell["ot_ticks"..i]), 
                                252.0/255, 69.0/255, 3.0/255);
                 end
@@ -635,7 +648,7 @@ end
             end
             tooltip:AddLine(string.format("Expected: %.1f %s",eval.spell.expectation_st, extra_info_st),
                           255.0/256, 128.0/256, 0);
-            tooltip:AddLine(string.format("Total: %.1f %s", eval.spell.expectation, extra_info_multi),
+            tooltip:AddLine(string.format("Optimistic: %.1f %s", eval.spell.expectation, extra_info_multi),
                             255.0/256, 128.0/256, 0);
         else
             if extra_info_st ~= "" then
@@ -829,9 +842,9 @@ end
 
     if eval.spell.expectation ~= eval.spell.expectation_st then
         if evaluation_options == "" then
-            evaluation_options = "ALT = 1.00x effect";
+            evaluation_options = "ALT for 1.00x effect";
         else
-            evaluation_options = evaluation_options.." | ALT = 1.00x";
+            evaluation_options = evaluation_options.." | ALT for 1.00x";
         end
     end
 

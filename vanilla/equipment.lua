@@ -619,7 +619,6 @@ local function apply_equipment(loadout, effects)
             found_anything = true;
             local item_stats = GetItemStats(item_link);
             if item_stats then
-                -- TODO: Track spell crit for int per crit calc correction
 
                 if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
                     effects.raw.mp5 = effects.raw.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
@@ -647,8 +646,11 @@ local function apply_equipment(loadout, effects)
             end
         end
         for k, v in pairs(loadout.num_set_pieces) do
+            loadout.num_set_pieces[k] = 10;
+        end
+        for k, v in pairs(loadout.num_set_pieces) do
             if set_bonus_effects[k] then
-                set_bonus_effects[k](10, loadout, effects);
+                set_bonus_effects[k](v, loadout, effects);
             end
         end
     end

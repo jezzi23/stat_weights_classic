@@ -274,7 +274,12 @@ local function create_runes()
             },
             [rune_ids.gore                          ] = { wowhead_id = "16xy"},
             [rune_ids.improved_barkskin             ] = { wowhead_id = "16xz"},
-            [rune_ids.efflorescene                  ] = { wowhead_id = "96y1"},
+            [rune_ids.efflorescene                  ] = {
+                apply = function(loadout, effects)
+                    --ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Swiftmend"], 0.08, 0.0);
+                end,
+                wowhead_id = "96y1"
+            },
             [rune_ids.improved_frenzied_regeneration] = { wowhead_id = "96pd"},
         };
     elseif class == "PALADIN" then

@@ -195,11 +195,6 @@ local function set_alias_spell(spell, loadout)
         end
     elseif spell.base_id == spell_name_to_id["Sunfire (Bear)"] or spell.base_id == spell_name_to_id["Sunfire (Cat)"]  then
         alias_spell = spells[414684];
-    elseif spell.base_id == spell_name_to_id["Conflagrate"] then
-        alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Immolate"], loadout.lvl)];
-        if not alias_spell then
-            alias_spell = spells[348];
-        end
     end
 
     return alias_spell;
@@ -279,6 +274,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     stats.crit_into_periodic = nil;
     stats.direct_into_periodic = nil;
     stats.direct_into_direct = nil;
+    stats.direct_into_direct_on_crit = false;
+    stats.direct_into_direct_use_flat_add = false;
 
     local target_vuln_mod = 1.0;
     local target_vuln_ot_mod = 1.0;
@@ -505,6 +502,14 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             cost_mod = cost_mod - loadout.talents_table:pts(1, 10) * 0.02;
         end
 
+        if spell.base_id == spell_name_to_id["Greater Heal"] and loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+            stats.direct_into_direct = 500;
+            stats.direct_into_direct_use_flat_add = true;
+            stats.direct_into_direct_on_crit = true;
+            stats.direct_into_direct_description = "Absorb";
+            stats.direct_into_direct_utilization = 1.0;
+        end
+
     elseif class == "DRUID" then
 
         if (spell.base_id == spell_name_to_id["Healing Touch"] or spell.base_id == spell_name_to_id["Nourish"])
@@ -614,7 +619,6 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 then
 
             local mh_speed, oh_speed = UnitAttackSpeed("player");
-            oh_speed = 6.0;
             local wep_speed = mh_speed;
             if bit.band(eval_flags, swc.calc.evaluation_flags.offhand) ~= 0 then
                 if oh_speed then
@@ -953,12 +957,24 @@ local function add_extra_spell_effects(info, stats)
         info.num_extra_direct_effects = info.num_extra_direct_effects + 1;
         local i = info.num_extra_direct_effects;
 
-        info["min_noncrit_if_hit"..i] = stats.direct_into_direct * info.min_noncrit_if_hit;
-        info["max_noncrit_if_hit"..i] = stats.direct_into_direct * info.max_noncrit_if_hit;
-        info["min_crit_if_hit"   ..i] = stats.direct_into_direct * info.min_crit_if_hit;
-        info["max_crit_if_hit"   ..i] = stats.direct_into_direct * info.max_crit_if_hit;
         info["direct_description"..i] = stats.direct_into_direct_description;
         info["direct_utilization"..i] = stats.direct_into_direct_utilization;
+
+        if stats.direct_into_direct_use_flat_add then
+            info["min_noncrit_if_hit"..i] = stats.direct_into_direct;
+            info["max_noncrit_if_hit"..i] = stats.direct_into_direct;
+            info["min_crit_if_hit"   ..i] = stats.direct_into_direct;
+            info["max_crit_if_hit"   ..i] = stats.direct_into_direct;
+        else
+            info["min_noncrit_if_hit"..i] = stats.direct_into_direct * info.min_noncrit_if_hit;
+            info["max_noncrit_if_hit"..i] = stats.direct_into_direct * info.max_noncrit_if_hit;
+            info["min_crit_if_hit"   ..i] = stats.direct_into_direct * info.min_crit_if_hit;
+            info["max_crit_if_hit"   ..i] = stats.direct_into_direct * info.max_crit_if_hit;
+        end
+        if stats.direct_into_direct_on_crit then
+            info["min_noncrit_if_hit"..i] = 0;
+            info["max_noncrit_if_hit"..i] = 0;
+        end
     end
 
     info.total_min_noncrit_if_hit      = info.min_noncrit_if_hit;
@@ -1126,7 +1142,15 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         stats.alias = spell.base_id;
         spell = spells[original_spell_id];
         stats.no_alias = true;
+        local alias_coef = stats.coef;
+        local alias_ot_coef = stats.ot_coef;
         stats_for_spell(stats, spell, loadout, effects, eval_flags);
+        if stats.coef == 0 then
+            stats.coef = alias_coef;
+        end
+        if stats.ot_coef == 0 then
+            stats.ot_coef = alias_ot_coef;
+        end
         stats.no_alias = nil;
     end
 
@@ -1365,9 +1389,6 @@ elseif class == "PRIEST" then
             add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Greater Heal"]] = function(spell, info, loadout, stats, effects)
-            if loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
-                info.expectation_direct = info.expectation_direct + stats.crit * 500;
-            end
 
             if loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
                 if not stats.secondary_ability_stats then
@@ -1385,6 +1406,7 @@ elseif class == "PRIEST" then
                 info.ot_freq = stats.secondary_ability_info.ot_freq; 
                 info.expected_ot = stats.secondary_ability_info.expected_ot;
 
+                stats.ot_coef = stats.secondary_ability_stats.ot_coef;
             end
 
             calc_expectation(info, spell, stats, loadout);
@@ -1397,8 +1419,6 @@ elseif class == "PRIEST" then
                 info.max_noncrit_if_hit = direct;
                 info.min_crit_if_hit = direct * stats.crit_mod;
                 info.max_crit_if_hit = direct * stats.crit_mod;
-                info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
-                info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
 
                 calc_expectation(info, spell, stats, loadout);
             end
@@ -1413,9 +1433,12 @@ elseif class == "DRUID" then
 
             local num_ticks = 4;
             if stats.alias and stats.alias == spell_name_to_id["Regrowth"] then
-                num_ticks = 7;
+                num_ticks = 6;
             end
-            
+
+            stats.coef = stats.ot_coef * num_ticks; 
+            stats.ot_coef = 0;
+
             local heal_amount = stats.spell_mod * num_ticks * info.ot_if_hit/info.ot_ticks;
             
             info.min_noncrit_if_hit = heal_amount;
@@ -1423,12 +1446,6 @@ elseif class == "DRUID" then
 
             info.min_crit_if_hit = stats.crit_mod*heal_amount;
             info.max_crit_if_hit = stats.crit_mod*heal_amount;
-
-            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
-            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
-
-            info.expectation_st = 0.5 * (info.min + info.max);
-            info.expectation = info.expectation_st;
 
             -- clear over time
             info.ot_if_hit = 0.0;
@@ -1439,6 +1456,8 @@ elseif class == "DRUID" then
             info.expected_ot_if_hit = 0.0;
             info.ot_duration = 0.0;
             info.ot_freq = 0.0;
+
+            calc_expectation(info, spell, stats, loadout);
         end,
         [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
             add_expectation_ot_st(info, 4);
@@ -1446,37 +1465,6 @@ elseif class == "DRUID" then
     };
 elseif class == "WARLOCK" then
     special_abilities = {
-        [spell_name_to_id["Conflagrate"]] = function(spell, info, loadout, stats)
-
-            local immolate_effect = stats.spell_mod * info.ot_if_hit;
-            local direct = 1.0 * immolate_effect;
-            
-            -- direct component
-            info.min_noncrit_if_hit = direct;
-            info.max_noncrit_if_hit = direct;
-
-            info.min_crit_if_hit = stats.crit_mod*direct;
-            info.max_crit_if_hit = stats.crit_mod*direct;
-
-            info.min = stats.hit * ((1 - stats.crit) * info.min_noncrit_if_hit + (stats.crit * info.min_crit_if_hit));
-            info.max = stats.hit * ((1 - stats.crit) * info.max_noncrit_if_hit + (stats.crit * info.max_crit_if_hit));
-
-            -- clear over time
-            info.ot_ticks = 0;
-            info.ot_duration = 0.0;
-            info.ot_freq = 0.0;
-
-            info.ot_if_hit = 0;
-            info.ot_if_hit_max = 0;
-            info.ot_if_crit = 0;
-            info.ot_if_crit_max = 0;
-
-            local expected_ot_if_hit = 0;
-            info.expected_ot = 0;
-
-            info.expectation_st = 0.5 * (info.min + info.max);
-            info.expectation = info.expectation_st;
-        end,
         [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout, stats, effects)
             add_expectation_direct_st(info, 2);
         end,

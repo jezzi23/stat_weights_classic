@@ -494,6 +494,6 @@ __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;
---core.__sw__test_all_codepaths = 1;
+core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;
 
