@@ -486,7 +486,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 if spell.base_id == spell_name_to_id["Wild Growth"] then
                     local heal_from_sp = stats.ot_coef*stats.spell_ot_mod*stats.spell_power*eval.spell.ot_ticks;
                     local heal_wo_sp = (eval.spell.ot_if_hit - heal_from_sp);
-                    tooltip:AddLine(string.format("%s: %.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %d)",
+                    tooltip:AddLine(string.format("%s: %.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %d)",
                                                   effect,
                                                   eval.spell.ot_if_hit, 
                                                   eval.spell.ot_duration, 

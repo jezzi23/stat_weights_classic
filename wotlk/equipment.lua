@@ -1128,8 +1128,11 @@ local function apply_equipment(loadout, effects)
             end
         end
         for k, v in pairs(loadout.num_set_pieces) do
+            loadout.num_set_pieces[k] = 10;
+        end
+        for k, v in pairs(loadout.num_set_pieces) do
             if set_bonus_effects[k] then
-                set_bonus_effects[k](10, loadout, effects);
+                set_bonus_effects[k](v, loadout, effects);
             end
         end
     end

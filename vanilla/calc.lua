@@ -990,6 +990,20 @@ local function add_extra_spell_effects(info, stats)
     end
 end
 
+local function add_expectation_direct_st(info, num_to_add)
+
+    local added = info.expectation_direct_st * num_to_add;
+    info.expectation_direct = info.expectation_direct + added;
+    info.expectation = info.expectation + added;
+end
+
+local function add_expectation_ot_st(info, num_to_add)
+
+    local added = info.expected_ot_st * num_to_add;
+    info.expected_ot = info.expected_ot + added;
+    info.expectation = info.expectation + added;
+end
+
 local function calc_expectation(info, spell, stats, loadout, num_unbounded_targets)
     if not num_unbounded_targets then
         num_unbounded_targets = 1;
@@ -1032,7 +1046,8 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
     info.expectation = info.expectation_direct + info.expected_ot
 
     if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
-        info.expectation = info.expectation + info.expectation_direct_st;
+        --info.expectation = info.expectation + info.expectation_direct_st;
+        add_expectation_direct_st(info, 1);
     end
 end
 
@@ -1306,20 +1321,6 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
         spell_effect.effect_until_oom = spell_effect.num_casts_until_oom * spell_effect.expectation;
         spell_effect.mp1 = mp1_casting;
     end
-end
-
-local function add_expectation_direct_st(info, num_to_add)
-
-    local added = info.expectation_direct_st * num_to_add;
-    info.expectation_direct = info.expectation_direct + added;
-    info.expectation = info.expectation + added;
-end
-
-local function add_expectation_ot_st(info, num_to_add)
-
-    local added = info.expected_ot_st * num_to_add;
-    info.expected_ot = info.expected_ot + added;
-    info.expectation = info.expectation + added;
 end
 
 if class == "SHAMAN" then

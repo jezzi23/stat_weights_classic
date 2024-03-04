@@ -1080,6 +1080,16 @@ local function spell_info(info, spell, stats, loadout, effects)
     end
     stats.alias = nil;
 
+    info.total_min_noncrit_if_hit = info.min_noncrit_if_hit;
+    info.total_max_noncrit_if_hit = info.max_noncrit_if_hit;
+    info.total_min_crit_if_hit = info.min_crit_if_hit;
+    info.total_max_crit_if_hit = info.max_crit_if_hit;
+
+    info.total_ot_if_hit = info.ot_if_hit;
+    info.total_ot_if_hit_max = info.ot_if_hit_max;
+    info.total_ot_if_crit = info.ot_if_crit;
+    info.total_ot_if_crit_max = info.ot_if_crit_max;
+
     if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
         -- holy light glyph may have been been applied to expectation
         info.expectation = info.expectation + info.expectation_st;

@@ -51,7 +51,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30219;
+local version_id = 30220;
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -311,7 +311,7 @@ local function main_update()
     core.sequence_counter = core.sequence_counter + 1;
     timestamp = t;
 
-    C_Timer.After(dt, update_overlay);
+    C_Timer.After(dt, main_update);
 end
 
 local function refresh_tooltip() 
@@ -494,6 +494,6 @@ __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;
-core.__sw__test_all_codepaths = 1;
+--core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;
 

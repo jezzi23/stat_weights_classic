@@ -920,7 +920,7 @@ local buffs_predefined = {
     -- grimoire of synergy
     [426303] = {
         apply = function(loadout, effects, buff)
-            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.05 - 1.0;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.25 - 1.0;
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,

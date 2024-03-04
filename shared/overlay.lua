@@ -516,10 +516,11 @@ local overlay_label_handler = {
                            0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb)));
     end,
     [icon_stat_display.crit] = function(frame_overlay, spell, spell_effect, stats)
-        if stats.crit > 0 then
-            frame_overlay:SetText(string.format("%d", 
-                math.floor(0.5+0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
-                               0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max) + spell_effect.absorb)));
+
+        local crit_sum = 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
+                               0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max);
+        if stats.crit > 0 and crit_sum > 0 then
+            frame_overlay:SetText(string.format("%d", math.floor(0.5 + crit_sum + spell_effect.absorb)));
         else
             frame_overlay:SetText("");
         end
@@ -849,6 +850,7 @@ local function update_overlay()
     end
 
     if not sw_frame.settings_frame.icon_overlay_disable:GetChecked() then
+
         update_spell_icons(loadout, effects, eval_flags);
     end
 end
