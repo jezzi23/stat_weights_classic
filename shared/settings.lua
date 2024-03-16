@@ -109,6 +109,9 @@ local function save_sw_settings()
     if sw_frame.settings_frame.icon_heal_variant:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.show_heal_variant);
     end
+    if not sw_frame.settings_frame.tooltip_addon_name:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.addon_name);
+    end
     if not sw_frame.settings_frame.tooltip_loadout_info:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.loadout_info);
     end

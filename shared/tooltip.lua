@@ -48,6 +48,7 @@ local tooltip_stat_display = {
     spell_rank          = bit.lshift(1,15),
     loadout_info        = bit.lshift(1,16), -- negate default
     sp_effect_calc      = bit.lshift(1,17), -- negate default
+    addon_name          = bit.lshift(1,18), -- negate default
 };
 
 local function sort_stat_weights(stat_weights, num_weights) 
@@ -81,7 +82,10 @@ local function begin_tooltip_section(tooltip, spell)
     end
 
     if tooltip == GameTooltip then
-        tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
+
+        if sw_frame.settings_frame.tooltip_addon_name:GetChecked() then
+            tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
+        end
         if sw_frame.stat_comparison_frame:IsShown() and sw_frame:IsShown() then
             tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
         end
