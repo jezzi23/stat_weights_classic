@@ -557,7 +557,7 @@ local overlay_label_handler = {
     end,
     [icon_stat_display.crit_chance] = function(frame_overlay, spell, spell_effect, stats)
     
-        if stats.crit ~= 0 and spell_effect.ot_if_crit + spell_effect.min_crit_if_hit > 0 then
+        if stats.crit ~= 0 and spell_effect.total_ot_if_crit + spell_effect.total_min_crit_if_hit > 0 then
             frame_overlay:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
         else 
             frame_overlay:SetText("");

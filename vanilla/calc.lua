@@ -1140,9 +1140,6 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         if stats.ot_crit > 0 then
             info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
             info.ot_if_crit_max = info.ot_if_hit_max * stats.crit_mod;
-        else
-            info.ot_if_crit = info.ot_if_hit;
-            info.ot_if_crit_max = info.ot_if_hit_max;
         end
     end
 

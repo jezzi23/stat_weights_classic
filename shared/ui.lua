@@ -1083,8 +1083,34 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.tooltip_settings_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.tooltip_settings_label:SetFontObject(font);
     sw_frame.settings_frame.tooltip_settings_label:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset);
-    sw_frame.settings_frame.tooltip_settings_label:SetText("Ability Tooltip Display Options         Presets:");
+    sw_frame.settings_frame.tooltip_settings_label:SetText("Ability Tooltip Display Options.   Presets:");
     sw_frame.settings_frame.tooltip_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.settings_frame.preset_default_button =
+        CreateFrame("Button", nil, sw_frame.settings_frame, "UIPanelButtonTemplate");
+    sw_frame.settings_frame.preset_default_button:SetScript("OnClick", function(self)
+
+    sw_frame.settings_frame.tooltip_addon_name:SetChecked(true);
+    sw_frame.settings_frame.tooltip_loadout_info:SetChecked(true);
+    sw_frame.settings_frame.tooltip_spell_rank:SetChecked(false);
+    sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
+    sw_frame.settings_frame.tooltip_crit_effect:SetChecked(true);
+    sw_frame.settings_frame.tooltip_normal_ot:SetChecked(true);
+    sw_frame.settings_frame.tooltip_crit_ot:SetChecked(true);
+    sw_frame.settings_frame.tooltip_expected_effect:SetChecked(true);
+    sw_frame.settings_frame.tooltip_effect_per_sec:SetChecked(true);
+    sw_frame.settings_frame.tooltip_effect_per_cost:SetChecked(true);
+    sw_frame.settings_frame.tooltip_cost_per_sec:SetChecked(true);
+    sw_frame.settings_frame.tooltip_stat_weights:SetChecked(true);
+    sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);
+    sw_frame.settings_frame.tooltip_avg_cast:SetChecked(true);
+    sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(true);
+    sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(true);
+
+    end);
+    sw_frame.settings_frame.preset_default_button:SetPoint("TOPLEFT", 220, sw_frame.settings_frame.y_offset + 8);
+    sw_frame.settings_frame.preset_default_button:SetText("Default");
+    sw_frame.settings_frame.preset_default_button:SetWidth(60);
 
     sw_frame.settings_frame.preset_minimalistic_button =
         CreateFrame("Button", nil, sw_frame.settings_frame, "UIPanelButtonTemplate");
@@ -1108,9 +1134,10 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(false);
 
     end);
-    sw_frame.settings_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 240, sw_frame.settings_frame.y_offset + 8);
+    sw_frame.settings_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 280, sw_frame.settings_frame.y_offset + 8);
     sw_frame.settings_frame.preset_minimalistic_button:SetText("Minimalistic");
     sw_frame.settings_frame.preset_minimalistic_button:SetWidth(93);
+
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 12;
 
