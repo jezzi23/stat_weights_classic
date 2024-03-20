@@ -1531,7 +1531,7 @@ local function create_spells()
                 base_max            = 0.0,
                 over_time           = 13.828124,
                 over_time_tick_freq = 1,
-                over_time_duration  = 20.0,
+                over_time_duration  = 10.0,
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 0,
