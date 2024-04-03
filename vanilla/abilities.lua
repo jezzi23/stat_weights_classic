@@ -67,7 +67,6 @@ local function spell_name_to_ids()
             ["Insect Swarm"]                = 5570,
             ["Hurricane"]                   = 16914,
             ["Entangling Roots"]            = 339,
-            --["Force of Nature"]             = 6913,
             ["Innervate"]                   = 29166,
             ["Swiftmend"]                   = 18562,
             ["Thorns"]                      = 467,
@@ -78,6 +77,7 @@ local function spell_name_to_ids()
             ["Sunfire (Cat)"]               = 414689,
             ["Wild Growth"]                 = 408120,
             ["Nourish"]                     = 408247,
+            ["Efflorescence"]               = 417149,
         };
     elseif class == "PRIEST" then
         return {
@@ -134,6 +134,7 @@ local function spell_name_to_ids()
             ["Earth Shield"]                = 408514,
             ["Flametongue Weapon"]          = 8024,
             ["Frostbrand Weapon"]           = 8033,
+            ["Riptide"]                     = 408521,
 
         };
     elseif class == "PALADIN" then
@@ -1617,8 +1618,8 @@ local function create_spells()
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.018012,
 				lvl_scaling_squared	= 0.044141,
-                lvl_coef            = 1.5 * 2.58,
-                lvl_coef_max        = 1.5 * 3.0,
+                lvl_coef            = 3.87,
+                lvl_coef_max        = 4.51,
 				lvl_coef_ot         = 0.08,
 				lvl_coef_ot_max     = 0.08,
                 multi_school        = {magic_school.frost},
@@ -1642,8 +1643,8 @@ local function create_spells()
                 over_time_coef      = 0.0,
 				lvl_scaling			= 0.018012,
 				lvl_scaling_squared	= 0.044141,
-                lvl_coef            = 1.5 * 2.03,
-                lvl_coef_max        = 1.5 * 2.37,
+                lvl_coef            = 3.05,
+                lvl_coef_max        = 3.55,
 				lvl_coef_ot         = 0.0,
 				lvl_coef_ot_max     = 0.0,
                 multi_school        = {magic_school.frost},
@@ -2668,25 +2669,20 @@ local function create_spells()
             [18562] = {
                 base_min            = 0.0,
                 base_max            = 0.0,
-                over_time           = 38.949830,
-                over_time_tick_freq = 2,
-                over_time_duration  = 30.0,
+                over_time           = 0.0,
+                over_time_tick_freq = 0,
+                over_time_duration  = 0.0,
                 cast_time           = 1.5,
                 rank                = 1,
                 lvl_req             = 40,
                 lvl_max             = 80,
                 lvl_outdated        = 80,
                 cost                = 0.2,
-                flags               = bit.bor(spell_flags.cd, spell_flags.heal, spell_flags.alias, spell_flags.exception_coef, spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.instant),
+                flags               = bit.bor(spell_flags.cd, spell_flags.heal, spell_flags.exception_coef, spell_flags.base_mana_cost, spell_flags.instant),
                 school              = magic_school.nature,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
-				lvl_scaling			= 0.606705,
-				lvl_scaling_squared	= 0.167780,
-                lvl_coef            = 0.0,
-                lvl_coef_max        = 0.0,
-				lvl_coef_ot         = 0.21,
-				lvl_coef_ot_max     = 0.21,
+				lvl_scaling			= 0.0,
             },
             -- thorns
             [467] = {
@@ -2933,7 +2929,7 @@ local function create_spells()
             -- rejuvenation (sod version)
             [417057] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 8,
                 over_time_tick_freq = 3,
                 over_time_duration  = 12,
@@ -2943,7 +2939,7 @@ local function create_spells()
                 lvl_req             = 4,
                 lvl_max             = 9,
                 lvl_outdated        = 9,
-                flags               = bit.bor(spell_flags.heal),
+                flags               = bit.bor(spell_flags.heal, spell_flags.instant),
                 school              = magic_school.nature,
                 coef                = 0.0,
                 over_time_coef      = 0.376,
@@ -2951,7 +2947,7 @@ local function create_spells()
             },
             [417058] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 14,
                 rank                = 2,
                 cost                = 40,
@@ -2962,7 +2958,7 @@ local function create_spells()
             },
             [417059] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 29,
                 rank                = 3,
                 cost                = 75,
@@ -2973,7 +2969,7 @@ local function create_spells()
             },
             [417060] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 45,
                 rank                = 4,
                 cost                = 105,
@@ -2984,7 +2980,7 @@ local function create_spells()
             },
             [417061] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 61,
                 rank                = 5,
                 cost                = 135,
@@ -2995,7 +2991,7 @@ local function create_spells()
             },
             [417062] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 76,
                 rank                = 6,
                 cost                = 160,
@@ -3006,7 +3002,7 @@ local function create_spells()
             },
             [417063] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 97,
                 rank                = 7,
                 cost                = 195,
@@ -3039,7 +3035,7 @@ local function create_spells()
             },
             [417066] = {
                 base_min            = 0.0,
-                base_max            = 0.0, 
+                base_max            = 0.0,
                 over_time           = 189,
                 rank                = 10,
                 cost                = 335,
@@ -3165,6 +3161,30 @@ local function create_spells()
                 lvl_max             = 65,
                 lvl_outdated        = 64,
 				lvl_scaling			= 6.8,
+            },
+            -- efflorescence
+            [417149] = {
+                base_min            = 0.0,
+                base_max            = 0.0,
+                over_time           = 38.949830,
+                over_time_tick_freq = 1,
+                over_time_duration  = 15.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 0,
+                lvl_max             = 60,
+                lvl_outdated        = 60,
+                cost                = 0.2,
+                flags               = bit.bor(spell_flags.aoe, spell_flags.heal, spell_flags.cd, spell_flags.sod_rune, spell_flags.exception_coef, spell_flags.base_mana_cost, spell_flags.instant),
+                school              = magic_school.nature,
+                coef                = 0.0,
+                over_time_coef      = 0.06,
+				lvl_scaling			= 0.606705,
+				lvl_scaling_squared	= 0.167780,
+                lvl_coef            = 0.0,
+                lvl_coef_max        = 0.0,
+				lvl_coef_ot         = 0.16,
+				lvl_coef_ot_max     = 0.16,
             },
         };
 
@@ -5688,7 +5708,7 @@ local function create_spells()
             -- lightning shield
             [324] = {
                 base_min            = 13.0,
-                base_max            = 13.0, 
+                base_max            = 13.0,
                 over_time           = 0,
                 over_time_tick_freq = 0,
                 over_time_duration  = 0.0,
@@ -5706,7 +5726,7 @@ local function create_spells()
             },
             [325] = {
                 base_min            = 29.0,
-                base_max            = 29.0, 
+                base_max            = 29.0,
                 over_time           = 0,
                 rank                = 2,
                 cost                = 80,
@@ -5717,7 +5737,7 @@ local function create_spells()
             },
             [905] = {
                 base_min            = 51.0,
-                base_max            = 51.0, 
+                base_max            = 51.0,
                 over_time           = 0,
                 rank                = 3,
                 cost                = 125,
@@ -5728,7 +5748,7 @@ local function create_spells()
             },
             [945] = {
                 base_min            = 80.0,
-                base_max            = 80.0, 
+                base_max            = 80.0,
                 over_time           = 0,
                 rank                = 4,
                 cost                = 180,
@@ -5739,7 +5759,7 @@ local function create_spells()
             },
             [8134] = {
                 base_min            = 114.0,
-                base_max            = 114.0, 
+                base_max            = 114.0,
                 over_time           = 0,
                 rank                = 5,
                 cost                = 240,
@@ -5750,7 +5770,7 @@ local function create_spells()
             },
             [10431] = {
                 base_min            = 154.0,
-                base_max            = 154.0, 
+                base_max            = 154.0,
                 over_time           = 0,
                 rank                = 6,
                 cost                = 305,
@@ -5761,7 +5781,7 @@ local function create_spells()
             },
             [10432] = {
                 base_min            = 198.0,
-                base_max            = 198.0, 
+                base_max            = 198.0,
                 over_time           = 0,
                 rank                = 7,
                 cost                = 370,
@@ -6445,6 +6465,30 @@ local function create_spells()
                 lvl_max             = 60,
                 lvl_outdated        = 60,
 				lvl_scaling			= 5.0,
+            },
+            -- riptide
+            [408521] = {
+                base_min            = 29.888200,
+                base_max            = 29.888200,
+                over_time           = 29.888200,
+                over_time_tick_freq = 3,
+                over_time_duration  = 15.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 0,
+                lvl_max             = 60,
+                lvl_outdated        = 60,
+                cost                = 0.18,
+                flags               = bit.bor(spell_flags.heal, spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.instant),
+                school              = magic_school.nature,
+                coef                = 0.274,
+                over_time_coef      = 0.051,
+				lvl_scaling			= 0.690312,
+				lvl_scaling_squared	= 0.136267,
+                lvl_coef            = 1.13,
+                lvl_coef_max        = 1.23,
+				lvl_coef_ot         = 0.24,
+				lvl_coef_ot_max     = 0.24,
             },
         };
     elseif class == "PALADIN" then
@@ -8409,14 +8453,14 @@ local function create_spells()
                 cost                = 0.27,
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.aoe, spell_flags.cd, spell_flags.special_periodic_school, spell_flags.unbounded_aoe_ot, spell_flags.unbounded_aoe_direct, spell_flags.exception_coef, spell_flags.destruction),
                 school              = magic_school.shadow,
-                coef                = 0.0715,
-                over_time_coef      = 0.022,
+                coef                = 0.107,
+                over_time_coef      = 0.107,
 				lvl_scaling			= 0.672028,
 				lvl_scaling_squared	= 0.031721,
-                lvl_coef            = 0.64,
-                lvl_coef_max        = 0.64,
-				lvl_coef_ot         = 0.24,
-				lvl_coef_ot_max     = 0.24,
+                lvl_coef            = 2.26,
+                lvl_coef_max        = 2.26,
+				lvl_coef_ot         = 0.61,
+				lvl_coef_ot_max     = 0.61,
 				multi_school        = {magic_school.fire},
             },
             -- immolation aura

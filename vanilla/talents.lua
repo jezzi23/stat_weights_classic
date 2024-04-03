@@ -23,16 +23,13 @@
 local addon_name, swc = ...;
 
 local ensure_exists_and_add         = swc.utils.ensure_exists_and_add;
-local ensure_exists_and_mul         = swc.utils.ensure_exists_and_mul;
 local class                         = swc.utils.class;
-local race                          = swc.utils.race;
 local stat                          = swc.utils.stat;
 local add_all_spell_crit            = swc.utils.add_all_spell_crit;
 
 local magic_school                  = swc.abilities.magic_school;
 local spell_name_to_id              = swc.abilities.spell_name_to_id;
 local spell_names_to_id             = swc.abilities.spell_names_to_id;
-local spells                        = swc.abilities.spells;
 -------------------------------------------------------------------------------
 local talents_export = {};
 
@@ -58,12 +55,15 @@ local rune_ids = {
     pain_suppression                = 6747,
     rolling_with_the_punches        = 6714,
     spirit_of_the_redeemer          = 7028,
-    -- px
+    shadowfiend                     = 6751,
+    -- p3
+    divine_aegis                    = 7109,
+    eye_of_the_void                 = 6754,
+    pain_and_suffering              = 6933,
     despair                         = 7112,
     surge_of_light                  = 7111,
     void_zone                       = 7113,
-    divine_aegis                    = 7109,
-    shadowfiend                     = 6751,
+    -- px
     --druid p1
     fury_of_the_stormrage           = 6872,
     living_seed                     = 6975,
@@ -84,11 +84,13 @@ local rune_ids = {
     dreamstate                      = 6871,
     king_of_the_jungle              = 7013,
     survival_instincts              = 6859,
-    -- px
-    efflorescene                    = 7105,
-    improved_frenzied_regeneration  = 6861,
+    -- p3
+    efflorescence                   = 7105,
+    elunes_fires                    = 6977,
     gale_winds                      = 7104,
     gore                            = 7102,
+    -- px
+    improved_frenzied_regeneration  = 6861,
     improved_barkskin               = 7103,
     --paladin p1
     aegis                           = 7041,
@@ -110,13 +112,15 @@ local rune_ids = {
     guarded_by_the_light            = 6963,
     sacred_shield                   = 6960,
     the_art_of_war                  = 6966,
-    -- px
-    improved_hammer_of_wrath        = 7091,
-    purifying_power                 = 7090,
+    -- p3
     fanaticism                      = 7088,
     improved_sanctuary              = 7092,
     lights_grace                    = 7087,
     wrath                           = 7089,
+    hammer_of_the_righteous         = 6849,
+    improved_hammer_of_wrath        = 7091,
+    purifying_power                 = 7090,
+    -- px
     --shaman p1
     dual_wield_specialization       = 6874,
     healing_rain                    = 6984,
@@ -138,6 +142,14 @@ local rune_ids = {
     decoy_totem                     = 7047,
     spirit_of_the_alpha             = 6882,
     two_handed_mastery              = 7224,
+    --p3
+    overcharged                     = 7128,
+    riptide                         = 6885,
+    rolling_thunder                 = 7126,
+    static_shock                    = 7127,
+    burn                            = 6987,
+    mental_dexterity                = 6982,
+    tidal_waves                     = 7125,
     --mage p1
     burnout                         = 6729,
     enlightment                     = 6922,
@@ -156,15 +168,18 @@ local rune_ids = {
     hot_streak                      = 6724,
     missile_barrage                 = 6733,
     spellfrost_bolt                 = 6930,
-    brain_freeze                    = 0, -- MISSING
+    brain_freeze                    = 6725,
     chronostatic_preservation       = 7022,
-    -- px
+    spell_power                     = 6921,
+    -- p3
     balefire_bolt                   = 7097,
-    displacement                    = 7096,
-    molten_armor                    = 7095,
     deep_freeze                     = 7093,
     temporal_anomaly                = 7094,
-    spell_power                     = 6921,
+    advanced_warding                = 6726,
+    displacement                    = 7096,
+    molten_armor                    = 7095,
+    -- px
+    frozen_orb                      = 0   , -- MISSING
     --warlock p1
     demonic_tactics                 = 6952,
     lake_of_fire                    = 6815,
@@ -185,13 +200,15 @@ local rune_ids = {
     dance_of_the_wicked             = 6957,
     demonic_knowledge               = 6953,
     shadowflame                     = 7057,
-    -- px
+    -- p3
+    backdraft                       = 7115,
+    pandemic                        = 7114,
+    vengeance                       = 7058,
     immolation_aura                 = 7118,
     summon_felguard                 = 7117,
     unstable_affliction             = 7116,
-    backdraft                       = 7115,
-    pandemic                        = 7114,
-};    
+    -- px
+};
 
 -- maps rune engraving enchant id to effect and wowhead's encoding
 local function create_runes()
@@ -222,14 +239,15 @@ local function create_runes()
             [rune_ids.dispersion                ] = { wowhead_id = "86vn"},
             [rune_ids.pain_suppression          ] = { wowhead_id = "86jv"},
             [rune_ids.spirit_of_the_redeemer    ] = { wowhead_id = "86vm"},
-            -- px
+            [rune_ids.shadowfiend               ] = { wowhead_id = "76jz"},
+            -- p3
             [rune_ids.divine_aegis              ] = { wowhead_id = "16y5"},
+            [rune_ids.eye_of_the_void           ] = { wowhead_id = "16k2"},
+            [rune_ids.pain_and_suffering        ] = { wowhead_id = "16rn"},
             [rune_ids.despair                   ] = { wowhead_id = "96y8"},
             [rune_ids.surge_of_light            ] = { wowhead_id = "96y7"},
             [rune_ids.void_zone                 ] = { wowhead_id = "96y9"},
-            [rune_ids.pain_suppression          ] = { wowhead_id = "86jv"},
-            [rune_ids.spirit_of_the_redeemer    ] = { wowhead_id = "86vm"},
-            [rune_ids.shadowfiend               ] = { wowhead_id = "76jz"},
+            -- px
         };
     elseif class == "DRUID" then
         return {
@@ -264,7 +282,7 @@ local function create_runes()
             [rune_ids.dreamstate                    ] = { wowhead_id = "86pq"},
             [rune_ids.king_of_the_jungle            ] = { wowhead_id = "86v5"},
             [rune_ids.survival_instincts            ] = { wowhead_id = "86pb"},
-            -- px
+            -- p3
             [rune_ids.gale_winds                    ] = {
                 apply = function(loadout, effects)
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 1.0, 0.0);
@@ -274,13 +292,10 @@ local function create_runes()
             },
             [rune_ids.gore                          ] = { wowhead_id = "16xy"},
             [rune_ids.improved_barkskin             ] = { wowhead_id = "16xz"},
-            [rune_ids.efflorescene                  ] = {
-                apply = function(loadout, effects)
-                    --ensure_exists_and_add(effects.ability.coef_ot_mod, spell_name_to_id["Swiftmend"], 0.08, 0.0);
-                end,
-                wowhead_id = "96y1"
-            },
+            [rune_ids.efflorescence                 ] = { wowhead_id = "96y1"},
             [rune_ids.improved_frenzied_regeneration] = { wowhead_id = "96pd"},
+            [rune_ids.elunes_fires                  ] = { wowhead_id = "96t1"},
+            -- px
         };
     elseif class == "PALADIN" then
         return {
@@ -320,7 +335,7 @@ local function create_runes()
             [rune_ids.guarded_by_the_light          ] = { wowhead_id = "86sk"},
             [rune_ids.sacred_shield                 ] = { wowhead_id = "86sg"},
             [rune_ids.the_art_of_war                ] = { wowhead_id = "86sp"},
-            -- px
+            -- p3
             [rune_ids.fanaticism                    ] = { wowhead_id = "16xg"},
             [rune_ids.improved_sanctuary            ] = { wowhead_id = "16xm"},
             [rune_ids.lights_grace                  ] = {
@@ -329,10 +344,11 @@ local function create_runes()
                 end,
                 wowhead_id = "16xf"
             },
-
             [rune_ids.wrath                         ] = { wowhead_id = "16xh"},
             [rune_ids.improved_hammer_of_wrath      ] = { wowhead_id = "96xk"},
             [rune_ids.purifying_power               ] = { wowhead_id = "96xj"},
+            [rune_ids.hammer_of_the_righteous       ] = { wowhead_id = "96p1"},
+            -- px
         };
     elseif class == "SHAMAN" then
         return {
@@ -362,6 +378,14 @@ local function create_runes()
             [rune_ids.ancestral_awakening           ] = { wowhead_id = "86w8"},
             [rune_ids.decoy_totem                   ] = { wowhead_id = "86w7"},
             [rune_ids.spirit_of_the_alpha           ] = { wowhead_id = "86q2"},
+            -- p3
+            [rune_ids.burn                          ] = { wowhead_id = "16tb"},
+            [rune_ids.mental_dexterity              ] = { wowhead_id = "16t6"},
+            [rune_ids.tidal_waves                   ] = { wowhead_id = "16yn"},
+            [rune_ids.overcharged                   ] = { wowhead_id = "96yr"},
+            [rune_ids.riptide                       ] = { wowhead_id = "96q5"},
+            [rune_ids.rolling_thunder               ] = { wowhead_id = "96yp"},
+            [rune_ids.static_shock                  ] = { wowhead_id = "96yq"},
         };
     elseif class == "MAGE" then
         return {
@@ -401,12 +425,21 @@ local function create_runes()
                 end,
                 wowhead_id = "86r9"
             },
-            -- px
+            -- p3
+            [rune_ids.advanced_warding] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Mana Shield"], 1.0, 0.0);
+                    --ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Fire Ward"], 1.0, 0.0);
+                    --ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Frost Ward "], 1.0, 0.0);
+                end,
+                wowhead_id = "16j6"
+            },
             [rune_ids.deep_freeze                   ] = { wowhead_id = "16xn"},
             [rune_ids.temporal_anomaly              ] = { wowhead_id = "16xp"},
             [rune_ids.balefire_bolt                 ] = { wowhead_id = "96xs"},
             [rune_ids.displacement                  ] = { wowhead_id = "96xr"},
             [rune_ids.molten_armor                  ] = { wowhead_id = "96xq"},
+            -- px
         };
 
     elseif class == "WARLOCK" then
@@ -441,11 +474,14 @@ local function create_runes()
             [rune_ids.dance_of_the_wicked           ] = { wowhead_id = "86sd"},
             [rune_ids.demonic_knowledge             ] = { wowhead_id = "86s9"},
             [rune_ids.shadowflame                   ] = { wowhead_id = "86wh"},
+            -- p3
             -- px
             [rune_ids.backdraft                     ] = { wowhead_id = "16yb"},
             [rune_ids.pandemic                      ] = { wowhead_id = "16ya"},
+            [rune_ids.vengeance                     ] = { wowhead_id = "16wj"},
             [rune_ids.immolation_aura               ] = { wowhead_id = "96ye"},
             [rune_ids.summon_felguard               ] = { wowhead_id = "96yd"},
+            [rune_ids.unstable_affliction           ] = { wowhead_id = "96yc"},
             [rune_ids.unstable_affliction           ] = { wowhead_id = "96yc"},
         };
     else
@@ -1018,7 +1054,6 @@ local function engraving_runes_id()
     local ids = {};
     if C_Engraving.IsEngravingEnabled then
         -- NOTE: order might be important here for wowhead export
-        local item_slots = {1, 5, 6, 7, 8, 9, 10};
         for k = 1, 16 do
             local rune_slot = C_Engraving.GetRuneForEquipmentSlot(k);
             if rune_slot then
@@ -1027,14 +1062,6 @@ local function engraving_runes_id()
                 end
             end
         end
-        --for k, v in pairs(item_slots) do
-        --    local rune_slot = C_Engraving.GetRuneForEquipmentSlot(v);
-        --    if rune_slot then
-        --        if runes[rune_slot.itemEnchantmentID] then
-        --            ids[k] = rune_slot.itemEnchantmentID;
-        --        end
-        --    end
-        --end
     end
     return ids
 end

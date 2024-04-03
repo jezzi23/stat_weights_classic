@@ -20,7 +20,7 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local utils                                 = swc.utils;
 
@@ -35,7 +35,6 @@ local update_loadouts_rhs                   = swc.ui.update_loadouts_rhs;
 local save_sw_settings                      = swc.settings.save_sw_settings;
 
 local reassign_overlay_icon                 = swc.overlay.reassign_overlay_icon;
-local setup_action_bars                     = swc.overlay.setup_action_bars;
 local update_overlay                        = swc.overlay.update_overlay;
 
 local update_tooltip                        = swc.tooltip.update_tooltip;
@@ -43,7 +42,6 @@ local append_tooltip_spell_info             = swc.tooltip.append_tooltip_spell_i
 
 local active_loadout                        = swc.loadout.active_loadout;
 local active_loadout_entry                  = swc.loadout.active_loadout_entry;
-local active_loadout_and_effects            = swc.loadout.active_loadout_and_effects;
 
 -------------------------------------------------------------------------
 local core = {};
@@ -51,7 +49,7 @@ swc.core = core;
 
 core.sw_addon_name = "Stat Weights Classic";
 
-local version_id = 30221;
+local version_id = 30222;
 local version = tostring(version_id);
 core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
 core.version_id = version;
@@ -77,9 +75,6 @@ if C_Engraving and C_Engraving.IsEngravingEnabled() then
     core.client_deviation = bit.bor(core.client_deviation, core.client_deviation_flags.sod);
 end
 
-local action_bar_addon_name = nil;
-local spell_book_addon_name = nil;
-
 sw_snapshot_loadout_update_freq = 1;
 sw_num_icon_overlay_fields_active = 0;
 
@@ -94,8 +89,6 @@ core.addon_running_time = 0;
 
 core.beacon_snapshot_time = -1000;
 
-
-local snapshot_time_since_last_update = 0;
 
 local function class_supported()
     return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
@@ -331,25 +324,8 @@ if class_is_supported then
 
     C_Timer.After(1.0, main_update);
     C_Timer.After(1.0, refresh_tooltip);
-    
-    --local dummy_frame_update = CreateFrame("FRAME");
-    --dummy_frame_update:HookScript("OnUpdate", function(self, elapsed)
-    --
-    --    core.addon_running_time = core.addon_running_time + elapsed;
-    --    snapshot_time_since_last_update = snapshot_time_since_last_update + elapsed;
 
-    --    if snapshot_time_since_last_update > 1/sw_snapshot_loadout_update_freq then
-
-    --        update_tooltip(GameTooltip);
-    --        update_overlay();
-
-    --        core.sequence_counter = core.sequence_counter + 1;
-    --        snapshot_time_since_last_update = 0;
-    --    end
-
-    --end)
-
-    GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip, is_fake, ...)
+    GameTooltip:HookScript("OnTooltipSetSpell", function(_, is_fake)
         append_tooltip_spell_info(is_fake);
     end)
 
@@ -452,7 +428,7 @@ if InterfaceOptions_AddCategory then
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
     str:SetText("Hard reset: /swc reset");
-    
+
 end
 
 local function command(msg, editbox)
@@ -494,6 +470,6 @@ __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;
---core.__sw__test_all_codepaths = 1;
---core.__sw__test_all_spells = 1;
+core.__sw__test_all_codepaths = 1;
+core.__sw__test_all_spells = 1;
 

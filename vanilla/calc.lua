@@ -20,12 +20,11 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 
 local spells                            = swc.abilities.spells;
 local spell_name_to_id                  = swc.abilities.spell_name_to_id;
-local spell_names_to_id                 = swc.abilities.spell_names_to_id;
 local magic_school                      = swc.abilities.magic_school;
 local spell_flags                       = swc.abilities.spell_flags;
 local best_rank_by_lvl                  = swc.abilities.best_rank_by_lvl;
@@ -36,21 +35,12 @@ local stat                              = swc.utils.stat;
 local loadout_flags                     = swc.utils.loadout_flags;
 local class                             = swc.utils.class;
 local deep_table_copy                   = swc.utils.deep_table_copy;
-local loadout_flags                     = swc.utils.loadout_flags;
-local spell_cost                        = swc.utils.spell_cost;
-local spell_cast_time                   = swc.utils.spell_cast_time;
 
 local effects_zero_diff                 = swc.loadout.effects_zero_diff;
 local effects_diff                      = swc.loadout.effects_diff;
 
 local set_tiers                         = swc.equipment.set_tiers;
 
-local buff_filters                      = swc.buffs.buff_filters;
-local buff_category                     = swc.buffs.buff_category;
-local filter_flags_active               = swc.buffs.filter_flags_active;
-local buffs                             = swc.buffs.buffs;
-local target_buffs                      = swc.buffs.target_buffs;
-local non_stackable_effects             = swc.buffs.non_stackable_effects;
 local is_buff_up                        = swc.buffs.is_buff_up;
 
 --------------------------------------------------------------------------------
@@ -178,22 +168,22 @@ local function set_alias_spell(spell, loadout)
 
     local alias_spell = spell;
 
-    if spell.base_id == spell_name_to_id["Swiftmend"] then
-        alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
-        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-            local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
-            local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
-            -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
-            if regrowth_buff then
-                if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
-                    alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Regrowth"], loadout.lvl)];
-                end
-            end
-        end
-        if not alias_spell then
-            alias_spell = spells[774];
-        end
-    elseif spell.base_id == spell_name_to_id["Sunfire (Bear)"] or spell.base_id == spell_name_to_id["Sunfire (Cat)"]  then
+    --if spell.base_id == spell_name_to_id["Swiftmend"] then
+    --    alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
+    --    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+    --        local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
+    --        local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
+    --        -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
+    --        if regrowth_buff then
+    --            if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
+    --                alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Regrowth"], loadout.lvl)];
+    --            end
+    --        end
+    --    end
+    --    if not alias_spell then
+    --        alias_spell = spells[774];
+    --    end
+    if spell.base_id == spell_name_to_id["Sunfire (Bear)"] or spell.base_id == spell_name_to_id["Sunfire (Cat)"]  then
         alias_spell = spells[414684];
     end
 
@@ -213,7 +203,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     stats.crit = loadout.spell_crit_by_school[spell.school] +
         effects.by_school.spell_crit[spell.school];
-     
+
     stats.ot_crit = 0.0;
     if effects.ability.crit[spell.base_id] then
         stats.crit = stats.crit + effects.ability.crit[spell.base_id];
@@ -330,7 +320,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     if spell.base_id == spell_name_to_id["Shoot"] then
         local wand_perc_active = 1.0 + effects.ability.effect_mod[spell.base_id];
         local wand_perc_spec = 1.0;
-        
+
         if class == "PRIEST" then
             wand_perc_spec = wand_perc_spec + loadout.talents_table:pts(1, 2) * 0.05;
         elseif class == "MAGE" then
@@ -363,7 +353,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         cost_flat = cost_flat + effects.ability.cost_flat[spell.base_id];
     end
     stats.cost = math.floor((original_base_cost - cost_flat)) * (1.0 - cost_mod_base);
-    
+
     local cost_mod = 1 - effects.raw.cost_mod - effects.by_school.cost_mod[spell.school];
 
     if effects.ability.cost_mod[spell.base_id] then
@@ -402,7 +392,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
         stats.target_resi_dot = math.min(loadout.lvl*5,
                                          math.max(0, loadout.target_res - res_pen_by_school));
-        
+
 
         if bit.band(spell.flags, spell_flags.binary) ~= 0 then
             stats.target_avg_resi = target_avg_magical_res_binary(loadout.lvl, stats.target_resi);
@@ -460,7 +450,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         stats.hit = math.min(0.99,
                             base_hit * (1.0 - stats.target_avg_resi) + stats.extra_hit);
                              
-        
+
         stats.target_avg_resi = 0.0;
         stats.target_avg_resi_dot = 0.0;
     else
@@ -472,7 +462,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         effects.ability.cast_mod[spell.base_id] = 0.0;
     end
     stats.cast_time = stats.cast_time - effects.ability.cast_mod[spell.base_id];
-    
+
     local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
     local haste_from_rating = 0.01 * max(0.0, loadout.haste_rating + effects.raw.haste_rating) / haste_rating_per_perc;
 
@@ -511,6 +501,13 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
 
     elseif class == "DRUID" then
+
+        -- clearcast
+        local pts = loadout.talents_table:pts(1, 9);
+        if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
+           bit.band(spell_flags.instant, spell.flags) == 0 then
+            cost_mod = cost_mod*(1.0 - 0.1 * pts);
+        end
 
         if (spell.base_id == spell_name_to_id["Healing Touch"] or spell.base_id == spell_name_to_id["Nourish"])
             and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
@@ -584,7 +581,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
     elseif class == "SHAMAN" then
         -- shaman clearcast
-        
+
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             -- clearcast
             local pts = loadout.talents_table:pts(1, 6);
@@ -594,7 +591,10 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
         end
 
-        if spell.base_id == spell_name_to_id["Healing Wave"] or spell.base_id == spell_name_to_id["Lesser Healing Wave"] then
+        if spell.base_id == spell_name_to_id["Healing Wave"] or
+            spell.base_id == spell_name_to_id["Lesser Healing Wave"] or 
+            spell.base_id == spell_name_to_id["Riptide"] then
+
             if loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
                 local mana_refund = original_base_cost;
                 resource_refund = resource_refund + 0.25 * 0.35 * mana_refund;
@@ -625,6 +625,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                     wep_speed = oh_speed;
                 end
             end
+            -- api may incorrectly return 0, clamp to something
+            wep_speed = math.max(wep_speed, 0.1);
             spell.over_time_tick_freq = wep_speed;
             -- scaling should change with weapon base speed not current attack speed
             -- but there is no easy way to get it
@@ -754,7 +756,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             (1.0 + effects.raw.spell_heal_mod_mul)
             *
             (1.0 + effects.ability.effect_mod[spell.base_id] + effects.ability.effect_ot_mod[spell.base_id]+ effects.raw.spell_heal_mod + effects.raw.ot_mod);
-        
+
 
     elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
 
@@ -798,7 +800,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             spell_dmg_mod_school_ot = spell_dmg_mod_school;
             spell_dmg_mod_school_add_ot = spell_dmg_mod_school_add;
         end
-        
+
         stats.spell_mod = target_vuln_mod * global_mod
             *
             (1.0 + stats.spell_dmg_mod_mul)
@@ -849,7 +851,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     end
 
     if bit.band(spell.flags, spell_flags.hybrid_scaling) ~= 0 then
-        
+
         stats.spell_power = stats.spell_power + stats.attack_power;
     end
 
@@ -880,7 +882,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             max_rank = 11;
         end
 
-        coef_estimate = spell.rank/max_rank;
+        local coef_estimate = spell.rank/max_rank;
 
         resource_refund = resource_refund + refund*coef_estimate;
     end
@@ -906,7 +908,7 @@ end
 local function add_extra_spell_effects(info, stats)
 
     info.num_extra_periodic_effects = 0;
-    
+
     if stats.crit_into_periodic then 
         info.num_extra_periodic_effects = info.num_extra_periodic_effects + 1;
         local i = info.num_extra_periodic_effects;
@@ -960,6 +962,7 @@ local function add_extra_spell_effects(info, stats)
         info["direct_description"..i] = stats.direct_into_direct_description;
         info["direct_utilization"..i] = stats.direct_into_direct_utilization;
 
+        -- TODO: bake crit mod and crit chance into this
         if stats.direct_into_direct_use_flat_add then
             info["min_noncrit_if_hit"..i] = stats.direct_into_direct;
             info["max_noncrit_if_hit"..i] = stats.direct_into_direct;
@@ -1092,6 +1095,9 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         end
 
     end
+    if loadout.runes[rune_ids.overcharged] then
+        
+    end
 
     if bit.band(spell.flags, spell_flags.sod_rune) ~= 0 then
         -- special sod runed ability periodic lvl scaling
@@ -1102,7 +1108,6 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         base_ot_tick = base_ot_tick + spell.lvl_scaling * lvl_diff_applicable;
         base_ot_tick_max = base_ot_tick_max + spell.lvl_scaling * lvl_diff_applicable;
     end
-
 
     info.ot_freq = spell.over_time_tick_freq;
     info.ot_duration = spell.over_time_duration;
@@ -1190,7 +1195,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.expectation_direct = 0;
 
     elseif bit.band(eval_flags, evaluation_flags.isolate_direct) ~= 0 then
-        
+
 
         info.expectation_st = info.expectation_st - info.expected_ot_st;
         info.expectation = info.expectation - info.expected_ot;
@@ -1290,7 +1295,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
         mp2_not_casting = math.ceil(mp2_not_casting);
     end
     local mp5 = effects.raw.mp5 + loadout.max_mana*effects.raw.perc_max_mana_as_mp5 + effects.raw.mp5_from_int_mod * loadout.stats[stat.int]*(1.0 + effects.by_attribute.stat_mod[stat.int]);
-    
+
     local mp1_casting = 0.2 * mp5 + 0.5 * mp2_not_casting * stats.regen_while_casting;
 
     --  don't use dynamic mana regen lua api for now
@@ -1330,8 +1335,29 @@ if class == "SHAMAN" then
                 add_expectation_direct_st(info, 0.5 + 0.5*0.5);
             end
         end,
-        [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout)
-            add_expectation_direct_st(info, 2);
+        [spell_name_to_id["Lightning Shield"]] = function(spell, info, loadout, stats)
+            if loadout.runes[rune_ids.static_shock] then
+                add_expectation_direct_st(info, 8);
+            elseif loadout.runes[rune_ids.overcharged] == nil then
+                add_expectation_direct_st(info, 2);
+            end
+            if loadout.runes[rune_ids.overcharged] then
+                stats.cost = 0;
+                stats.cast_time = 1;
+                -- convert into periodic, with duration 1 sec to not go infinite
+
+                info.ot_if_hit = info.min_noncrit_if_hit;
+                info.ot_if_hit_max = info.max_noncrit_if_hit;
+                info.ot_if_crit = info.min_crit_if_hit;
+                info.ot_if_crit_max = info.max_crit_if_hit;
+                info.ot_ticks = 1;
+                info.ot_duration = 1;
+                info.ot_freq = 1;
+                stats.ot_crit = stats.crit;
+
+                stats.ot_coef = stats.coef;
+                stats.coef = 0;
+            end
         end,
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
 
@@ -1356,6 +1382,57 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Earth Shield"]] = function(spell, info, loadout)
             add_expectation_direct_st(info, 8);
+        end,
+        [spell_name_to_id["Flame Shock"]] = function(spell, info, loadout, stats, effects)
+            if loadout.runes[rune_ids.burn] then
+                add_expectation_ot_st(info, 2);
+            end
+        end,
+        [spell_name_to_id["Earth Shock"]] = function(spell, info, loadout, stats, effects)
+            if loadout.runes[rune_ids.rolling_thunder] and spell.base_id == spell_name_to_id["Earth Shock"] then
+
+                if not stats.secondary_ability_stats then
+                    stats.secondary_ability_stats = {};
+                    stats.secondary_ability_info = {};
+                end
+
+                local lightning_shield = spells[best_rank_by_lvl(spell_name_to_id["Lightning Shield"], loadout.lvl)];
+
+                spell_info_from_stats(stats.secondary_ability_info,
+                                      stats.secondary_ability_stats,
+                                      lightning_shield,
+                                      loadout,
+                                      effects);
+
+                local ls_stacks = 3;
+                if loadout.runes[rune_ids.static_shock] then
+                    ls_stacks = 9;
+                end
+                if loadout.dynamic_buffs["player"][GetSpellInfo(324)] then
+                    ls_stacks = loadout.dynamic_buffs["player"][GetSpellInfo(324)].count;
+                    ls_stacks = ls_stacks - 3;
+                end
+                if ls_stacks > 0 then
+
+
+                    info.num_extra_direct_effects = info.num_extra_direct_effects + 1;
+                    local i = info.num_extra_direct_effects;
+                    info["direct_description"..i] = string.format("Lightning Shield %dx", ls_stacks);
+                    info["direct_utilization"..i] = 1.0;
+
+                    local ls_dmg = stats.secondary_ability_info.min_noncrit_if_hit * ls_stacks;
+
+                    -- TODO: bake crit mod and crit chance into this
+                    info["min_noncrit_if_hit"..i] = ls_dmg;
+                    info["max_noncrit_if_hit"..i] = ls_dmg;
+                    info["min_crit_if_hit"   ..i] = ls_dmg * stats.crit_mod;
+                    info["max_crit_if_hit"   ..i] = ls_dmg * stats.crit_mod;
+
+                end
+                -- TODO: Deal with independent crit here
+            end
+            calc_expectation(info, spell, stats, loadout);
+
         end,
     };
 elseif class == "PRIEST" then
@@ -1427,37 +1504,75 @@ elseif class == "DRUID" then
         [spell_name_to_id["Tranquility"]] = function(spell, info, loadout)
             add_expectation_ot_st(info, 4);
         end,
-        [spell_name_to_id["Swiftmend"]] = function(spell, info, loadout, stats)
+        [spell_name_to_id["Swiftmend"]] = function(spell, info, loadout, stats, effects)
 
-            local num_ticks = 4;
-            if stats.alias and stats.alias == spell_name_to_id["Regrowth"] then
-                num_ticks = 6;
+            if not stats.secondary_ability_stats then
+                stats.secondary_ability_stats = {};
+                stats.secondary_ability_info = {};
             end
 
-            stats.coef = stats.ot_coef * num_ticks; 
+            local num_ticks = 4;
+            local hot_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
+            if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+                local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
+                local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
+                -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
+                if regrowth_buff then
+                    if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
+                        hot_spell = spells[best_rank_by_lvl(spell_name_to_id["Regrowth"], loadout.lvl)];
+                    end
+                    num_ticks = 6;
+                end
+            end
+            if not hot_spell then
+                hot_spell = spells[774];
+            end
+
+            spell_info_from_stats(stats.secondary_ability_info,
+                                  stats.secondary_ability_stats,
+                                  hot_spell,
+                                  loadout,
+                                  effects);
+
+
+            stats.coef = stats.ot_coef * num_ticks;
             stats.ot_coef = 0;
 
-            local heal_amount = stats.spell_mod * num_ticks * info.ot_if_hit/info.ot_ticks;
-            
+            local heal_amount = stats.secondary_ability_stats.spell_mod * num_ticks * stats.secondary_ability_info.ot_if_hit/stats.secondary_ability_info.ot_ticks;
+
             info.min_noncrit_if_hit = heal_amount;
             info.max_noncrit_if_hit = heal_amount;
 
             info.min_crit_if_hit = stats.crit_mod*heal_amount;
             info.max_crit_if_hit = stats.crit_mod*heal_amount;
 
-            -- clear over time
-            info.ot_if_hit = 0.0;
-            info.ot_if_hit_max = 0.0;
-            info.ot_if_crit = 0.0;
-            info.ot_if_crit_max = 0.0;
-            info.ot_ticks = 0;
-            info.expected_ot_if_hit = 0.0;
-            info.ot_duration = 0.0;
-            info.ot_freq = 0.0;
+            if loadout.runes[rune_ids.efflorescence] then
+                spell_info_from_stats(stats.secondary_ability_info,
+                                      stats.secondary_ability_stats,
+                                      spells[417149],
+                                      loadout,
+                                      effects);
+
+                info.ot_if_hit = stats.secondary_ability_info.ot_if_hit;
+                info.ot_if_hit_max = stats.secondary_ability_info.ot_if_hit_max;
+
+                info.ot_if_crit = stats.secondary_ability_info.ot_if_crit;
+                info.ot_if_crit_max = stats.secondary_ability_info.ot_if_crit_max;
+                stats.ot_crit = stats.secondary_ability_stats.ot_crit;
+
+                info.ot_duration = stats.secondary_ability_info.ot_duration;
+                info.ot_freq = stats.secondary_ability_info.ot_freq;
+                info.ot_ticks = stats.secondary_ability_info.ot_ticks;
+
+            end
 
             calc_expectation(info, spell, stats, loadout);
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Wild Growth"]] = function(spell, info, loadout)
+            add_expectation_ot_st(info, 4);
+        end,
+        [spell_name_to_id["Efflorescence"]] = function(spell, info, loadout)
             add_expectation_ot_st(info, 4);
         end,
     };
@@ -1487,7 +1602,11 @@ elseif class == "MAGE" then
         [spell_name_to_id["Mana Shield"]] = function(spell, info, loadout, stats)
 
             local pts = loadout.talents_table:pts(1, 10);
-            stats.cost = stats.cost + 2*info.absorb*(1.0 - 0.1*pts);
+            local drain_mod = 0.1*pts;
+            if loadout.runes[rune_ids.advanced_warding] then
+                drain_mod = drain_mod + 0.5;
+            end
+            stats.cost = stats.cost + 2*info.absorb*(1.0 - drain_mod);
         end,
         [spell_name_to_id["Temporal Anomaly"]] = function(spell, info, loadout)
             add_expectation_direct_st(info, 4);
@@ -1628,7 +1747,7 @@ local function spell_diff(spell_normal, spell_diffed, sim_type)
             second = spell_diffed.expectation - spell_normal.expectation
         };
     elseif sim_type == simulation_type.cast_until_oom then
-        
+
         return {
             diff_ratio = 100 * (spell_diffed.effect_until_oom/spell_normal.effect_until_oom - 1),
             first = spell_diffed.effect_until_oom - spell_normal.effect_until_oom,

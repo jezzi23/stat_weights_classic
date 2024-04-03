@@ -20,10 +20,9 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 --
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local ensure_exists_and_add         = swc.utils.ensure_exists_and_add;
-local ensure_exists_and_mul         = swc.utils.ensure_exists_and_mul;
 local deep_table_copy               = swc.utils.deep_table_copy;
 local stat                          = swc.utils.stat;
 local class                         = swc.utils.class;
@@ -1056,6 +1055,27 @@ local buffs_predefined = {
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
     },
+    -- mental dexterity
+    [415144] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                local sp = loadout.attack_power * 0.3;
+                effects.raw.spell_dmg = effects.raw.spell_dmg + sp;
+                effects.raw.healing_power = effects.raw.healing_power + sp;
+            end
+        end,
+        filter = bit.bor(buff_filters.shaman, buff_filters.sod),
+        category = buff_category.class,
+    },
+    -- tidal waves
+    [432041] = {
+        apply = function(loadout, effects, buff, inactive)
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Wave"], 0.3, 0);
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lesser Healing Wave"], 0.25, 0);
+        end,
+        filter = bit.bor(buff_filters.shaman, buff_filters.sod),
+        category = buff_category.class,
+    },
 };
 
 local target_buffs_predefined = {
@@ -1363,7 +1383,7 @@ local target_buffs_predefined = {
         apply = function(loadout, effects, buff)
             if not buff.src or buff.src == "player" then
                 effects.by_school.target_spell_dmg_taken[magic_school.fire] =
-                    (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]) * 1.4 - 1.0;
+                    (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]) * 1.5 - 1.0;
             end
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.hostile),
@@ -1465,6 +1485,14 @@ local target_buffs_predefined = {
 
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.sod, buff_filters.friendly),
+        category = buff_category.class,
+    },
+    -- riptide
+    [408521] = {
+        apply = function(loadout, effects, buff)
+            ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Chain Heal"], 0.25, 0.0);
+        end,
+        filter = bit.bor(buff_filters.shaman, buff_filters.sod, buff_filters.friendly),
         category = buff_category.class,
     },
 };

@@ -191,10 +191,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 -- dmg spells with real direct range
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
                     
-                    tooltip:AddLine(string.format("%s %s: %d-%d", 
-                                                   effect, 
+                    tooltip:AddLine(string.format("%s %s: %d-%d",
+                                                   effect,
                                                    hit_str,
-                                                   math.floor(eval.spell.min_noncrit_if_hit), 
+                                                   math.floor(eval.spell.min_noncrit_if_hit),
                                                    math.ceil(eval.spell.max_noncrit_if_hit)),
                                      232.0/255, 225.0/255, 32.0/255);
                     if spell.base_id == spell_name_to_id["Chain Lightning"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
@@ -638,7 +638,7 @@ end
             if extra_info_st == "" then
                 extra_info_st = "(1.00x effect)";
             else
-                extra_info_st = "("..extra_info_multi.." | 1.00x effect)";
+                extra_info_st = "("..extra_info_st.." | 1.00x effect)";
             end
             local aoe_ratio = string.format("%.2fx effect", eval.spell.expectation/eval.spell.expectation_st);
             if extra_info_multi == "" then
