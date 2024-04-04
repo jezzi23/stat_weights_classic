@@ -1165,6 +1165,7 @@ local buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
         category = buff_category.item,
+        icon_id = GetItemIcon(221440)
     },
     -- roar of the grove
     [446711] = {
@@ -1190,7 +1191,7 @@ local buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
-        category = buff_category.item,
+        category = buff_category.world_buffs,
     },
     -- fervor of the temple explorer
     [446698] = {
@@ -1206,7 +1207,7 @@ local buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
-        category = buff_category.item,
+        category = buff_category.world_buffs,
     },
 };
 
