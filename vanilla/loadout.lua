@@ -20,7 +20,7 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local class                              = swc.utils.class;
 local stat                               = swc.utils.stat;

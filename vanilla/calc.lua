@@ -168,21 +168,6 @@ local function set_alias_spell(spell, loadout)
 
     local alias_spell = spell;
 
-    --if spell.base_id == spell_name_to_id["Swiftmend"] then
-    --    alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
-    --    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-    --        local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
-    --        local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
-    --        -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
-    --        if regrowth_buff then
-    --            if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
-    --                alias_spell = spells[best_rank_by_lvl(spell_name_to_id["Regrowth"], loadout.lvl)];
-    --            end
-    --        end
-    --    end
-    --    if not alias_spell then
-    --        alias_spell = spells[774];
-    --    end
     if spell.base_id == spell_name_to_id["Sunfire (Bear)"] or spell.base_id == spell_name_to_id["Sunfire (Cat)"]  then
         alias_spell = spells[414684];
     end
@@ -962,7 +947,8 @@ local function add_extra_spell_effects(info, stats)
         info["direct_description"..i] = stats.direct_into_direct_description;
         info["direct_utilization"..i] = stats.direct_into_direct_utilization;
 
-        -- TODO: bake crit mod and crit chance into this
+        info["crit"              ..i] = stats.crit;
+
         if stats.direct_into_direct_use_flat_add then
             info["min_noncrit_if_hit"..i] = stats.direct_into_direct;
             info["max_noncrit_if_hit"..i] = stats.direct_into_direct;
@@ -1018,8 +1004,8 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
 
     for i = 1, info.num_extra_direct_effects do
         expected_direct_if_hit = expected_direct_if_hit + info["direct_utilization"..i] *
-            ((1.0 - stats.crit) * 0.5 * (info["min_noncrit_if_hit"..i] + info["max_noncrit_if_hit"..i]) +
-            stats.crit * 0.5 * (info["min_crit_if_hit"..i] + info["max_crit_if_hit"..i]));
+            ((1.0 - info["crit"..i]) * 0.5 * (info["min_noncrit_if_hit"..i] + info["max_noncrit_if_hit"..i]) +
+            info["crit"..i] * 0.5 * (info["min_crit_if_hit"..i] + info["max_crit_if_hit"..i]));
     end
 
     info.expectation_direct_st = stats.hit * expected_direct_if_hit * (1 - stats.target_avg_resi);
@@ -1094,9 +1080,6 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
             base_max = base_max + spell.lvl_scaling * lvl_diff_applicable;
         end
 
-    end
-    if loadout.runes[rune_ids.overcharged] then
-        
     end
 
     if bit.band(spell.flags, spell_flags.sod_rune) ~= 0 then
@@ -1344,7 +1327,9 @@ if class == "SHAMAN" then
             if loadout.runes[rune_ids.overcharged] then
                 stats.cost = 0;
                 stats.cast_time = 1;
+                stats.cast_time_nogcd = 1;
                 -- convert into periodic, with duration 1 sec to not go infinite
+
 
                 info.ot_if_hit = info.min_noncrit_if_hit;
                 info.ot_if_hit_max = info.max_noncrit_if_hit;
@@ -1357,6 +1342,12 @@ if class == "SHAMAN" then
 
                 stats.ot_coef = stats.coef;
                 stats.coef = 0;
+                info.min_noncrit_if_hit = 0;
+                info.max_noncrit_if_hit = 0;
+                info.min_crit_if_hit = 0;
+                info.max_crit_if_hit = 0;
+
+                calc_expectation(info, spell, stats, loadout);
             end
         end,
         [spell_name_to_id["Chain Lightning"]] = function(spell, info, loadout)
@@ -1404,13 +1395,13 @@ if class == "SHAMAN" then
                                       loadout,
                                       effects);
 
-                local ls_stacks = 3;
-                if loadout.runes[rune_ids.static_shock] then
-                    ls_stacks = 9;
-                end
-                if loadout.dynamic_buffs["player"][GetSpellInfo(324)] then
-                    ls_stacks = loadout.dynamic_buffs["player"][GetSpellInfo(324)].count;
+                local ls_stacks = 0;
+                local ls_lname = GetSpellInfo(324);
+                if loadout.dynamic_buffs["player"][ls_lname] then
+                    ls_stacks = loadout.dynamic_buffs["player"][ls_lname].count;
                     ls_stacks = ls_stacks - 3;
+                elseif bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[ls_lname] then
+                    ls_stacks = 9-3;
                 end
                 if ls_stacks > 0 then
 
@@ -1422,14 +1413,13 @@ if class == "SHAMAN" then
 
                     local ls_dmg = stats.secondary_ability_info.min_noncrit_if_hit * ls_stacks;
 
-                    -- TODO: bake crit mod and crit chance into this
                     info["min_noncrit_if_hit"..i] = ls_dmg;
                     info["max_noncrit_if_hit"..i] = ls_dmg;
                     info["min_crit_if_hit"   ..i] = ls_dmg * stats.crit_mod;
                     info["max_crit_if_hit"   ..i] = ls_dmg * stats.crit_mod;
+                    info["crit"              ..i] = stats.secondary_ability_stats.crit;
 
                 end
-                -- TODO: Deal with independent crit here
             end
             calc_expectation(info, spell, stats, loadout);
 

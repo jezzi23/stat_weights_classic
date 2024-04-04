@@ -21,7 +21,7 @@
 --SOFTWARE.
 
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local spell_cost                                    = swc.utils.spell_cost;
 local spell_cast_time                               = swc.utils.spell_cast_time;

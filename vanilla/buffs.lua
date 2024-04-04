@@ -65,6 +65,7 @@ local buff_filters = {
     sod         = bit.lshift(1,16),
     sod_p1_only = bit.lshift(1,17),
     sod_p2_only = bit.lshift(1,18),
+    sod_p3_only = bit.lshift(1,19),
 };
 
 local buff_category = {
@@ -605,7 +606,7 @@ local buffs_predefined = {
                 effects.raw.mp5 = effects.raw.mp5 + 15;
             end
         end,
-        filter = bit.bor(buff_filters.shaman, buff_filters.hidden),
+        filter = bit.bor(buff_filters.shaman),
         category = buff_category.class,
     },
     -- ephipany
@@ -814,7 +815,7 @@ local buffs_predefined = {
     -- fanaticism
     [429142] = {
         apply = function(loadout, effects, buff, inactive)
-            
+
             if inactive then
                 effects.by_school.spell_crit[magic_school.holy] = 
                     effects.by_school.spell_crit[magic_school.holy] + 0.18;
@@ -1075,6 +1076,137 @@ local buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.sod),
         category = buff_category.class,
+    },
+    -- sigil of living dreams
+    [446240] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + 50;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.consumes,
+    },
+    -- atalai mojo of forbidden magic
+    [446256] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + 40;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.consumes,
+    },
+    -- atalai mojo of life
+    [446396] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.healing_power = effects.raw.healing_power + 45;
+                effects.raw.mp5 = effects.raw.mp5 + 11;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.consumes,
+    },
+    -- echoes of madness
+    [446518] = {
+        apply = function(loadout, effects, buff, inactive)
+            effects.raw.haste_mod = effects.raw.haste_mod + 0.1;
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- echoes of fear
+    [446592] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 50;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- echoes of the depraved
+    [446570] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 30;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- shadow spark
+    [450013] = {
+        apply = function(loadout, effects, buff, inactive)
+            local c = 2;
+            if buff.src then
+                c = buff.count;
+            end
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Immolate"], c*0.5, 0);
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- for lordaeron
+    [449982] = {
+        apply = function(loadout, effects, buff, inactive)
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.2, 0);
+        end,
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- roar of the dream
+    [446706] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 66;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- roar of the grove
+    [446711] = {
+        apply = function(loadout, effects, buff, inactive)
+            if inactive then
+                effects.raw.healing_power = effects.raw.healing_power + 120;
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- fervor of the temple explorer
+    [446695] = {
+        apply = function(loadout, effects, buff, inactive)
+            add_all_spell_crit(effects, 0.05, inactive);
+            if inactive then
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 65;
+                swc.loadout.add_int_mod(loadout, effects, 0.08, 0.08);
+                swc.loadout.add_spirit_mod(loadout, effects, 0.08, 0.08);
+            else
+                swc.loadout.add_int_mod(loadout, effects, 0.0, 0.08);
+                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
+    },
+    -- fervor of the temple explorer
+    [446698] = {
+        apply = function(loadout, effects, buff, inactive)
+            add_all_spell_crit(effects, 0.05, inactive);
+            if inactive then
+                effects.raw.spell_dmg = effects.raw.spell_dmg + 65;
+                swc.loadout.add_int_mod(loadout, effects, 0.08, 0.08);
+                swc.loadout.add_spirit_mod(loadout, effects, 0.08, 0.08);
+            else
+                swc.loadout.add_int_mod(loadout, effects, 0.0, 0.08);
+                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
+            end
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        category = buff_category.item,
     },
 };
 

@@ -20,14 +20,11 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local ensure_exists_and_add             = swc.utils.ensure_exists_and_add;
-local ensure_exists_and_mul             = swc.utils.ensure_exists_and_mul;
 local class                             = swc.utils.class;
-local stat                              = swc.utils.stat;
 
-local magic_school                      = swc.abilities.magic_school;
 local spell_name_to_id                  = swc.abilities.spell_name_to_id;
 local spell_names_to_id                 = swc.abilities.spell_names_to_id;
 
@@ -39,7 +36,6 @@ local set_tiers = {
     pve_0_5          = 2,
     pve_1            = 3,
     pve_2            = 4,
-    pve_3            = 5,
     pve_2_5_0        = 6, -- zg
     pve_2_5_1        = 7, -- aq20
     pve_2_5_2        = 8, -- aq40
@@ -48,6 +44,8 @@ local set_tiers = {
     pvp_2            = 11,
     sod_p2_anyclass  = 12,
     sod_p2_class     = 13,
+    sod_p3_t1        = 14,
+    sod_p3_t1_dmg    = 14,
 };
 
 local function create_sets()
@@ -80,6 +78,11 @@ local function create_sets()
         end
         set_tier_ids[23061] = set_tiers.pve_3;
 
+        --sod p3
+        for i = 220683, 220685 do
+            set_tier_ids[i] = set_tiers.sod_p3_t1;
+        end
+
     elseif class == "DRUID" then
 
         -- t1
@@ -108,6 +111,14 @@ local function create_sets()
         set_tier_ids[213312] = set_tiers.sod_p2_class;
         set_tier_ids[213331] = set_tiers.sod_p2_class;
         set_tier_ids[213342] = set_tiers.sod_p2_class;
+
+        --sod p3
+        for i = 220669, 220670 do
+            set_tier_ids[i] = set_tiers.sod_p3_t1;
+        end
+        for i = 220672, 220675 do
+            set_tier_ids[i] = set_tiers.sod_p3_t1_dmg;
+        end
 
     elseif class == "SHAMAN" then
         -- t1
@@ -159,6 +170,11 @@ local function create_sets()
         set_tier_ids[213315] = set_tiers.sod_p2_class;
         set_tier_ids[213334] = set_tiers.sod_p2_class;
         set_tier_ids[213338] = set_tiers.sod_p2_class;
+
+        --sod p3
+        for i = 220663, 220665 do
+            set_tier_ids[i] = set_tiers.sod_p3_t1;
+        end
 
     elseif class == "WARLOCK" then
         for i = 16803, 16810 do
@@ -293,6 +309,11 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Renew"], 0.12, 0.0);
                 end
             end,
+            [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    effects.raw.mp5 = effects.raw.mp5 + 4;
+                end
+            end,
         };
 
     elseif class == "DRUID" then
@@ -332,6 +353,18 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.02, 0.0);
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.02, 0.0);
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.02, 0.0);
+                end
+            end,
+            [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    effects.raw.mp5 = effects.raw.mp5 + 4;
+                end
+            end,
+            [set_tiers.sod_p3_t1_dmg] = function(num_pieces, loadout, effects)
+                if num_pieces >= 3 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.03, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.03, 0.0);
                 end
             end,
         };
@@ -378,6 +411,11 @@ local function create_set_effects()
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.2, 0.0);
+                end
+            end,
+            [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 3 then
+                    ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0);
                 end
             end,
         };

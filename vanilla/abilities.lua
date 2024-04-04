@@ -54,6 +54,7 @@ local function spell_name_to_ids()
             ["Balefire Bolt"]               = 428878,
             ["Deep Freeze"]                 = 428739,
             ["Temporal Anomaly"]            = 428885,
+            ["Frozen Orb"]                  = 440802,
         };
     elseif class == "DRUID" then
         return {
@@ -1746,6 +1747,30 @@ local function create_spells()
                 lvl_coef_max        = 0.0,
 				lvl_coef_ot         = 1.0,
 				lvl_coef_ot_max     = 1.0,
+            },
+            -- frozen orb
+            [440802] = {
+                base_min            = 0.0,
+                base_max            = 0.0,
+                over_time           = 13.828124,
+                over_time_tick_freq = 1,
+                over_time_duration  = 16.0,
+                cast_time           = 1.5,
+                rank                = 1,
+                lvl_req             = 0,
+                lvl_max             = 60,
+                lvl_outdated        = 60,
+                cost                = 0.11,
+                flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.unbounded_aoe_ot, spell_flags.aoe),
+                school              = magic_school.arcane,
+                coef                = 0.0,
+                over_time_coef      = 0.0,
+				lvl_scaling			= 0.018012,
+				lvl_scaling_squared	= 0.044141,
+                lvl_coef            = 0.0,
+                lvl_coef_max        = 0.0,
+				lvl_coef_ot         = 0.01,
+				lvl_coef_ot_max     = 0.01,
             },
         };
 

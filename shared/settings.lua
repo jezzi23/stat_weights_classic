@@ -20,8 +20,7 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local icon_stat_display         = swc.overlay.icon_stat_display;
 local tooltip_stat_display      = swc.tooltip.tooltip_stat_display;

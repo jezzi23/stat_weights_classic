@@ -20,17 +20,13 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local spells                                    = swc.abilities.spells;
 local spell_name_to_id                          = swc.abilities.spell_name_to_id;
-local spell_names_to_id                         = swc.abilities.spell_names_to_id;
-local magic_school                              = swc.abilities.magic_school;
 local spell_flags                               = swc.abilities.spell_flags;
-local best_rank_by_lvl                          = swc.abilities.best_rank_by_lvl;
 
 local wowhead_talent_link                       = swc.talents.wowhead_talent_link;
-local wowhead_talent_code                       = swc.talents.wowhead_talent_code;
 local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_code_from_url;
 
 local simulation_type                           = swc.calc.simulation_type;
@@ -41,26 +37,20 @@ local update_icon_overlay_settings              = swc.overlay.update_icon_overla
 local icon_stat_display                         = swc.overlay.icon_stat_display;
 
 local loadout_flags                             = swc.utils.loadout_flags;
-local stat_ids_in_ui                            = swc.utils.stat_ids_in_ui;
 local class                                     = swc.utils.class;
 local deep_table_copy                           = swc.utils.deep_table_copy;
 
 local empty_loadout                             = swc.loadout.empty_loadout;
 local empty_effects                             = swc.loadout.empty_effects;
 local effects_add                               = swc.loadout.effects_add;
-local effects_zero_diff                         = swc.loadout.effects_zero_diff;
 local default_loadout                           = swc.loadout.default_loadout;
 local active_loadout                            = swc.loadout.active_loadout;
 local active_loadout_entry                      = swc.loadout.active_loadout_entry;
-local static_loadout_from_dynamic               = swc.loadout.static_loadout_from_dynamic;
-local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
-local print_loadout                             = swc.loadout.print_loadout;
 local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
 
 local stats_for_spell                           = swc.calc.stats_for_spell;
 local spell_info                                = swc.calc.spell_info;
 local cast_until_oom                            = swc.calc.cast_until_oom;
-local evaluate_spell                            = swc.calc.evaluate_spell;
 local spell_diff                                = swc.calc.spell_diff;
 
 local tooltip_stat_display                      = swc.tooltip.tooltip_stat_display;

@@ -20,15 +20,13 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local spells                                    = swc.abilities.spells;
 local spell_flags                               = swc.abilities.spell_flags;
 local spell_name_to_id                          = swc.abilities.spell_name_to_id;
-local spell_names_to_id                         = swc.abilities.spell_names_to_id;
 local next_spell_rank                           = swc.abilities.next_spell_rank;
 local best_rank_by_lvl                          = swc.abilities.best_rank_by_lvl;
-local magic_school                              = swc.abilities.magic_school;
 
 local loadout_flags                             = swc.utils.loadout_flags;
 local class                                     = swc.utils.class;
@@ -37,14 +35,9 @@ local spell_cast_time                           = swc.utils.spell_cast_time;
 
 local set_tiers                                 = swc.equipment.set_tiers;
 
-local is_buff_up                                = swc.buffs.is_buff_up;
 
 local stats_for_spell                           = swc.calc.stats_for_spell;
-local spell_info                                = swc.calc.spell_info;
-local cast_until_oom                            = swc.calc.cast_until_oom;
 local evaluate_spell                            = swc.calc.evaluate_spell;
-
-local rune_ids                                  = swc.talents.rune_ids;
 
 local sort_stat_weights                         = swc.tooltip.sort_stat_weights        
 local begin_tooltip_section                     = swc.tooltip.begin_tooltip_section    
@@ -406,14 +399,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             if eval.spell["min_crit_if_hit"..i] ~= eval.spell["max_crit_if_hit"..i] then
                 tooltip:AddLine(string.format("%s (%.2f%%): %d-%d",
                                               eval.spell["direct_description"..i],
-                                              stats.crit*100, 
-                                              math.floor(eval.spell["min_crit_if_hit"..i]), 
+                                              eval.spell["crit"..i]*100,
+                                              math.floor(eval.spell["min_crit_if_hit"..i]),
                                               math.ceil(eval.spell["max_crit_if_hit"..i])),
                                252.0/255, 69.0/255, 3.0/255);
             else
                 tooltip:AddLine(string.format("%s (%.2f%%): %.1f",
                                               eval.spell["direct_description"..i],
-                                              stats.crit*100, 
+                                              eval.spell["crit"..i]*100,
                                               eval.spell["min_crit_if_hit"..i]),
                                252.0/255, 69.0/255, 3.0/255);
             end
