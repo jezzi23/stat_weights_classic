@@ -164,6 +164,7 @@ local function save_sw_settings()
     __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities = sw_frame.settings_frame.icon_mana_overlay:GetChecked();
     __sw__persistent_data_per_char.settings.icon_overlay_old_rank = sw_frame.settings_frame.icon_old_rank_warning:GetChecked();
     __sw__persistent_data_per_char.settings.icon_show_single_target_only = sw_frame.settings_frame.icon_show_single_target_only:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_macro_name_clearance = sw_frame.settings_frame.icon_macro_name_clearance:GetChecked();
 
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;

@@ -478,6 +478,12 @@ local function update_icon_overlay_settings()
         sw_frame.settings_frame.icon_overlay[2] = nil;
     end
 
+    if sw_frame.settings_frame.icon_macro_name_clearance:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[2] = sw_frame.settings_frame.icon_overlay[1]
+        sw_frame.settings_frame.icon_overlay[1] = sw_frame.settings_frame.icon_overlay[3]
+        sw_frame.settings_frame.icon_overlay[3] = nil;
+    end
+
     sw_num_icon_overlay_fields_active = index - 1;
 
     -- hide existing overlay frames that should no longer exist
@@ -639,10 +645,15 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
 
+
         if sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
-            frame_info.overlay_frames[3]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
-            frame_info.overlay_frames[3]:SetTextColor(0.0, 1.0, 1.0);
-            frame_info.overlay_frames[3]:Show();
+            local idx = 3;
+            if sw_frame.settings_frame.icon_macro_name_clearance:GetChecked() then
+                idx = 1;
+            end
+            frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
+            frame_info.overlay_frames[idx]:SetTextColor(0.0, 1.0, 1.0);
+            frame_info.overlay_frames[idx]:Show();
         end
 
     elseif sw_num_icon_overlay_fields_active > 0 then

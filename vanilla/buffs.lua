@@ -1321,12 +1321,14 @@ local target_buffs_predefined = {
             local id_to_mod = {
                 [1490]   = 0.06,
                 [11721]  = 0.08,
-                [11722]  = 0.1
+                [11722]  = 0.1,
+                [402792] = 0.1
             };
             local id_to_res = {
                 [1490]   = 45,
                 [11721]  = 60,
-                [11722]  = 75
+                [11722]  = 75,
+                [402792] = 75
             };
             local id = 11722; -- default
 
@@ -1440,12 +1442,14 @@ local target_buffs_predefined = {
     [17937] = {
         apply = function(loadout, effects, buff)
             local id_to_mod = {
-                [17862]   = 0.08,
+                [17862]  = 0.08,
                 [17937]  = 0.1,
+                [402791]  = 0.1,
             };
             local id_to_res = {
                 [17862]  = 60,
                 [17937]  = 75,
+                [402791] = 75,
             };
             local id = 17937; -- default
 

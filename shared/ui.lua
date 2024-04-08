@@ -785,19 +785,9 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_settings_label:SetText("Ability Icon Overlay Display Options (max 3)");
     sw_frame.settings_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    -- TODO: this needs to be checked based on saved vars
     sw_frame.settings_frame.icons_num_checked = 0;
 
     local icon_checkbox_func = function(self)
-        if self:GetChecked() then
-            if sw_frame.settings_frame.icons_num_checked >= 3 then
-                self:SetChecked(false);
-            else
-                sw_frame.settings_frame.icons_num_checked = sw_frame.settings_frame.icons_num_checked + 1;
-            end
-        else
-            sw_frame.settings_frame.icons_num_checked = sw_frame.settings_frame.icons_num_checked - 1;
-        end
         update_icon_overlay_settings();
     end;
 
@@ -883,9 +873,20 @@ local function create_sw_gui_settings_frame()
         
     end);
 
-    sw_frame.settings_frame.icon_show_single_target_only = 
+   sw_frame.settings_frame.icon_show_single_target_only = 
         create_sw_checkbox("sw_icon_show_single_target_only", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
                            "Show single target only", nil);  
+
+    sw_frame.settings_frame.icon_macro_name_clearance = 
+        create_sw_checkbox("sw_icon_macro_name_clearance", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Macro name clearance", nil);  
+
+    sw_frame.settings_frame.icon_macro_name_clearance:SetScript("OnClick", function(self)
+            
+        update_icon_overlay_settings();
+        
+    end);
+
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
@@ -1063,6 +1064,10 @@ local function create_sw_gui_settings_frame()
 
     if __sw__persistent_data_per_char.settings.icon_show_single_target_only then
         sw_frame.settings_frame.icon_show_single_target_only:SetChecked(true);
+    end
+
+    if __sw__persistent_data_per_char.settings.icon_macro_name_clearance then
+        sw_frame.settings_frame.icon_macro_name_clearance:SetChecked(true);
     end
 
     sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
