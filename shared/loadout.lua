@@ -79,7 +79,7 @@ local function empty_loadout()
     };
 end
 
-local function empty_effects(effects) 
+local function empty_effects(effects)
 
     effects.by_school = {};
     effects.by_school.spell_dmg_hit = {0, 0, 0, 0, 0, 0, 0};

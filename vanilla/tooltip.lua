@@ -549,8 +549,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         if stats.ot_crit ~= 0.0 and eval.spell.ot_if_crit ~= 0 then
             if eval.spell.ot_if_crit ~= eval.spell.ot_if_crit_max then
                 tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d over %.1fs (%d-%d every %.1fs x %d)",
-                                              stats.crit*100, 
-                                              stats.crit_mod,
+                                              stats.ot_crit*100, 
+                                              stats.ot_crit_mod,
                                               math.floor(eval.spell.ot_if_crit), 
                                               math.ceil(eval.spell.ot_if_crit_max), 
                                               eval.spell.ot_duration, 
@@ -563,7 +563,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             else
                 tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f over %.1fs (%.1f every %.1fs x %d)",
                                               stats.ot_crit*100, 
-                                              stats.crit_mod,
+                                              stats.ot_crit_mod,
                                               eval.spell.ot_if_crit, 
                                               eval.spell.ot_duration, 
                                               eval.spell.ot_if_crit/eval.spell.ot_ticks,
@@ -852,30 +852,30 @@ end
     end
 
     -- debug tooltip stuff
-    if swc.core.__sw__debug__ then
-        tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
-        tooltip:AddLine("Base "..effect..": "..spell.over_time);
-        tooltip:AddLine(
-          string.format("Stats: sp %d, crit %.4f, crit_mod %.4f, hit %.4f, mod %.4f, ot_mod %.4f, flat add %.4f",
-                        stats.spell_power,
-                        stats.crit,
-                        stats.crit_mod,
-                        stats.hit,
-                        stats.spell_mod,
-                        stats.spell_ot_mod,
-                        stats.flat_addition));
+    --if swc.core.__sw__debug__ then
+    --    tooltip:AddLine("Base "..effect..": "..spell.base_min.."-"..spell.base_max);
+    --    tooltip:AddLine("Base "..effect..": "..spell.over_time);
+    --    tooltip:AddLine(
+    --      string.format("Stats: sp %d, crit %.4f, crit_mod %.4f, hit %.4f, mod %.4f, ot_mod %.4f, flat add %.4f",
+    --                    stats.spell_power,
+    --                    stats.crit,
+    --                    stats.crit_mod,
+    --                    stats.hit,
+    --                    stats.spell_mod,
+    --                    stats.spell_ot_mod,
+    --                    stats.flat_addition));
 
-        tooltip:AddLine(
-          string.format("cost %f, cast %f, coef %f, ot %f, mcoef %f, ot %f",
-                        stats.cost,
-                        stats.cast_time,
-                        stats.coef,
-                        stats.ot_coef,
-                        stats.coef*stats.spell_mod,
-                        stats.ot_coef*stats.spell_ot_mod
-                        ));
-                        
-    end
+    --    tooltip:AddLine(
+    --      string.format("cost %f, cast %f, coef %f, ot %f, mcoef %f, ot %f",
+    --                    stats.cost,
+    --                    stats.cast_time,
+    --                    stats.coef,
+    --                    stats.ot_coef,
+    --                    stats.coef*stats.spell_mod,
+    --                    stats.ot_coef*stats.spell_ot_mod
+    --                    ));
+    --                    
+    --end
 
 
     end_tooltip_section(tooltip);

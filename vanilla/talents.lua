@@ -69,13 +69,13 @@ local rune_ids = {
     living_seed                     = 6975,
     survival_of_the_fittest         = 6972,
     wild_strikes                    = 6858,
-    lacerate                        = 6973,
+    lacerate                        = 7492,
     mangle                          = 6868,
     sunfire                         = 6976,
     wild_growth                     = 6860,
     lifebloom                       = 6865,
     savage_roar                     = 6863,
-    skull_bash                      = 6971,
+    skull_bash                      = 7491,
     starsurge                       = 7011,
     -- p2
     berserk                         = 7012,
@@ -115,7 +115,7 @@ local rune_ids = {
     -- p3
     fanaticism                      = 7088,
     improved_sanctuary              = 7092,
-    lights_grace                    = 7087,
+    lights_grace                    = 7499,
     wrath                           = 7089,
     hammer_of_the_righteous         = 6849,
     improved_hammer_of_wrath        = 7091,
@@ -261,7 +261,7 @@ local function create_runes()
             [rune_ids.living_seed                   ] = { wowhead_id = "56sz"},
             [rune_ids.survival_of_the_fittest       ] = { wowhead_id = "56sw"},
             [rune_ids.wild_strikes                  ] = { wowhead_id = "56pa"},
-            [rune_ids.lacerate                      ] = { wowhead_id = "a6sx"},
+            [rune_ids.skull_bash                    ] = { wowhead_id = "a7a3"},
             [rune_ids.mangle                        ] = { wowhead_id = "a6pm"},
             [rune_ids.sunfire                       ] = { wowhead_id = "a6t0"},
             [rune_ids.wild_growth                   ] = { wowhead_id = "a6pc"},
@@ -273,8 +273,8 @@ local function create_runes()
                 wowhead_id = "76ph"
             },
             [rune_ids.savage_roar                   ] = { wowhead_id = "76pf"},
-            [rune_ids.skull_bash                    ] = { wowhead_id = "76sv"},
             [rune_ids.starsurge                     ] = { wowhead_id = "76v3"},
+            [rune_ids.lacerate                      ] = { wowhead_id = "77a4"},
             -- p2
             [rune_ids.berserk                       ] = { wowhead_id = "66v4"},
             [rune_ids.eclipse                       ] = { wowhead_id = "66y2"},
@@ -338,16 +338,16 @@ local function create_runes()
             -- p3
             [rune_ids.fanaticism                    ] = { wowhead_id = "16xg"},
             [rune_ids.improved_sanctuary            ] = { wowhead_id = "16xm"},
-            [rune_ids.lights_grace                  ] = {
-                apply = function(loadout, effects)
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.5, 0.0);
-                end,
-                wowhead_id = "16xf"
-            },
             [rune_ids.wrath                         ] = { wowhead_id = "16xh"},
             [rune_ids.improved_hammer_of_wrath      ] = { wowhead_id = "96xk"},
             [rune_ids.purifying_power               ] = { wowhead_id = "96xj"},
             [rune_ids.hammer_of_the_righteous       ] = { wowhead_id = "96p1"},
+            [rune_ids.lights_grace                  ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.5, 0.0);
+                end,
+                wowhead_id = "97ab"
+            },
             -- px
         };
     elseif class == "SHAMAN" then
@@ -481,7 +481,6 @@ local function create_runes()
             [rune_ids.vengeance                     ] = { wowhead_id = "16wj"},
             [rune_ids.immolation_aura               ] = { wowhead_id = "96ye"},
             [rune_ids.summon_felguard               ] = { wowhead_id = "96yd"},
-            [rune_ids.unstable_affliction           ] = { wowhead_id = "96yc"},
             [rune_ids.unstable_affliction           ] = { wowhead_id = "96yc"},
         };
     else

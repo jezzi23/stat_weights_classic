@@ -190,6 +190,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         effects.by_school.spell_crit[spell.school];
 
     stats.ot_crit = 0.0;
+    stats.ot_crit = 0.0;
     if effects.ability.crit[spell.base_id] then
         stats.crit = stats.crit + effects.ability.crit[spell.base_id];
     end
@@ -240,7 +241,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
         stats.crit = 0.0;
-    else 
+    else
         stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
         stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0)*2*extra_crit_mod;
     end
@@ -459,6 +460,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
 
+    stats.ot_crit_mod = stats.crit_mod;
+
     if class == "PRIEST" then
         if bit.band(spell_flags.heal, spell.flags) ~= 0 then
             if loadout.runes[rune_ids.divine_aegis]  then
@@ -470,6 +473,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         else
             if loadout.runes[rune_ids.despair] then
                 stats.ot_crit = stats.crit;
+                stats.ot_crit_mod = stats.ot_crit_mod + 0.5;
             end
             stats.crit = math.min(1.0, stats.crit + loadout.talents_table:pts(1, 14) * 0.01);
         end
@@ -693,10 +697,11 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         if bit.band(spell.flags, spell_flags.destruction) ~= 0 then
             cost_mod = cost_mod - loadout.talents_table:pts(3, 2) * 0.01;
             stats.crit = math.min(1.0, stats.crit + loadout.talents_table:pts(3, 7) * 0.01);
-            stats.crit_mod = stats.crit_mod + loadout.talents_table:pts(3, 14) * 0.5;
-            
+            local crit_mod = loadout.talents_table:pts(3, 14) * 0.5;
+            stats.crit_mod = stats.crit_mod + crit_mod;
+            stats.ot_crit_mod = stats.ot_crit_mod + crit_mod;
         end
-        if loadout.runes[rune_ids.pandemic] and 
+        if loadout.runes[rune_ids.pandemic] and
             (spell.base_id == spell_name_to_id["Corruption"] or
              spell.base_id == spell_name_to_id["Immolate"] or
              spell.base_id == spell_name_to_id["Unstable Affliction"] or
@@ -705,6 +710,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
              spell.base_id == spell_name_to_id["Siphon Life"]) then
 
             stats.ot_crit = stats.crit;
+            stats.ot_crit_mod = stats.ot_crit_mod + 0.5;
         end
         if loadout.runes[rune_ids.dance_of_the_wicked] and spell.base_min ~= 0 then
             resource_refund = resource_refund + stats.crit * 0.02 * loadout.max_mana;
@@ -718,6 +724,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             stats.cast_time = stats.cast_time * (1.0 - effects.ability.cast_mod_reduce[spell.base_id]);
         end
     end
+
 
     stats.cast_time_nogcd = stats.cast_time;
     stats.cast_time = math.max(stats.cast_time, stats.gcd);
@@ -1126,8 +1133,8 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.ot_if_hit_max = (base_ot_tick_max*stats.spell_mod_base + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
 
         if stats.ot_crit > 0 then
-            info.ot_if_crit = info.ot_if_hit * stats.crit_mod;
-            info.ot_if_crit_max = info.ot_if_hit_max * stats.crit_mod;
+            info.ot_if_crit = info.ot_if_hit * stats.ot_crit_mod;
+            info.ot_if_crit_max = info.ot_if_hit_max * stats.ot_crit_mod;
         end
     end
 
@@ -1599,7 +1606,7 @@ elseif class == "MAGE" then
             stats.cost = stats.cost + 2*info.absorb*(1.0 - drain_mod);
         end,
         [spell_name_to_id["Temporal Anomaly"]] = function(spell, info, loadout)
-            add_expectation_direct_st(info, 4);
+            add_expectation_ot_st(info, 4);
         end,
     };
 else

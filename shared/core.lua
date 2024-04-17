@@ -20,56 +20,57 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local _, swc = ...;
+local _, swc                    = ...;
 
-local utils                                 = swc.utils;
+local utils                     = swc.utils;
 
-local wowhead_talent_code                   = swc.talents.wowhead_talent_code;
+local wowhead_talent_code       = swc.talents.wowhead_talent_code;
 
-local font                                  = swc.ui.font;
-local load_sw_ui                            = swc.ui.load_sw_ui;
-local create_sw_base_gui                    = swc.ui.create_sw_base_gui;
-local sw_activate_tab                       = swc.ui.sw_activate_tab;
-local update_loadouts_rhs                   = swc.ui.update_loadouts_rhs;
+local font                      = swc.ui.font;
+local load_sw_ui                = swc.ui.load_sw_ui;
+local create_sw_base_gui        = swc.ui.create_sw_base_gui;
+local sw_activate_tab           = swc.ui.sw_activate_tab;
+local update_loadouts_rhs       = swc.ui.update_loadouts_rhs;
 
-local save_sw_settings                      = swc.settings.save_sw_settings;
+local save_sw_settings          = swc.settings.save_sw_settings;
 
-local reassign_overlay_icon                 = swc.overlay.reassign_overlay_icon;
-local update_overlay                        = swc.overlay.update_overlay;
+local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
+local update_overlay            = swc.overlay.update_overlay;
 
-local update_tooltip                        = swc.tooltip.update_tooltip;
-local append_tooltip_spell_info             = swc.tooltip.append_tooltip_spell_info;
+local update_tooltip            = swc.tooltip.update_tooltip;
+local append_tooltip_spell_info = swc.tooltip.append_tooltip_spell_info;
 
-local active_loadout                        = swc.loadout.active_loadout;
-local active_loadout_entry                  = swc.loadout.active_loadout_entry;
+local active_loadout            = swc.loadout.active_loadout;
+local active_loadout_entry      = swc.loadout.active_loadout_entry;
 
 -------------------------------------------------------------------------
-local core = {};
-swc.core = core;
+local core                      = {};
+swc.core                        = core;
 
-core.sw_addon_name = "Stat Weights Classic";
+core.sw_addon_name              = "Stat Weights Classic";
 
-local version_id = 30224;
-local version = tostring(version_id);
-core.version = tonumber(version:sub(1,1)).."."..tonumber(version:sub(2,3)).."."..tonumber(version:sub(4,5));
-core.version_id = version;
+local version_id                = 30224;
+local version                   = tostring(version_id);
+core.version                    = tonumber(version:sub(1, 1)) ..
+    "." .. tonumber(version:sub(2, 3)) .. "." .. tonumber(version:sub(4, 5));
+core.version_id                 = version;
 
-core.expansions = {
+core.expansions                 = {
     vanilla = 1,
     tbc     = 2,
     wotlk   = 3
 };
 
-local client_build_version = GetBuildInfo();
-core.expansion_loaded = tonumber(client_build_version:sub(1,1));
+local client_build_version      = GetBuildInfo();
+core.expansion_loaded           = tonumber(client_build_version:sub(1, 1));
 
-core.sw_addon_loaded = false;
+core.sw_addon_loaded            = false;
 
-core.client_deviation_flags = {
-    sod = bit.lshift(1,0)
+core.client_deviation_flags     = {
+    sod = bit.lshift(1, 0)
 };
 
-core.client_deviation = 0;
+core.client_deviation           = 0;
 
 if C_Engraving and C_Engraving.IsEngravingEnabled() then
     core.client_deviation = bit.bor(core.client_deviation, core.client_deviation_flags.sod);
@@ -92,7 +93,7 @@ core.beacon_snapshot_time = -1000;
 
 local function class_supported()
     return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
-       utils.class == "SHAMAN" or utils.class == "DRUID" or utils.class == "PALADIN";
+        utils.class == "SHAMAN" or utils.class == "DRUID" or utils.class == "PALADIN";
 end
 local class_is_supported = class_supported();
 
@@ -100,13 +101,12 @@ local addon_msg_swc_id = "__SWC"
 
 local event_dispatch = {
     ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, msg, msg2, msg3)
-        if msg3 == 53563 or msg3 == 407613 then  -- beacon
-             core.beacon_snapshot_time = core.addon_running_time;
+        if msg3 == 53563 or msg3 == 407613 then -- beacon
+            core.beacon_snapshot_time = core.addon_running_time;
         end
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
         if msg == "StatWeightsClassic" then
-
             if __sw__persistent_data_per_char and not __sw__persistent_data_per_char.settings.version_saved
                 and core.expansion_loaded ~= core.expansions.wotlk then
                 core.__sw__use_defaults__ = true;
@@ -142,14 +142,13 @@ local event_dispatch = {
         save_sw_settings();
     end,
     ["PLAYER_LOGIN"] = function(self, msg, msg2, msg3)
-
         swc.core.setup_action_bar_needed = true;
         core.sw_addon_loaded = true;
 
         if core.expansion_loaded == core.expansions.vanilla and C_Engraving.IsEngravingEnabled then
             --after fresh login the runes cannot be queried until
             --character frame has been opened!!!
-            
+
             if CharacterFrame then
                 ShowUIPanel(CharacterFrame);
                 if CharacterFrameTab1 then
@@ -164,7 +163,6 @@ local event_dispatch = {
                 print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
             end
         end
-
     end,
     ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
         if not core.sw_addon_loaded then
@@ -234,11 +232,9 @@ local event_dispatch = {
         end
     end,
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
-
         local loadout = active_loadout();
-       
-        if bit.band(loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
 
+        if bit.band(loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
             loadout.talents_code = wowhead_talent_code();
             core.talents_update_needed = true;
             update_loadouts_rhs();
@@ -251,7 +247,6 @@ local event_dispatch = {
         core.equipment_update_needed = true;
     end,
     ["GLYPH_ADDED"] = function(self, msg, msg2, msg3)
-
         if bit.band(active_loadout_entry().loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
             core.talents_update_needed = true;
         end
@@ -276,8 +271,8 @@ local event_dispatch = {
 
 
 local event_dispatch_client_exceptions = {
-    ["ENGRAVING_MODE_CHANGED"]      = core.expansions.vanilla,
-    ["RUNE_UPDATED"]                = core.expansions.vanilla,
+    ["ENGRAVING_MODE_CHANGED"] = core.expansions.vanilla,
+    ["RUNE_UPDATED"]           = core.expansions.vanilla,
 };
 
 core.event_dispatch = event_dispatch;
@@ -288,13 +283,12 @@ local timestamp = 0;
 
 local pname = UnitName("player");
 
-local function main_update() 
-
-    local dt = 1.0/sw_snapshot_loadout_update_freq;
+local function main_update()
+    local dt = 1.0 / sw_snapshot_loadout_update_freq;
 
     local t = GetTime();
 
-    core.addon_running_time = core.addon_running_time + t-timestamp;
+    core.addon_running_time = core.addon_running_time + t - timestamp;
 
     update_overlay();
     if core.addon_message_on_update then
@@ -307,8 +301,7 @@ local function main_update()
     C_Timer.After(dt, main_update);
 end
 
-local function refresh_tooltip() 
-
+local function refresh_tooltip()
     local dt = 0.1;
     if core.__sw__test_all_spells then
         dt = 0.01;
@@ -328,14 +321,12 @@ if class_is_supported then
     GameTooltip:HookScript("OnTooltipSetSpell", function(_, is_fake)
         append_tooltip_spell_info(is_fake);
     end)
-
 else
     --print("Stat Weights Classic currently does not support your class :(");
 end
 
 -- add addon to Addons list under Interface
 if InterfaceOptions_AddCategory then
-
     local addon_interface_panel = CreateFrame("FRAME");
     addon_interface_panel.name = "Stat Weights Classic";
     InterfaceOptions_AddCategory(addon_interface_panel);
@@ -348,7 +339,7 @@ if InterfaceOptions_AddCategory then
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("Stats Weights Classic - Version "..core.version);
+    str:SetText("Stats Weights Classic - Version " .. core.version);
 
     y_offset = y_offset - 15;
 
@@ -374,8 +365,8 @@ if InterfaceOptions_AddCategory then
         return;
     end
 
-    addon_interface_panel.open_sw_frame_button = 
-        CreateFrame("Button", "sw_addon_interface_open_frame_button", addon_interface_panel, "UIPanelButtonTemplate"); 
+    addon_interface_panel.open_sw_frame_button =
+        CreateFrame("Button", "sw_addon_interface_open_frame_button", addon_interface_panel, "UIPanelButtonTemplate");
 
     addon_interface_panel.open_sw_frame_button:SetPoint("TOPLEFT", x_offset, y_offset);
     addon_interface_panel.open_sw_frame_button:SetWidth(150);
@@ -428,7 +419,6 @@ if InterfaceOptions_AddCategory then
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
     str:SetText("Hard reset: /swc reset");
-
 end
 
 local function command(msg, editbox)
@@ -439,13 +429,11 @@ local function command(msg, editbox)
             sw_activate_tab(2);
         elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
             sw_activate_tab(1);
-        elseif msg == "compare" or msg == "sc" or msg == "stat compare"  or msg == "stat" or msg == "calc" or msg == "calculator" then
+        elseif msg == "compare" or msg == "sc" or msg == "stat compare" or msg == "stat" or msg == "calc" or msg == "calculator" then
             sw_activate_tab(3);
         elseif msg == "reset" then
-
             core.__sw__use_defaults__ = 1;
             ReloadUI();
-
         else
             sw_activate_tab(2);
         end
@@ -472,4 +460,3 @@ __SWC = swc.ext;
 --core.__sw__use_defaults__ = 1;
 --core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;
-
