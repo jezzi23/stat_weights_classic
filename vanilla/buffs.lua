@@ -304,12 +304,15 @@ local buffs_predefined = {
     -- shadow form
     [15473] = {
         apply = function(loadout, effects, buff)
-            effects.by_school.spell_dmg_mod[magic_school.shadow] = 
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.15 - 1.0;
 
             if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
-                effects.by_school.cost_mod[magic_school.shadow] = 
+                effects.by_school.cost_mod[magic_school.shadow] =
                     effects.by_school.cost_mod[magic_school.shadow] + 0.5;
+                effects.by_school.spell_dmg_mod[magic_school.shadow] =
+                    (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.25 - 1.0;
+            else
+                effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                    (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.15 - 1.0;
 
             end
         end,

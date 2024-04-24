@@ -1383,7 +1383,8 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Flame Shock"]] = function(spell, info, loadout, stats, effects)
             if loadout.runes[rune_ids.burn] then
-                add_expectation_ot_st(info, 2);
+                add_expectation_ot_st(info, 4);
+                add_expectation_direct_st(info, 4);
             end
         end,
         [spell_name_to_id["Earth Shock"]] = function(spell, info, loadout, stats, effects)

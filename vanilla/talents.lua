@@ -286,7 +286,7 @@ local function create_runes()
             [rune_ids.gale_winds                    ] = {
                 apply = function(loadout, effects)
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 1.0, 0.0);
-                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Hurricane"], 0.2, 0.0);
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Hurricane"], 0.6, 0.0);
                 end,
                 wowhead_id = "16y0"
             },
@@ -379,7 +379,14 @@ local function create_runes()
             [rune_ids.decoy_totem                   ] = { wowhead_id = "86w7"},
             [rune_ids.spirit_of_the_alpha           ] = { wowhead_id = "86q2"},
             -- p3
-            [rune_ids.burn                          ] = { wowhead_id = "16tb"},
+            [rune_ids.burn                          ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Flame Shock"], 1.0, 0.0);
+                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Flame Shock"], 2, 0.0);
+                end,
+                wowhead_id = "16tb"
+            },
+
             [rune_ids.mental_dexterity              ] = { wowhead_id = "16t6"},
             [rune_ids.tidal_waves                   ] = { wowhead_id = "16yn"},
             [rune_ids.overcharged                   ] = { wowhead_id = "96yr"},
@@ -620,6 +627,16 @@ local function create_talents()
                     local sf = spell_name_to_id["Sunfire"];
                     ensure_exists_and_add(effects.ability.crit, sf, pts * 0.02, 0);
                     ensure_exists_and_add(effects.ability.effect_mod_base, sf, pts * 0.02, 0.0);
+                end
+            },
+            [106] = {
+                apply = function(loadout, effects, pts)
+                    if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+                        effects.by_school.spell_dmg_mod_add[magic_school.nature] =
+                            effects.by_school.spell_dmg_mod_add[magic_school.nature] + 0.02 * pts;
+                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] =
+                            effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.02 * pts;
+                    end
                 end
             },
             [111] = {
