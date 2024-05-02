@@ -632,10 +632,10 @@ local function create_talents()
             [106] = {
                 apply = function(loadout, effects, pts)
                     if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
-                        effects.by_school.spell_dmg_mod_add[magic_school.nature] =
-                            effects.by_school.spell_dmg_mod_add[magic_school.nature] + 0.02 * pts;
-                        effects.by_school.spell_dmg_mod_add[magic_school.arcane] =
-                            effects.by_school.spell_dmg_mod_add[magic_school.arcane] + 0.02 * pts;
+                        effects.by_school.spell_dmg_mod[magic_school.nature] =
+                            (1.0 + effects.by_school.spell_dmg_mod[magic_school.nature]) * (1.0 + 0.02 * pts) - 1.0;
+                        effects.by_school.spell_dmg_mod[magic_school.arcane] =
+                            (1.0 + effects.by_school.spell_dmg_mod[magic_school.arcane]) * (1.0 + 0.02 * pts) - 1.0;
                     end
                 end
             },
