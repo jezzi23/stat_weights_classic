@@ -107,7 +107,7 @@ local function empty_effects(effects)
     effects.raw.spell_heal_mod_base = 0;
     effects.raw.spell_dmg_mod = 0;
     effects.raw.spell_dmg_mod_mul = 0;
-    effects.raw.target_healing_taken = 0;
+    effects.raw.garget_healing_taken = 0;
     effects.raw.mana_mod = 0;
     effects.raw.mana = 0;
     effects.raw.mp5_from_int_mod = 0;

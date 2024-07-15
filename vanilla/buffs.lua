@@ -520,6 +520,9 @@ local buffs_predefined = {
                 ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Moonfire"], 0.5, 0);
                 ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Sunfire"], 0.5, 0);
 
+                if inactive then
+                    effects.raw.spell_dmg = effects.raw.spell_dmg + 2*loadout.lvl;
+                end
             end
         end,
         filter = buff_filters.druid,
@@ -1212,6 +1215,36 @@ local buffs_predefined = {
         filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
         category = buff_category.world_buffs,
     },
+    -- tree of life form
+    [439733] = {
+        apply = function(loadout, effects, buff, inactive)
+            
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Lifebloom"], 0.2, 0);
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Regrowth"], 0.2, 0);
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Rejuvenation"], 0.2, 0);
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Tranquility"], 0.2, 0);
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Wild Growth"], 0.2, 0);
+
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wild Growth"], 0.6, 0);
+
+            if inactive then
+                swc.loadout.add_spirit_mod(loadout, effects, 0.25, 0.25);
+            else
+                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.25);
+            end
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
+
+        category = buff_category.class,
+    },
+    -- decimation
+    [440873] = {
+        apply = function(loadout, effects, buff, inactive)
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Soul Fire"], 0.4, 0);
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod_p3_only),
+        category = buff_category.class,
+    },
 };
 
 local target_buffs_predefined = {
@@ -1489,7 +1522,12 @@ local target_buffs_predefined = {
                     effects.by_school.target_spell_dmg_taken_ot[magic_school.shadow] + 0.2;
             end
             if loadout.runes[swc.talents.rune_ids.soul_siphon] then
-                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Drain Soul"], 0.06, 0);
+                if loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.2 then
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Drain Soul"], 0.5, 0);
+                else
+                    ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Drain Soul"], 0.06, 0);
+
+                end
                 ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Drain Life"], 0.06, 0);
             end
         end,
@@ -1593,7 +1631,7 @@ local target_buffs_predefined = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus) == 0 then
 
-                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0); 
+                ensure_exists_and_add(effects.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2, 0.0);
 
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
@@ -1634,6 +1672,27 @@ local target_buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.sod, buff_filters.friendly),
         category = buff_category.class,
+    },
+    -- tree of life
+    [439745] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.target_healing_taken = effects.raw.target_healing_taken + 0.1;
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.sod, buff_filters.friendly),
+        category = buff_category.raid,
+    },
+    -- mark of chaos
+    [461615] = {
+        apply = function(loadout, effects, buff)
+            for i = 1, 7 do
+                effects.by_school.target_spell_dmg_taken[i] =
+                    (1.0 + effects.by_school.target_spell_dmg_taken[i]) * 1.11 - 1.0;
+                effects.by_school.target_res[i] = effects.by_school.target_res[i] + 0.75
+            end
+
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.hostile),
+        category = buff_category.raid,
     },
 };
 

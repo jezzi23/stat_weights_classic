@@ -329,6 +329,7 @@ local function create_set_effects()
                 end
                 if num_pieces >= 5 then
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Regrowth"], 0.2, 0.0);
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], 0.2, 0.0);
                 end
                 if num_pieces >= 8 then
                     ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Rejuvenation"], 1, 0.0);
@@ -566,6 +567,7 @@ local function create_relics()
             end,
             [23004] = function(effects)
                 ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Healing Touch"], 25, 0.0);
+                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Nourish"], 25, 0.0);
             end,
             [216490] = function(effects)
                 ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.02, 0.0);

@@ -63,7 +63,10 @@ local rune_ids = {
     despair                         = 7112,
     surge_of_light                  = 7111,
     void_zone                       = 7113,
-    -- px
+    -- p4
+    vampiric_touch                  = 6749,
+    soul_warding                    = 6742,
+    binding_heal                    = 6745,
     --druid p1
     fury_of_the_stormrage           = 6872,
     living_seed                     = 6975,
@@ -89,6 +92,10 @@ local rune_ids = {
     elunes_fires                    = 6977,
     gale_winds                      = 7104,
     gore                            = 7102,
+    -- p4
+    starfall                        = 7259,
+    tree_of_life                    = 7258,
+    improved_swipe                  = 7257,
     -- px
     improved_frenzied_regeneration  = 6861,
     improved_barkskin               = 7103,
@@ -120,7 +127,11 @@ local rune_ids = {
     hammer_of_the_righteous         = 6849,
     improved_hammer_of_wrath        = 7091,
     purifying_power                 = 7090,
-    -- px
+    -- p4
+    righteous_vengeance             = 7271,
+    shock_and_awe                   = 7270,
+    shield_of_rigtheousness         = 7269,
+    divine_light                    = 7562,
     --shaman p1
     dual_wield_specialization       = 6874,
     healing_rain                    = 6984,
@@ -150,6 +161,10 @@ local rune_ids = {
     burn                            = 6987,
     mental_dexterity                = 6982,
     tidal_waves                     = 7125,
+    --p4
+    storm_earth_and_fire            = 7268,
+    feral_spirit                    = 7267,
+    coherence                       = 7000,
     --mage p1
     burnout                         = 6729,
     enlightment                     = 6922,
@@ -158,14 +173,14 @@ local rune_ids = {
     arcane_blast                    = 6728,
     ice_lance                       = 6730,
     living_bomb                     = 6923,
-    rewind_time                     = 6731,
+    rewind_time                     = 7561,
     arcane_surge                    = 7021,
     icy_veins                       = 7020,
     living_flame                    = 6737,
     mass_regeneration               = 6927,
     -- p2
     frostfire_bolt                  = 6732,
-    hot_streak                      = 6724,
+    hot_streak                      = 7560,
     missile_barrage                 = 6733,
     spellfrost_bolt                 = 6930,
     brain_freeze                    = 6725,
@@ -178,13 +193,14 @@ local rune_ids = {
     advanced_warding                = 6726,
     displacement                    = 7096,
     molten_armor                    = 7095,
-    -- px
-    frozen_orb                      = 0   , -- MISSING
+    -- p4
+    frozen_orb                      = 7272,
+    arcane_barrage                  = 6723,
+    overheat                        = 6734,
     --warlock p1
     demonic_tactics                 = 6952,
     lake_of_fire                    = 6815,
     master_channeler                = 6811,
-    soul_siphon                     = 6808,
     chaos_bolt                      = 6805,
     haunt                           = 6803,
     metamorphosis                   = 6816,
@@ -207,7 +223,11 @@ local rune_ids = {
     immolation_aura                 = 7118,
     summon_felguard                 = 7117,
     unstable_affliction             = 7116,
-    -- px
+    -- p4
+    decimation                      = 7273,
+    infernal_armor                  = 7275,
+    soul_siphon                     = 7590,
+    mark_of_chaos                   = 7592,
 };
 
 -- maps rune engraving enchant id to effect and wowhead's encoding
@@ -247,7 +267,16 @@ local function create_runes()
             [rune_ids.despair                   ] = { wowhead_id = "96y8"},
             [rune_ids.surge_of_light            ] = { wowhead_id = "96y7"},
             [rune_ids.void_zone                 ] = { wowhead_id = "96y9"},
-            -- px
+            -- p4
+            [rune_ids.vampiric_touch            ] = { wowhead_id = "f6jx"},
+            [rune_ids.soul_warding              ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Power Word: Shield"], 0.15, 0.0);
+                    ensure_exists_and_add(effects.ability.coef_mod, spell_name_to_id["Power Word: Shield"], 0.5, 0.0);
+                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Power Word: Shield"], 0.15, 0.0);
+                end,
+                wowhead_id = "f6jp"},
+            [rune_ids.binding_heal              ] = { wowhead_id = "f6js"},
         };
     elseif class == "DRUID" then
         return {
@@ -295,7 +324,10 @@ local function create_runes()
             [rune_ids.efflorescence                 ] = { wowhead_id = "96y1"},
             [rune_ids.improved_frenzied_regeneration] = { wowhead_id = "96pd"},
             [rune_ids.elunes_fires                  ] = { wowhead_id = "96t1"},
-            -- px
+            -- p4
+            [rune_ids.starfall                      ] = { wowhead_id = "f72v"},
+            [rune_ids.tree_of_life                  ] = { wowhead_id = "f72t"},
+            [rune_ids.improved_swipe                ] = { wowhead_id = "f72s"},
         };
     elseif class == "PALADIN" then
         return {
@@ -348,7 +380,11 @@ local function create_runes()
                 end,
                 wowhead_id = "97ab"
             },
-            -- px
+            -- p4
+            [rune_ids.righteous_vengeance           ] = { wowhead_id = "f737"},
+            [rune_ids.shock_and_awe                 ] = { wowhead_id = "f736"},
+            [rune_ids.shield_of_rigtheousness       ] = { wowhead_id = "f735"},
+            [rune_ids.divine_light                  ] = { wowhead_id = "f7ca"},
         };
     elseif class == "SHAMAN" then
         return {
@@ -393,6 +429,15 @@ local function create_runes()
             [rune_ids.riptide                       ] = { wowhead_id = "96q5"},
             [rune_ids.rolling_thunder               ] = { wowhead_id = "96yp"},
             [rune_ids.static_shock                  ] = { wowhead_id = "96yq"},
+            --p4
+            [rune_ids.storm_earth_and_fire          ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Flame Shock"], 0.6, 0.0);
+                end,
+                wowhead_id = "f734"
+            },
+            [rune_ids.feral_spirit                  ] = { wowhead_id = "f733"},
+            [rune_ids.coherence                     ] = { wowhead_id = "f6tr"},
         };
     elseif class == "MAGE" then
         return {
@@ -407,7 +452,7 @@ local function create_runes()
                 end,
                 wowhead_id = "56j9"
             },
-            [rune_ids.rewind_time                   ] = { wowhead_id = "a6jb"},
+            [rune_ids.rewind_time                   ] = { wowhead_id = "97c9"},
             [rune_ids.living_bomb                   ] = { wowhead_id = "a6rb"},
             [rune_ids.ice_lance                     ] = { wowhead_id = "a6ja"},
             [rune_ids.arcane_blast                  ] = { wowhead_id = "a6j8"},
@@ -417,7 +462,7 @@ local function create_runes()
             [rune_ids.arcane_surge                  ] = { wowhead_id = "76vd"},
             -- p2
             [rune_ids.frostfire_bolt                ] = { wowhead_id = "66jc"},
-            [rune_ids.hot_streak                    ] = { wowhead_id = "66j4"},
+            [rune_ids.hot_streak                    ] = { wowhead_id = "17c8"},
             [rune_ids.missile_barrage               ] = { wowhead_id = "66jd"},
             [rune_ids.spellfrost_bolt               ] = { wowhead_id = "66rj"},
             [rune_ids.brain_freeze                  ] = { wowhead_id = "86j5"},
@@ -446,13 +491,15 @@ local function create_runes()
             [rune_ids.balefire_bolt                 ] = { wowhead_id = "96xs"},
             [rune_ids.displacement                  ] = { wowhead_id = "96xr"},
             [rune_ids.molten_armor                  ] = { wowhead_id = "96xq"},
-            -- px
+            -- p4
+            [rune_ids.frozen_orb                    ] = { wowhead_id = "f738"},
+            [rune_ids.arcane_barrage                ] = { wowhead_id = "f6j3"},
+            [rune_ids.overheat                      ] = { wowhead_id = "f6je"},
         };
 
     elseif class == "WARLOCK" then
         return {
             -- p1
-            [rune_ids.soul_siphon                   ] = { wowhead_id = "56mr"},
             [rune_ids.lake_of_fire                  ] = { wowhead_id = "56mz"},
             [rune_ids.demonic_tactics               ] = {
                 apply = function(loadout, effects, inactive)
@@ -489,6 +536,11 @@ local function create_runes()
             [rune_ids.immolation_aura               ] = { wowhead_id = "96ye"},
             [rune_ids.summon_felguard               ] = { wowhead_id = "96yd"},
             [rune_ids.unstable_affliction           ] = { wowhead_id = "96yc"},
+            --p4
+            [rune_ids.decimation                    ] = { wowhead_id = "f739"},
+            [rune_ids.infernal_armor                ] = { wowhead_id = "f73b"},
+            [rune_ids.soul_siphon                   ] = { wowhead_id = "f7d6"},
+            [rune_ids.mark_of_chaos                 ] = { wowhead_id = "87d8"},
         };
     else
         return {};
@@ -654,7 +706,7 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation"});
+                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation", "Nourish"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.03, 0);
                     end
@@ -709,6 +761,7 @@ local function create_talents()
             [314] = {
                 apply = function(loadout, effects, pts)
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Regrowth"], pts * 0.1, 0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Nourish"], pts * 0.1, 0);
                 end
             },
         };

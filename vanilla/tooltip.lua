@@ -194,8 +194,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.7;
+                        if loadout.runes[rune_ids.coherence] then
+                            bounces = 3;
+                            falloff = falloff + 0.1;
+                        end
                         if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
-                            falloff = 0.75;
+                            falloff = falloff + 0.05;
                         end
                         for i = 1, bounces-1 do
                             bounce_str = bounce_str..string.format(" %d-%d  + ",
@@ -222,6 +226,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         local bounce_str = "     + ";
                         local bounces = 2;
                         local falloff = 0.5;
+                        if loadout.runes[rune_ids.coherence] then
+                            bounces = 3;
+                            falloff = falloff + 0.15;
+                        end
                         if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
                             falloff = 0.5 * 1.3;
                         end
