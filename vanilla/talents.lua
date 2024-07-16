@@ -44,7 +44,7 @@ local rune_ids = {
     penance                         = 6752,
     shadow_word_death               = 6741,
     homunculi                       = 6744,
-    power_word_barrier              = 7023,
+    power_word_barrier              = 7589,
     prayer_of_mending               = 6740,
     shared_pain                     = 6746,
     -- p2
@@ -208,7 +208,7 @@ local rune_ids = {
     demonic_grace                   = 7039,
     demonic_pact                    = 7038,
     everlasting_affliction          = 6950,
-    incinerate                      = 6955,
+    incinerate                      = 7591,
     -- p2
     grimoire_of_synergy             = 7054,
     invocation                      = 7053,
@@ -228,6 +228,13 @@ local rune_ids = {
     infernal_armor                  = 7275,
     soul_siphon                     = 7590,
     mark_of_chaos                   = 7592,
+    --rings p4
+    arcane_specialization           = 7514,
+    fire_specialization             = 7515,
+    frost_specialization            = 7516,
+    holy_specialization             = 7519,
+    shadow_specialization           = 7518,
+    nature_specialization           = 7517,
 };
 
 -- maps rune engraving enchant id to effect and wowhead's encoding
@@ -244,7 +251,7 @@ local function create_runes()
             [rune_ids.penance                   ] = { wowhead_id = "a6k0"},
             [rune_ids.shadow_word_death         ] = { wowhead_id = "a6jn"},
             [rune_ids.homunculi                 ] = { wowhead_id = "76jr"},
-            [rune_ids.power_word_barrier        ] = { wowhead_id = "76vf"},
+            [rune_ids.power_word_barrier        ] = { wowhead_id = "97d5"},
             [rune_ids.prayer_of_mending         ] = { wowhead_id = "76jm"},
             [rune_ids.shared_pain               ] = { wowhead_id = "76jt"},
             -- p2
@@ -494,7 +501,12 @@ local function create_runes()
             -- p4
             [rune_ids.frozen_orb                    ] = { wowhead_id = "f738"},
             [rune_ids.arcane_barrage                ] = { wowhead_id = "f6j3"},
-            [rune_ids.overheat                      ] = { wowhead_id = "f6je"},
+            [rune_ids.overheat                      ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Fire Blast"], 1.0, 0.0);
+                end,
+                wowhead_id = "f6je"
+            },
         };
 
     elseif class == "WARLOCK" then
@@ -511,13 +523,13 @@ local function create_runes()
             [rune_ids.master_channeler              ] = { wowhead_id = "56mv"},
             [rune_ids.shadow_bolt_volley            ] = {
                 apply = function(loadout, effects)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Bolt"], -0.2, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Bolt"], -0.05, 0.0);
                 end,
                 wowhead_id = "a6my"
             },
             [rune_ids.metamorphosis                 ] = { wowhead_id = "a6n0"},
             [rune_ids.haunt                         ] = { wowhead_id = "a6mk"},
-            [rune_ids.incinerate                    ] = { wowhead_id = "76sb"},
+            [rune_ids.incinerate                    ] = { wowhead_id = "97d7"},
             [rune_ids.everlasting_affliction        ] = { wowhead_id = "76s6"},
             [rune_ids.demonic_pact                  ] = { wowhead_id = "76vy"},
             [rune_ids.demonic_grace                 ] = { wowhead_id = "76vz"},
@@ -1113,6 +1125,50 @@ end
 
 local talents = create_talents();
 local runes = create_runes();
+
+runes[rune_ids.arcane_specialization] = {
+    apply = function(loadout, effects)
+        effects.by_school.spell_dmg_hit[magic_school.arcane] =
+            effects.by_school.spell_dmg_hit[magic_school.arcane] + 0.06;
+    end,
+    wowhead_id = "b7at"
+};
+runes[rune_ids.fire_specialization] = {
+    apply = function(loadout, effects)
+        effects.by_school.spell_dmg_hit[magic_school.fire] =
+            effects.by_school.spell_dmg_hit[magic_school.fire] + 0.06;
+    end,
+    wowhead_id = "b7av"
+};
+runes[rune_ids.frost_specialization] = {
+    apply = function(loadout, effects)
+        effects.by_school.spell_dmg_hit[magic_school.frost] =
+            effects.by_school.spell_dmg_hit[magic_school.frost] + 0.06;
+    end,
+    wowhead_id = "b7aw"
+};
+runes[rune_ids.holy_specialization] = {
+    apply = function(loadout, effects)
+        effects.by_school.spell_dmg_hit[magic_school.holy] =
+            effects.by_school.spell_dmg_hit[magic_school.holy] + 0.06;
+    end,
+    wowhead_id = "b7az"
+};
+runes[rune_ids.shadow_specialization] = {
+    apply = function(loadout, effects)
+        effects.by_school.spell_dmg_hit[magic_school.shadow] =
+            effects.by_school.spell_dmg_hit[magic_school.shadow] + 0.06;
+    end,
+    wowhead_id = "b7ay"
+};
+runes[rune_ids.nature_specialization] = {
+    apply = function(loadout, effects)
+        effects.by_school.spell_dmg_hit[magic_school.nature] =
+            effects.by_school.spell_dmg_hit[magic_school.nature] + 0.06;
+    end,
+    wowhead_id = "b7ax"
+};
+
 local wowhead_rune_code_to_id = {};
 -- reverse mapping from wowhead 3 char code to rune spell id
 for k, v in pairs(runes) do

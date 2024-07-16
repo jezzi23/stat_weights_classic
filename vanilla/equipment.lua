@@ -551,6 +551,12 @@ local function create_relics()
             [215436] = function(effects)
                 ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Flame Shock"], 10, 0.0);
             end,
+            [228179] = function(effects)
+                ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0.0);
+            end,
+            [228176] = function(effects)
+                ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.1, 0.0);
+            end,
         };
     elseif class == "DRUID" then
         return {
@@ -571,6 +577,13 @@ local function create_relics()
             end,
             [216490] = function(effects)
                 ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.02, 0.0);
+            end,
+            [228183] = function(effects)
+                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Regrowth"], 25, 0.0);
+                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Nourish"], 25, 0.0);
+            end,
+            [228180] = function(effects)
+                ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Insect Swarm"], 6, 0.0);
             end,
         };
     else 

@@ -872,6 +872,7 @@ local buffs_predefined = {
     [400625] = {
         apply = function(loadout, effects, buff)
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Pyroblast"], 1.0, 0);
+            ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Pyroblast"], 1.0, 0);
             
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
@@ -926,7 +927,7 @@ local buffs_predefined = {
     -- grimoire of synergy
     [426303] = {
         apply = function(loadout, effects, buff)
-            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.25 - 1.0;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.1 - 1.0;
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
@@ -1234,7 +1235,6 @@ local buffs_predefined = {
             end
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
-
         category = buff_category.class,
     },
     -- decimation
@@ -1244,6 +1244,44 @@ local buffs_predefined = {
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod_p3_only),
         category = buff_category.class,
+    },
+    -- survival instincts
+    [408024] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.2 - 1.0;
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
+        category = buff_category.class,
+    },
+    -- fel armor
+    [403619] = {
+        apply = function(loadout, effects, buff, inactive)
+            effects.by_attribute.sp_from_stat_mod[stat.spirit] = effects.by_attribute.sp_from_stat_mod[stat.spirit] + 0.5;
+            effects.by_attribute.hp_from_stat_mod[stat.spirit] = effects.by_attribute.hp_from_stat_mod[stat.spirit] + 0.5;
+            if inactive then
+                effects.raw.spell_power = effects.raw.spell_power + loadout.lvl;
+            end
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
+        category = buff_category.class,
+    },
+    -- immolation aura
+    [427726] = {
+        apply = function(loadout, effects, buff, inactive)
+            effects.by_school.spell_dmg_mod[magic_school.fire] =
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.1 - 1.0;
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
+        category = buff_category.class,
+    },
+    -- might of stormwind
+    [460940] = {
+        apply = function(loadout, effects, buff, inactive)
+
+           effects.raw.mp5 = effects.raw.mp5 + 10;
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.alliance),
+        category = buff_category.world_buffs,
     },
 };
 
@@ -1601,7 +1639,7 @@ local target_buffs_predefined = {
 
             if loadout.runes[swc.talents.rune_ids.renewed_hope] then
                 for k, v in pairs(spell_names_to_id({"Flash Heal", "Lesser Heal", "Heal", "Greater Heal", "Penance"})) do
-                    ensure_exists_and_add(effects.ability.crit, v, 0.1, 0);
+                    ensure_exists_and_add(effects.ability.crit, v, 0.2, 0);
                 end
             end
         end,

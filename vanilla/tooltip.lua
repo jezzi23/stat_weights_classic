@@ -35,6 +35,7 @@ local spell_cast_time                           = swc.utils.spell_cast_time;
 
 local set_tiers                                 = swc.equipment.set_tiers;
 
+local rune_ids                                  = swc.talents.rune_ids;
 
 local stats_for_spell                           = swc.calc.stats_for_spell;
 local evaluate_spell                            = swc.calc.evaluate_spell;

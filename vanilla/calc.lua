@@ -538,8 +538,6 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
         end
 
-        if  and spell.base_min ~= 0 then
-
         if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
             is_buff_up(loadout, "player", GetSpellInfo(24858), true) then
 
@@ -699,11 +697,11 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                     target_vuln_mod = target_vuln_mod * 3;
                 end
             end
-            if loadout.runes[rune_ids.overheat] and
-                benefit_id == spell_name_to_id["Fire Blast"] then
-                stats.gcd = 0.0;
-                stats.cast_time = 0.0;
-            end
+            --if loadout.runes[rune_ids.overheat] and
+            --    benefit_id == spell_name_to_id["Fire Blast"] then
+            --    stats.gcd = 0.0;
+            --    stats.cast_time = 0.0;
+            --end
         end
 
 
@@ -1628,7 +1626,7 @@ elseif class == "DRUID" then
 elseif class == "WARLOCK" then
     special_abilities = {
         [spell_name_to_id["Shadow Cleave"]] = function(spell, info, loadout, stats, effects)
-            add_expectation_direct_st(info, 2);
+            add_expectation_direct_st(info, 9);
         end,
         [spell_name_to_id["Shadow Bolt"]] = function(spell, info, loadout)
 
