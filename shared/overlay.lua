@@ -535,7 +535,11 @@ local overlay_label_handler = {
         frame_overlay:SetText(string.format("%d", math.floor(spell_effect.expectation+0.5)));
     end,
     [icon_stat_display.effect_per_sec] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d", math.floor(spell_effect.effect_per_sec+0.5)));
+        if spell_effect.effect_per_sec == math.huge then
+            frame_overlay:SetText("inf");
+        else
+            frame_overlay:SetText(string.format("%d", math.floor(spell_effect.effect_per_sec+0.5)));
+        end
     end,
     [icon_stat_display.effect_per_cost] = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(string.format("%.2f", spell_effect.effect_per_cost));

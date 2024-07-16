@@ -357,9 +357,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     local bounce_str = "     + ";
                     local bounces = 2;
                     local falloff = 0.5;
-                    if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-                        falloff = 1.3*0.5;
+                    if loadout.runes[rune_ids.coherence] then
+                        bounces = 3;
+                        falloff = falloff + 0.15;
                     end
+                    if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
+                        falloff = 0.5 * 1.3;
+                    end
+
                     for i = 1, bounces-1 do
                         bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                falloff*math.floor(eval.spell.min_crit_if_hit), 
@@ -374,11 +379,17 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
                 elseif spell.base_id == spell_name_to_id["Chain Lightning"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
                     local bounce_str = "     + ";
+
                     local bounces = 2;
                     local falloff = 0.7;
-                    if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
-                        falloff = 0.75;
+                    if loadout.runes[rune_ids.coherence] then
+                        bounces = 3;
+                        falloff = falloff + 0.1;
                     end
+                    if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
+                        falloff = falloff + 0.05;
+                    end
+
                     for i = 1, bounces-1 do
                         bounce_str = bounce_str..string.format(" %d-%d  + ",
                                                                falloff*math.floor(eval.spell.min_crit_if_hit), 

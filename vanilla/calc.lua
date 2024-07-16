@@ -539,7 +539,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
 
         if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
-            is_buff_up(loadout, "player", GetSpellInfo(24858), true) then
+            is_buff_up(loadout, "player", GetSpellInfo(24858), true) and
+            bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.no_crit)) == 0 then
 
             --moonkin form periodic crit
             stats.ot_crit = stats.crit + extra_ot_crit;
@@ -697,11 +698,11 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                     target_vuln_mod = target_vuln_mod * 3;
                 end
             end
-            --if loadout.runes[rune_ids.overheat] and
-            --    benefit_id == spell_name_to_id["Fire Blast"] then
-            --    stats.gcd = 0.0;
-            --    stats.cast_time = 0.0;
-            --end
+            if loadout.runes[rune_ids.overheat] and
+                benefit_id == spell_name_to_id["Fire Blast"] then
+                stats.gcd = 0.0;
+                stats.cast_time = 0.0;
+            end
         end
 
 
