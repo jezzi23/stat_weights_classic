@@ -1283,6 +1283,27 @@ local buffs_predefined = {
         filter = bit.bor(buff_filters.caster, buff_filters.alliance),
         category = buff_category.world_buffs,
     },
+    -- melting faces
+    [456549] = {
+        apply = function(loadout, effects, buff, inactive)
+
+            ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Mind Flay"], 1.5, 0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Mind Flay"], 0.5, 0);
+        end,
+        filter = bit.bor(buff_filters.priest, buff_filters.sod),
+        category = buff_category.item,
+    },
+    -- fire trance
+    [457558] = {
+        apply = function(loadout, effects, buff, inactive)
+
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Immolate"], 1.0, 0);
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Incinerate"], 1.0, 0);
+        end,
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
+        category = buff_category.item,
+    },
+
 };
 
 local target_buffs_predefined = {

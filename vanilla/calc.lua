@@ -503,11 +503,15 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             cost_mod = cost_mod*(1.0 - 0.1 * pts);
         end
 
-        if (benefit_id == spell_name_to_id["Healing Touch"] or spell.base_id == spell_name_to_id["Nourish"])
-            and loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
-
-            local mana_refund = original_base_cost;
-            resource_refund = resource_refund + stats.crit * 0.3 * mana_refund;
+        if (benefit_id == spell_name_to_id["Healing Touch"] or spell.base_id == spell_name_to_id["Nourish"]) then
+            if loadout.num_set_pieces[set_tiers.pve_3] >= 8 then
+                local mana_refund = original_base_cost;
+                resource_refund = resource_refund + stats.crit * 0.3 * mana_refund;
+            end
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6 then
+                local mana_refund = original_base_cost;
+                resource_refund = resource_refund + 0.25*0.35* mana_refund;
+            end
         end
         if benefit_id == spell_name_to_id["Lifebloom"] then
             local mana_refund = stats.cost * cost_mod * 0.5;
@@ -597,7 +601,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             benefit_id == spell_name_to_id["Lesser Healing Wave"] or 
             benefit_id == spell_name_to_id["Riptide"] then
 
-            if loadout.num_set_pieces[set_tiers.pve_1] >= 5 then
+            if loadout.num_set_pieces[set_tiers.pve_1] >= 5 or loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 4 then
                 local mana_refund = original_base_cost;
                 resource_refund = resource_refund + 0.25 * 0.35 * mana_refund;
             end
@@ -1414,7 +1418,7 @@ if class == "SHAMAN" then
         end,
         [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
 
-            if loadout.num_set_pieces[set_tiers.pve_1] >= 8 then
+            if loadout.num_set_pieces[set_tiers.pve_1] >= 8 or loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6 then
                 add_expectation_direct_st(info, 0.2 + 0.2*0.2);
             end
         end,

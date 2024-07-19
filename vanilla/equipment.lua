@@ -32,20 +32,24 @@ local spell_names_to_id                 = swc.abilities.spell_names_to_id;
 local equipment = {};
 
 local set_tiers = {
-    pve_0            = 1,
-    pve_0_5          = 2,
-    pve_1            = 3,
-    pve_2            = 4,
-    pve_2_5_0        = 6, -- zg
-    pve_2_5_1        = 7, -- aq20
-    pve_2_5_2        = 8, -- aq40
-    pve_3            = 9,
-    pvp_1            = 10,
-    pvp_2            = 11,
-    sod_p2_anyclass  = 12,
-    sod_p2_class     = 13,
-    sod_p3_t1        = 14,
-    sod_p3_t1_dmg    = 14,
+    pve_0                   = 1,
+    pve_0_5                 = 2,
+    pve_1                   = 3,
+    pve_2                   = 4,
+    pve_2_5_0               = 6, -- zg
+    pve_2_5_1               = 7, -- aq20
+    pve_2_5_2               = 8, -- aq40
+    pve_3                   = 9,
+    pvp_1                   = 10,
+    pvp_2                   = 11,
+    sod_p2_anyclass         = 12,
+    sod_p2_class            = 13,
+    sod_p3_t1               = 14,
+    sod_p3_t1_dmg           = 15,
+    sod_final_pve_0_5       = 16,
+    sod_final_pve_0_5_heal  = 17,
+    sod_final_pve_1         = 18,
+    sod_final_pve_1_heal    = 19,
 };
 
 local function create_sets()
@@ -78,9 +82,13 @@ local function create_sets()
         end
         set_tier_ids[23061] = set_tiers.pve_3;
 
-        --sod p3
+        --sod 
         for i = 220683, 220685 do
             set_tier_ids[i] = set_tiers.sod_p3_t1;
+        end
+
+        for i = 226571, 226578 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_1_heal;
         end
 
     elseif class == "DRUID" then
@@ -112,13 +120,21 @@ local function create_sets()
         set_tier_ids[213331] = set_tiers.sod_p2_class;
         set_tier_ids[213342] = set_tiers.sod_p2_class;
 
-        --sod p3
+        --sod
         for i = 220669, 220670 do
             set_tier_ids[i] = set_tiers.sod_p3_t1;
         end
         for i = 220672, 220675 do
             set_tier_ids[i] = set_tiers.sod_p3_t1_dmg;
         end
+        --sod pve t1
+        for i = 226651, 226658 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_1;
+        end
+        for i = 226644, 226650 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_1_heal;
+        end
+        set_tier_ids[221785] = set_tiers.sod_final_pve_1_heal;
 
     elseif class == "SHAMAN" then
         -- t1
@@ -129,7 +145,6 @@ local function create_sets()
         for i = 16943, 16950 do
             set_tier_ids[i] = set_tiers.pve_2;
         end
-        -- pvp set has non linear ids
         set_tier_ids[22857] = set_tiers.pvp_1;
         set_tier_ids[22867] = set_tiers.pvp_1;
         set_tier_ids[22876] = set_tiers.pvp_1;
@@ -171,9 +186,13 @@ local function create_sets()
         set_tier_ids[213334] = set_tiers.sod_p2_class;
         set_tier_ids[213338] = set_tiers.sod_p2_class;
 
-        --sod p3
+        --sod
         for i = 220663, 220665 do
             set_tier_ids[i] = set_tiers.sod_p3_t1;
+        end
+
+        for i = 226611, 226618 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_1_heal;
         end
 
     elseif class == "WARLOCK" then
@@ -227,6 +246,11 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.pve_3;
         end
         set_tier_ids[23063] = set_tiers.pve_3;
+
+        -- sod
+        for i = 226547, 226554 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_1;
+        end
     elseif class == "MAGE" then
         -- zg
         set_tier_ids[19601] = set_tiers.pve_2_5_0;
@@ -314,6 +338,16 @@ local function create_set_effects()
                     effects.raw.mp5 = effects.raw.mp5 + 4;
                 end
             end,
+            [set_tiers.sod_final_pve_1_heal] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Flash Heal"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Greater Heal"], 0.1, 0.0);
+                end
+                if num_pieces >= 6 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.25, 0.0);
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Circle of Healing"], 0.25, 0.0);
+                end
+            end,
         };
 
     elseif class == "DRUID" then
@@ -366,6 +400,16 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.03, 0.0);
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.03, 0.0);
+                end
+            end,
+            [set_tiers.sod_final_pve_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Thorns"], 1.0, 0.0);
+                end
+            end,
+            [set_tiers.sod_final_pve_1_heal] = function(num_pieces, loadout, effects)
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Tranquility"], 1.0, 0.0);
                 end
             end,
         };
@@ -460,6 +504,11 @@ local function create_set_effects()
             [set_tiers.pvp_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
                     ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], 0.2, 0.0);
+                end
+            end,
+            [set_tiers.sod_final_pve_1] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 0.2, 0.0);
                 end
             end,
         };
