@@ -517,8 +517,8 @@ local buffs_predefined = {
                 ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Moonfire"], 0.5, 0);
                 ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Sunfire"], 0.5, 0);
 
-                ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Moonfire"], 0.5, 0);
-                ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Sunfire"], 0.5, 0);
+                ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Moonfire"], 1.0, 0);
+                ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Sunfire"], 1.0, 0);
 
                 if inactive then
                     effects.raw.spell_dmg = effects.raw.spell_dmg + 2*loadout.lvl;
