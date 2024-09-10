@@ -135,6 +135,9 @@ local function empty_effects(effects)
     effects.raw.special_crit_heal_mod = 0;
     effects.raw.non_stackable_effect_flags = 0;
 
+    effects.raw.target_num_afflictions = 0;
+    effects.raw.target_num_shadow_afflictions = 0;
+
     -- indexable by ability base id
     effects.ability = {};
     effects.ability.crit = {};

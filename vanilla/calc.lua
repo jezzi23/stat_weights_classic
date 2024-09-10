@@ -263,13 +263,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     if effects.ability.vuln_mod[benefit_id] then
 
-        if loadout.runes[rune_ids.soul_siphon] then
-            target_vuln_mod = target_vuln_mod * (1.0 + math.min(0.18, effects.ability.vuln_mod[benefit_id]));
-        else
-            target_vuln_mod = target_vuln_mod * (1.0 + effects.ability.vuln_mod[benefit_id]);
-        end
+        target_vuln_mod = target_vuln_mod * (1.0 + effects.ability.vuln_mod[benefit_id]);
     end
-    
+
     target_vuln_ot_mod = target_vuln_mod;
 
     if effects.ability.vuln_ot_mod[benefit_id] then
@@ -494,6 +490,14 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             stats.direct_into_direct_utilization = 1.0;
         end
 
+        if benefit_id == spell_name_to_id["Circle of Healing"] and loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 6 then
+                stats.direct_into_periodic = 0.25;
+                stats.direct_into_periodic_freq = 3;
+                stats.direct_into_periodic_ticks = 5;
+                stats.direct_into_periodic_description = "6P Set Bonus";
+                stats.direct_into_periodic_utilization = 1.0;
+        end
+
     elseif class == "DRUID" then
 
         -- clearcast
@@ -538,7 +542,12 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
             stats.gcd = stats.gcd - 0.5;
 
-            stats.cast_time = spell.cast_time - effects.ability.cast_mod[benefit_id] - 0.5*stats.crit;
+            local crit_cast_reduction = 0.5*stats.crit;
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 4 and bit.band(spell_flags.heal, spell.flags) ~= 0 then
+               crit_cast_reduction = math.min(0.5, crit_cast_reduction*2);
+            end
+
+            stats.cast_time = spell.cast_time - effects.ability.cast_mod[benefit_id] - crit_cast_reduction;
             stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
         end
 
@@ -707,6 +716,18 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 stats.gcd = 0.0;
                 stats.cast_time = 0.0;
             end
+
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 and benefit_id == spell_name_to_id["Fireball"] then
+                stats.direct_into_periodic = 0.4;
+                stats.direct_into_periodic_freq = 2;
+                stats.direct_into_periodic_ticks = 4;
+                stats.direct_into_periodic_description = "6P Set Bonus";
+                stats.direct_into_periodic_utilization = 1.0;
+            end
+
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and benefit_id == spell_name_to_id["Arcane Missiles"] then
+                resource_refund = resource_refund + 0.5*original_base_cost;
+            end
         end
 
 
@@ -736,6 +757,21 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
         if loadout.runes[rune_ids.dance_of_the_wicked] and spell.base_min ~= 0 then
             resource_refund = resource_refund + stats.crit * 0.02 * loadout.max_mana;
+        end
+
+        if loadout.runes[swc.talents.rune_ids.soul_siphon] then
+            if benefit_id == spell_name_to_id["Drain Soul"] then
+                if loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.2 then
+                    target_vuln_ot_mod = target_vuln_ot_mod * math.min(1.5, 1.0 + 0.5*effects.raw.target_num_shadow_afflictions);
+                else
+                    target_vuln_ot_mod = target_vuln_ot_mod * math.min(1.18, 1.0 + 0.06*effects.raw.target_num_shadow_afflictions);
+                end
+            elseif benefit_id == spell_name_to_id["Drain Life"] then
+                target_vuln_ot_mod = target_vuln_ot_mod * math.min(1.18, 1.0 + 0.06*effects.raw.target_num_shadow_afflictions);
+            end
+        end
+        if benefit_id == spell_name_to_id["Shadow Bolt"] and loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
+            target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.05*effects.raw.target_num_afflictions);
         end
     end
 
@@ -1549,6 +1585,11 @@ elseif class == "PRIEST" then
         end,
         [spell_name_to_id["Binding Heal"]] = function(spell, info, loadout, stats, effects)
             add_expectation_direct_st(info, 1);
+        end,
+        [spell_name_to_id["Penance"]] = function(spell, info, loadout, stats, effects)
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 6 then
+                add_expectation_direct_st(info, 0.25);
+            end
         end,
     };
 elseif class == "DRUID" then

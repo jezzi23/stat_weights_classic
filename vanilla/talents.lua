@@ -235,6 +235,9 @@ local rune_ids = {
     holy_specialization             = 7519,
     shadow_specialization           = 7518,
     nature_specialization           = 7517,
+
+    meditation_specialization       = 7639,
+    healing_specialization          = 7638,
 };
 
 -- maps rune engraving enchant id to effect and wowhead's encoding
@@ -551,7 +554,12 @@ local function create_runes()
             --p4
             [rune_ids.decimation                    ] = { wowhead_id = "f739"},
             [rune_ids.infernal_armor                ] = { wowhead_id = "f73b"},
-            [rune_ids.soul_siphon                   ] = { wowhead_id = "f7d6"},
+            [rune_ids.soul_siphon                   ] = {
+                apply = function(loadout, effects)
+                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Drain Soul"], 10, 0);
+                end,
+                wowhead_id = "f7d6"
+            },
             [rune_ids.mark_of_chaos                 ] = { wowhead_id = "87d8"},
         };
     else
@@ -1168,6 +1176,13 @@ runes[rune_ids.nature_specialization] = {
     end,
     wowhead_id = "b7ax"
 };
+runes[rune_ids.meditation_specialization] = {
+    apply = function(loadout, effects)
+        effects.raw.mp5 = effects.raw.mp5 + 5;
+    end,
+    wowhead_id = "b7eq"
+};
+runes[rune_ids.healing_specialization] = { wowhead_id = "b7ep" };
 
 local wowhead_rune_code_to_id = {};
 -- reverse mapping from wowhead 3 char code to rune spell id

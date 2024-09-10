@@ -50,6 +50,8 @@ local set_tiers = {
     sod_final_pve_0_5_heal  = 17,
     sod_final_pve_1         = 18,
     sod_final_pve_1_heal    = 19,
+    sod_final_pve_2         = 20,
+    sod_final_pve_2_heal    = 21,
 };
 
 local function create_sets()
@@ -89,6 +91,13 @@ local function create_sets()
 
         for i = 226571, 226578 do
             set_tier_ids[i] = set_tiers.sod_final_pve_1_heal;
+        end
+
+        for i = 231165, 231172 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2;
+        end
+        for i = 231155, 231162 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2_heal;
         end
 
     elseif class == "DRUID" then
@@ -135,6 +144,13 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.sod_final_pve_1_heal;
         end
         set_tier_ids[221785] = set_tiers.sod_final_pve_1_heal;
+        --sod pve t2
+        for i = 231246, 231253 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2;
+        end
+        for i = 231230, 231237  do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2_heal;
+        end
 
     elseif class == "SHAMAN" then
         -- t1
@@ -195,6 +211,13 @@ local function create_sets()
             set_tier_ids[i] = set_tiers.sod_final_pve_1_heal;
         end
 
+        for i = 231214, 231221 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2;
+        end
+        for i = 231198, 231204 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2_heal;
+        end
+
     elseif class == "WARLOCK" then
         for i = 16803, 16810 do
             set_tier_ids[i] = set_tiers.pve_1;
@@ -251,6 +274,11 @@ local function create_sets()
         for i = 226547, 226554 do
             set_tier_ids[i] = set_tiers.sod_final_pve_1;
         end
+
+        for i = 231072, 231079 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2;
+        end
+
     elseif class == "MAGE" then
         -- zg
         set_tier_ids[19601] = set_tiers.pve_2_5_0;
@@ -279,6 +307,14 @@ local function create_sets()
         set_tier_ids[16917] = set_tiers.pve_2;
         set_tier_ids[16918] = set_tiers.pve_2;
 
+        --sod pve t2
+        for i = 231100, 231107 do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2;
+        end
+        for i = 231108, 231115  do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2_heal;
+        end
+
     elseif class == "PALADIN" then
         -- zg
         set_tier_ids[19588] = set_tiers.pve_2_5_0;
@@ -290,6 +326,11 @@ local function create_sets()
         set_tier_ids[216486] = set_tiers.sod_p2_class;
         set_tier_ids[216485] = set_tiers.sod_p2_class;
         set_tier_ids[216484] = set_tiers.sod_p2_class;
+
+        --sod pve t2
+        for i = 231190, 231197  do
+            set_tier_ids[i] = set_tiers.sod_final_pve_2_heal;
+        end
     end
 
     set_tier_ids[213310] = set_tiers.sod_p2_anyclass;
@@ -346,6 +387,11 @@ local function create_set_effects()
                 if num_pieces >= 6 then
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.25, 0.0);
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Circle of Healing"], 0.25, 0.0);
+                end
+            end,
+            [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.15;
                 end
             end,
         };
@@ -412,6 +458,17 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Tranquility"], 1.0, 0.0);
                 end
             end,
+            [set_tiers.sod_final_pve_2] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 0.25, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.25, 0.0);
+                end
+            end,
+            [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
+                if num_pieces >= 6 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wild Growth"], 0.1, 0.0);
+                end
+            end,
         };
 
     elseif class == "SHAMAN" then
@@ -463,6 +520,12 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0);
                 end
             end,
+            [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
+                if num_pieces >= 6 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], 0.2, 0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Lightning"], 0.2, 0);
+                end
+            end,
         };
 
     elseif class == "WARLOCK" then
@@ -511,6 +574,19 @@ local function create_set_effects()
                     ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 0.2, 0.0);
                 end
             end,
+            [set_tiers.sod_final_pve_2] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Curse of Agony"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Rain of Fire"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Soul"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Siphon Life"], 0.1, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Shadowflame"], 0.1, 0.0);
+                end
+            end,
         };
 
 
@@ -550,6 +626,14 @@ local function create_set_effects()
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
                     ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.02, 0.0);
+                end
+            end,
+            [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
+                if num_pieces >= 2 then
+                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.2, 0.0);
+                end
+                if num_pieces >= 4 then
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Consecration"], 0.5, 0.0);
                 end
             end,
         };
