@@ -274,7 +274,16 @@ local function create_runes()
             [rune_ids.divine_aegis              ] = { wowhead_id = "16y5"},
             [rune_ids.eye_of_the_void           ] = { wowhead_id = "16k2"},
             [rune_ids.pain_and_suffering        ] = { wowhead_id = "16rn"},
-            [rune_ids.despair                   ] = { wowhead_id = "96y8"},
+            [rune_ids.despair                   ] = {
+                apply = function(loadout, effects)
+
+                    for i = 1, 7 do
+                        effects.by_school.spell_crit_mod[i] = 
+                            effects.by_school.spell_crit_mod[i] + 0.5;
+                    end
+                end,
+                wowhead_id = "96y8"
+            },
             [rune_ids.surge_of_light            ] = { wowhead_id = "96y7"},
             [rune_ids.void_zone                 ] = { wowhead_id = "96y9"},
             -- p4

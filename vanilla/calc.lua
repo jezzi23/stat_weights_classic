@@ -474,7 +474,6 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         else
             if loadout.runes[rune_ids.despair] then
                 stats.ot_crit = stats.crit + extra_ot_crit;
-                stats.ot_crit_mod = stats.ot_crit_mod + 0.5;
             end
             stats.crit = math.min(1.0, stats.crit + loadout.talents_table:pts(1, 14) * 0.01);
         end
@@ -1100,8 +1099,7 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
     info.expectation = info.expectation_direct + info.expected_ot
 
     if loadout.beacon and bit.band(spell_flags.heal, spell.flags) ~= 0 then
-        --info.expectation = info.expectation + info.expectation_direct_st;
-        add_expectation_direct_st(info, 1);
+        add_expectation_direct_st(info, 0.75);
     end
 end
 
@@ -1455,7 +1453,7 @@ if class == "SHAMAN" then
         [spell_name_to_id["Healing Wave"]] = function(spell, info, loadout)
 
             if loadout.num_set_pieces[set_tiers.pve_1] >= 8 or loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6 then
-                add_expectation_direct_st(info, 0.2 + 0.2*0.2);
+                add_expectation_direct_st(info, 0.4 + 0.4*0.4);
             end
         end,
         [spell_name_to_id["Healing Stream Totem"]] = function(spell, info, loadout, stats, effects)

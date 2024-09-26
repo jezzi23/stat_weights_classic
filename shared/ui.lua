@@ -921,7 +921,7 @@ local function create_sw_gui_settings_frame()
         self:HighlightText(0,0);
     end
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 25;
 
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEnterPressed", hz_editbox);
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetScript("OnEscapePressed", hz_editbox);
@@ -936,14 +936,24 @@ local function create_sw_gui_settings_frame()
     end);
 
     sw_frame.settings_frame.icon_overlay_font_size_slider =
-        CreateFrame("Slider", "icon_overlay_font_size", sw_frame.settings_frame, "OptionsSliderTemplate");
-    sw_frame.settings_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset);
+        CreateFrame("Slider", nil, sw_frame.settings_frame, "UISliderTemplate");
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetOrientation('HORIZONTAL');
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 145, sw_frame.settings_frame.y_offset+4);
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetMinMaxValues(2, 24)
-    getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'Text'):SetText("Icon overlay font size");
-    getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'Low'):SetText("");
-    getglobal(sw_frame.settings_frame.icon_overlay_font_size_slider:GetName()..'High'):SetText("");
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetWidth(150)
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetHeight(20)
+
+    sw_frame.settings_frame.icon_overlay_font_size_slider_text = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY")
+    sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetFontObject(font)
+    sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset)
+    sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetText("Icon overlay font size")
     sw_frame.settings_frame.icon_overlay_font_size = __sw__persistent_data_per_char.settings.icon_overlay_font_size;
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetValue(sw_frame.settings_frame.icon_overlay_font_size);
+
+    sw_frame.settings_frame.icon_overlay_font_size_slider_val = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY")
+    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetFontObject(font)
+    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetPoint("TOPLEFT", 300, sw_frame.settings_frame.y_offset)
+    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2f pt", sw_frame.settings_frame.icon_overlay_font_size))
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetValueStep(1)
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetScript("OnValueChanged", function(self, val)
         sw_frame.settings_frame.icon_overlay_font_size = val;
@@ -967,8 +977,9 @@ local function create_sw_gui_settings_frame()
                 end
             end
         end
-    end);
 
+        sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2f pt", sw_frame.settings_frame.icon_overlay_font_size))
+    end);
 
     local num_icon_overlay_checks = 0;
     -- set checkboxes for _icon options as  according to persistent data per char
@@ -1073,7 +1084,7 @@ local function create_sw_gui_settings_frame()
     sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetText(""..sw_snapshot_loadout_update_freq);
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 30;
 
     sw_frame.settings_frame.tooltip_settings_label = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.settings_frame.tooltip_settings_label:SetFontObject(font);
@@ -1728,15 +1739,12 @@ local function create_sw_gui_loadout_frame()
     sw_frame.loadouts_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     sw_frame.loadouts_frame.loadouts_slider =
-        CreateFrame("Slider", "sw_loadouts_slider", sw_frame.loadouts_frame.lhs_list, "OptionsSliderTemplate");
+        CreateFrame("Slider", nil, sw_frame.loadouts_frame.lhs_list, "UISliderTemplate");
     sw_frame.loadouts_frame.loadouts_slider:SetOrientation('VERTICAL');
     sw_frame.loadouts_frame.loadouts_slider:SetPoint("TOPRIGHT", 0, -14);
     sw_frame.loadouts_frame.loadouts_slider:SetSize(15, 248);
     sw_frame.loadouts_frame.lhs_list.num_loadouts_can_fit =
         math.floor(sw_frame.loadouts_frame.loadouts_slider:GetHeight()/20);
-    getglobal(sw_frame.loadouts_frame.loadouts_slider:GetName()..'Text'):SetText("");
-    getglobal(sw_frame.loadouts_frame.loadouts_slider:GetName()..'Low'):SetText("");
-    getglobal(sw_frame.loadouts_frame.loadouts_slider:GetName()..'High'):SetText("");
     sw_frame.loadouts_frame.loadouts_slider:SetMinMaxValues(0, 0);
     sw_frame.loadouts_frame.loadouts_slider:SetValue(0);
     sw_frame.loadouts_frame.loadouts_slider:SetValueStep(1);
@@ -2435,7 +2443,7 @@ local function create_sw_gui_loadout_frame()
     end
 
     sw_frame.loadouts_frame.self_buffs_slider =
-        CreateFrame("Slider", "sw_self_buffs_slider", sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "OptionsSliderTemplate");
+        CreateFrame("Slider", nil, sw_frame.loadouts_frame.rhs_list.self_buffs_frame, "UISliderTemplate");
     sw_frame.loadouts_frame.self_buffs_slider:SetOrientation('VERTICAL');
     sw_frame.loadouts_frame.self_buffs_slider:SetPoint("TOPRIGHT", -10, -82);
     sw_frame.loadouts_frame.self_buffs_slider:SetSize(15, 465);
@@ -2445,9 +2453,6 @@ local function create_sw_gui_loadout_frame()
         0, 
         max(0, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs - sw_frame.loadouts_frame.rhs_list.buffs.num_buffs_can_fit)
     );
-    getglobal(sw_frame.loadouts_frame.self_buffs_slider:GetName()..'Text'):SetText("");
-    getglobal(sw_frame.loadouts_frame.self_buffs_slider:GetName()..'Low'):SetText("");
-    getglobal(sw_frame.loadouts_frame.self_buffs_slider:GetName()..'High'):SetText("");
     sw_frame.loadouts_frame.self_buffs_slider:SetValue(0);
     sw_frame.loadouts_frame.self_buffs_slider:SetValueStep(1);
     sw_frame.loadouts_frame.self_buffs_slider:SetScript("OnValueChanged", function(self, val)
@@ -2465,7 +2470,7 @@ local function create_sw_gui_loadout_frame()
     end);
 
     sw_frame.loadouts_frame.target_buffs_slider =
-        CreateFrame("Slider", "sw_target_buffs_slider", sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "OptionsSliderTemplate");
+        CreateFrame("Slider", nil, sw_frame.loadouts_frame.rhs_list.target_buffs_frame, "UISliderTemplate");
     sw_frame.loadouts_frame.target_buffs_slider:SetOrientation('VERTICAL');
     sw_frame.loadouts_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -82);
     sw_frame.loadouts_frame.target_buffs_slider:SetSize(15, 465);
@@ -2475,9 +2480,6 @@ local function create_sw_gui_loadout_frame()
         0, 
         max(0, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs - sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs_can_fit)
     );
-    getglobal(sw_frame.loadouts_frame.target_buffs_slider:GetName()..'Text'):SetText("");
-    getglobal(sw_frame.loadouts_frame.target_buffs_slider:GetName()..'Low'):SetText("");
-    getglobal(sw_frame.loadouts_frame.target_buffs_slider:GetName()..'High'):SetText("");
     sw_frame.loadouts_frame.target_buffs_slider:SetValue(0);
     sw_frame.loadouts_frame.target_buffs_slider:SetValueStep(1);
     sw_frame.loadouts_frame.target_buffs_slider:SetScript("OnValueChanged", function(self, val)

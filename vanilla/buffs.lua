@@ -686,7 +686,7 @@ local buffs_predefined = {
     [412758] = {
         apply = function(loadout, effects, buff)
             effects.by_school.spell_dmg_mod[magic_school.fire] = 
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.25 - 1.0;
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.4 - 1.0;
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
@@ -727,6 +727,10 @@ local buffs_predefined = {
     -- demonic pact
     [425467] = {
         apply = function(loadout, effects, buff, inactive)
+            effects.by_school.spell_dmg_mod[magic_school.fire] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) * 1.1 - 1.0;
+            effects.by_school.spell_dmg_mod[magic_school.shadow] = 
+                (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.1 - 1.0;
             if inactive then
                 effects.raw.spell_power = effects.raw.spell_power + math.max(0.1*effects.raw.spell_power, loadout.lvl/2);
             end
@@ -916,10 +920,10 @@ local buffs_predefined = {
             if buff.count then
                 c = buff.count
             else
-                c = 10;
+                c = 5;
             end
 
-            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Balefire Bolt"], c*0.1, 0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Balefire Bolt"], c*0.2, 0);
             
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
@@ -1088,6 +1092,7 @@ local buffs_predefined = {
     [432041] = {
         apply = function(loadout, effects, buff, inactive)
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Wave"], 0.3, 0);
+            ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Chain Heal"], 0.15, 0);
             ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Lesser Healing Wave"], 0.25, 0);
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.sod),
@@ -1316,11 +1321,11 @@ local buffs_predefined = {
     [467088] = {
         apply = function(loadout, effects, buff, inactive)
 
-            local amount = 0.1;
+            local stacks = 3;
             if buff.count then
-                amount = 0.1 * (buff.count/3);
+                stacks = buff.count;
             end
-            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfire"], amount, 0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfire"], 0.1*stacks, 0);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.item,
@@ -1337,13 +1342,8 @@ local buffs_predefined = {
             if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
                 loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
 
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Word: Pain"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Mind Flay"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Devouring Plague"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Mind Sear"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Void Plague"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Void Zone"], 0.2, 0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Vampiric Touch"], 0.2, 0);
+                effects.by_school.spell_dmg_mod[magic_school.shadow] =
+                    (1.0 + effects.by_school.spell_dmg_mod[magic_school.shadow]) * 1.25 - 1.0;
             end
         end,
         filter = bit.bor(buff_filters.priest),
