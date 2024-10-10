@@ -2500,6 +2500,7 @@ local function create_sw_base_gui()
 
     sw_frame = CreateFrame("Frame", "sw_frame", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
 
+    sw_frame:SetFrameStrata("HIGH")
     sw_frame:SetMovable(true)
     sw_frame:EnableMouse(true)
     sw_frame:RegisterForDrag("LeftButton")
