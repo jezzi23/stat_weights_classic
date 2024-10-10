@@ -699,6 +699,7 @@ local function create_relics()
             [23197] = function(effects)
                 ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Moonfire"], 0.17, 0.0);
                 ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Sunfire"], 0.17, 0.0);
+                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.17, 0.0);
             end,
             [22399] = function(effects)
                 ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Healing Touch"], 0.15, 0.0);

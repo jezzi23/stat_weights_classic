@@ -708,6 +708,9 @@ local function create_talents()
                     local sf = spell_name_to_id["Sunfire"];
                     ensure_exists_and_add(effects.ability.crit, sf, pts * 0.02, 0);
                     ensure_exists_and_add(effects.ability.effect_mod_base, sf, pts * 0.02, 0.0);
+                    local starfall = spell_name_to_id["Starfall"];
+                    ensure_exists_and_add(effects.ability.crit, starfall, pts * 0.02, 0);
+                    ensure_exists_and_add(effects.ability.effect_mod_base, starfall, pts * 0.02, 0.0);
                 end
             },
             [106] = {
@@ -722,7 +725,7 @@ local function create_talents()
             },
             [111] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath", "Starsurge", "Sunfire"});
+                    local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath", "Starsurge", "Sunfire", "Starfall"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.crit_mod, v, pts * 0.1, 0);
                     end
@@ -735,7 +738,7 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation", "Nourish"});
+                    local abilities = spell_names_to_id({"Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth", "Rejuvenation", "Nourish", "Starfall"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.03, 0);
                     end
@@ -743,7 +746,7 @@ local function create_talents()
             },
             [115] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath", "Starsurge", "Sunfire"});
+                    local abilities = spell_names_to_id({"Starfire", "Moonfire", "Wrath", "Starsurge", "Sunfire", "Starfall"});
                     for k, v in pairs(abilities) do
                         ensure_exists_and_add(effects.ability.effect_mod_base, v, pts * 0.02, 0.0);
                     end

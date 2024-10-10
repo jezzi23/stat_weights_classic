@@ -626,8 +626,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                                                  benefit_id == spell_name_to_id["Lava Burst"]) then
 
             stats.direct_into_direct = 0.5;
-            stats.direct_into_direct_description = "Overload 50% chance";
-            stats.direct_into_direct_utilization = 0.5;
+            stats.direct_into_direct_description = "Overload 60% chance";
+            stats.direct_into_direct_utilization = 0.6;
         end
 
         if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 then
