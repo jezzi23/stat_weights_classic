@@ -928,13 +928,11 @@ local function create_talents()
             },
             [311] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    -- TODO: Is this affecting active GetSpellCritChance nature school??
-                    for k, v in pairs(spell_names_to_id({"Lightning Shield", "Healing Wave", "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Chain Heal"})) do
+                    for k, v in pairs(spell_names_to_id({"Lightning Shield", "Healing Wave", "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Chain Heal", "Earth Shield", "Riptide", "Healing Rain"})) do
                         ensure_exists_and_add(effects.ability.crit, v, pts * 0.01, 0.0);
                     end
                 end
             },
-            -- TODO VANILLA: healing way talent 
             [314] = {
                 apply = function(loadout, effects, pts)
                     effects.raw.spell_heal_mod_base = effects.raw.spell_heal_mod_base + pts * 0.02;

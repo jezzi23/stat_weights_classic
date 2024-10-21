@@ -581,6 +581,27 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 stats.direct_into_periodic_description = "Extra";
                 stats.direct_into_periodic_utilization = 1.0;
             end
+            if benefit_id == spell_name_to_id["Holy Light"] and spell.rank < 4 then
+                -- Subtract healing to account for blessing of light coef for low rank holy light
+                local buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(19979)]
+                    or loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(25890)];
+
+                if buff then
+                    local id_to_hl = {
+                        [19977] = 210,
+                        [19978] = 300,
+                        [19979] = 400,
+                        [25890] = 400
+                    };
+                    local bol_hl_coef_subtract = {
+                        [1] = 1.0 - (1 - (20 - 1) * 0.0375) * 2.5/3.5, -- lvl 1 hl coef used
+                        [2] = 1.0 - 0.4,
+                        [3] = 1.0 - 0.7,
+                    };
+
+                    stats.flat_addition = stats.flat_addition - id_to_hl[buff.id]*bol_hl_coef_subtract[spell.rank];
+                end
+            end
         else
             if loadout.runes[rune_ids.wrath] then
                 stats.crit = math.min(1.0, stats.crit + loadout.melee_crit);

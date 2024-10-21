@@ -105,23 +105,23 @@ end
 
 local non_stackable_effects     = {
     moonkin_crit               = bit.lshift(1, 0),
-    arcane_empowerment         = bit.lshift(1, 1),
-    totem_of_wrath_sp          = bit.lshift(1, 2),
-    moonkin_haste              = bit.lshift(1, 3),
-    earth_and_moon             = bit.lshift(1, 4),
-    totem_of_wrath_crit_target = bit.lshift(1, 5),
-    misery_hit                 = bit.lshift(1, 6),
-    mage_crit_target           = bit.lshift(1, 7),
-    water_shield               = bit.lshift(1, 9),
-    druid_nourish_bonus        = bit.lshift(1, 10),
-    bow_mp5                    = bit.lshift(1, 11),
-    bok                        = bit.lshift(1, 12),
+    stormstrike                = bit.lshift(1, 1),
+    druid_nourish_bonus        = bit.lshift(1, 2),
+    bow_mp5                    = bit.lshift(1, 3),
+    bok                        = bit.lshift(1, 4),
 };
+
+local function alias_buff(buffs_list, alias_id, original_id, should_hide)
+    buffs_list[alias_id] = deep_table_copy(buffs_list[original_id]);
+    if should_hide then
+        buffs_list[alias_id].filter = bit.bor(buffs_list[alias_id].filter, buff_filters.hidden);
+    end
+end
 
 --TODO VANILLA:
 --    troll beast
 --    divine sacrifice expiration buff id unknown
-local buffs_predefined          = {
+local buffs_predefined = {
     -- onyxia
     [22888] = {
         apply = function(loadout, effects, buff, inactive)
@@ -368,25 +368,6 @@ local buffs_predefined          = {
         filter = buff_filters.alliance,
         category = buff_category.raid,
     },
-    [20217] = {
-        apply = function(loadout, effects, buff, inactive)
-            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok) == 0 then
-                if inactive then
-                    swc.loadout.add_int_mod(loadout, effects, 0.1, 0.1);
-                    swc.loadout.add_spirit_mod(loadout, effects, 0.1, 0.1);
-                else
-                    swc.loadout.add_int_mod(loadout, effects, 0.0, 0.1);
-                    swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.1);
-                end
-
-                effects.raw.non_stackable_effect_flags =
-                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok);
-            end
-        end,
-        filter = bit.bor(buff_filters.alliance, buff_filters.hidden),
-        category = buff_category.raid,
-    },
-
     -- vengeance
     [20055] = {
         apply = function(loadout, effects, buff)
@@ -461,6 +442,7 @@ local buffs_predefined          = {
                     [19853] = 25,
                     [19854] = 30,
                     [25290] = 33,
+                    [25918] = 33,
                 };
                 local id = 25290; -- default
                 local mp5 = 0;
@@ -1339,7 +1321,10 @@ local buffs_predefined          = {
     },
 };
 
-local target_buffs_predefined   = {
+alias_buff(buffs_predefined, 25918, 25290, true); -- greater blessing of wisdom
+alias_buff(buffs_predefined, 20217, 25898, false); -- greater blessing of kings
+
+local target_buffs_predefined = {
     -- amplify magic
     [10170] = {
         apply = function(loadout, effects, buff)
@@ -1399,12 +1384,14 @@ local target_buffs_predefined   = {
             local id_to_hl = {
                 [19977] = 210,
                 [19978] = 300,
-                [19979] = 400
+                [19979] = 400,
+                [25890] = 400
             };
             local id_to_fl = {
                 [19977] = 60,
                 [19978] = 85,
-                [19979] = 115
+                [19979] = 115,
+                [25890] = 115
             };
             local id = 19979; -- default
 
@@ -1414,6 +1401,7 @@ local target_buffs_predefined   = {
 
             ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Holy Light"], id_to_hl[id], 0);
             ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Flash of Light"], id_to_fl[id], 0);
+            -- NOTE: A special coef is applied to lower ranks of Holy Light and subtracted in later stage
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
         category = buff_category.class,
@@ -1548,8 +1536,15 @@ local target_buffs_predefined   = {
     -- stormstrike
     [17364] = {
         apply = function(loadout, effects, buff)
-            effects.by_school.target_spell_dmg_taken[magic_school.nature] =
-                (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike) == 0 then
+
+                effects.by_school.target_spell_dmg_taken[magic_school.nature] =
+                    (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
+
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike);
+            end
+
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.druid, buff_filters.hostile),
         category = buff_category.raid,
@@ -1698,8 +1693,15 @@ local target_buffs_predefined   = {
     -- dreamstate
     [437132] = {
         apply = function(loadout, effects, buff)
-            effects.by_school.target_spell_dmg_taken[magic_school.nature] =
-                (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
+
+            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike) == 0 then
+
+                effects.by_school.target_spell_dmg_taken[magic_school.nature] =
+                    (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
+
+                effects.raw.non_stackable_effect_flags =
+                    bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike);
+            end
             effects.by_school.target_spell_dmg_taken[magic_school.arcane] =
                 (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.arcane]) * 1.2 - 1.0;
         end,
@@ -1794,13 +1796,15 @@ local target_buffs_predefined   = {
     },
 };
 
-target_buffs_predefined[8936]   = deep_table_copy(target_buffs_predefined[774]);
-target_buffs_predefined[408124] = deep_table_copy(target_buffs_predefined[774]);
-target_buffs_predefined[408120] = deep_table_copy(target_buffs_predefined[774]);
+alias_buff(target_buffs_predefined, 8936,   774, false);
+alias_buff(target_buffs_predefined, 408124, 774, false);
+alias_buff(target_buffs_predefined, 408120, 774, false);
 
-target_buffs_predefined[980]    = deep_table_copy(target_buffs_predefined[172]);
-target_buffs_predefined[18265]  = deep_table_copy(target_buffs_predefined[172]);
-target_buffs_predefined[427717] = deep_table_copy(target_buffs_predefined[172]);
+alias_buff(target_buffs_predefined, 980,    172, false);
+alias_buff(target_buffs_predefined, 18265,  172, false);
+alias_buff(target_buffs_predefined, 427717, 172, false);
+
+alias_buff(target_buffs_predefined, 25890, 19979, false); -- greater blessing of light
 
 local buffs                     = {};
 for k, v in pairs(buffs_predefined) do
