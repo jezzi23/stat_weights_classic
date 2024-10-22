@@ -118,6 +118,77 @@ local function alias_buff(buffs_list, alias_id, original_id, should_hide)
     end
 end
 
+local lookups = {
+    bow_id_to_mp5 = {
+        [19742] = 10,
+        [19850] = 15,
+        [19852] = 20,
+        [19853] = 25,
+        [19854] = 30,
+        [25290] = 33,
+        [25918] = 33,
+    },
+    mana_spring_id_to_mp5 = {
+        [5677]  = 2.5*4,
+        [10491] = 2.5*6,
+        [10493] = 2.5*8,
+        [10494] = 2.5*10,
+    },
+    amp_magic_id_to_hp = {
+        [1008]  = 30,
+        [8455]  = 60,
+        [10169] = 100,
+        [10170] = 150,
+    },
+    damp_magic_id_to_hp = {
+        [604]   = 20,
+        [8450]  = 40,
+        [8451]  = 80,
+        [10173] = 120,
+        [10174] = 180,
+    },
+    bol_id_to_hl = {
+        [19977] = 210,
+        [19978] = 300,
+        [19979] = 400,
+        [25890] = 400
+    },
+    bol_id_to_fl = {
+        [19977] = 60,
+        [19978] = 85,
+        [19979] = 115,
+        [25890] = 115
+    },
+    coe_id_to_mod = {
+        [1490]   = 0.06,
+        [11721]  = 0.08,
+        [11722]  = 0.1,
+        [402792] = 0.1
+    },
+    coe_id_to_res = {
+        [1490]   = 45,
+        [11721]  = 60,
+        [11722]  = 75,
+        [402792] = 75
+    },
+    cos_id_to_mod = {
+        [17862]  = 0.08,
+        [17937]  = 0.1,
+        [402791] = 0.1,
+    },
+    cos_id_to_res = {
+        [17862]  = 60,
+        [17937]  = 75,
+        [402791] = 75,
+    },
+    wep_enchant_id_to_buff = {
+        [2628] = 25122,
+        [2629] = 25123,
+        [7099] = 430585,
+    },
+    spellname_beacon_of_light = GetSpellInfo(407613)
+};
+
 --TODO VANILLA:
 --    troll beast
 --    divine sacrifice expiration buff id unknown
@@ -435,15 +506,7 @@ local buffs_predefined = {
     [25290] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5) == 0 then
-                local id_to_mp5 = {
-                    [19742] = 10,
-                    [19850] = 15,
-                    [19852] = 20,
-                    [19853] = 25,
-                    [19854] = 30,
-                    [25290] = 33,
-                    [25918] = 33,
-                };
+                local id_to_mp5 = lookups.bow_id_to_mp5;
                 local id = 25290; -- default
                 local mp5 = 0;
 
@@ -500,15 +563,10 @@ local buffs_predefined = {
         category = buff_category.class,
     },
     -- mana spring
-    [10497] = {
+    [10494] = {
         apply = function(loadout, effects, buff)
-            local id_to_mp5 = {
-                [5677]  = 4,
-                [10495] = 6,
-                [10496] = 8,
-                [10497] = 10,
-            };
-            local id = 10497; -- default
+            local id_to_mp5 = lookups.mana_spring_id_to_mp5;
+            local id = 10494; -- default
             local mp5 = 0;
 
             if buff.id and id_to_mp5[buff.id] then
@@ -1328,12 +1386,7 @@ local target_buffs_predefined = {
     -- amplify magic
     [10170] = {
         apply = function(loadout, effects, buff)
-            local id_to_hp = {
-                [1008]  = 30,
-                [8455]  = 60,
-                [10169] = 100,
-                [10170] = 150,
-            };
+            local id_to_hp = lookups.amp_magic_id_to_hp;
             local id = 10170; -- default
             local hp = 0;
 
@@ -1354,13 +1407,7 @@ local target_buffs_predefined = {
     -- dampen magic
     [10174] = {
         apply = function(loadout, effects, buff)
-            local id_to_hp = {
-                [604]   = 20,
-                [8450]  = 40,
-                [8451]  = 80,
-                [10173] = 120,
-                [10174] = 180,
-            };
+            local id_to_hp = lookups.damp_magic_id_to_hp;
             local id = 10174; -- default
             local hp = 0;
 
@@ -1381,18 +1428,8 @@ local target_buffs_predefined = {
     -- blessing of light
     [19979] = {
         apply = function(loadout, effects, buff)
-            local id_to_hl = {
-                [19977] = 210,
-                [19978] = 300,
-                [19979] = 400,
-                [25890] = 400
-            };
-            local id_to_fl = {
-                [19977] = 60,
-                [19978] = 85,
-                [19979] = 115,
-                [25890] = 115
-            };
+            local id_to_hl = lookups.bol_id_to_hl;
+            local id_to_fl = lookups.bol_id_to_fl;
             local id = 19979; -- default
 
             if buff.id and id_to_hl[buff.id] and id_to_fl[buff.id] then
@@ -1425,18 +1462,8 @@ local target_buffs_predefined = {
     -- curse of the elements
     [11722] = {
         apply = function(loadout, effects, buff)
-            local id_to_mod = {
-                [1490]   = 0.06,
-                [11721]  = 0.08,
-                [11722]  = 0.1,
-                [402792] = 0.1
-            };
-            local id_to_res = {
-                [1490]   = 45,
-                [11721]  = 60,
-                [11722]  = 75,
-                [402792] = 75
-            };
+            local id_to_mod = lookups.coe_id_to_mod;
+            local id_to_res = lookups.coe_id_to_res;
             local id = 11722; -- default
 
             if buff.id and id_to_mod[buff.id] and id_to_res[buff.id] then
@@ -1552,16 +1579,8 @@ local target_buffs_predefined = {
     -- curse of shadow
     [17937] = {
         apply = function(loadout, effects, buff)
-            local id_to_mod = {
-                [17862]  = 0.08,
-                [17937]  = 0.1,
-                [402791] = 0.1,
-            };
-            local id_to_res = {
-                [17862]  = 60,
-                [17937]  = 75,
-                [402791] = 75,
-            };
+            local id_to_mod = lookups.cos_id_to_mod;
+            local id_to_res = lookups.cos_id_to_res;
             local id = 17937; -- default
 
             if buff.id and id_to_mod[buff.id] and id_to_res[buff.id] then
@@ -1828,12 +1847,6 @@ for k, v in pairs(target_buffs_predefined) do
 end
 
 -- allows weapon enchant buffs to be registered as buffs
-local wep_enchant_id_to_buff = {
-    [2628] = 25122,
-    [2629] = 25123,
-    [7099] = 430585,
-};
-
 local function detect_buffs(loadout)
     loadout.dynamic_buffs = { ["player"] = {}, ["target"] = {}, ["mouseover"] = {} };
     if loadout.player_name == loadout.target_name then
@@ -1881,6 +1894,7 @@ local function detect_buffs(loadout)
         loadout.dynamic_buffs["target"][lname] = { count = 1, id = racial_id, nil, nil };
     end
     local _, _, _, enchant_id = GetWeaponEnchantInfo();
+    local wep_enchant_id_to_buff = lookups.wep_enchant_id_to_buff;
     if enchant_id and wep_enchant_id_to_buff[enchant_id] then
         local lname = GetSpellInfo(wep_enchant_id_to_buff[enchant_id]);
         loadout.dynamic_buffs["player"][lname] = { count = 1, id = wep_enchant_id_to_buff[enchant_id], nil, nil };
@@ -1928,7 +1942,7 @@ local function apply_buffs(loadout, effects)
             end
         end
 
-        if class == "PALADIN" and loadout.target_buffs[GetSpellInfo(407613)] then
+        if class == "PALADIN" and loadout.target_buffs[lookups.spellname_beacon_of_light] then
             loadout.beacon = true;
         end
     else

@@ -2506,6 +2506,7 @@ local function create_sw_base_gui()
     sw_frame:RegisterForDrag("LeftButton")
     sw_frame:SetScript("OnDragStart", sw_frame.StartMoving)
     sw_frame:SetScript("OnDragStop", sw_frame.StopMovingOrSizing)
+    sw_frame:Hide();
 
     sw_frame.settings_frame = CreateFrame("ScrollFrame", "sw_settings_frame", sw_frame);
     sw_frame.loadouts_frame = CreateFrame("ScrollFrame", "sw_loadout_frame ", sw_frame);

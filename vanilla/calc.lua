@@ -108,17 +108,17 @@ local lvl_20_mana_bracket = {
 };
 local lvl_40_mana_bracket = {
     ["DRUID"] =     { start = 354,   per_lvl = (824-354)/21},
-    ["MAGE"] =      { start = 371,  per_lvl = (853-371)/21},
+    ["MAGE"] =      { start = 371,   per_lvl = (853-371)/21},
     ["PALADIN"] =   { start = 412,   per_lvl = (987-412)/21},
-    ["PRIEST"] =    { start = 375,  per_lvl = (911-375)/21}, -- ??
+    ["PRIEST"] =    { start = 375,   per_lvl = (911-375)/21}, -- ??
     ["SHAMAN"] =    { start = 370,   per_lvl = (975-370)/21},
     ["WARLOCK"] =   { start = 365,   per_lvl = (965-365)/23},
 };
 local lvl_60_mana_bracket = {
     ["DRUID"] =     { start = 854,   per_lvl = (1244-854)/20},
-    ["MAGE"] =      { start = 853,  per_lvl = (1213-853)/20},
+    ["MAGE"] =      { start = 853,   per_lvl = (1213-853)/20},
     ["PALADIN"] =   { start = 987,   per_lvl = (1512-987)/20},
-    ["PRIEST"] =    { start = 911,  per_lvl = (1400-911)/20}, -- ??
+    ["PRIEST"] =    { start = 911,   per_lvl = (1400-911)/20}, -- ??
     ["SHAMAN"] =    { start = 975,   per_lvl = (1520-975)/20},
     ["WARLOCK"] =   { start = 918,   per_lvl = (1522-918)/20},
 };
@@ -129,6 +129,28 @@ local lvl_70_mana_bracket = {
     ["PRIEST"] =    { start = 1400 }, -- ??
     ["SHAMAN"] =    { start = 1520 },
     ["WARLOCK"] =   { start = 1522 },
+};
+
+local lookups = {
+    bol_id_to_hl = {
+        [19977] = 210,
+        [19978] = 300,
+        [19979] = 400,
+        [25890] = 400
+    },
+    bol_rank_to_hl_coef_subtract = {
+        [1] = 1.0 - (1 - (20 - 1) * 0.0375) * 2.5/3.5, -- lvl 1 hl coef used
+        [2] = 1.0 - 0.4,
+        [3] = 1.0 - 0.7,
+    },
+    spellname_moonkin_form = GetSpellInfo(24858),
+    spellname_sheath_of_light = GetSpellInfo(426159),
+    spellname_sacred_shield = GetSpellInfo(412019),
+    spellname_blessing_of_light = GetSpellInfo(19979),
+    spellname_greater_blessing_of_light = GetSpellInfo(25890),
+    spellname_lightning_shield = GetSpellInfo(324),
+    spellname_rejuvenation = GetSpellInfo(774),
+    spellname_regrowth = GetSpellInfo(8936),
 };
 
 local function base_mana_pool(clvl)
@@ -551,7 +573,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
 
         if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
-            is_buff_up(loadout, "player", GetSpellInfo(24858), true) and
+            is_buff_up(loadout, "player", lookups.spellname_moonkin_form, true) and
             bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.no_crit)) == 0 then
 
             --moonkin form periodic crit
@@ -566,14 +588,14 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 resource_refund = resource_refund + stats.crit * pts*0.2 * original_base_cost;
             end
 
-            if is_buff_up(loadout, "player", GetSpellInfo(426159), true) and spell.base_min ~= 0 then
+            if is_buff_up(loadout, "player", lookups.spellname_sheath_of_light, true) and spell.base_min ~= 0 then
 
                 stats.crit_into_periodic = 0.6;
                 stats.crit_into_periodic_freq = 3;
                 stats.crit_into_periodic_ticks = 4;
                 stats.crit_into_periodic_description = "Sheath";
             end
-            if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, GetSpellInfo(412019), false) then
+            if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, lookups.spellname_sacred_shield, false) then
 
                 stats.direct_into_periodic = 1.0;
                 stats.direct_into_periodic_freq = 1;
@@ -583,23 +605,12 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             end
             if benefit_id == spell_name_to_id["Holy Light"] and spell.rank < 4 then
                 -- Subtract healing to account for blessing of light coef for low rank holy light
-                local buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(19979)]
-                    or loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(25890)];
+                local buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_blessing_of_light]
+                    or loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_greater_blessing_of_light];
 
                 if buff then
-                    local id_to_hl = {
-                        [19977] = 210,
-                        [19978] = 300,
-                        [19979] = 400,
-                        [25890] = 400
-                    };
-                    local bol_hl_coef_subtract = {
-                        [1] = 1.0 - (1 - (20 - 1) * 0.0375) * 2.5/3.5, -- lvl 1 hl coef used
-                        [2] = 1.0 - 0.4,
-                        [3] = 1.0 - 0.7,
-                    };
-
-                    stats.flat_addition = stats.flat_addition - id_to_hl[buff.id]*bol_hl_coef_subtract[spell.rank];
+                    stats.flat_addition = stats.flat_addition
+                        - lookups.bol_id_to_hl[buff.id]*lookups.bol_rank_to_hl_coef_subtract[spell.rank];
                 end
             end
         else
@@ -1510,11 +1521,10 @@ if class == "SHAMAN" then
                                       effects);
 
                 local ls_stacks = 0;
-                local ls_lname = GetSpellInfo(324);
-                if loadout.dynamic_buffs["player"][ls_lname] then
-                    ls_stacks = loadout.dynamic_buffs["player"][ls_lname].count;
+                if loadout.dynamic_buffs["player"][lookups.spellname_lightning_shield] then
+                    ls_stacks = loadout.dynamic_buffs["player"][lookups.spellname_lightning_shield].count;
                     ls_stacks = ls_stacks - 3;
-                elseif bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[ls_lname] then
+                elseif bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[lookups.spellname_lightning_shield] then
                     ls_stacks = 9-3;
                 end
                 if ls_stacks > 0 then
@@ -1626,8 +1636,8 @@ elseif class == "DRUID" then
             local num_ticks = 4;
             local hot_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
             if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-                local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(774)];
-                local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][GetSpellInfo(8936)];
+                local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_rejuvenation];
+                local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_regrowth];
                 -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
                 if regrowth_buff then
                     if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then
