@@ -33,7 +33,7 @@ local add_all_spell_crit    = swc.utils.add_all_spell_crit;
 
 local magic_school          = swc.abilities.magic_school;
 local spell_name_to_id      = swc.abilities.spell_name_to_id;
-local spell_names_to_id     = swc.abilities.spell_names_to_id;
+local spell_groups          = swc.abilities.spell_groups;
 
 local set_tiers             = swc.equipment.set_tiers;
 
@@ -186,6 +186,13 @@ local lookups = {
         [2629] = 25123,
         [7099] = 430585,
     },
+    md_id_to_mod = {
+        [23761] = 0.02,
+        [23833] = 0.04,
+        [23834] = 0.06,
+        [23835] = 0.08,
+        [23836] = 0.1,
+    },
     spellname_beacon_of_light = GetSpellInfo(407613)
 };
 
@@ -313,9 +320,7 @@ local buffs_predefined = {
     -- zg trinket
     [24543] = {
         apply = function(loadout, effects, buff, inactive)
-            local destr = spell_names_to_id({ "Immolate", "Shadow Bolt", "Hellfire", "Searing Pain", "Rain of Fire",
-                "Conflagrate", "Shadowburn", "Soul Fire" });
-            for k, v in pairs(destr) do
+            for k, v in pairs(spell_groups.destruction) do
                 ensure_exists_and_add(effects.ability.crit, v, 0.1, 0);
             end
         end,
@@ -326,9 +331,7 @@ local buffs_predefined = {
     [24546] = {
         apply = function(loadout, effects, buff)
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Greater Heal"], 0.4, 0);
-            local heals = spell_names_to_id({ "Greater Heal", "Renew", "Prayer of Healing", "Lesser Heal", "Heal",
-                "Flash Heal", "Holy Nova" });
-            for k, v in pairs(heals) do
+            for k, v in pairs(spell_groups.heal) do
                 ensure_exists_and_add(effects.ability.cost_mod, v, 0.05, 0);
             end
         end,
@@ -338,7 +341,7 @@ local buffs_predefined = {
     -- zg trinket
     [24499] = {
         apply = function(loadout, effects, buff)
-            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], 0.5, 0);
+            ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], 1.0, 0);
         end,
         filter = buff_filters.shaman,
         category = buff_category.item,
@@ -348,8 +351,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Touch"], 0.4, 0);
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Nourish"], 0.4, 0);
-            local heals = spell_names_to_id({ "Tranquility", "Rejuvenation", "Healing Touch", "Regrowth", "Nourish" });
-            for k, v in pairs(heals) do
+            for k, v in pairs(spell_groups.heal) do
                 ensure_exists_and_add(effects.ability.cost_mod, v, 0.05, 0);
             end
         end,
@@ -489,7 +491,11 @@ local buffs_predefined = {
     -- mage armor
     [22783] = {
         apply = function(loadout, effects, buff, inactive)
-            effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.3;
+            local val = 0.3;
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_1] >= 6 then
+                val = val + 0.15;
+            end
+            effects.raw.regen_while_casting = effects.raw.regen_while_casting + val;
         end,
         filter = buff_filters.mage,
         category = buff_category.class,
@@ -724,8 +730,7 @@ local buffs_predefined = {
             if buff.count then
                 c = buff.count
             end
-            local heals = spell_names_to_id({ "Lesser Heal", "Heal", "Greater Heal", "Prayer of Healing" });
-            for k, v in pairs(heals) do
+            for k, v in pairs(spell_groups.serendipity_affected) do
                 ensure_exists_and_add(effects.ability.cast_mod_mul, v, c * 0.2, 0.0);
             end
         end,
@@ -871,7 +876,7 @@ local buffs_predefined = {
                 c = 5;
             end
 
-            for k, v in pairs(spell_names_to_id({ "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Healing Wave", "Chain Heal", "Lava Burst" })) do
+            for k, v in pairs(spell_groups.maelstrom_affected) do
                 ensure_exists_and_add(effects.ability.cast_mod_mul, v, c * 0.2, 0);
             end
         end,
@@ -881,7 +886,7 @@ local buffs_predefined = {
     -- power surge
     [415105] = {
         apply = function(loadout, effects, buff)
-            for k, v in pairs(spell_names_to_id({ "Chain Lightning", "Lava Burst", "Chain Heal" })) do
+            for k, v in pairs(spell_groups.power_surge_affected) do
                 ensure_exists_and_add(effects.ability.cast_mod_mul, v, 1.0, 0);
             end
         end,
@@ -913,7 +918,7 @@ local buffs_predefined = {
     -- brain freeze
     [400730] = {
         apply = function(loadout, effects, buff)
-            for k, v in pairs(spell_names_to_id({ "Fireball", "Spellfrost Bolt", "Frostfire Bolt" })) do
+            for k, v in pairs(spell_groups.brain_freeze_affected) do
                 ensure_exists_and_add(effects.ability.cast_mod_mul, v, 1.0, 0);
                 ensure_exists_and_add(effects.ability.cost_mod, v, 1.0, 0);
             end
@@ -1366,16 +1371,49 @@ local buffs_predefined = {
     [16164] = {
         apply = function(loadout, effects, buff, inactive)
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
-                effects.by_school.spell_dmg_mod_add[magic_school.fire] =
-                    effects.by_school.spell_dmg_mod_add[magic_school.fire] + 0.3;
-                effects.by_school.spell_dmg_mod_add[magic_school.frost] =
-                    effects.by_school.spell_dmg_mod_add[magic_school.frost] + 0.3;
-                effects.by_school.spell_dmg_mod_add[magic_school.nature] =
-                    effects.by_school.spell_dmg_mod_add[magic_school.nature] + 0.3;
+                effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.15 - 1.0;
             end
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.sod),
         category = buff_category.class,
+    },
+    -- zg trinket
+    [468387] = {
+        apply = function(loadout, effects, buff, inactive)
+            effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.1 - 1.0;
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.1 - 1.0;
+            add_all_spell_crit(effects, 0.1, inactive);
+        end,
+        filter = bit.bor(buff_filters.druid, buff_filters.sod),
+        category = buff_category.item,
+    },
+    -- master demonologist
+    [23836] = {
+        apply = function(loadout, effects, buff, inactive)
+            local val = lookups.md_id_to_mod[buff.id];
+            if val then
+                if loadout.num_set_pieces[set_tiers.sod_final_pve_zg] >= 5 then
+                    val = val * 1.5;
+                end
+                effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * (1.0 + val) - 1.0;
+            end
+        end,
+        filter = buff_filters.warlock,
+        category = buff_category.class,
+    },
+    -- zg trinket
+    [468512] = {
+        apply = function(loadout, effects, buff, inactive)
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frostbolt"], 0.05, 0.0);
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Spellfrost Bolt"], 0.05, 0.0);
+            ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Frozen Orb"], 0.05, 0.0);
+
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Frostbolt"], 0.25, 0.0);
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Spellfrost Bolt"], 0.25, 0.0);
+            ensure_exists_and_add(effects.ability.crit_mod, spell_name_to_id["Frozen Orb"], 0.25, 0.0);
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
+        category = buff_category.item,
     },
 };
 
@@ -1693,7 +1731,7 @@ local target_buffs_predefined = {
     [6788] = {
         apply = function(loadout, effects, buff)
             if loadout.runes[swc.talents.rune_ids.renewed_hope] then
-                for k, v in pairs(spell_names_to_id({ "Flash Heal", "Lesser Heal", "Heal", "Greater Heal", "Penance" })) do
+                for k, v in pairs(spell_groups.weakened_soul_affected) do
                     ensure_exists_and_add(effects.ability.crit, v, 0.2, 0);
                 end
             end
@@ -1869,7 +1907,10 @@ local function detect_buffs(loadout)
             if not exp_time then
                 exp_time = 0.0;
             end
-            v[name] = { count = count, id = spell_id, src = src, dur = exp_time - GetTime() };
+            -- if multiple buffs with same name, prioritize buff_id that exists in the buffs list
+            if not v[name] or buffs_predefined[spell_id] then
+                v[name] = { count = count, id = spell_id, src = src, dur = exp_time - GetTime() };
+            end
             i = i + 1;
         end
         local i = 1;

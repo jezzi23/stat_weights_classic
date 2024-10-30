@@ -377,8 +377,7 @@ local function create_runes()
             },
             [rune_ids.infusion_of_light             ] = {
                 apply = function(loadout, effects)
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Holy Shock"], 0.2, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod_only_heal, spell_name_to_id["Holy Shock"], -0.2, 0.0);
+                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Holy Shock"], 0.5, 0.0);
                 end,
                 wowhead_id = "66wb"
             },

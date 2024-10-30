@@ -1784,7 +1784,7 @@ local function create_spells()
                 lvl_outdated        = 60,
                 cost                = 0.11,
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune,
-                    spell_flags.unbounded_aoe_ot, spell_flags.aoe, spell_flags.snare),
+                    spell_flags.unbounded_aoe_ot, spell_flags.aoe, spell_flags.snare, spell_flags.over_time_crit),
                 school              = magic_school.arcane,
                 coef                = 0.0,
                 over_time_coef      = 0.0,
@@ -9255,6 +9255,44 @@ local function spell_names_to_id(english_names)
     return base_ids;
 end
 
+local spell_groups = {};
+spell_groups.heal = {};
+spell_groups.instant = {};
+
+if class == "WARLOCK" then
+    spell_groups.destruction = {};
+    for k, v in pairs(spell_name_to_id) do
+        if bit.band(spells[v].flags, spell_flags.destruction) ~= 0 then
+            spell_groups.destruction[v] = v;
+        end
+    end
+elseif class == "PRIEST" then
+    spell_groups.serendipity_affected =
+        spell_names_to_id({ "Lesser Heal", "Heal", "Greater Heal", "Prayer of Healing" });
+    spell_groups.weakened_soul_affected =
+        spell_names_to_id({ "Flash Heal", "Lesser Heal", "Heal", "Greater Heal", "Penance" });
+elseif class == "SHAMAN" then
+    spell_groups.maelstrom_affected =
+        spell_names_to_id({ "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Healing Wave", "Chain Heal",
+            "Lava Burst" });
+    spell_groups.power_surge_affected =
+        spell_names_to_id({ "Chain Lightning", "Lava Burst", "Chain Heal" });
+elseif class == "MAGE" then
+    spell_groups.brain_freeze_affected =
+        spell_names_to_id({ "Fireball", "Spellfrost Bolt", "Frostfire Bolt" });
+end
+
+for k, v in pairs(spell_name_to_id) do
+    if bit.band(spells[v].flags, spell_flags.heal) ~= 0 or spells[v].healing_version then
+        spell_groups.heal[v] = v;
+    end
+    if bit.band(spells[v].flags, spell_flags.instant) ~= 0 then
+        spell_groups.instant[v] = v;
+    end
+end
+
+
+
 local addon_name, swc = ...;
 local abilities = {};
 
@@ -9266,5 +9304,6 @@ abilities.magic_school = magic_school;
 abilities.spell_flags = spell_flags;
 abilities.best_rank_by_lvl = best_rank_by_lvl;
 abilities.next_spell_rank = next_spell_rank;
+abilities.spell_groups = spell_groups;
 
 swc.abilities = abilities;

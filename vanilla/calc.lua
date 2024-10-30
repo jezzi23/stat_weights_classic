@@ -150,6 +150,8 @@ local lookups = {
     spellname_lightning_shield = GetSpellInfo(324),
     spellname_rejuvenation = GetSpellInfo(774),
     spellname_regrowth = GetSpellInfo(8936),
+    spellname_rapid_healing = GetSpellInfo(468531),
+    spellname_water_shield = GetSpellInfo(408510),
 };
 
 local function base_mana_pool(clvl, max_mana_mod)
@@ -197,14 +199,21 @@ local function set_alias_spell(spell, loadout)
     return alias_spell;
 end
 
-local function add_extra_periodic_effect(stats, triggers_on_crit, use_flat, value, ticks, freq, utilization, description,
-                                         should_track_crit_mod)
+local extra_effect_flags = {
+    triggers_on_crit        = bit.lshift(1, 0),
+    use_flat                = bit.lshift(1, 1),
+    base_on_periodic_effect = bit.lshift(1, 2),
+    should_track_crit_mod   = bit.lshift(1, 3),
+};
+
+local function add_extra_periodic_effect(stats, flags, value, ticks, freq, utilization, description)
     stats.num_extra_effects = stats.num_extra_effects + 1;
     local i = stats.num_extra_effects;
 
     stats["extra_effect_is_periodic" .. i] = true;
-    stats["extra_effect_on_crit" .. i] = triggers_on_crit;
-    stats["extra_effect_use_flat" .. i] = use_flat;
+    stats["extra_effect_on_crit" .. i] = bit.band(flags, extra_effect_flags.triggers_on_crit) ~= 0;
+    stats["extra_effect_use_flat" .. i] = bit.band(flags, extra_effect_flags.use_flat) ~= 0;
+    stats["extra_effect_base_on_periodic" .. i] = bit.band(flags, extra_effect_flags.base_on_periodic_effect) ~= 0;
     stats["extra_effect_val" .. i] = value;
     stats["extra_effect_desc" .. i] = description;
     stats["extra_effect_util" .. i] = utilization;
@@ -212,23 +221,23 @@ local function add_extra_periodic_effect(stats, triggers_on_crit, use_flat, valu
     stats["extra_effect_ticks" .. i] = ticks;
     stats["extra_effect_freq" .. i] = freq;
 
-    if should_track_crit_mod then
+    if bit.band(flags, extra_effect_flags.should_track_crit_mod) ~= 0 then
         stats.special_crit_mod_tracked = i;
     end
 end
-local function add_extra_direct_effect(stats, triggers_on_crit, use_flat, value, utilization, description,
-                                       should_track_crit_mod)
+local function add_extra_direct_effect(stats, flags, value, utilization, description)
     stats.num_extra_effects = stats.num_extra_effects + 1;
     local i = stats.num_extra_effects;
 
     stats["extra_effect_is_periodic" .. i] = false;
-    stats["extra_effect_on_crit" .. i] = triggers_on_crit;
-    stats["extra_effect_use_flat" .. i] = use_flat;
+    stats["extra_effect_on_crit" .. i] = bit.band(flags, extra_effect_flags.triggers_on_crit) ~= 0;
+    stats["extra_effect_use_flat" .. i] = bit.band(flags, extra_effect_flags.use_flat) ~= 0;
+    stats["extra_effect_base_on_periodic" .. i] = bit.band(flags, extra_effect_flags.base_on_periodic_effect) ~= 0;
     stats["extra_effect_val" .. i] = value;
     stats["extra_effect_desc" .. i] = description;
     stats["extra_effect_util" .. i] = utilization;
 
-    if should_track_crit_mod then
+    if bit.band(flags, extra_effect_flags.should_track_crit_mod) ~= 0 then
         stats.special_crit_mod_tracked = i;
     end
 end
@@ -518,7 +527,24 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     if class == "PRIEST" then
         if bit.band(spell_flags.heal, spell.flags) ~= 0 then
             if loadout.runes[rune_ids.divine_aegis] then
-                add_extra_direct_effect(stats, true, false, 0.3, 1.0, "Divine Aegis", true);
+
+                local aegis_flags = bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod);
+                if benefit_id == spell_name_to_id["Penance"] then
+                    aegis_flags = bit.bor(aegis_flags, extra_effect_flags.base_on_periodic_effect);
+                end
+                add_extra_direct_effect(stats, aegis_flags, 0.3, 1.0, "Divine Aegis");
+            end
+            if benefit_id == spell_name_to_id["Greater Heal"] and loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
+                add_extra_direct_effect(stats,
+                                        bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.use_flat),
+                                        500, 1.0, "Absorb");
+            end
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 6 then
+                if benefit_id == spell_name_to_id["Circle of Healing"] then
+                    add_extra_periodic_effect(stats, 0, 0.25, 5, 3, 1.0, "6P Set Bonus");
+                elseif benefit_id == spell_name_to_id["Penance"] then
+                    add_extra_periodic_effect(stats, extra_effect_flags.base_on_periodic_effect, 0.25, 5, 3, 1.0, "6P Set Bonus");
+                end
             end
         elseif bit.band(spell_flags.absorb, spell.flags) ~= 0 then
         else
@@ -531,13 +557,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             cost_mod = cost_mod - loadout.talents_table:pts(1, 10) * 0.02;
         end
 
-        if benefit_id == spell_name_to_id["Greater Heal"] and loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
-            add_extra_direct_effect(stats, true, true, 500, 1.0, "Absorb");
-        end
 
-        if benefit_id == spell_name_to_id["Circle of Healing"] and loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 6 then
-            add_extra_periodic_effect(stats, false, false, 0.25, 5, 3, 1.0, "6P Set Bonus");
-        end
     elseif class == "DRUID" then
         -- clearcast
         local pts = loadout.talents_table:pts(1, 9);
@@ -551,7 +571,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 local mana_refund = original_base_cost;
                 resource_refund = resource_refund + stats.crit * 0.3 * mana_refund;
             end
-            if loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6 then
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 4 then
                 local mana_refund = original_base_cost;
                 resource_refund = resource_refund + 0.25 * 0.35 * mana_refund;
             end
@@ -565,11 +585,16 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             -- looks like seeds will work on lifebloom in sod
             if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.base_min ~= 0)
                 or benefit_id == spell_name_to_id["Rejuvenation"] or benefit_id == spell_name_to_id["Swiftmend"] then
-                add_extra_direct_effect(stats, true, false, 0.5, 1.0, "Living Seed", true);
+                add_extra_direct_effect(stats,
+                                        bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
+                                        0.5, 1.0, "Living Seed");
             end
         end
         if loadout.runes[rune_ids.lifebloom] and
             (benefit_id == spell_name_to_id["Rejuvenation"] or benefit_id == spell_name_to_id["Lifebloom"]) then
+            stats.gcd = stats.gcd - 0.5;
+        end
+        if loadout.num_set_pieces[set_tiers.sod_final_pve_zg] >= 3 and benefit_id == spell_name_to_id["Starfire"] then
             stats.gcd = stats.gcd - 0.5;
         end
 
@@ -601,11 +626,13 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 resource_refund = resource_refund + stats.crit * pts * 0.2 * original_base_cost;
             end
 
-            if is_buff_up(loadout, "player", lookups.spellname_sheath_of_light, true) and spell.base_min ~= 0 then
-                add_extra_periodic_effect(stats, true, false, 0.6, 4, 3, 1.0, "Sheath", true);
+            if loadout.runes[rune_ids.fanaticism] then
+                add_extra_periodic_effect(stats,
+                                          bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
+                                          0.6, 4, 3, 1.0, "Fanaticism");
             end
             if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, lookups.spellname_sacred_shield, false) then
-                add_extra_periodic_effect(stats, false, false, 1.0, 12, 1, 1.0, "Extra");
+                add_extra_periodic_effect(stats, 0, 1.0, 12, 1, 1.0, "Extra");
             end
             if benefit_id == spell_name_to_id["Holy Light"] and spell.rank < 4 then
                 -- Subtract healing to account for blessing of light coef for low rank holy light
@@ -648,7 +675,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 resource_refund = resource_refund + 0.25 * 0.35 * mana_refund;
             end
             if loadout.runes[rune_ids.ancestral_awakening] then
-                add_extra_direct_effect(stats, true, false, 0.3, 1.0, "Awakening", true);
+                add_extra_direct_effect(stats,
+                                        bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
+                                        0.3, 1.0, "Awakening");
             end
         end
         if loadout.runes[rune_ids.overload] and (benefit_id == spell_name_to_id["Chain Heal"] or
@@ -656,7 +685,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 benefit_id == spell_name_to_id["Healing Wave"] or
                 benefit_id == spell_name_to_id["Lightning Bolt"] or
                 benefit_id == spell_name_to_id["Lava Burst"]) then
-            add_extra_direct_effect(stats, false, false, 0.5, 0.6, "Overload 60% chance");
+            add_extra_direct_effect(stats, 0, 0.5, 0.6, "Overload 60% chance");
         end
 
         if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 then
@@ -682,6 +711,10 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         if benefit_id == spell_name_to_id["Earth Shield"] and loadout.friendly_towards == "player" then
             -- strange behaviour hacked in
             stats.effect_mod = stats.effect_mod + 0.02 * loadout.talents_table:pts(3, 14);
+        end
+        if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.base_min ~= 0 and is_buff_up(loadout, "player", lookups.spellname_water_shield, true) then
+
+            resource_refund = resource_refund + stats.crit * 0.04 * loadout.max_mana;
         end
     elseif class == "MAGE" then
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -712,7 +745,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) *
                 (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]);
 
-                add_extra_periodic_effect(stats, true, false, (pts * 0.08) * double_dip, 2, 2, 1.0, "Ignite", true);
+                add_extra_periodic_effect(stats,
+                                          bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
+                                          (pts * 0.08) * double_dip, 2, 2, 1.0, "Ignite");
             end
             if benefit_id == spell_name_to_id["Arcane Surge"] then
                 stats.cost = loadout.mana;
@@ -743,7 +778,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             end
 
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 and benefit_id == spell_name_to_id["Fireball"] then
-                add_extra_periodic_effect(stats, false, false, 1.0, 4, 2, 1.0, "6P Set Bonus");
+                add_extra_periodic_effect(stats, 0, 1.0, 4, 2, 1.0, "6P Set Bonus");
             end
 
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and benefit_id == spell_name_to_id["Arcane Missiles"] then
@@ -792,7 +827,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             end
         end
         if benefit_id == spell_name_to_id["Shadow Bolt"] and loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
-            target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.05 * effects.raw.target_num_afflictions);
+            target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
         end
     end
 
@@ -983,8 +1018,13 @@ local function resolve_extra_spell_effects(info, stats)
             if (stats["extra_effect_on_crit" .. k]) then
                 info["ot_if_hit" .. i] = 0;
                 info["ot_if_hit_max" .. i] = 0;
-                info["ot_if_crit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit;
-                info["ot_if_crit_max" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit;
+                if (stats["extra_effect_base_on_periodic" .. k]) then
+                    info["ot_if_crit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_crit;
+                    info["ot_if_crit_max" .. i] = stats["extra_effect_val" .. k] * info.ot_if_crit_max;
+                else
+                    info["ot_if_crit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit;
+                    info["ot_if_crit_max" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit;
+                end
                 info["ot_ticks" .. i] = stats["extra_effect_ticks" .. k];
                 info["ot_freq" .. i] = stats["extra_effect_freq" .. k];
                 info["ot_duration" .. i] = stats["extra_effect_ticks" .. k] * stats["extra_effect_freq" .. k];
@@ -992,10 +1032,18 @@ local function resolve_extra_spell_effects(info, stats)
                 info["ot_crit" .. i] = stats.crit;
                 info["ot_utilization" .. i] = stats["extra_effect_util" .. k];
             else
-                info["ot_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_noncrit_if_hit;
-                info["ot_if_hit_max" .. i] = stats["extra_effect_val" .. k] * info.max_noncrit_if_hit;
-                info["ot_if_crit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit;
-                info["ot_if_crit_max" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit;
+                if (stats["extra_effect_base_on_periodic" .. k]) then
+                    info["ot_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_hit;
+                    info["ot_if_hit_max" .. i] = stats["extra_effect_val" .. k] * info.ot_if_hit_max;
+                    info["ot_if_crit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_crit;
+                    info["ot_if_crit_max" .. i] = stats["extra_effect_val" .. k] * info.ot_if_crit_max;
+
+                else
+                    info["ot_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_noncrit_if_hit;
+                    info["ot_if_hit_max" .. i] = stats["extra_effect_val" .. k] * info.max_noncrit_if_hit;
+                    info["ot_if_crit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit;
+                    info["ot_if_crit_max" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit;
+                end
                 info["ot_ticks" .. i] = stats["extra_effect_ticks" .. k];
                 info["ot_freq" .. i] = stats["extra_effect_freq" .. k];
                 info["ot_duration" .. i] = stats["extra_effect_ticks" .. k] * stats["extra_effect_freq" .. k];
@@ -1018,10 +1066,18 @@ local function resolve_extra_spell_effects(info, stats)
                 info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k];
                 info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k];
             else
-                info["min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_noncrit_if_hit;
-                info["max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_noncrit_if_hit;
-                info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit;
-                info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit;
+
+                if (stats["extra_effect_base_on_periodic" .. k]) then
+                    info["min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_hit;
+                    info["max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_hit_max;
+                    info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_crit;
+                    info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_if_crit_max;
+                else
+                    info["min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_noncrit_if_hit;
+                    info["max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_noncrit_if_hit;
+                    info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit;
+                    info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit;
+                end
             end
             if (stats["extra_effect_on_crit" .. k]) then
                 info["min_noncrit_if_hit" .. i] = 0;
@@ -1524,9 +1580,11 @@ elseif class == "PRIEST" then
         end,
         [spell_name_to_id["Prayer of Healing"]] = function(spell, info, loadout, stats, effects)
             add_expectation_direct_st(info, 4);
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Circle of Healing"]] = function(spell, info, loadout, stats, effects)
             add_expectation_direct_st(info, 4);
+            add_expectation_ot_st(info, 4);
         end,
         [spell_name_to_id["Prayer of Mending"]] = function(spell, info, loadout, stats, effects)
             add_expectation_direct_st(info, 4);
@@ -1583,10 +1641,13 @@ elseif class == "PRIEST" then
             add_expectation_direct_st(info, 1);
         end,
         [spell_name_to_id["Penance"]] = function(spell, info, loadout, stats, effects)
-            if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 6 then
-                add_expectation_direct_st(info, 0.25);
+
+            if is_buff_up(loadout, "player", lookups.spellname_rapid_healing, true) and
+                bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+
+                add_expectation_ot_st(info, 2);
             end
-        end,
+        end
     };
 elseif class == "DRUID" then
     special_abilities = {

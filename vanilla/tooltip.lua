@@ -29,7 +29,6 @@ local next_spell_rank       = swc.abilities.next_spell_rank;
 local best_rank_by_lvl      = swc.abilities.best_rank_by_lvl;
 
 local loadout_flags         = swc.utils.loadout_flags;
-local class                 = swc.utils.class;
 local spell_cost            = swc.utils.spell_cost;
 local spell_cast_time       = swc.utils.spell_cast_time;
 
@@ -529,10 +528,15 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
         if sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
             if stats.ot_crit ~= 0.0 and eval.spell.ot_if_crit ~= 0 then
+                local ot_crit_mod = stats.ot_crit_mod;
+                if stats.special_crit_mod_tracked ~= 0 then
+                    ot_crit_mod = ot_crit_mod * (1.0 + stats["extra_effect_val"..stats.special_crit_mod_tracked]);
+                end
+
                 if eval.spell.ot_if_crit ~= eval.spell.ot_if_crit_max then
                     tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                             stats.ot_crit * 100,
-                            stats.ot_crit_mod,
+                            ot_crit_mod,
                             math.floor(eval.spell.ot_if_crit),
                             math.ceil(eval.spell.ot_if_crit_max),
                             eval.spell.ot_duration,
@@ -544,7 +548,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 else
                     tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f over %.1fs (%.1f every %.1fs x %d)",
                             stats.ot_crit * 100,
-                            stats.ot_crit_mod,
+                            ot_crit_mod,
                             eval.spell.ot_if_crit,
                             eval.spell.ot_duration,
                             eval.spell.ot_if_crit / eval.spell.ot_ticks,

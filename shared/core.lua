@@ -49,7 +49,7 @@ swc.core                        = core;
 
 core.sw_addon_name              = "Stat Weights Classic";
 
-local version_id                = 30305;
+local version_id                = 30306;
 local version                   = tostring(version_id);
 core.version                    = tonumber(version:sub(1, 1)) ..
     "." .. tonumber(version:sub(2, 3)) .. "." .. tonumber(version:sub(4, 5));
@@ -431,5 +431,5 @@ __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;
-core.__sw__test_all_codepaths = 1;
+--core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;
