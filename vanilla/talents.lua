@@ -896,8 +896,7 @@ local function create_talents()
             [302] = {
                 apply = function(loadout, effects, pts)
 
-                    -- TODO VANILLA: is healing stream totem here??
-                    local healing_spells = spell_names_to_id({"Chain Heal", "Lesser Healing Wave", "Healing Wave", "Healing Rain"});
+                    local healing_spells = spell_names_to_id({"Chain Heal", "Lesser Healing Wave", "Healing Wave", "Healing Rain", "Riptide", "Earth Shield"});
                     for k, v in pairs(healing_spells) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.01, 0.0);
                     end
@@ -905,8 +904,7 @@ local function create_talents()
             },
             [305] = {
                 apply = function(loadout, effects, pts)
-                    -- TODO VANILLA : is fire nova a totem?
-                    for k, v in pairs(spell_names_to_id({"Healing Stream Totem", "Magma Totem", "Searing Totem"})) do
+                    for k, v in pairs(spell_names_to_id({"Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem"})) do
                         ensure_exists_and_add(effects.ability.cost_mod, v, pts * 0.05, 0.0);
                     end
                 end
@@ -936,6 +934,7 @@ local function create_talents()
             [314] = {
                 apply = function(loadout, effects, pts)
                     effects.raw.spell_heal_mod_base = effects.raw.spell_heal_mod_base + pts * 0.02;
+                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Earth Shield"], -pts * 0.02, 0.0);
                 end
             },
         };
@@ -1338,21 +1337,6 @@ local function talent_table(wowhead_code)
             else
                 break;
             end
-        end
-        for k = 1, 3 do
-            -- runes start with 5 for chest, 7 for legs, "a" (10) for gloves
-            -- followed by 3 id characters
-            --local rune_code = wowhead_code:sub(i, i + 3);
-            --if rune_code ~= "" then
-            --    local rune_id = wowhead_rune_code_to_id[rune_code];
-            --    if rune_id then
-            --        runes_table[rune_id] = runes[rune_id];
-            --    end
-            --    i = i + 4;
-            --else
-            --    break;
-            --end
-
         end
     end
 

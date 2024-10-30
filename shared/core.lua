@@ -177,10 +177,6 @@ local event_dispatch = {
         end
         core.special_action_bar_changed = true;
     end,
-    -- NOTE: Some bug is causing this event to be spammed even if no shapeshifts
-    --       of any sort are taking place
-    --["UPDATE_SHAPESHIFT_FORM"] = function(self, msg, msg2, msg3)
-    --end,
     ["UPDATE_BONUS_ACTIONBAR"] = function(self, msg, msg2, msg3)
         if not core.sw_addon_loaded then
             return;
@@ -204,32 +200,9 @@ local event_dispatch = {
             core.special_action_bar_changed = true;
         end
     end,
-    --["ACTIONBAR_UPDATE_STATE"] = function(self, msg, msg2, msg3)
-    --    -- test
-    --end,
-    --["UNIT_AURA"] = function(self, msg, msg2, msg3)
-    --    if msg == "player" or msg == "target" or msg == "mouseover" then
-    --        buffs_update_needed = true;
-    --    end
-    --end,
-    --["PLAYER_TARGET_CHANGED"] = function(self, msg, msg2, msg3)
-    --    buffs_update_needed = true;
-    --end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
-        --if core.sw_addon_loaded  then
-        --    for k, v in pairs(__sw__icon_frames.bars) do
-        --        for i = 1, 3 do
-        --            if v.overlay_frames[i] then
-        --                v.overlay_frames[i]:Hide();
-        --            end
-        --        end
-
-        --    end
-        --end
         core.setup_action_bar_needed = true;
-        if bit.band(active_loadout_entry().loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
-            core.talents_update_needed = true;
-        end
+        core.talents_update_needed = true;
     end,
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
         local loadout = active_loadout();
@@ -458,5 +431,5 @@ __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.__sw__use_defaults__ = 1;
---core.__sw__test_all_codepaths = 1;
+core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;

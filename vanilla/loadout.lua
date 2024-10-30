@@ -151,6 +151,7 @@ end
 local function add_mana_mod(loadout, effects, inactive_value, mod_value)
 
     effects.raw.mana_mod = effects.raw.mana_mod + mod_value-inactive_value;
+    effects.raw.mana_mod_active = effects.raw.mana_mod_active + mod_value-inactive_value;
 
     local mana_gained = inactive_value * loadout.mana/(1.0 + effects.raw.mana_mod);
     loadout.mana = loadout.mana + mana_gained;

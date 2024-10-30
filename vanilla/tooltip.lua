@@ -286,53 +286,27 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
         if stats.crit ~= 0 and eval.spell.min_crit_if_hit + eval.spell.absorb ~= 0 and stats.crit ~= 0 then
             local effect_type_str = nil;
-            local extra_crit_mod = 0;
-            if stats.extra_crit_mod_mul or (stats.crit_into_periodic and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0) then
-                if class == "MAGE" then
-                    effect_type_str = "ignite"
-                elseif class == "DRUID" then
-                    effect_type_str = "seeds";
-                elseif class == "PALADIN" then
-                    effect_type_str = "sheath";
-                elseif class == "PRIEST" then
-                    effect_type_str = "absorbs";
-                elseif class == "SHAMAN" then
-                    effect_type_str = "awakens";
-                end
-            end
-            if effect_type_str and eval.spell.min_crit_if_hit ~= 0 then
-                local crit_mod = stats.crit_mod;
-                if stats.crit_into_periodic then
-                    crit_mod = crit_mod * (1.0 + stats.crit_into_periodic);
-                end
-                if stats.extra_crit_mod_mul then
-                    extra_crit_mod = stats.extra_crit_mod_mul;
-                end
-                local min_crit_if_hit = eval.spell.min_crit_if_hit / (1 + extra_crit_mod);
-                local max_crit_if_hit = eval.spell.max_crit_if_hit / (1 + extra_crit_mod);
-                local effect_min = extra_crit_mod * min_crit_if_hit;
-                local effect_max = extra_crit_mod * max_crit_if_hit;
+            if eval.spell.min_crit_if_hit ~= 0 and stats.special_crit_mod_tracked ~= 0 and
+                (not stats["extra_effect_is_periodic"..stats.special_crit_mod_tracked] or bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0) then
+
+                effect_type_str = stats["extra_effect_desc"..stats.special_crit_mod_tracked];
+
+                local crit_mod = stats.crit_mod * (1.0 + stats["extra_effect_val"..stats.special_crit_mod_tracked]);
+
                 if eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
-                    if not stats.crit_into_periodic then
-                        effect_type_str = effect_type_str ..
-                            string.format(" %d-%d", math.floor(effect_min), math.ceil(effect_max));
-                    end
                     tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d + %s",
                             stats.crit * 100,
                             crit_mod,
-                            math.floor(min_crit_if_hit),
-                            math.ceil(max_crit_if_hit),
+                            math.floor(eval.spell.min_crit_if_hit),
+                            math.ceil(eval.spell.max_crit_if_hit),
                             effect_type_str),
                         252.0 / 255, 69.0 / 255, 3.0 / 255);
                 elseif eval.spell.min_crit_if_hit ~= 0 then
-                    if not stats.crit_into_periodic then
-                        effect_type_str = effect_type_str .. string.format(" %.1f", effect_min);
-                    end
 
                     tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f + %s",
                             stats.crit * 100,
                             crit_mod,
-                            min_crit_if_hit,
+                            eval.spell.min_crit_if_hit,
                             effect_type_str),
                         252.0 / 255, 69.0 / 255, 3.0 / 255);
                 end

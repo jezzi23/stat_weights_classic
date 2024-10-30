@@ -109,6 +109,7 @@ local function empty_effects(effects)
     effects.raw.spell_dmg_mod_mul = 0;
     effects.raw.target_healing_taken = 0;
     effects.raw.mana_mod = 0;
+    effects.raw.mana_mod_active = 0;
     effects.raw.mana = 0;
     effects.raw.mp5_from_int_mod = 0;
     effects.raw.mp5 = 0;
@@ -498,7 +499,7 @@ local function active_loadout_and_effects()
 
     local loadout_entry = active_loadout_entry();
     dynamic_loadout(loadout_entry.loadout);
-        
+
     if swc.core.equipment_update_needed then
         zero_effects(loadout_entry.equipped);
         local equipment_api_worked = apply_equipment(loadout_entry.loadout, loadout_entry.equipped);
