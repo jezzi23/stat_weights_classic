@@ -2,7 +2,12 @@
 ## Title: Stat Weights Classic WOTLK
 ## Notes: Advanced caster ability information, icon overlays and more
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char
-## OptionalDeps: LibStub, LibDBIcon-1.0, LibDataBroker-1.1
+
+libs/LibStub/Libstub.lua
+libs/CallbackHandler-1.0/CallbackHandler-1.0.xml
+libs/LibDataBroker-1.1/LibDataBroker-1.1.lua
+libs/LibDBIcon-1.0/LibDBIcon-1.0.lua
+
 shared/utils.lua
 wotlk/abilities.lua
 wotlk/equipment.lua

@@ -57,7 +57,6 @@ local icon_stat_display = {
 
 local active_overlays = {};
 local action_bar_frame_names = {};
-local action_id_by_name = {};
 local action_id_frames = {};
 local spell_book_frames = {};
 local action_bar_addon_name = "Default";
@@ -200,7 +199,6 @@ local function gather_spell_icons()
 
         for i = 1, 120 do
             action_bar_frame_names[i] = "BT4Button"..i;
-            action_id_by_name[action_bar_frame_names[i]] = i;
         end
         action_bar_addon_name = "Bartender4";
 
@@ -210,7 +208,6 @@ local function gather_spell_icons()
             for j = 1, 12 do
                 action_bar_frame_names[index] = 
                     "ElvUI_Bar"..i.."Button"..j;
-                action_id_by_name[action_bar_frame_names[index]] = index;
 
                 index = index + 1;
             end
@@ -226,7 +223,6 @@ local function gather_spell_icons()
         for k, v in pairs(bars) do
             for j = 1, 12 do
                 action_bar_frame_names[index] = v..j;
-                action_id_by_name[action_bar_frame_names[index]] = index;
 
                 index = index + 1;
             end
@@ -234,11 +230,9 @@ local function gather_spell_icons()
 
         for i = index, 120 do
             action_bar_frame_names[i] = "DominosActionButton"..i;
-            action_id_by_name[action_bar_frame_names[i]] = i;
         end
         for i = 13, 24 do
             action_bar_frame_names[i] = "DominosActionButton"..i;
-            action_id_by_name[action_bar_frame_names[i]] = i;
         end
         action_bar_addon_name = "Dominos";
 
@@ -252,7 +246,6 @@ local function gather_spell_icons()
         for k, v in pairs(bars) do
             for j = 1, 12 do
                 action_bar_frame_names[index] = v..j;
-                action_id_by_name[action_bar_frame_names[index]] = index;
 
                 index = index + 1;
             end
