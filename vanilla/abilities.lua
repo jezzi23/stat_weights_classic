@@ -9086,21 +9086,15 @@ end
 if class == "DRUID" then
     -- healing touch
     spells[5185].cast_time = 1.5;
-
     spells[5186].cast_time = 2.0;
-
     spells[5187].cast_time = 2.5;
-
     spells[5188].cast_time = 3.0;
     -- moonfire
 
     -- wrath
     spells[5176].cast_time = 1.5;
-
     spells[5177].cast_time = 1.7;
-
     spells[5178].cast_time = 2.0;
-
     spells[8921].over_time_duration = 9;
 
     -- entangling roots
@@ -9123,9 +9117,7 @@ elseif class == "PALADIN" then
 elseif class == "SHAMAN" then
     -- healing wave
     spells[331].cast_time = 1.5;
-
     spells[332].cast_time = 2.0;
-
     spells[547].cast_time = 2.5;
 
     -- lightning bolt
@@ -9143,11 +9135,8 @@ elseif class == "SHAMAN" then
 elseif class == "MAGE" then
     -- frostbolt
     spells[116].cast_time = 1.5;
-
     spells[205].cast_time = 1.8;
-
     spells[837].cast_time = 2.2;
-
     spells[7322].cast_time = 2.6;
 
     -- fireball
@@ -9172,14 +9161,11 @@ elseif class == "MAGE" then
 elseif class == "WARLOCK" then
     -- corruption
     spells[172].over_time_duration = 12.0;
-
     spells[6222].over_time_duration = 15.0;
 
     --shadow bolt
     spells[686].cast_time = 1.7;
-
     spells[695].cast_time = 2.2;
-
     spells[705].cast_time = 2.8;
 end
 
@@ -9259,6 +9245,15 @@ local spell_groups = {};
 spell_groups.heal = {};
 spell_groups.instant = {};
 
+for k, v in pairs(spell_name_to_id) do
+    if bit.band(spells[v].flags, spell_flags.heal) ~= 0 or spells[v].healing_version then
+        spell_groups.heal[v] = v;
+    end
+    if bit.band(spells[v].flags, spell_flags.instant) ~= 0 then
+        spell_groups.instant[v] = v;
+    end
+end
+
 if class == "WARLOCK" then
     spell_groups.destruction = {};
     for k, v in pairs(spell_name_to_id) do
@@ -9281,17 +9276,6 @@ elseif class == "MAGE" then
     spell_groups.brain_freeze_affected =
         spell_names_to_id({ "Fireball", "Spellfrost Bolt", "Frostfire Bolt" });
 end
-
-for k, v in pairs(spell_name_to_id) do
-    if bit.band(spells[v].flags, spell_flags.heal) ~= 0 or spells[v].healing_version then
-        spell_groups.heal[v] = v;
-    end
-    if bit.band(spells[v].flags, spell_flags.instant) ~= 0 then
-        spell_groups.instant[v] = v;
-    end
-end
-
-
 
 local addon_name, swc = ...;
 local abilities = {};

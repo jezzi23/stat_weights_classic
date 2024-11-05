@@ -83,6 +83,7 @@ core.talents_update_needed = true;
 core.equipment_update_needed = true;
 core.special_action_bar_changed = true;
 core.setup_action_bar_needed = true;
+core.update_action_bar_needed = true;
 core.addon_message_on_update = false;
 
 core.sequence_counter = 0;
@@ -201,7 +202,7 @@ local event_dispatch = {
         end
     end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
-        core.setup_action_bar_needed = true;
+        core.update_action_bar_needed = true;
         core.talents_update_needed = true;
     end,
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)

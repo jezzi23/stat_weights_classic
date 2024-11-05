@@ -788,6 +788,10 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icons_num_checked = 0;
 
     local icon_checkbox_func = function(self)
+
+        if sw_num_icon_overlay_fields_active >= 3 then
+            self:SetChecked(false); 
+        end
         update_icon_overlay_settings();
     end;
 

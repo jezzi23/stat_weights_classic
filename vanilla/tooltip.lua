@@ -47,6 +47,22 @@ local end_tooltip_section   = swc.tooltip.end_tooltip_section
 
 local stats                 = {};
 
+local function format_bounce_spell(min_hit, max_hit, bounces, falloff)
+
+    local bounce_str = "     + ";
+    for _ = 1, bounces - 1 do
+        bounce_str = bounce_str .. string.format(" %d-%d  + ",
+            falloff * math.floor(min_hit),
+            falloff * math.ceil(max_hit));
+        falloff = falloff * falloff;
+    end
+    bounce_str = bounce_str .. string.format(" %d-%d",
+        falloff * math.floor(min_hit),
+        falloff * math.ceil(max_hit));
+    return bounce_str;
+
+end
+
 local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_tooltip_on, spell_id)
     -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
     if bit.band(spell.flags, spell_flags.sod_rune) == 0 then
@@ -186,31 +202,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.floor(eval.spell.min_noncrit_if_hit),
                             math.ceil(eval.spell.max_noncrit_if_hit)),
                         232.0 / 255, 225.0 / 255, 32.0 / 255);
-                    if spell.base_id == spell_name_to_id["Chain Lightning"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
-                        local bounce_str = "     + ";
-                        local bounces = 2;
-                        local falloff = 0.7;
-                        if loadout.runes[rune_ids.coherence] then
-                            bounces = 3;
-                            falloff = falloff + 0.1;
-                        end
-                        if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
-                            falloff = falloff + 0.05;
-                        end
-                        for i = 1, bounces - 1 do
-                            bounce_str = bounce_str .. string.format(" %d-%d  + ",
-                                falloff * math.floor(eval.spell.min_noncrit_if_hit),
-                                falloff * math.ceil(eval.spell.max_noncrit_if_hit));
-
-                            falloff = falloff * falloff;
-                        end
-                        bounce_str = bounce_str .. string.format(" %d-%d",
-                            falloff * math.floor(eval.spell.min_noncrit_if_hit),
-                            falloff * math.ceil(eval.spell.max_noncrit_if_hit));
-                        tooltip:AddLine(bounce_str, 232.0 / 255, 225.0 / 255, 32.0 / 255);
-                    end
-
-                    -- heal spells with real direct range
+                -- heal spells with real direct range
                 else
                     tooltip:AddLine(string.format("%s: %d-%d",
                             effect,
@@ -218,8 +210,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.ceil(eval.spell.max_noncrit_if_hit)),
                         232.0 / 255, 225.0 / 255, 32.0 / 255);
 
-                    if spell.base_id == spell_name_to_id["Chain Heal"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
-                        local bounce_str = "     + ";
+                end
+                if bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
+
+                    if spell.base_id == spell_name_to_id["Chain Heal"] then
                         local bounces = 2;
                         local falloff = 0.5;
                         if loadout.runes[rune_ids.coherence] then
@@ -230,17 +224,38 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             falloff = 0.5 * 1.3;
                         end
 
-                        for i = 1, bounces - 1 do
-                            bounce_str = bounce_str .. string.format(" %d-%d  + ",
-                                falloff * math.floor(eval.spell.min_noncrit_if_hit),
-                                falloff * math.ceil(eval.spell.max_noncrit_if_hit));
+                        tooltip:AddLine(format_bounce_spell(eval.spell.min_noncrit_if_hit,
+                                                            eval.spell.max_noncrit_if_hit,
+                                                            bounces,
+                                                            falloff),
+                                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                    elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
 
-                            falloff = falloff * falloff;
+                        local bounces = 2;
+                        local falloff = 0.7;
+                        if loadout.runes[rune_ids.coherence] then
+                            bounces = 3;
+                            falloff = falloff + 0.1;
                         end
-                        bounce_str = bounce_str .. string.format(" %d-%d",
-                            falloff * math.floor(eval.spell.min_noncrit_if_hit),
-                            falloff * math.ceil(eval.spell.max_noncrit_if_hit));
-                        tooltip:AddLine(bounce_str, 232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
+                            falloff = falloff + 0.05;
+                        end
+                        tooltip:AddLine(format_bounce_spell(eval.spell.min_noncrit_if_hit,
+                                                            eval.spell.max_noncrit_if_hit,
+                                                            bounces,
+                                                            falloff),
+                                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                    elseif spell.base_id == spell_name_to_id["Healing Wave"] and 
+                        (loadout.num_set_pieces[set_tiers.pve_1] >= 8 or
+                        loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6) then
+
+                        local bounces = 2;
+                        local falloff = 0.4;
+                        tooltip:AddLine(format_bounce_spell(eval.spell.min_noncrit_if_hit,
+                                                            eval.spell.max_noncrit_if_hit,
+                                                            bounces,
+                                                            falloff),
+                                        232.0 / 255, 225.0 / 255, 32.0 / 255);
                     end
                 end
             else
@@ -316,9 +331,16 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         math.floor(eval.spell.min_crit_if_hit),
                         math.ceil(eval.spell.max_crit_if_hit)),
                     252.0 / 255, 69.0 / 255, 3.0 / 255);
+            elseif eval.spell.min_crit_if_hit ~= 0 then
+                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f",
+                        stats.crit * 100,
+                        stats.crit_mod,
+                        eval.spell.min_crit_if_hit),
+                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+            end
 
-                if spell.base_id == spell_name_to_id["Chain Heal"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
-                    local bounce_str = "     + ";
+            if bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
+                if spell.base_id == spell_name_to_id["Chain Heal"] then
                     local bounces = 2;
                     local falloff = 0.5;
                     if loadout.runes[rune_ids.coherence] then
@@ -329,20 +351,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         falloff = 0.5 * 1.3;
                     end
 
-                    for i = 1, bounces - 1 do
-                        bounce_str = bounce_str .. string.format(" %d-%d  + ",
-                            falloff * math.floor(eval.spell.min_crit_if_hit),
-                            falloff * math.ceil(eval.spell.max_crit_if_hit));
-
-                        falloff = falloff * falloff;
-                    end
-                    bounce_str = bounce_str .. string.format(" %d-%d",
-                        falloff * math.floor(eval.spell.min_crit_if_hit),
-                        falloff * math.ceil(eval.spell.max_crit_if_hit));
-                    tooltip:AddLine(bounce_str, 252.0 / 255, 69.0 / 255, 3.0 / 255);
-                elseif spell.base_id == spell_name_to_id["Chain Lightning"] and bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
-                    local bounce_str = "     + ";
-
+                    tooltip:AddLine(format_bounce_spell(eval.spell.min_crit_if_hit,
+                                                        eval.spell.max_crit_if_hit,
+                                                        bounces,
+                                                        falloff),
+                                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
                     local bounces = 2;
                     local falloff = 0.7;
                     if loadout.runes[rune_ids.coherence] then
@@ -352,28 +366,23 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
                         falloff = falloff + 0.05;
                     end
+                    tooltip:AddLine(format_bounce_spell(eval.spell.min_crit_if_hit,
+                                                        eval.spell.max_crit_if_hit,
+                                                        bounces,
+                                                        falloff),
+                                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                elseif spell.base_id == spell_name_to_id["Healing Wave"] and 
+                    (loadout.num_set_pieces[set_tiers.pve_1] >= 8 or
+                    loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6) then
 
-                    for i = 1, bounces - 1 do
-                        bounce_str = bounce_str .. string.format(" %d-%d  + ",
-                            falloff * math.floor(eval.spell.min_crit_if_hit),
-                            falloff * math.ceil(eval.spell.max_crit_if_hit));
-
-                        falloff = falloff * falloff;
-                    end
-                    bounce_str = bounce_str .. string.format(" %d-%d",
-                        falloff * math.floor(eval.spell.min_crit_if_hit),
-                        falloff * math.ceil(eval.spell.max_crit_if_hit));
-                    tooltip:AddLine(bounce_str, 252.0 / 255, 69.0 / 255, 3.0 / 255);
-                elseif spell.base_id == spell_name_to_id["Greater Heal"] and loadout.num_set_pieces[set_tiers.pve_3] >= 4 then
-                    tooltip:AddLine("                         + 500 absorb",
-                        252.0 / 255, 69.0 / 255, 3.0 / 255);
+                    local bounces = 2;
+                    local falloff = 0.4;
+                    tooltip:AddLine(format_bounce_spell(eval.spell.min_crit_if_hit,
+                                                        eval.spell.max_crit_if_hit,
+                                                        bounces,
+                                                        falloff),
+                                    252.0 / 255, 69.0 / 255, 3.0 / 255);
                 end
-            elseif eval.spell.min_crit_if_hit ~= 0 then
-                tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f",
-                        stats.crit * 100,
-                        stats.crit_mod,
-                        eval.spell.min_crit_if_hit),
-                    252.0 / 255, 69.0 / 255, 3.0 / 255);
             end
         end
 

@@ -82,16 +82,18 @@ end
 
 local function init_frame_overlay(frame_info)
 
-    frame_info.overlay_frames = {};
-    local offsets = {-3, -1.5, 0};
-    local anchors = {"TOP", "CENTER", "BOTTOM"};
+    if not frame_info.overlay_frames then
+        frame_info.overlay_frames = {};
+        local offsets = {-3, -1.5, 0};
+        local anchors = {"TOP", "CENTER", "BOTTOM"};
 
-    for i = 1, 3 do
-        frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
-        
-        frame_info.overlay_frames[i]:SetFont(
-            swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
-        frame_info.overlay_frames[i]:SetPoint(anchors[i], 1, offsets[i]);
+        for i = 1, 3 do
+            frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
+            frame_info.overlay_frames[i]:SetFont(
+                swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+            frame_info.overlay_frames[i]:SetPoint(anchors[i], 1, offsets[i]);
+        end
+    else
     end
 end
 
@@ -146,47 +148,28 @@ local function spell_id_of_action(action_id)
     return spell_id;
 end
 
-local function try_register_frame(frame_name)
+local function try_register_frame(action_id, frame_name)
     -- creates it if it suddenly exists but not registered
     local frame = getfenv()[frame_name];
     if frame then
-        local action_id = action_id_by_name[frame_name];
-        if not action_id_frames[action_id].frame then
-
-            local action_type, id, _ = GetActionInfo(action_id);
-
-            if action_id then
-
+        action_id_frames[action_id].frame = frame;
                 local spell_id = spell_id_of_action(action_id);
                 if spell_id ~= 0 then
                     active_overlays[action_id] = spell_id;
                 end
-            end
             action_id_frames[action_id].spell_id = spell_id;
-            action_id_frames[action_id].frame = frame; 
             init_frame_overlay(action_id_frames[action_id]);
-        end
     end
 end
 
-local function rescan_action_frames()
+local function scan_action_frames()
 
     for action_id, v in pairs(action_bar_frame_names) do
 
-        try_register_frame(v); 
-
-        local frame = getfenv()[v];
-        if frame then
-
-            local spell_id = spell_id_of_action(action_id);
-            
-            if spell_id ~= 0 then
-                active_overlays[action_id] = spell_id;
-            end
-
-            action_id_frames[action_id].frame = frame; 
-            action_id_frames[action_id].spell_id = spell_id;
+        if not action_id_frames[action_id] then
+            action_id_frames[action_id] = {};
         end
+        try_register_frame(action_id, v);
     end
 end
 
@@ -223,8 +206,6 @@ local function gather_spell_icons()
 
     elseif IsAddOnLoaded("ElvUI") then -- check for some common addons if they overrite spellbook frames
 
-        --local elvi_bar_order_to_match_action_ids = {1, 6, 5, 4, 2, 3, 7, 8, 9, 10};
-        --local elvi_bar_order_to_match_action_ids = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         for i = 1, 10 do
             for j = 1, 12 do
                 action_bar_frame_names[index] = 
@@ -251,12 +232,9 @@ local function gather_spell_icons()
             end
         end
 
-        --local dominos_button_index = 13;
         for i = index, 120 do
             action_bar_frame_names[i] = "DominosActionButton"..i;
             action_id_by_name[action_bar_frame_names[i]] = i;
-            --action_bar_frame_names[i] = "DominosActionButton"..dominos_button_index;
-            --dominos_button_index = dominos_button_index + 1;
         end
         for i = 13, 24 do
             action_bar_frame_names[i] = "DominosActionButton"..i;
@@ -282,32 +260,12 @@ local function gather_spell_icons()
         action_bar_addon_name = "Default";
     end
 
-    for action_id, v in pairs(action_bar_frame_names) do
-
-        action_id_frames[action_id] = {};
-
-        local frame = getfenv()[v];
-        if frame then
-
-            local spell_id = spell_id_of_action(action_id);
-
-            if spell_id ~= 0 then
-                active_overlays[action_id] = spell_id;
-            end
-
-            action_id_frames[action_id].frame = frame; 
-            action_id_frames[action_id].spell_id = spell_id;
-
-            init_frame_overlay(action_id_frames[action_id]);
-        end
-    end
-
+    scan_action_frames();
 end
 
 local function reassign_overlay_icon_spell(action_id, spell_id, action_button_frame)
 
     if action_id_frames[action_id].frame then
-
         if spell_id == 0 then
             for i = 1, 3 do
                 action_id_frames[action_id].overlay_frames[i]:SetText("");
@@ -327,7 +285,7 @@ local function reassign_overlay_icon(action_id)
     if action_id > 120 or action_id <= 0 or not action_bar_frame_names[action_id] then
         return;
     end
-    try_register_frame(action_bar_frame_names[action_id]); 
+    try_register_frame(action_id, action_bar_frame_names[action_id]);
 
     local spell_id = spell_id_of_action(action_id);
 
@@ -339,7 +297,7 @@ local function reassign_overlay_icon(action_id)
         local mirrored_action_button_frame = action_id_frames[mirrored_bar_id].frame;
         local mirrored_action_id = action_id_of_button(mirrored_action_button_frame);
         if mirrored_action_id == action_id then
-            -- yep was mirrored, update that as well
+            -- was mirrored, update that as well
             reassign_overlay_icon_spell(mirrored_bar_id, spell_id, mirrored_action_button_frame)
         end
     end
@@ -380,7 +338,7 @@ local function update_icon_overlay_settings()
     cast_speed_overlay = sw_frame.settings_frame.icon_avg_cast:GetChecked();
 
     sw_frame.settings_frame.icon_overlay = {};
-    
+
     local index = 1; 
 
     if sw_frame.settings_frame.icon_normal_effect:GetChecked() then
@@ -504,7 +462,7 @@ local function update_icon_overlay_settings()
     end
 
     active_overlays = {};
-    rescan_action_frames();
+    scan_action_frames();
     on_special_action_bar_changed();
 end
 
@@ -512,37 +470,54 @@ local function setup_action_bars()
     gather_spell_icons();
     update_icon_overlay_settings();
 end
+local function update_action_bars()
+    update_icon_overlay_settings();
+end
 
-local spell_cache = {};    
+local spell_cache = {};
+
+local function format_overlay_number(val)
+    if (val < 100.0) then
+        return string.format("%.2f", val);
+    elseif (val < 1000.0) then
+        return string.format("%.1f", val);
+    elseif (val < 10000.0) then
+        return string.format("%d", 0.5+math.floor(val));
+    elseif (val < 1000000.0) then
+        return string.format("%.1fk", val/1000);
+    elseif (val < 1000000000.0) then
+        return string.format("%.1fm", val/1000000);
+    else
+        return "inf";
+    end
+end
 
 local overlay_label_handler = {
     [icon_stat_display.normal] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d",
-            math.floor(0.5+0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) +
-                           0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb)));
+        frame_overlay:SetText(format_overlay_number(0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) + 0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb));
     end,
     [icon_stat_display.crit] = function(frame_overlay, spell, spell_effect, stats)
 
         local crit_sum = 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
                                0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max);
         if stats.crit > 0 and crit_sum > 0 then
-            frame_overlay:SetText(string.format("%d", math.floor(0.5 + crit_sum + spell_effect.absorb)));
+            frame_overlay:SetText(format_overlay_number(crit_sum + spell_effect.absorb));
         else
             frame_overlay:SetText("");
         end
     end,
     [icon_stat_display.expected] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%d", math.floor(spell_effect.expectation+0.5)));
+        frame_overlay:SetText(format_overlay_number(spell_effect.expectation));
     end,
     [icon_stat_display.effect_per_sec] = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.effect_per_sec == math.huge then
             frame_overlay:SetText("inf");
         else
-            frame_overlay:SetText(string.format("%d", math.floor(spell_effect.effect_per_sec+0.5)));
+            frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_sec));
         end
     end,
     [icon_stat_display.effect_per_cost] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.2f", spell_effect.effect_per_cost));
+        frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_cost));
     end,
     [icon_stat_display.avg_cost] = function(frame_overlay, spell, spell_effect, stats)
         if stats.cost >= 0 then
@@ -553,7 +528,7 @@ local overlay_label_handler = {
     end,
     [icon_stat_display.avg_cast] = function(frame_overlay, spell, spell_effect, stats)
         if stats.cast_time > 0 then
-            frame_overlay:SetText(string.format("%.1f", stats.cast_time));
+            frame_overlay:SetText(format_overlay_number(stats.cast_time));
         else
             frame_overlay:SetText("");
         end
@@ -576,18 +551,18 @@ local overlay_label_handler = {
     [icon_stat_display.casts_until_oom] = function(frame_overlay, spell, spell_effect, stats)
 
         if spell_effect.num_casts_until_oom >= 0 then
-            frame_overlay:SetText(string.format("%.1f", spell_effect.num_casts_until_oom));
+            frame_overlay:SetText(format_overlay_number(spell_effect.num_casts_until_oom));
         else
             frame_overlay:SetText("");
         end
 
     end,
     [icon_stat_display.effect_until_oom] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(string.format("%.0f", math.floor(spell_effect.effect_until_oom+0.5)));
+        frame_overlay:SetText(format_overlay_number(spell_effect.effect_until_oom));
     end,
     [icon_stat_display.time_until_oom] = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.time_until_oom >= 0 then
-            frame_overlay:SetText(string.format("%.1fs", spell_effect.time_until_oom));
+            frame_overlay:SetText(format_overlay_number(spell_effect.time_until_oom));
         else
             frame_overlay:SetText("");
         end
@@ -748,6 +723,10 @@ local function update_spell_icons(loadout, effects, eval_flags)
     if swc.core.setup_action_bar_needed then
         setup_action_bars();
         swc.core.setup_action_bar_needed = false;
+    end
+    if swc.core.update_action_bar_needed then
+        update_action_bars();
+        swc.core.update_action_bar_needed = false;
     end
 
     --NOTE: sometimes the Action buttons 1-12 haven't been updated
