@@ -626,7 +626,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 resource_refund = resource_refund + stats.crit * pts * 0.2 * original_base_cost;
             end
 
-            if loadout.runes[rune_ids.fanaticism] then
+            if loadout.runes[rune_ids.fanaticism] and spell.base_min ~= 0 then
                 add_extra_periodic_effect(stats,
                                           bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
                                           0.6, 4, 3, 1.0, "Fanaticism");
@@ -739,7 +739,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
             -- ignite
             local pts = loadout.talents_table:pts(2, 3);
-            if pts ~= 0 and spell.school == magic_school.fire then
+            if pts ~= 0 and spell.school == magic_school.fire and spell.base_min ~= 0 then
                 -- % ignite double dips in % multipliers
                 local double_dip = (1.0 + stats.spell_dmg_mod_mul) *
                 (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) *
