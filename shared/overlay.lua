@@ -81,18 +81,19 @@ end
 
 local function init_frame_overlay(frame_info)
 
+    local offsets = {-3, -1.5, 0};
+    local anchors = {"TOP", "CENTER", "BOTTOM"};
     if not frame_info.overlay_frames then
         frame_info.overlay_frames = {};
-        local offsets = {-3, -1.5, 0};
-        local anchors = {"TOP", "CENTER", "BOTTOM"};
 
         for i = 1, 3 do
             frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
-            frame_info.overlay_frames[i]:SetFont(
-                swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
-            frame_info.overlay_frames[i]:SetPoint(anchors[i], 1, offsets[i]);
         end
-    else
+    end
+    for i = 1, 3 do
+        frame_info.overlay_frames[i]:SetFont(
+            swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
+        frame_info.overlay_frames[i]:SetPoint(anchors[i], sw_frame.settings_frame.icon_overlay_offset + 1.0, offsets[i]);
     end
 end
 
@@ -152,12 +153,12 @@ local function try_register_frame(action_id, frame_name)
     local frame = getfenv()[frame_name];
     if frame then
         action_id_frames[action_id].frame = frame;
-                local spell_id = spell_id_of_action(action_id);
-                if spell_id ~= 0 then
-                    active_overlays[action_id] = spell_id;
-                end
-            action_id_frames[action_id].spell_id = spell_id;
-            init_frame_overlay(action_id_frames[action_id]);
+        local spell_id = spell_id_of_action(action_id);
+        if spell_id ~= 0 then
+            active_overlays[action_id] = spell_id;
+        end
+        action_id_frames[action_id].spell_id = spell_id;
+        init_frame_overlay(action_id_frames[action_id]);
     end
 end
 
@@ -182,9 +183,11 @@ local function gather_spell_icons()
     else -- default spellbook frames
         for i = 1, 12 do
 
-            spell_book_frames[i] = { 
-                frame = getfenv()["SpellButton"..i];
-            };
+            if not spell_book_frames[i] then
+                spell_book_frames[i] = { 
+                    frame = getfenv()["SpellButton"..i];
+                };
+            end
         end
     end
     for i = 1, 12 do
@@ -429,10 +432,19 @@ local function update_icon_overlay_settings()
         sw_frame.settings_frame.icon_overlay[2] = nil;
     end
 
-    if sw_frame.settings_frame.icon_macro_name_clearance:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[2] = sw_frame.settings_frame.icon_overlay[1]
-        sw_frame.settings_frame.icon_overlay[1] = sw_frame.settings_frame.icon_overlay[3]
+    if sw_frame.settings_frame.icon_bottom_clearance:GetChecked() then
+        sw_frame.settings_frame.icon_overlay[2] = sw_frame.settings_frame.icon_overlay[1];
+        sw_frame.settings_frame.icon_overlay[1] = sw_frame.settings_frame.icon_overlay[3];
         sw_frame.settings_frame.icon_overlay[3] = nil;
+    end
+
+    if sw_frame.settings_frame.icon_top_clearance:GetChecked() then
+        if sw_frame.settings_frame.icon_bottom_clearance:GetChecked() then
+            sw_frame.settings_frame.icon_overlay[2] = sw_frame.settings_frame.icon_overlay[1];
+        else
+            sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[1] or sw_frame.settings_frame.icon_overlay[3];
+        end
+        sw_frame.settings_frame.icon_overlay[1] = nil;
     end
 
     sw_num_icon_overlay_fields_active = index - 1;
@@ -469,10 +481,11 @@ end
 
 local spell_cache = {};
 
-local function format_overlay_number(val)
-    if (val < 100.0) then
+local function format_overlay_number(val, max_accuracy_digits)
+
+    if (val < 100.0 and max_accuracy_digits >= 2) then
         return string.format("%.2f", val);
-    elseif (val < 1000.0) then
+    elseif (val < 1000.0 and max_accuracy_digits >= 1) then
         return string.format("%.1f", val);
     elseif (val < 10000.0) then
         return string.format("%d", 0.5+math.floor(val));
@@ -487,30 +500,31 @@ end
 
 local overlay_label_handler = {
     [icon_stat_display.normal] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) + 0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb));
+        local val = 0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) + 0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb;
+        frame_overlay:SetText(format_overlay_number(val, 1));
     end,
     [icon_stat_display.crit] = function(frame_overlay, spell, spell_effect, stats)
 
         local crit_sum = 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
                                0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max);
         if stats.crit > 0 and crit_sum > 0 then
-            frame_overlay:SetText(format_overlay_number(crit_sum + spell_effect.absorb));
+            frame_overlay:SetText(format_overlay_number(crit_sum + spell_effect.absorb, 1));
         else
             frame_overlay:SetText("");
         end
     end,
     [icon_stat_display.expected] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(spell_effect.expectation));
+        frame_overlay:SetText(format_overlay_number(spell_effect.expectation, 1));
     end,
     [icon_stat_display.effect_per_sec] = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.effect_per_sec == math.huge then
             frame_overlay:SetText("inf");
         else
-            frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_sec));
+            frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_sec, 1));
         end
     end,
     [icon_stat_display.effect_per_cost] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_cost));
+        frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_cost, 2));
     end,
     [icon_stat_display.avg_cost] = function(frame_overlay, spell, spell_effect, stats)
         if stats.cost >= 0 then
@@ -521,7 +535,7 @@ local overlay_label_handler = {
     end,
     [icon_stat_display.avg_cast] = function(frame_overlay, spell, spell_effect, stats)
         if stats.cast_time > 0 then
-            frame_overlay:SetText(format_overlay_number(stats.cast_time));
+            frame_overlay:SetText(format_overlay_number(stats.cast_time, 2));
         else
             frame_overlay:SetText("");
         end
@@ -534,7 +548,7 @@ local overlay_label_handler = {
         end
     end,
     [icon_stat_display.crit_chance] = function(frame_overlay, spell, spell_effect, stats)
-    
+
         if stats.crit ~= 0 and spell_effect.total_ot_if_crit + spell_effect.total_min_crit_if_hit > 0 then
             frame_overlay:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
         else 
@@ -544,18 +558,18 @@ local overlay_label_handler = {
     [icon_stat_display.casts_until_oom] = function(frame_overlay, spell, spell_effect, stats)
 
         if spell_effect.num_casts_until_oom >= 0 then
-            frame_overlay:SetText(format_overlay_number(spell_effect.num_casts_until_oom));
+            frame_overlay:SetText(format_overlay_number(spell_effect.num_casts_until_oom, 1));
         else
             frame_overlay:SetText("");
         end
 
     end,
     [icon_stat_display.effect_until_oom] = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(spell_effect.effect_until_oom));
+        frame_overlay:SetText(format_overlay_number(spell_effect.effect_until_oom, 0));
     end,
     [icon_stat_display.time_until_oom] = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.time_until_oom >= 0 then
-            frame_overlay:SetText(format_overlay_number(spell_effect.time_until_oom));
+            frame_overlay:SetText(format_overlay_number(spell_effect.time_until_oom, 2));
         else
             frame_overlay:SetText("");
         end
@@ -620,7 +634,9 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
         if sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
             local idx = 3;
-            if sw_frame.settings_frame.icon_macro_name_clearance:GetChecked() then
+            if sw_frame.settings_frame.icon_bottom_clearance:GetChecked() and sw_frame.settings_frame.icon_top_clearance:GetChecked() then
+                idx = 2;
+            elseif sw_frame.settings_frame.icon_bottom_clearance:GetChecked() then
                 idx = 1;
             end
             frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));

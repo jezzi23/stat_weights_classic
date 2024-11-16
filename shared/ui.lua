@@ -630,6 +630,9 @@ local function sw_activate_tab(tab_index)
     sw_frame.tab3:UnlockHighlight();
     sw_frame.tab3:SetButtonState("NORMAL");
 
+
+    --PanelTemplates_SetTab(sw_frame, 1);
+
     if tab_index == 1 then
         sw_frame.settings_frame:Show();
         sw_frame.tab1:LockHighlight();
@@ -864,7 +867,10 @@ local function create_sw_gui_settings_frame()
 
     sw_frame.settings_frame.icon_heal_variant = 
         create_sw_checkbox("sw_icon_heal_variant", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Show healing for hybrids", nil);  
+                           "Show healing for hybrids", nil);
+
+    getglobal(sw_frame.settings_frame.icon_heal_variant:GetName()).tooltip = 
+        "Shows healing instead of damage for hybrid spells like Holy Nova or Penance.";
 
     sw_frame.settings_frame.icon_old_rank_warning = 
         create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
@@ -877,15 +883,29 @@ local function create_sw_gui_settings_frame()
         
     end);
 
+    sw_frame.settings_frame.icon_top_clearance = 
+        create_sw_checkbox("sw_icon_top_clearance", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+                           "Top clearance", nil);  
+
+    sw_frame.settings_frame.icon_bottom_clearance = 
+        create_sw_checkbox("sw_icon_bottom_clearance", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
+                           "Bottom clearance", nil);  
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
    sw_frame.settings_frame.icon_show_single_target_only = 
         create_sw_checkbox("sw_icon_show_single_target_only", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Show single target only", nil);  
+                           "Show single target only", nil);
 
-    sw_frame.settings_frame.icon_macro_name_clearance = 
-        create_sw_checkbox("sw_icon_macro_name_clearance", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Macro name clearance", nil);  
+    getglobal(sw_frame.settings_frame.icon_show_single_target_only:GetName()).tooltip = 
+        "Expectation is displayed as 1.0x effect instead of 5.0x for Prayer of Healing as an example.";
 
-    sw_frame.settings_frame.icon_macro_name_clearance:SetScript("OnClick", function(self)
+
+    sw_frame.settings_frame.icon_top_clearance:SetScript("OnClick", function(self)
+            
+        update_icon_overlay_settings();
+        
+    end);
+    sw_frame.settings_frame.icon_bottom_clearance:SetScript("OnClick", function(self)
             
         update_icon_overlay_settings();
         
@@ -903,7 +923,7 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.settings_frame.y_offset);
     sw_frame.settings_frame.icon_settings_update_freq_label_lhs:SetText("Hz (higher = more responsive overlay)");
 
-    sw_frame.settings_frame.icon_settings_update_freq_editbox = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.settings_frame, "InputBoxTemplate");
+    sw_frame.settings_frame.icon_settings_update_freq_editbox = CreateFrame("EditBox", nil, sw_frame.settings_frame, "InputBoxTemplate");
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetPoint("TOPLEFT", 120, sw_frame.settings_frame.y_offset + 3);
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetText("");
     sw_frame.settings_frame.icon_settings_update_freq_editbox:SetSize(40, 15);
@@ -913,9 +933,7 @@ local function create_sw_gui_settings_frame()
 
         local hz = tonumber(self:GetText());
         if hz and hz >= 0.01 and hz <= 300 then
-
-            sw_snapshot_loadout_update_freq = tonumber(hz);
-            
+            sw_snapshot_loadout_update_freq = hz;
         else
             self:SetText("3"); 
             sw_snapshot_loadout_update_freq = 3;
@@ -942,22 +960,22 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_overlay_font_size_slider =
         CreateFrame("Slider", nil, sw_frame.settings_frame, "UISliderTemplate");
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetOrientation('HORIZONTAL');
-    sw_frame.settings_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 145, sw_frame.settings_frame.y_offset+4);
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 65, sw_frame.settings_frame.y_offset+4);
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetMinMaxValues(2, 24)
-    sw_frame.settings_frame.icon_overlay_font_size_slider:SetWidth(150)
+    sw_frame.settings_frame.icon_overlay_font_size_slider:SetWidth(60)
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetHeight(20)
 
     sw_frame.settings_frame.icon_overlay_font_size_slider_text = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY")
     sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetFontObject(font)
     sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetPoint("TOPLEFT", 15, sw_frame.settings_frame.y_offset)
-    sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetText("Icon overlay font size")
+    sw_frame.settings_frame.icon_overlay_font_size_slider_text:SetText("Font size")
     sw_frame.settings_frame.icon_overlay_font_size = __sw__persistent_data_per_char.settings.icon_overlay_font_size;
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetValue(sw_frame.settings_frame.icon_overlay_font_size);
 
     sw_frame.settings_frame.icon_overlay_font_size_slider_val = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY")
     sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetFontObject(font)
-    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetPoint("TOPLEFT", 300, sw_frame.settings_frame.y_offset)
-    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2f pt", sw_frame.settings_frame.icon_overlay_font_size))
+    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetPoint("TOPLEFT", 130, sw_frame.settings_frame.y_offset)
+    sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2fx", sw_frame.settings_frame.icon_overlay_font_size))
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetValueStep(1)
     sw_frame.settings_frame.icon_overlay_font_size_slider:SetScript("OnValueChanged", function(self, val)
         sw_frame.settings_frame.icon_overlay_font_size = val;
@@ -982,7 +1000,71 @@ local function create_sw_gui_settings_frame()
             end
         end
 
-        sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2f pt", sw_frame.settings_frame.icon_overlay_font_size))
+        sw_frame.settings_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2fx", sw_frame.settings_frame.icon_overlay_font_size))
+    end);
+
+    sw_frame.settings_frame.icon_overlay_offset_slider =
+        CreateFrame("Slider", nil, sw_frame.settings_frame, "UISliderTemplate");
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetOrientation('HORIZONTAL');
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetPoint("TOPLEFT", 270, sw_frame.settings_frame.y_offset+4);
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetMinMaxValues(-15, 15);
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetWidth(60)
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetHeight(20)
+
+    sw_frame.settings_frame.icon_overlay_offset_slider_text = sw_frame.settings_frame:CreateFontString(nil, "OVERLAY")
+    sw_frame.settings_frame.icon_overlay_offset_slider_text:SetFontObject(font)
+    sw_frame.settings_frame.icon_overlay_offset_slider_text:SetPoint("TOPLEFT", 180, sw_frame.settings_frame.y_offset)
+    sw_frame.settings_frame.icon_overlay_offset_slider_text:SetText("Horizontal offset")
+    sw_frame.settings_frame.icon_overlay_offset = __sw__persistent_data_per_char.settings.icon_overlay_offset;
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetValue(sw_frame.settings_frame.icon_overlay_offset);
+
+    
+    sw_frame.settings_frame.icon_overlay_offset_slider_val = CreateFrame("EditBox", nil, sw_frame.settings_frame, "InputBoxTemplate");
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetPoint("TOPLEFT", 340, sw_frame.settings_frame.y_offset)
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetText(string.format("%.1f", sw_frame.settings_frame.icon_overlay_offset))
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetAutoFocus(false)
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetSize(35, 10);
+
+    local offset_edit = function(self)
+        local offset = tonumber(self:GetText());
+        if offset and offset >= -15 and offset <= 15 then
+
+            sw_frame.settings_frame.icon_overlay_offset = offset;
+            sw_frame.settings_frame.icon_overlay_offset_slider:SetValue(offset);
+        else
+            self:SetText("0.0"); 
+            sw_frame.settings_frame.icon_overlay_offset = 0.0;
+            sw_frame.settings_frame.icon_overlay_offset_slider:SetValue(0.0);
+
+        end
+
+    	self:ClearFocus();
+        self:HighlightText(0,0);
+    end;
+
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetScript("OnEnterPressed", offset_edit);
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetScript("OnEscapePressed", offset_edit);
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetScript("OnEditFocusLost", offset_edit);
+    sw_frame.settings_frame.icon_overlay_offset_slider_val:SetScript("OnTextChanged", function(self)
+        local offset = tonumber(self:GetText());
+        if offset and offset >= -15 and offset <= 15 then
+            sw_frame.settings_frame.icon_overlay_offset = offset;
+
+            swc.core.setup_action_bar_needed = true;
+            --sw_frame.settings_frame.icon_overlay_offset_slider:SetValue(offset);
+        end
+
+
+    end);
+
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetValueStep(0.1);
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetValue(sw_frame.settings_frame.icon_overlay_offset);
+    sw_frame.settings_frame.icon_overlay_offset_slider:SetScript("OnValueChanged", function(self, val)
+        sw_frame.settings_frame.icon_overlay_offset = val;
+
+        sw_frame.settings_frame.icon_overlay_offset_slider_val:SetText(string.format("%.1f", sw_frame.settings_frame.icon_overlay_offset))
+        swc.core.setup_action_bar_needed = true;
+        swc.overlay.update_overlay();
     end);
 
     local num_icon_overlay_checks = 0;
@@ -1081,8 +1163,11 @@ local function create_sw_gui_settings_frame()
         sw_frame.settings_frame.icon_show_single_target_only:SetChecked(true);
     end
 
-    if __sw__persistent_data_per_char.settings.icon_macro_name_clearance then
-        sw_frame.settings_frame.icon_macro_name_clearance:SetChecked(true);
+    if __sw__persistent_data_per_char.settings.icon_top_clearance then
+        sw_frame.settings_frame.icon_top_clearance:SetChecked(true);
+    end
+    if __sw__persistent_data_per_char.settings.icon_bottom_clearance then
+        sw_frame.settings_frame.icon_bottom_clearance:SetChecked(true);
     end
 
     sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
@@ -1333,17 +1418,15 @@ local function create_sw_gui_settings_frame()
         sw_frame.settings_frame.clear_original_tooltip
     );
 
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 23;
-
     sw_frame.settings_frame.reset_addon_button =
         CreateFrame("Button", nil, sw_frame.settings_frame, "UIPanelButtonTemplate");
     sw_frame.settings_frame.reset_addon_button:SetScript("OnClick", function(self)
         swc.core.__sw__use_defaults__ = 1;
         ReloadUI();
     end);
-    sw_frame.settings_frame.reset_addon_button:SetPoint("TOPLEFT", 12, sw_frame.settings_frame.y_offset);
+    sw_frame.settings_frame.reset_addon_button:SetPoint("TOPLEFT", 190, sw_frame.settings_frame.y_offset - 4);
     sw_frame.settings_frame.reset_addon_button:SetText("Reset all to default (UI Reload)");
-    sw_frame.settings_frame.reset_addon_button:SetWidth(200);
+    sw_frame.settings_frame.reset_addon_button:SetWidth(190);
 
     if swc.core.expansion_loaded ~= swc.core.expansions.vanilla then
         sw_frame.settings_frame.icon_show_single_target_only:Hide();
@@ -2254,11 +2337,11 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
     end);
 
-    y_offset_rhs = y_offset_rhs - 20;
+    y_offset_rhs = y_offset_rhs - 15;
 
 
     sw_frame.loadouts_frame.rhs_list.buffs_button =
-        CreateFrame("Button", "sw_frame_buffs_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
+        CreateFrame("Button", "sw_frame_buffs_button", sw_frame.loadouts_frame.rhs_list, "PanelTopTabButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetScript("OnClick", function(self)
 
         sw_frame.loadouts_frame.rhs_list.self_buffs_frame:Show();
@@ -2275,13 +2358,16 @@ local function create_sw_gui_loadout_frame()
 
     end);
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetPoint("TOPLEFT", 20, y_offset_rhs);
-    sw_frame.loadouts_frame.rhs_list.buffs_button:SetText("SELF");
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetText("PLAYER");
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetWidth(93);
     sw_frame.loadouts_frame.rhs_list.buffs_button:LockHighlight();
     sw_frame.loadouts_frame.rhs_list.buffs_button:SetButtonState("PUSHED");
 
+    sw_frame.loadouts_frame.rhs_list.buffs_button:SetID(1);
+    PanelTemplates_TabResize(sw_frame.loadouts_frame.rhs_list.buffs_button, 0)
+
     sw_frame.loadouts_frame.rhs_list.target_buffs_button =
-        CreateFrame("Button", "sw_frame_target_buffs_button", sw_frame.loadouts_frame.rhs_list, "UIPanelButtonTemplate");
+        CreateFrame("Button", "sw_frame_target_buffs_button", sw_frame.loadouts_frame.rhs_list, "PanelTopTabButtonTemplate");
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetScript("OnClick", function(self)
 
         sw_frame.loadouts_frame.rhs_list.target_buffs_frame:Show();
@@ -2297,11 +2383,13 @@ local function create_sw_gui_loadout_frame()
         update_loadouts_rhs();
 
     end);
-    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOPLEFT", 93 + 20, y_offset_rhs);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetPoint("TOPLEFT", 93, y_offset_rhs);
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetText("TARGET");
     sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetWidth(93);
+    sw_frame.loadouts_frame.rhs_list.target_buffs_button:SetID(2);
+    PanelTemplates_TabResize(sw_frame.loadouts_frame.rhs_list.target_buffs_button, 0)
 
-    y_offset_rhs = y_offset_rhs - 20;
+    y_offset_rhs = y_offset_rhs - 30;
 
     sw_frame.loadouts_frame.rhs_list.buffs = {};
     sw_frame.loadouts_frame.rhs_list.buffs.num_buffs = 0;
@@ -2545,8 +2633,8 @@ local function create_sw_base_gui()
     );
 
     create_sw_spell_id_viewer();
-    
-    sw_frame.tab1 = CreateFrame("Button", "__sw_settings_button", sw_frame, "UIPanelButtonTemplate"); 
+
+    sw_frame.tab1 = CreateFrame("Button", "__sw_settings_button", sw_frame, "PanelTopTabButtonTemplate"); 
 
     sw_frame.tab1:SetPoint("TOPLEFT", 10, -25);
     sw_frame.tab1:SetWidth(116);
@@ -2555,26 +2643,34 @@ local function create_sw_base_gui()
     sw_frame.tab1:SetScript("OnClick", function()
         sw_activate_tab(1);
     end);
+    sw_frame.tab1:SetID(1);
+    PanelTemplates_TabResize(sw_frame.tab1, 0)
 
 
-    sw_frame.tab2 = CreateFrame("Button", "__sw_loadouts_button", sw_frame, "UIPanelButtonTemplate"); 
-    sw_frame.tab2:SetPoint("TOPLEFT", 124, -25);
+    sw_frame.tab2 = CreateFrame("Button", "__sw_loadouts_button", sw_frame, "PanelTopTabButtonTemplate"); 
+    sw_frame.tab2:SetPoint("TOPLEFT", 85, -25);
     sw_frame.tab2:SetWidth(116);
     sw_frame.tab2:SetHeight(25);
     sw_frame.tab2:SetText("Loadouts");
+    sw_frame.tab2:SetID(2);
+    PanelTemplates_TabResize(sw_frame.tab2, 0)
 
     sw_frame.tab2:SetScript("OnClick", function()
         sw_activate_tab(2);
     end);
 
-    sw_frame.tab3 = CreateFrame("Button", "__sw_stat_comparison_button", sw_frame, "UIPanelButtonTemplate"); 
-    sw_frame.tab3:SetPoint("TOPLEFT", 238, -25);
+    sw_frame.tab3 = CreateFrame("Button", "__sw_stat_comparison_button", sw_frame, "PanelTopTabButtonTemplate"); 
+    sw_frame.tab3:SetPoint("TOPLEFT", 165, -25);
     sw_frame.tab3:SetWidth(150);
     sw_frame.tab3:SetHeight(25);
     sw_frame.tab3:SetText("Stat Calculator");
     sw_frame.tab3:SetScript("OnClick", function()
         sw_activate_tab(3);
     end);
+    sw_frame.tab3:SetID(3);
+    PanelTemplates_TabResize(sw_frame.tab3, 0);
+
+    PanelTemplates_SetNumTabs(sw_frame, 3);
 end
 
 

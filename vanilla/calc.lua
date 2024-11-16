@@ -42,6 +42,7 @@ local effects_diff      = swc.loadout.effects_diff;
 local set_tiers         = swc.equipment.set_tiers;
 
 local is_buff_up        = swc.buffs.is_buff_up;
+local get_buff          = swc.buffs.get_buff;
 
 --------------------------------------------------------------------------------
 local calc              = {};
@@ -142,6 +143,13 @@ local lookups = {
         [2] = 1.0 - 0.4,
         [3] = 1.0 - 0.7,
     },
+    isb_to_vuln = {
+        [17794] = 0.04,
+        [17798] = 0.08,
+        [17797] = 0.12,
+        [17799] = 0.16,
+        [17800] = 0.2
+    },
     spellname_moonkin_form = GetSpellInfo(24858),
     spellname_sheath_of_light = GetSpellInfo(426159),
     spellname_sacred_shield = GetSpellInfo(412019),
@@ -152,6 +160,7 @@ local lookups = {
     spellname_regrowth = GetSpellInfo(8936),
     spellname_rapid_healing = GetSpellInfo(468531),
     spellname_water_shield = GetSpellInfo(408510),
+    spellname_isb_shadow_vuln = GetSpellInfo(17800),
 };
 
 local function base_mana_pool(clvl, max_mana_mod)
@@ -322,6 +331,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     stats.num_extra_periodic_effects = 0;
 
+    stats.hit_inflation = 1.0; -- inflate hit value visually while not contributing to expectation
+
     local target_vuln_mod = 1.0;
     local target_vuln_ot_mod = 1.0;
 
@@ -417,8 +428,6 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             cost_mod = cost_mod - effects.by_school.cost_mod[v];
         end
     end
-
-    local cast_mod_mul = 0.0;
 
     stats.target_resi = 0;
     stats.target_resi_dot = 0;
@@ -613,7 +622,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
 
         if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
-            is_buff_up(loadout, "player", lookups.spellname_moonkin_form, true) and
+            is_buff_up(loadout, "player", lookups.spellname_moonkin_form) and
             bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.no_crit)) == 0 then
             --moonkin form periodic crit
             stats.ot_crit = stats.crit + extra_ot_crit;
@@ -631,7 +640,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                                           bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
                                           0.6, 4, 3, 1.0, "Fanaticism");
             end
-            if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, lookups.spellname_sacred_shield, false) then
+            if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, lookups.spellname_sacred_shield) then
                 add_extra_periodic_effect(stats, 0, 1.0, 12, 1, 1.0, "Extra");
             end
             if benefit_id == spell_name_to_id["Holy Light"] and spell.rank < 4 then
@@ -712,7 +721,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             -- strange behaviour hacked in
             stats.effect_mod = stats.effect_mod + 0.02 * loadout.talents_table:pts(3, 14);
         end
-        if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.base_min ~= 0 and is_buff_up(loadout, "player", lookups.spellname_water_shield, true) then
+        if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.base_min ~= 0 and is_buff_up(loadout, "player", lookups.spellname_water_shield) then
 
             resource_refund = resource_refund + stats.crit * 0.04 * loadout.max_mana;
         end
@@ -826,8 +835,21 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 math.min(1.18, 1.0 + 0.06 * effects.raw.target_num_shadow_afflictions);
             end
         end
-        if benefit_id == spell_name_to_id["Shadow Bolt"] and loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
-            target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
+        if benefit_id == spell_name_to_id["Shadow Bolt"] then
+            if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
+                target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
+            end
+            --local isb = get_buff(loadout, "target", lookups.spellname_isb_shadow_vuln);
+            local isb = is_buff_up(loadout, "target", lookups.spellname_isb_shadow_vuln);
+            local isb_pts = loadout.talents_table:pts(3, 1);
+            local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
+
+            --if isb then
+            --    local isb_buff_val = lookups.isb_to_vuln[isb.id] or 0.0;
+            --    target_vuln_mod = target_vuln_mod / (1.0 + isb_buff_val);
+            --    stats.hit_inflation = isb_buff_val * isb_pts*0.04*isb_uptime;
+            --end
+            target_vuln_mod = target_vuln_mod * (1.0 + isb_pts*0.04*isb_uptime);
         end
     end
 
@@ -1268,6 +1290,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
     calc_expectation(info, spell, stats, loadout, num_unbounded_targets);
 
+
     if original_spell_id ~= spell.base_id then
         -- using alias for swiftmend/conflagrate
         -- we have the context for the aliased spell but now
@@ -1379,6 +1402,18 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         end
         info.effect_per_cost = math.huge;
     end
+
+
+    --info.min_noncrit_if_hit = info.min_noncrit_if_hit * stats.hit_inflation;
+    --info.max_noncrit_if_hit = info.max_noncrit_if_hit * stats.hit_inflation;
+    --info.min_crit_if_hit = info.min_crit_if_hit       * stats.hit_inflation;
+    --info.max_crit_if_hit = info.max_crit_if_hit       * stats.hit_inflation;
+
+    --info.ot_if_hit = info.ot_if_hit                   * stats.hit_inflation;
+    --info.ot_if_hit_max = info.ot_if_hit_max           * stats.hit_inflation;
+    --info.ot_if_crit = info.ot_if_crit                 * stats.hit_inflation;
+    --info.ot_if_crit_max = info.ot_if_crit_max         * stats.hit_inflation;
+
 end
 
 local function spell_info_from_stats(info, stats, spell, loadout, effects, eval_flags)
@@ -1389,16 +1424,12 @@ end
 local function cast_until_oom(spell_effect, stats, loadout, effects, calculating_weights)
     calculating_weights = calculating_weights or false;
 
-    local num_casts = 0;
-    local effect = 0;
-
     local mana = loadout.mana + loadout.extra_mana + effects.raw.mana;
 
     -- src: https://wowwiki-archive.fandom.com/wiki/Spirit
     -- without mp5
     local spirit = loadout.stats[stat.spirit] + effects.by_attribute.stats[stat.spirit];
 
-    -- TODO VANILLA: verify formula, especially at lower lvls
     local mp2_not_casting = spirit_mana_regen(spirit);
 
     if not calculating_weights then
@@ -1642,7 +1673,7 @@ elseif class == "PRIEST" then
         end,
         [spell_name_to_id["Penance"]] = function(spell, info, loadout, stats, effects)
 
-            if is_buff_up(loadout, "player", lookups.spellname_rapid_healing, true) and
+            if is_buff_up(loadout, "player", lookups.spellname_rapid_healing) and
                 bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
 
                 add_expectation_ot_st(info, 2);

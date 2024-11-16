@@ -610,13 +610,20 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 (eval.spell.expectation_direct_st + eval.spell.expected_ot_st);
             extra_info_st = extra_info_st ..
                 string.format("%.1f%% direct | %.1f%% periodic", direct_ratio * 100, (1.0 - direct_ratio) * 100);
-        elseif eval.spell.expectation_direct ~= 0 then
-            extra_info_multi = extra_info_multi .. "100% direct";
-            extra_info_st = "100% direct";
-        elseif eval.spell.expected_ot ~= 0 then
-            extra_info_multi = extra_info_multi .. "100% periodic";
-            extra_info_st = "100% periodic";
+        --elseif eval.spell.expectation_direct ~= 0 then
+        --    extra_info_multi = extra_info_multi .. "100% direct";
+        --    extra_info_st = "100% direct";
+        --elseif eval.spell.expected_ot ~= 0 then
+        --    extra_info_multi = extra_info_multi .. "100% periodic";
+        --    extra_info_st = "100% periodic";
         end
+        if spell.base_id == spell_name_to_id["Shadow Bolt"] and loadout.talents_table:pts(3, 1) ~= 0 then
+            local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
+
+            extra_info_st = extra_info_st .. string.format("ISB uptime %.1f%%", 100*isb_uptime);
+            extra_info_multi = extra_info_multi .. string.format("ISB uptime %.1f%%", 100*isb_uptime);
+        end
+
 
         if eval.spell.expectation ~= eval.spell.expectation_st then
             if extra_info_st == "" then
@@ -647,22 +654,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
-        --if eval.spell.effect_per_sec ~= eval.spell.effect_per_dur then
-        --    tooltip:AddLine(string.format("%s: %.1f%s",
-        --                                  effect_per_sec.." (cast time)",
-        --                                  eval.spell.effect_per_sec, direct_to_periodic_str),
-        --                    255.0/256, 128.0/256, 0);
-        --    tooltip:AddLine(string.format("%s: %.1f",
-        --                                  effect_per_sec.." (duration)",
-        --                                  eval.spell.effect_per_dur),
-        --                    255.0/256, 128.0/256, 0);
-        --    else
-        --    tooltip:AddLine(string.format("%s: %.1f%s",
-        --                                  effect_per_sec,
-        --                                  eval.spell.effect_per_sec, direct_to_periodic_str),
-        --                    255.0/256, 128.0/256, 0);
-        --end
-
         local periodic_part = "";
         if eval.spell.effect_per_dur ~= 0 and eval.spell.effect_per_dur ~= eval.spell.effect_per_sec then
             periodic_part = string.format("| %.1f periodic for %d sec", eval.spell.effect_per_dur,
@@ -676,7 +667,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() and not repeated_tooltip_on then
         local tooltip_cast = spell_cast_time(spell_id);
-        if not tooltip_cast or tooltip_cast ~= stats.cast_time then
+        if bit.band(spell_flags.instant, spell.flags) == 0 and (not tooltip_cast or tooltip_cast ~= stats.cast_time_nogcd) then
             if stats.cast_time_nogcd ~= stats.cast_time then
                 tooltip:AddLine(
                     string.format("Expected Cast Time: %.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
@@ -847,7 +838,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
 
     if evaluation_options ~= "" then
-        --tooltip:AddLine("Hold key to isolate: "..evaluation_options, 1.0, 1.0, 1.0);
         tooltip:AddLine("To isolate: Hold " .. evaluation_options, 1.0, 1.0, 1.0);
     end
     if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, swc.calc.evaluation_flags.offhand) == 0 then

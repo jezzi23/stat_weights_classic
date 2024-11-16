@@ -53,6 +53,7 @@ local function default_sw_settings()
 
     settings.icon_overlay_update_freq = 3;
     settings.icon_overlay_font_size = 8;
+    settings.icon_overlay_offset = 0.0;
     settings.icon_overlay_disable = false;
     settings.icon_overlay_mana_abilities = true;
     settings.icon_overlay_old_rank = false;
@@ -164,7 +165,8 @@ local function save_sw_settings()
     __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities = sw_frame.settings_frame.icon_mana_overlay:GetChecked();
     __sw__persistent_data_per_char.settings.icon_overlay_old_rank = sw_frame.settings_frame.icon_old_rank_warning:GetChecked();
     __sw__persistent_data_per_char.settings.icon_show_single_target_only = sw_frame.settings_frame.icon_show_single_target_only:GetChecked();
-    __sw__persistent_data_per_char.settings.icon_macro_name_clearance = sw_frame.settings_frame.icon_macro_name_clearance:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_bottom_clearance = sw_frame.settings_frame.icon_bottom_clearance:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_top_clearance = sw_frame.settings_frame.icon_top_clearance:GetChecked();
 
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
@@ -172,6 +174,7 @@ local function save_sw_settings()
     __sw__persistent_data_per_char.settings.clear_original_tooltip = sw_frame.settings_frame.clear_original_tooltip;
     __sw__persistent_data_per_char.settings.icon_overlay_update_freq = sw_snapshot_loadout_update_freq;
     __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.settings_frame.icon_overlay_font_size;
+    __sw__persistent_data_per_char.settings.icon_overlay_offset = sw_frame.settings_frame.icon_overlay_offset;
 
     __sw__persistent_data_per_char.settings.version_saved = swc.core.version_id;
 end

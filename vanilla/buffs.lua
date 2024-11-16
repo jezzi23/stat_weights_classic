@@ -43,29 +43,33 @@ local buffs_export          = {};
 local buff_filters          = {
     caster      = bit.lshift(1, 1),
     --
-    priest      = bit.lshift(1, 2),
-    mage        = bit.lshift(1, 3),
-    warlock     = bit.lshift(1, 4),
-    druid       = bit.lshift(1, 5),
-    shaman      = bit.lshift(1, 6),
-    paladin     = bit.lshift(1, 7),
+    priest       = bit.lshift(1, 2),
+    mage         = bit.lshift(1, 3),
+    warlock      = bit.lshift(1, 4),
+    druid        = bit.lshift(1, 5),
+    shaman       = bit.lshift(1, 6),
+    paladin      = bit.lshift(1, 7),
     --
-    troll       = bit.lshift(1, 8),
-    belf        = bit.lshift(1, 9),
+    troll        = bit.lshift(1, 8),
+    belf         = bit.lshift(1, 9),
 
-    -- for buffs/debuffs that affect healing taken or dmg taken
-    friendly    = bit.lshift(1, 11),
-    hostile     = bit.lshift(1, 12),
-    horde       = bit.lshift(1, 13),
-    alliance    = bit.lshift(1, 14),
+    horde        = bit.lshift(1, 10),
+    alliance     = bit.lshift(1, 11),
 
-    -- hidden buffs to deal with, not toggled
-    hidden      = bit.lshift(1, 15),
+    hidden       = bit.lshift(1, 12),
+    friendly     = bit.lshift(1, 13),
+    hostile      = bit.lshift(1, 14),
 
-    sod         = bit.lshift(1, 16),
-    sod_p1_only = bit.lshift(1, 17),
-    sod_p2_only = bit.lshift(1, 18),
-    sod_p3_only = bit.lshift(1, 19),
+    holy        = bit.lshift(1, 15),
+    fire        = bit.lshift(1, 16),
+    shadow      = bit.lshift(1, 17),
+    frost       = bit.lshift(1, 18),
+    nature      = bit.lshift(1, 19),
+    arcane      = bit.lshift(1, 20),
+
+
+    sod         = bit.lshift(1, 21),
+
 };
 
 local buff_category         = {
@@ -80,17 +84,17 @@ local buff_category         = {
 local filter_flags_active   = 0;
 filter_flags_active         = bit.bor(filter_flags_active, buff_filters.caster);
 if class == "PRIEST" then
-    filter_flags_active = bit.bor(filter_flags_active, buff_filters.priest);
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.priest, buff_filters.holy, buff_filters.shadow);
 elseif class == "DRUID" then
-    filter_flags_active = bit.bor(filter_flags_active, buff_filters.druid);
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.druid, buff_filters.nature, buff_filters.arcane);
 elseif class == "SHAMAN" then
-    filter_flags_active = bit.bor(filter_flags_active, buff_filters.shaman);
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.shaman, buff_filters.nature, buff_filters.frost, buff_filters.fire);
 elseif class == "MAGE" then
-    filter_flags_active = bit.bor(filter_flags_active, buff_filters.mage);
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.mage, buff_filters.arcane, buff_filters.frost, buff_filters.fire);
 elseif class == "WARLOCK" then
-    filter_flags_active = bit.bor(filter_flags_active, buff_filters.warlock);
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.warlock, buff_filters.shadow, buff_filters.fire);
 elseif class == "PALADIN" then
-    filter_flags_active = bit.bor(filter_flags_active, buff_filters.paladin);
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.paladin, buff_filters.holy);
 end
 
 if faction == "Horde" then
@@ -103,12 +107,21 @@ if race == "Troll" then
     filter_flags_active = bit.bor(filter_flags_active, buff_filters.troll);
 end
 
-local non_stackable_effects     = {
-    moonkin_crit               = bit.lshift(1, 0),
-    stormstrike                = bit.lshift(1, 1),
-    druid_nourish_bonus        = bit.lshift(1, 2),
-    bow_mp5                    = bit.lshift(1, 3),
-    bok                        = bit.lshift(1, 4),
+if C_Engraving and C_Engraving.IsEngravingEnabled() then
+    filter_flags_active = bit.bor(filter_flags_active, buff_filters.sod);
+end
+
+filter_flags_active         = bit.bor(filter_flags_active, buff_filters.hidden);
+filter_flags_active         = bit.bor(filter_flags_active, buff_filters.friendly);
+filter_flags_active         = bit.bor(filter_flags_active, buff_filters.hostile);
+
+
+local non_stackable_effects = {
+    moonkin_crit        = bit.lshift(1, 0),
+    stormstrike         = bit.lshift(1, 1),
+    druid_nourish_bonus = bit.lshift(1, 2),
+    bow_mp5             = bit.lshift(1, 3),
+    bok                 = bit.lshift(1, 4),
 };
 
 local function alias_buff(buffs_list, alias_id, original_id, should_hide)
@@ -129,10 +142,10 @@ local lookups = {
         [25918] = 33,
     },
     mana_spring_id_to_mp5 = {
-        [5677]  = 2.5*4,
-        [10491] = 2.5*6,
-        [10493] = 2.5*8,
-        [10494] = 2.5*10,
+        [5677]  = 2.5 * 4,
+        [10491] = 2.5 * 6,
+        [10493] = 2.5 * 8,
+        [10494] = 2.5 * 10,
     },
     amp_magic_id_to_hp = {
         [1008]  = 30,
@@ -192,6 +205,13 @@ local lookups = {
         [23834] = 0.06,
         [23835] = 0.08,
         [23836] = 0.1,
+    },
+    isb_to_vuln = {
+        [17794] = 0.04,
+        [17798] = 0.08,
+        [17797] = 0.12,
+        [17799] = 0.16,
+        [17800] = 0.2
     },
     spellname_beacon_of_light = GetSpellInfo(407613)
 };
@@ -781,7 +801,7 @@ local buffs_predefined = {
                 end
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p1_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.consumes,
         icon_id = GetItemIcon(211848),
     },
@@ -791,7 +811,7 @@ local buffs_predefined = {
             effects.raw.spell_heal_mod_mul = (1.0 + effects.raw.spell_heal_mod_mul) * 1.05 - 1.0;
             effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.05 - 1.0;
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p1_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.world_buffs,
     },
     -- boon of blackfathom
@@ -804,7 +824,7 @@ local buffs_predefined = {
                 end
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p1_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.world_buffs,
     },
     -- sod arcane power
@@ -1013,7 +1033,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff)
             effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.1 - 1.0;
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod, buff_filters.sod_p1_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- spark of inspiration
@@ -1025,7 +1045,7 @@ local buffs_predefined = {
 
             add_all_spell_crit(effects, 0.04, inactive);
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.world_buffs,
     },
     -- mildly irradiated
@@ -1035,7 +1055,7 @@ local buffs_predefined = {
                 effects.raw.spell_power = effects.raw.spell_power + 35;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- coin flip
@@ -1043,7 +1063,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             add_all_spell_crit(effects, 0.03, inactive);
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- hyperconductive shock
@@ -1051,7 +1071,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             effects.raw.haste_mod = effects.raw.haste_mod + 0.2;
         end,
-        filter = bit.bor(buff_filters.shaman, buff_filters.paladin, buff_filters.sod_p2_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- charged inspiration
@@ -1062,7 +1082,7 @@ local buffs_predefined = {
                 effects.raw.spell_power = effects.raw.spell_power + 50;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p2_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- starsurge
@@ -1114,7 +1134,7 @@ local buffs_predefined = {
                 effects.raw.spell_power = effects.raw.spell_power + 50;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.consumes,
     },
     -- atalai mojo of forbidden magic
@@ -1124,7 +1144,7 @@ local buffs_predefined = {
                 effects.raw.spell_power = effects.raw.spell_power + 40;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.consumes,
     },
     -- atalai mojo of life
@@ -1135,7 +1155,7 @@ local buffs_predefined = {
                 effects.raw.mp5 = effects.raw.mp5 + 11;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.consumes,
     },
     -- echoes of madness
@@ -1143,7 +1163,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             effects.raw.haste_mod = effects.raw.haste_mod + 0.1;
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- echoes of fear
@@ -1153,7 +1173,7 @@ local buffs_predefined = {
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 50;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- echoes of the depraved
@@ -1163,7 +1183,7 @@ local buffs_predefined = {
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 30;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- shadow spark
@@ -1175,7 +1195,7 @@ local buffs_predefined = {
             end
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Immolate"], c * 0.5, 0);
         end,
-        filter = bit.bor(buff_filters.warlock, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.item,
     },
     -- for lordaeron
@@ -1183,7 +1203,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.2, 0);
         end,
-        filter = bit.bor(buff_filters.paladin, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.item,
     },
     -- roar of the dream
@@ -1193,7 +1213,7 @@ local buffs_predefined = {
                 effects.raw.spell_dmg = effects.raw.spell_dmg + 66;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
         icon_id = GetItemIcon(221440)
     },
@@ -1204,7 +1224,7 @@ local buffs_predefined = {
                 effects.raw.healing_power = effects.raw.healing_power + 120;
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.item,
     },
     -- fervor of the temple explorer
@@ -1220,7 +1240,7 @@ local buffs_predefined = {
                 swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.world_buffs,
     },
     -- fervor of the temple explorer
@@ -1236,7 +1256,7 @@ local buffs_predefined = {
                 swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
             end
         end,
-        filter = bit.bor(buff_filters.caster, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.caster, buff_filters.sod),
         category = buff_category.world_buffs,
     },
     -- tree of life form
@@ -1264,7 +1284,7 @@ local buffs_predefined = {
         apply = function(loadout, effects, buff, inactive)
             ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Soul Fire"], 0.4, 0);
         end,
-        filter = bit.bor(buff_filters.warlock, buff_filters.sod_p3_only),
+        filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
     },
     -- survival instincts
@@ -1415,10 +1435,20 @@ local buffs_predefined = {
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.item,
     },
+    -- sod mage t1 bonus
+    [456399] = {
+        apply = function(loadout, effects, buff)
+            effects.raw.spell_dmg_mod_mul = (1.0 + effects.raw.spell_dmg_mod_mul) * 1.01 - 1.0;
+        end,
+        filter = bit.bor(buff_filters.mage, buff_filters.sod),
+        category = buff_category.item,
+    },
 };
 
-alias_buff(buffs_predefined, 25918, 25290, true); -- greater blessing of wisdom
+alias_buff(buffs_predefined, 25918, 25290, true);  -- greater blessing of wisdom
 alias_buff(buffs_predefined, 20217, 25898, false); -- greater blessing of kings
+alias_buff(buffs_predefined, 456400, 456399, false);
+alias_buff(buffs_predefined, 456401, 456399, false);
 
 local target_buffs_predefined = {
     -- amplify magic
@@ -1537,7 +1567,7 @@ local target_buffs_predefined = {
             effects.by_school.spell_crit[magic_school.frost] =
                 effects.by_school.spell_crit[magic_school.frost] + c * 0.02;
         end,
-        filter = bit.bor(buff_filters.mage, buff_filters.shaman, buff_filters.priest, buff_filters.hostile),
+        filter = bit.bor(buff_filters.caster, buff_filters.frost, buff_filters.hostile),
         category = buff_category.raid,
     },
     -- nightfall
@@ -1570,48 +1600,45 @@ local target_buffs_predefined = {
     -- improved shadow bolt
     [17800] = {
         apply = function(loadout, effects, buff)
-            if buff.src and buff.src == "player" then
-                effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
-                    (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) *
-                    (1.0 + 0.04 * loadout.talents_table:pts(3, 1)) - 1.0;
-            else
-                effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
-                    (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) * 1.2 - 1.0;
+            local m = 0.2;
+            if lookups.isb_to_vuln[buff.id] then
+                m = lookups.isb_to_vuln[buff.id];
             end
-        end,
-        filter = bit.bor(buff_filters.warlock, buff_filters.hostile),
-        category = buff_category.raid,
-    },
-    -- shadow weaving
-    [15258] = {
-        apply = function(loadout, effects, buff)
-            local c = 0;
-            if buff.count then
-                c = buff.count
-            else
-                c = 5;
-            end
-
             effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
-                (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) * (1.0 + c * 0.03) - 1.0;
+                (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) *
+                (1.0 + m) - 1.0;
         end,
-        filter = bit.bor(buff_filters.priest, buff_filters.warlock, buff_filters.hostile),
+        filter = bit.bor(buff_filters.caster, buff_filters.shadow, buff_filters.hostile),
         category = buff_category.raid,
     },
+    ---- shadow weaving
+    --[15258] = {
+    --    apply = function(loadout, effects, buff)
+    --        local c = 0;
+    --        if buff.count then
+    --            c = buff.count
+    --        else
+    --            c = 5;
+    --        end
+
+    --        effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
+    --            (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) * (1.0 + c * 0.03) - 1.0;
+    --    end,
+    --    filter = bit.bor(buff_filters.caster, buff_filters.shadow, buff_filters.hostile),
+    --    category = buff_category.raid,
+    --},
     -- stormstrike
     [17364] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike) == 0 then
-
                 effects.by_school.target_spell_dmg_taken[magic_school.nature] =
                     (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
 
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike);
             end
-
         end,
-        filter = bit.bor(buff_filters.shaman, buff_filters.druid, buff_filters.hostile),
+        filter = bit.bor(buff_filters.caster, buff_filters.nature, buff_filters.hostile),
         category = buff_category.raid,
     },
     -- curse of shadow
@@ -1640,8 +1667,7 @@ local target_buffs_predefined = {
                 effects.raw.target_num_shadow_afflictions = effects.raw.target_num_shadow_afflictions + 1;
             end
         end,
-        filter = bit.bor(buff_filters.warlock, buff_filters.priest, buff_filters.mage, buff_filters.druid,
-            buff_filters.hostile),
+        filter = bit.bor(buff_filters.caster, buff_filters.hostile),
         category = buff_category.raid,
     },
     -- frost nova
@@ -1750,9 +1776,7 @@ local target_buffs_predefined = {
     -- dreamstate
     [437132] = {
         apply = function(loadout, effects, buff)
-
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.stormstrike) == 0 then
-
                 effects.by_school.target_spell_dmg_taken[magic_school.nature] =
                     (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.nature]) * 1.2 - 1.0;
 
@@ -1762,7 +1786,7 @@ local target_buffs_predefined = {
             effects.by_school.target_spell_dmg_taken[magic_school.arcane] =
                 (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.arcane]) * 1.2 - 1.0;
         end,
-        filter = bit.bor(buff_filters.shaman, buff_filters.druid, buff_filters.hostile),
+        filter = bit.bor(buff_filters.caster, buff_filters.hostile),
         category = buff_category.raid,
     },
     -- rejuv
@@ -1853,19 +1877,20 @@ local target_buffs_predefined = {
     },
 };
 
-alias_buff(target_buffs_predefined, 8936,   774, false);
+alias_buff(target_buffs_predefined, 8936, 774, false);
 alias_buff(target_buffs_predefined, 408124, 774, false);
 alias_buff(target_buffs_predefined, 408120, 774, false);
 
-alias_buff(target_buffs_predefined, 980,    172, false);
-alias_buff(target_buffs_predefined, 18265,  172, false);
+alias_buff(target_buffs_predefined, 980, 172, false);
+alias_buff(target_buffs_predefined, 18265, 172, false);
 alias_buff(target_buffs_predefined, 427717, 172, false);
 
 alias_buff(target_buffs_predefined, 25890, 19979, false); -- greater blessing of light
 
-local buffs                     = {};
+local buffs = {};
 for k, v in pairs(buffs_predefined) do
-    if bit.band(filter_flags_active, v.filter) ~= 0 then
+    --if bit.band(filter_flags_active, v.filter) ~= 0 then
+    if v.filter == bit.band(filter_flags_active, v.filter) then
         local buff_lname = GetSpellInfo(k);
         if buff_lname then
             buffs[buff_lname] = v;
@@ -1875,7 +1900,8 @@ for k, v in pairs(buffs_predefined) do
 end
 local target_buffs = {};
 for k, v in pairs(target_buffs_predefined) do
-    if bit.band(filter_flags_active, v.filter) ~= 0 then
+    --if bit.band(filter_flags_active, v.filter) ~= 0 then
+    if v.filter == bit.band(filter_flags_active, v.filter) then
         local buff_lname = GetSpellInfo(k);
         if buff_lname then
             target_buffs[buff_lname] = v;
@@ -1944,7 +1970,8 @@ end
 
 local function apply_buffs(loadout, effects)
     for k, v in pairs(loadout.dynamic_buffs["player"]) do
-        if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
+        --if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
+        if buffs[k] then
             buffs[k].apply(loadout, effects, v);
         end
     end
@@ -1972,12 +1999,12 @@ local function apply_buffs(loadout, effects)
     end
 
     if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
-        for k, v in pairs(loadout.buffs) do
+        for k, _ in pairs(loadout.buffs) do
             if not loadout.dynamic_buffs["player"][k] and buffs[k] then
                 buffs[k].apply(loadout, effects, buffs[k], true);
             end
         end
-        for k, v in pairs(loadout.target_buffs) do
+        for k, _ in pairs(loadout.target_buffs) do
             if not target_buffs_applied[k] then
                 target_buffs[k].apply(loadout, effects, target_buffs[k], true);
             end
@@ -1986,28 +2013,45 @@ local function apply_buffs(loadout, effects)
         if class == "PALADIN" and loadout.target_buffs[lookups.spellname_beacon_of_light] then
             loadout.beacon = true;
         end
-    else
     end
 
     if swc.core.__sw__test_all_codepaths then
         for k, v in pairs(buffs) do
             if v then
                 v.apply(loadout, effects, v, true);
+                v.apply(loadout, effects, v, false);
             end
         end
         for k, v in pairs(target_buffs) do
+            v.apply(loadout, effects, v, true);
             v.apply(loadout, effects, v);
         end
     end
 end
 
-local function is_buff_up(loadout, unit, buff_name, is_self)
-    if is_self then
+local function is_buff_up(loadout, unit, buff_name)
+    if unit == "player" then
         return loadout.dynamic_buffs[unit][buff_name] ~= nil or
             (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_name]);
     else
         return loadout.dynamic_buffs[unit][buff_name] ~= nil or
             (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_name]);
+    end
+end
+
+local function get_buff(loadout, unit, buff_name)
+    if unit == "player" then
+        local unit_buff = loadout.dynamic_buffs[unit][buff_name];
+        if not unit_buff and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
+            unit_buff = loadout.buffs[buff_name];
+        end
+        return unit_buff;
+    else
+        local unit_buff = loadout.dynamic_buffs[unit][buff_name];
+        if not unit_buff and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_name] then
+            unit_buff = target_buffs[buff_name];
+        end
+        return unit_buff;
     end
 end
 
@@ -2020,5 +2064,6 @@ buffs_export.detect_buffs = detect_buffs;
 buffs_export.apply_buffs = apply_buffs;
 buffs_export.non_stackable_effects = non_stackable_effects;
 buffs_export.is_buff_up = is_buff_up;
+buffs_export.get_buff = get_buff;
 
 swc.buffs = buffs_export;
