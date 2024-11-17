@@ -50,10 +50,10 @@ swc.core                        = core;
 core.sw_addon_name              = "Stat Weights Classic";
 
 local version_id                = 30307;
+core.version_id                 = version_id;
 local version                   = tostring(version_id);
 core.version                    = tonumber(version:sub(1, 1)) ..
     "." .. tonumber(version:sub(2, 3)) .. "." .. tonumber(version:sub(4, 5));
-core.version_id                 = version;
 
 core.expansions                 = {
     vanilla = 1,
@@ -108,7 +108,7 @@ local event_dispatch = {
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
         if msg == "StatWeightsClassic" then
-            if __sw__persistent_data_per_char and not __sw__persistent_data_per_char.settings.version_saved
+            if __sw__persistent_data_per_char and __sw__persistent_data_per_char.settings and not __sw__persistent_data_per_char.settings.version_saved
                 and core.expansion_loaded ~= core.expansions.wotlk then
                 core.__sw__use_defaults__ = true;
             end

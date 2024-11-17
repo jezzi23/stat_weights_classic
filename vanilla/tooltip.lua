@@ -610,18 +610,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 (eval.spell.expectation_direct_st + eval.spell.expected_ot_st);
             extra_info_st = extra_info_st ..
                 string.format("%.1f%% direct | %.1f%% periodic", direct_ratio * 100, (1.0 - direct_ratio) * 100);
-        --elseif eval.spell.expectation_direct ~= 0 then
-        --    extra_info_multi = extra_info_multi .. "100% direct";
-        --    extra_info_st = "100% direct";
-        --elseif eval.spell.expected_ot ~= 0 then
-        --    extra_info_multi = extra_info_multi .. "100% periodic";
-        --    extra_info_st = "100% periodic";
         end
         if spell.base_id == spell_name_to_id["Shadow Bolt"] and loadout.talents_table:pts(3, 1) ~= 0 then
             local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
 
-            extra_info_st = extra_info_st .. string.format("ISB uptime %.1f%%", 100*isb_uptime);
-            extra_info_multi = extra_info_multi .. string.format("ISB uptime %.1f%%", 100*isb_uptime);
+            extra_info_st = extra_info_st .. string.format("ISB debuff uptime %.1f%%", 100*isb_uptime);
+            extra_info_multi = extra_info_multi .. string.format("ISB debuff uptime %.1f%%", 100*isb_uptime);
         end
 
 

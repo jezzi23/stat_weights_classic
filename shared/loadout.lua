@@ -33,7 +33,6 @@ local apply_equipment                   = swc.equipment.apply_equipment;
 
 local apply_talents                     = swc.talents.apply_talents;
 local wowhead_talent_code               = swc.talents.wowhead_talent_code;
-local wowhead_talent_link               = swc.talents.wowhead_talent_link;
 
 --------------------------------------------------------------------------------
 local loadout_export = {};
@@ -468,7 +467,7 @@ local function dynamic_loadout(loadout)
         loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     end
 
-    if UnitExists("mouseover") and UnitName("mouseover") ~= UnitName("target") then
+    if UnitExists("mouseover") and UnitIsFriend("player", "mouseover") then
         loadout.friendly_towards = "mouseover";
         loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     end
@@ -476,17 +475,16 @@ local function dynamic_loadout(loadout)
     if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
         loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("target"), 1);
     end
+    
 
     detect_buffs(loadout);
 end
 
 local function active_loadout_entry()
-    
     return sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout];
 end
 
 local function active_loadout()
-    
     return active_loadout_entry().loadout;
 end
 

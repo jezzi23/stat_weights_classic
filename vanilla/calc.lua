@@ -42,7 +42,6 @@ local effects_diff      = swc.loadout.effects_diff;
 local set_tiers         = swc.equipment.set_tiers;
 
 local is_buff_up        = swc.buffs.is_buff_up;
-local get_buff          = swc.buffs.get_buff;
 
 --------------------------------------------------------------------------------
 local calc              = {};
@@ -102,15 +101,15 @@ local lvl_20_mana_bracket = {
     ["DRUID"] = { start = 50, per_lvl = (329 - 50) / 19 },
     ["MAGE"] = { start = 100, per_lvl = (343 - 100) / 19 },
     ["PALADIN"] = { start = 60, per_lvl = (390 - 60) / 19 },
-    ["PRIEST"] = { start = 110, per_lvl = (350 - 110) / 19 }, --20 unknown
+    ["PRIEST"] = { start = 110, per_lvl = (350 - 110) / 19 },
     ["SHAMAN"] = { start = 55, per_lvl = (346 - 55) / 19 },
-    ["WARLOCK"] = { start = 90, per_lvl = (325 - 50) / 19 }, --20 unknown
+    ["WARLOCK"] = { start = 90, per_lvl = (325 - 50) / 19 },
 };
 local lvl_40_mana_bracket = {
     ["DRUID"] = { start = 354, per_lvl = (824 - 354) / 21 },
     ["MAGE"] = { start = 371, per_lvl = (853 - 371) / 21 },
     ["PALADIN"] = { start = 412, per_lvl = (987 - 412) / 21 },
-    ["PRIEST"] = { start = 375, per_lvl = (911 - 375) / 21 }, -- ??
+    ["PRIEST"] = { start = 375, per_lvl = (911 - 375) / 21 },
     ["SHAMAN"] = { start = 370, per_lvl = (975 - 370) / 21 },
     ["WARLOCK"] = { start = 365, per_lvl = (965 - 365) / 23 },
 };
@@ -118,7 +117,7 @@ local lvl_60_mana_bracket = {
     ["DRUID"] = { start = 854, per_lvl = (1244 - 854) / 20 },
     ["MAGE"] = { start = 853, per_lvl = (1213 - 853) / 20 },
     ["PALADIN"] = { start = 987, per_lvl = (1512 - 987) / 20 },
-    ["PRIEST"] = { start = 911, per_lvl = (1400 - 911) / 20 }, -- ??
+    ["PRIEST"] = { start = 911, per_lvl = (1400 - 911) / 20 },
     ["SHAMAN"] = { start = 975, per_lvl = (1520 - 975) / 20 },
     ["WARLOCK"] = { start = 918, per_lvl = (1522 - 918) / 20 },
 };
@@ -126,7 +125,7 @@ local lvl_70_mana_bracket = {
     ["DRUID"] = { start = 1244 },
     ["MAGE"] = { start = 1213 },
     ["PALADIN"] = { start = 1512 },
-    ["PRIEST"] = { start = 1400 },    -- ??
+    ["PRIEST"] = { start = 1400 },
     ["SHAMAN"] = { start = 1520 },
     ["WARLOCK"] = { start = 1522 },
 };
@@ -150,17 +149,17 @@ local lookups = {
         [17799] = 0.16,
         [17800] = 0.2
     },
-    spellname_moonkin_form = GetSpellInfo(24858),
-    spellname_sheath_of_light = GetSpellInfo(426159),
-    spellname_sacred_shield = GetSpellInfo(412019),
-    spellname_blessing_of_light = GetSpellInfo(19979),
-    spellname_greater_blessing_of_light = GetSpellInfo(25890),
-    spellname_lightning_shield = GetSpellInfo(324),
-    spellname_rejuvenation = GetSpellInfo(774),
-    spellname_regrowth = GetSpellInfo(8936),
-    spellname_rapid_healing = GetSpellInfo(468531),
-    spellname_water_shield = GetSpellInfo(408510),
-    spellname_isb_shadow_vuln = GetSpellInfo(17800),
+    moonkin_form = 24858,
+    sheath_of_light = 426159,
+    sacred_shield = 412019,
+    blessing_of_light = 19979,
+    greater_blessing_of_light = 25890,
+    lightning_shield = 324,
+    rejuvenation = 774,
+    regrowth = 8936,
+    rapid_healing = 468531,
+    water_shield = 408510,
+    isb_shadow_vuln = 17800,
 };
 
 local function base_mana_pool(clvl, max_mana_mod)
@@ -622,7 +621,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
 
         if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
-            is_buff_up(loadout, "player", lookups.spellname_moonkin_form) and
+            is_buff_up(loadout, "player", lookups.moonkin_form, true) and
             bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.no_crit)) == 0 then
             --moonkin form periodic crit
             stats.ot_crit = stats.crit + extra_ot_crit;
@@ -640,17 +639,23 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                                           bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
                                           0.6, 4, 3, 1.0, "Fanaticism");
             end
-            if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, lookups.spellname_sacred_shield) then
+            if benefit_id == spell_name_to_id["Flash of Light"] and is_buff_up(loadout, loadout.friendly_towards, lookups.sacred_shield, false) then
                 add_extra_periodic_effect(stats, 0, 1.0, 12, 1, 1.0, "Extra");
             end
             if benefit_id == spell_name_to_id["Holy Light"] and spell.rank < 4 then
                 -- Subtract healing to account for blessing of light coef for low rank holy light
-                local buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_blessing_of_light]
-                    or loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_greater_blessing_of_light];
+                local bol_hl_val = nil;
+                for k, v in pairs(lookups.bol_id_to_hl) do
+                    local bol = is_buff_up(loadout, loadout.friendly_towards, k, false);
+                    if bol then
+                        bol_hl_val = v;
+                        break;
+                    end
+                end
 
-                if buff then
+                if bol_hl_val then
                     stats.flat_addition = stats.flat_addition
-                        - lookups.bol_id_to_hl[buff.id] * lookups.bol_rank_to_hl_coef_subtract[spell.rank];
+                        - bol_hl_val * lookups.bol_rank_to_hl_coef_subtract[spell.rank];
                 end
             end
         else
@@ -721,7 +726,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             -- strange behaviour hacked in
             stats.effect_mod = stats.effect_mod + 0.02 * loadout.talents_table:pts(3, 14);
         end
-        if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.base_min ~= 0 and is_buff_up(loadout, "player", lookups.spellname_water_shield) then
+        if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.base_min ~= 0 and is_buff_up(loadout, "player", lookups.water_shield, true) then
 
             resource_refund = resource_refund + stats.crit * 0.04 * loadout.max_mana;
         end
@@ -839,16 +844,22 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
                 target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
             end
-            --local isb = get_buff(loadout, "target", lookups.spellname_isb_shadow_vuln);
-            local isb = is_buff_up(loadout, "target", lookups.spellname_isb_shadow_vuln);
+            local isb_buff_val = nil;
+            for k, v in pairs(lookups.isb_to_vuln) do
+                local isb = is_buff_up(loadout, loadout.hostile_towards, k, false);
+                if isb then
+                    isb_buff_val = v;
+                    break;
+                end
+            end
+            
             local isb_pts = loadout.talents_table:pts(3, 1);
             local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
 
-            --if isb then
-            --    local isb_buff_val = lookups.isb_to_vuln[isb.id] or 0.0;
-            --    target_vuln_mod = target_vuln_mod / (1.0 + isb_buff_val);
-            --    stats.hit_inflation = isb_buff_val * isb_pts*0.04*isb_uptime;
-            --end
+            if isb_buff_val and isb_pts ~= 0 then
+                target_vuln_mod = target_vuln_mod / (1.0 + isb_buff_val);
+                stats.hit_inflation = isb_buff_val * isb_pts*0.04*isb_uptime;
+            end
             target_vuln_mod = target_vuln_mod * (1.0 + isb_pts*0.04*isb_uptime);
         end
     end
@@ -1580,10 +1591,10 @@ if class == "SHAMAN" then
                     effects);
 
                 local ls_stacks = 0;
-                if loadout.dynamic_buffs["player"][lookups.spellname_lightning_shield] then
-                    ls_stacks = loadout.dynamic_buffs["player"][lookups.spellname_lightning_shield].count;
+                if loadout.dynamic_buffs["player"][lookups.lightning_shield] then
+                    ls_stacks = loadout.dynamic_buffs["player"][lookups.lightning_shield].count;
                     ls_stacks = ls_stacks - 3;
-                elseif bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[lookups.spellname_lightning_shield] then
+                elseif bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[lookups.lightning_shield] then
                     ls_stacks = 9 - 3;
                 end
                 if ls_stacks > 0 then
@@ -1673,7 +1684,7 @@ elseif class == "PRIEST" then
         end,
         [spell_name_to_id["Penance"]] = function(spell, info, loadout, stats, effects)
 
-            if is_buff_up(loadout, "player", lookups.spellname_rapid_healing) and
+            if is_buff_up(loadout, "player", lookups.rapid_healing, true) and
                 bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
 
                 add_expectation_ot_st(info, 2);
@@ -1694,8 +1705,8 @@ elseif class == "DRUID" then
             local num_ticks = 4;
             local hot_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
             if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-                local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_rejuvenation];
-                local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.spellname_regrowth];
+                local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.rejuvenation];
+                local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.regrowth];
                 -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account
                 if regrowth_buff then
                     if not rejuv_buff or regrowth_buff.dur < rejuv_buff.dur then

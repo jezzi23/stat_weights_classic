@@ -413,7 +413,7 @@ local function update_loadouts_rhs()
             local v = sw_frame.loadouts_frame.rhs_list.buffs[k];
             if v.checkbutton.buff_type == "self" then
                 
-                if loadout.buffs[v.checkbutton.buff_lname] then
+                if loadout.buffs[v.checkbutton.buff_id] then
                     v.checkbutton:SetChecked(true);
                     num_checked_buffs = num_checked_buffs + 1;
                 else
@@ -427,7 +427,7 @@ local function update_loadouts_rhs()
 
             local v = sw_frame.loadouts_frame.rhs_list.target_buffs[k];
 
-            if loadout.target_buffs[v.checkbutton.buff_lname] then
+            if loadout.target_buffs[v.checkbutton.buff_id] then
                 v.checkbutton:SetChecked(true);
                 num_checked_target_buffs = num_checked_target_buffs + 1;
             else
@@ -1731,58 +1731,52 @@ local function create_sw_gui_stat_comparison_frame()
 
 end
 
-local function create_loadout_buff_checkbutton(buffs_table, buff_lname, buff_info, buff_type, parent_frame, func)
+local function create_loadout_buff_checkbutton(buffs_table, buff_id, buff_info, buff_type, parent_frame, func)
 
     local index = buffs_table.num_buffs + 1;
 
     buffs_table[index] = {};
-    buffs_table[index].checkbutton = CreateFrame("CheckButton", "loadout_apply_buffs_"..buff_lname, parent_frame, "ChatConfigCheckButtonTemplate");
+    buffs_table[index].checkbutton = CreateFrame("CheckButton", "loadout_apply_buffs_"..buff_info.lname..index, parent_frame, "ChatConfigCheckButtonTemplate");
     buffs_table[index].checkbutton.buff_info = buff_info.filter;
     buffs_table[index].checkbutton.buff_category = buff_info.category;
-    buffs_table[index].checkbutton.buff_lname = buff_lname;
+    buffs_table[index].checkbutton.buff_lname = buff_info.lname;
     buffs_table[index].checkbutton.buff_type = buff_type;
-    local category_txt = "";
+    buffs_table[index].checkbutton.buff_id = buff_id;
     local rgb = {};
     if buff_info.category == buff_category.class  then
-        category_txt = "CLASS: ";
         rgb = {235/255, 52/255, 88/255};
     elseif buff_info.category == buff_category.raid  then
-        category_txt = "RAID: ";
         rgb = {103/255, 52/255, 235/255};
     elseif buff_info.category == buff_category.consumes  then
-        category_txt = "CONSUME: ";
         rgb = {225/255, 235/255, 52/255};
     elseif buff_info.category == buff_category.item  then
-        category_txt = "ITEM: ";
         rgb = {0/255, 204/255, 255/255};
     elseif buff_info.category == buff_category.world_buffs  then
-        category_txt = "WORLD: ";
         rgb = {0/255, 153/255, 51/255};
     end
     local buff_name_max_len = 25;
-    category_txt = "";
-    local name_appear =  category_txt..buff_lname;
+    local name_appear =  buff_info.lname;
     if buff_info.name then
-        name_appear =  category_txt..buff_info.name;
+        name_appear =  buff_info.name;
     end
     getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(name_appear:sub(1, buff_name_max_len));
     local checkbutton_txt = getglobal(buffs_table[index].checkbutton:GetName() .. 'Text');
     checkbutton_txt:SetTextColor(rgb[1], rgb[2], rgb[3]);
     buffs_table[index].checkbutton:SetScript("OnClick", func);
 
-    buffs_table[index].icon = CreateFrame("Frame", "loadout_apply_buffs_icon_"..buff_lname, parent_frame);
+    buffs_table[index].icon = CreateFrame("Frame", "loadout_apply_buffs_icon_"..buff_info.lname, parent_frame);
     buffs_table[index].icon:SetSize(15, 15);
     local tex = buffs_table[index].icon:CreateTexture(nil);
     tex:SetAllPoints(buffs_table[index].icon);
     if buff_info.icon_id then
         tex:SetTexture(buff_info.icon_id);
     else
-        tex:SetTexture(GetSpellTexture(buff_info.id));
+        tex:SetTexture(GetSpellTexture(buff_id));
     end
 
     buffs_table[index].checkbutton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
-        GameTooltip:SetSpellByID(buff_info.id);
+        GameTooltip:SetSpellByID(buff_id);
         GameTooltip:Show();
     end);
     buffs_table[index].checkbutton:SetScript("OnLeave", function(self)
@@ -2406,19 +2400,19 @@ local function create_sw_gui_loadout_frame()
         end
         if self:GetChecked() then
             if self.buff_type == "self" then
-                loadout.buffs[self.buff_lname] = self.buff_info;
+                loadout.buffs[self.buff_id] = self.buff_info;
                 sw_frame.loadouts_frame.rhs_list.num_checked_buffs = sw_frame.loadouts_frame.rhs_list.num_checked_buffs + 1;
             elseif self.buff_type == "target_buffs" then
-                loadout.target_buffs[self.buff_lname] = self.buff_info;
+                loadout.target_buffs[self.buff_id] = self.buff_info;
                 sw_frame.loadouts_frame.rhs_list.num_checked_target_buffs = sw_frame.loadouts_frame.rhs_list.num_checked_target_buffs + 1;
             end
 
         else    
             if self.buff_type == "self" then
-                loadout.buffs[self.buff_lname] = nil;
+                loadout.buffs[self.buff_id] = nil;
                 sw_frame.loadouts_frame.rhs_list.num_checked_buffs = sw_frame.loadouts_frame.rhs_list.num_checked_buffs - 1;
             elseif self.buff_type == "target_buffs" then
-                loadout.target_buffs[self.buff_lname] = nil;
+                loadout.target_buffs[self.buff_id] = nil;
                 sw_frame.loadouts_frame.rhs_list.num_checked_target_buffs = sw_frame.loadouts_frame.rhs_list.num_checked_target_buffs - 1;
             end
         end
@@ -2455,11 +2449,9 @@ local function create_sw_gui_loadout_frame()
             return;
         end
         if self:GetChecked() then
-
             loadout.buffs = {};
-
             for i = 1, sw_frame.loadouts_frame.rhs_list.buffs.num_buffs do
-                loadout.buffs[sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton.buff_lname] =
+                loadout.buffs[sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton.buff_id] =
                     sw_frame.loadouts_frame.rhs_list.buffs[i].checkbutton.buff_info;
             end
         else
@@ -2481,9 +2473,8 @@ local function create_sw_gui_loadout_frame()
             return;
         end
         if self:GetChecked() then
-            
             for  i = 1, sw_frame.loadouts_frame.rhs_list.target_buffs.num_buffs  do
-                loadout.target_buffs[sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton.buff_lname] =
+                loadout.target_buffs[sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton.buff_id] =
                     sw_frame.loadouts_frame.rhs_list.target_buffs[i].checkbutton.buff_info;
             end
         else
@@ -2503,15 +2494,16 @@ local function create_sw_gui_loadout_frame()
     local sorted_buffs_by_name = {};
     for k, v in pairs(buffs) do
         if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-            table.insert(sorted_buffs_by_name, {k, v.category});
+            local lname = select(1, GetSpellInfo(k));
+            table.insert(sorted_buffs_by_name, {lname, v.category, k});
         end
     end
     table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
     for _, k in ipairs(sorted_buffs_by_name) do
-        k = k[1];
-        local v = buffs[k];
+        local buff_id = k[3];
+        local v = buffs[buff_id];
         create_loadout_buff_checkbutton(
-            sw_frame.loadouts_frame.rhs_list.buffs, k, v, "self", 
+            sw_frame.loadouts_frame.rhs_list.buffs, buff_id, v, "self",
             sw_frame.loadouts_frame.rhs_list.self_buffs_frame, check_button_buff_func
         );
     
@@ -2521,15 +2513,16 @@ local function create_sw_gui_loadout_frame()
     sorted_buffs_by_name = {};
     for k, v in pairs(target_buffs) do
         if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-            table.insert(sorted_buffs_by_name, {k, v.category});
+            local lname = select(1, GetSpellInfo(k));
+            table.insert(sorted_buffs_by_name, {lname, v.category, k});
         end
     end
     table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
     for _, k in ipairs(sorted_buffs_by_name) do
-        local k = k[1];
-        local v = target_buffs[k];
+        local buff_id = k[3];
+        local v = target_buffs[buff_id];
         create_loadout_buff_checkbutton(
-            sw_frame.loadouts_frame.rhs_list.target_buffs, k, v, "target_buffs", 
+            sw_frame.loadouts_frame.rhs_list.target_buffs, buff_id, v, "target_buffs",
             sw_frame.loadouts_frame.rhs_list.target_buffs_frame, check_button_buff_func
         );
     end
@@ -2679,11 +2672,15 @@ local function load_sw_ui()
 
     if not __sw__persistent_data_per_char then
         __sw__persistent_data_per_char = {};
+
     end
     if swc.core.__sw__use_defaults__ then
         __sw__persistent_data_per_char.settings = nil;
         __sw__persistent_data_per_char.loadouts = nil;
     end
+
+    
+
 
     local default_settings = default_sw_settings();
     if not __sw__persistent_data_per_char.settings then
@@ -2730,6 +2727,14 @@ local function load_sw_ui()
     else
         libstub_icon:Show(swc.core.sw_addon_name);
         sw_frame.settings_frame.libstub_icon_checkbox:SetChecked(true);
+    end
+
+
+    print("last saved", type(__sw__persistent_data_per_char.settings.version_saved), __sw__persistent_data_per_char.settings.version_saved);
+    if type(__sw__persistent_data_per_char.settings.version_saved) ~= "number" or __sw__persistent_data_per_char.settings.version_saved < 30307 then
+    -- version changes how loadout buffs are stored; use default
+    print("resetting loadouts");
+        __sw__persistent_data_per_char.loadouts = nil;
     end
 
     create_sw_gui_loadout_frame();

@@ -131,89 +131,136 @@ local function alias_buff(buffs_list, alias_id, original_id, should_hide)
     end
 end
 
+local function alias_buffs_by_table(buffs_list, buff_alias_ids, original_id)
+    local src_id = original_id or buff_alias_ids.default;
+    for k, _ in pairs(buff_alias_ids.map) do
+        if k ~= src_id then
+            alias_buff(buffs_list, k, src_id, false);
+        end
+    end
+end
+
 local lookups = {
     bow_id_to_mp5 = {
-        [19742] = 10,
-        [19850] = 15,
-        [19852] = 20,
-        [19853] = 25,
-        [19854] = 30,
-        [25290] = 33,
-        [25918] = 33,
+        map = {
+            [19742] = 10,
+            [19850] = 15,
+            [19852] = 20,
+            [19853] = 25,
+            [19854] = 30,
+            [25290] = 33,
+            [25918] = 33
+        },
+        default = 25290,
     },
     mana_spring_id_to_mp5 = {
-        [5677]  = 2.5 * 4,
-        [10491] = 2.5 * 6,
-        [10493] = 2.5 * 8,
-        [10494] = 2.5 * 10,
+        map = {
+            [5677]  = 2.5 * 4,
+            [10491] = 2.5 * 6,
+            [10493] = 2.5 * 8,
+            [10494] = 2.5 * 10,
+        },
+        default = 10494,
     },
     amp_magic_id_to_hp = {
-        [1008]  = 30,
-        [8455]  = 60,
-        [10169] = 100,
-        [10170] = 150,
+        map = {
+            [1008]  = 30,
+            [8455]  = 60,
+            [10169] = 100,
+            [10170] = 150,
+        },
+        default = 10170,
     },
     damp_magic_id_to_hp = {
-        [604]   = 20,
-        [8450]  = 40,
-        [8451]  = 80,
-        [10173] = 120,
-        [10174] = 180,
+        map = {
+            [604]   = 20,
+            [8450]  = 40,
+            [8451]  = 80,
+            [10173] = 120,
+            [10174] = 180,
+        },
+        default = 10174,
     },
     bol_id_to_hl = {
-        [19977] = 210,
-        [19978] = 300,
-        [19979] = 400,
-        [25890] = 400
+        map = {
+            [19977] = 210,
+            [19978] = 300,
+            [19979] = 400,
+            [25890] = 400,
+        },
+        default = 19979,
     },
     bol_id_to_fl = {
-        [19977] = 60,
-        [19978] = 85,
-        [19979] = 115,
-        [25890] = 115
+        map = {
+            [19977] = 60,
+            [19978] = 85,
+            [19979] = 115,
+            [25890] = 115,
+        },
+        default = 25890,
     },
     coe_id_to_mod = {
-        [1490]   = 0.06,
-        [11721]  = 0.08,
-        [11722]  = 0.1,
-        [402792] = 0.1
+        map = {
+            [1490]   = 0.06,
+            [11721]  = 0.08,
+            [11722]  = 0.1,
+            [402792] = 0.1,
+        },
+        default = 11722,
     },
     coe_id_to_res = {
-        [1490]   = 45,
-        [11721]  = 60,
-        [11722]  = 75,
-        [402792] = 75
+        map = {
+            [1490]   = 45,
+            [11721]  = 60,
+            [11722]  = 75,
+            [402792] = 75,
+        },
+        default = 11722,
     },
     cos_id_to_mod = {
-        [17862]  = 0.08,
-        [17937]  = 0.1,
-        [402791] = 0.1,
+        map = {
+            [17862]  = 0.08,
+            [17937]  = 0.1,
+            [402791] = 0.1,
+        },
+        default = 17937,
     },
     cos_id_to_res = {
-        [17862]  = 60,
-        [17937]  = 75,
-        [402791] = 75,
-    },
-    wep_enchant_id_to_buff = {
-        [2628] = 25122,
-        [2629] = 25123,
-        [7099] = 430585,
+        map = {
+            [17862]  = 60,
+            [17937]  = 75,
+            [402791] = 75,
+        },
+        default = 17937,
     },
     md_id_to_mod = {
-        [23761] = 0.02,
-        [23833] = 0.04,
-        [23834] = 0.06,
-        [23835] = 0.08,
-        [23836] = 0.1,
+        map = {
+            [23761] = 0.02,
+            [23833] = 0.04,
+            [23834] = 0.06,
+            [23835] = 0.08,
+            [23836] = 0.1,
+        },
+        default = 23836,
     },
     isb_to_vuln = {
-        [17794] = 0.04,
-        [17798] = 0.08,
-        [17797] = 0.12,
-        [17799] = 0.16,
-        [17800] = 0.2
+        map = {
+            [17794] = 0.04,
+            [17798] = 0.08,
+            [17797] = 0.12,
+            [17799] = 0.16,
+            [17800] = 0.2,
+        },
+        default = 17800,
     },
-    spellname_beacon_of_light = GetSpellInfo(407613)
+    wep_enchant_id_to_buff = {
+        map = {
+            [2628] = 25122,
+            [2629] = 25123,
+            [7099] = 430585,
+        },
+    },
+    beacon_of_light = 407613
 };
 
 --TODO VANILLA:
@@ -532,7 +579,7 @@ local buffs_predefined = {
     [25290] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bow_mp5) == 0 then
-                local id_to_mp5 = lookups.bow_id_to_mp5;
+                local id_to_mp5 = lookups.bow_id_to_mp5.map;
                 local id = 25290; -- default
                 local mp5 = 0;
 
@@ -591,7 +638,7 @@ local buffs_predefined = {
     -- mana spring
     [10494] = {
         apply = function(loadout, effects, buff)
-            local id_to_mp5 = lookups.mana_spring_id_to_mp5;
+            local id_to_mp5 = lookups.mana_spring_id_to_mp5.map;
             local id = 10494; -- default
             local mp5 = 0;
 
@@ -1410,7 +1457,7 @@ local buffs_predefined = {
     -- master demonologist
     [23836] = {
         apply = function(loadout, effects, buff, inactive)
-            local val = lookups.md_id_to_mod[buff.id];
+            local val = lookups.md_id_to_mod.map[buff.id];
             if val then
                 if loadout.num_set_pieces[set_tiers.sod_final_pve_zg] >= 5 then
                     val = val * 1.5;
@@ -1445,16 +1492,20 @@ local buffs_predefined = {
     },
 };
 
-alias_buff(buffs_predefined, 25918, 25290, true);  -- greater blessing of wisdom
 alias_buff(buffs_predefined, 20217, 25898, false); -- greater blessing of kings
 alias_buff(buffs_predefined, 456400, 456399, false);
 alias_buff(buffs_predefined, 456401, 456399, false);
+
+
+alias_buffs_by_table(buffs_predefined, lookups.bow_id_to_mp5);
+alias_buffs_by_table(buffs_predefined, lookups.mana_spring_id_to_mp5);
+alias_buffs_by_table(buffs_predefined, lookups.md_id_to_mod);
 
 local target_buffs_predefined = {
     -- amplify magic
     [10170] = {
         apply = function(loadout, effects, buff)
-            local id_to_hp = lookups.amp_magic_id_to_hp;
+            local id_to_hp = lookups.amp_magic_id_to_hp.map;
             local id = 10170; -- default
             local hp = 0;
 
@@ -1475,7 +1526,7 @@ local target_buffs_predefined = {
     -- dampen magic
     [10174] = {
         apply = function(loadout, effects, buff)
-            local id_to_hp = lookups.damp_magic_id_to_hp;
+            local id_to_hp = lookups.damp_magic_id_to_hp.map;
             local id = 10174; -- default
             local hp = 0;
 
@@ -1496,8 +1547,8 @@ local target_buffs_predefined = {
     -- blessing of light
     [19979] = {
         apply = function(loadout, effects, buff)
-            local id_to_hl = lookups.bol_id_to_hl;
-            local id_to_fl = lookups.bol_id_to_fl;
+            local id_to_hl = lookups.bol_id_to_hl.map;
+            local id_to_fl = lookups.bol_id_to_fl.map;
             local id = 19979; -- default
 
             if buff.id and id_to_hl[buff.id] and id_to_fl[buff.id] then
@@ -1530,8 +1581,8 @@ local target_buffs_predefined = {
     -- curse of the elements
     [11722] = {
         apply = function(loadout, effects, buff)
-            local id_to_mod = lookups.coe_id_to_mod;
-            local id_to_res = lookups.coe_id_to_res;
+            local id_to_mod = lookups.coe_id_to_mod.map;
+            local id_to_res = lookups.coe_id_to_res.map;
             local id = 11722; -- default
 
             if buff.id and id_to_mod[buff.id] and id_to_res[buff.id] then
@@ -1601,8 +1652,8 @@ local target_buffs_predefined = {
     [17800] = {
         apply = function(loadout, effects, buff)
             local m = 0.2;
-            if lookups.isb_to_vuln[buff.id] then
-                m = lookups.isb_to_vuln[buff.id];
+            if lookups.isb_to_vuln.map[buff.id] then
+                m = lookups.isb_to_vuln.map[buff.id];
             end
             effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
                 (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) *
@@ -1611,22 +1662,22 @@ local target_buffs_predefined = {
         filter = bit.bor(buff_filters.caster, buff_filters.shadow, buff_filters.hostile),
         category = buff_category.raid,
     },
-    ---- shadow weaving
-    --[15258] = {
-    --    apply = function(loadout, effects, buff)
-    --        local c = 0;
-    --        if buff.count then
-    --            c = buff.count
-    --        else
-    --            c = 5;
-    --        end
+    -- shadow weaving
+    [15258] = {
+        apply = function(loadout, effects, buff)
+            local c = 0;
+            if buff.count then
+                c = buff.count
+            else
+                c = 5;
+            end
 
-    --        effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
-    --            (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) * (1.0 + c * 0.03) - 1.0;
-    --    end,
-    --    filter = bit.bor(buff_filters.caster, buff_filters.shadow, buff_filters.hostile),
-    --    category = buff_category.raid,
-    --},
+            effects.by_school.target_spell_dmg_taken[magic_school.shadow] =
+                (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.shadow]) * (1.0 + c * 0.03) - 1.0;
+        end,
+        filter = bit.bor(buff_filters.caster, buff_filters.shadow, buff_filters.hostile),
+        category = buff_category.raid,
+    },
     -- stormstrike
     [17364] = {
         apply = function(loadout, effects, buff)
@@ -1644,8 +1695,8 @@ local target_buffs_predefined = {
     -- curse of shadow
     [17937] = {
         apply = function(loadout, effects, buff)
-            local id_to_mod = lookups.cos_id_to_mod;
-            local id_to_res = lookups.cos_id_to_res;
+            local id_to_mod = lookups.cos_id_to_mod.map;
+            local id_to_res = lookups.cos_id_to_res.map;
             local id = 17937; -- default
 
             if buff.id and id_to_mod[buff.id] and id_to_res[buff.id] then
@@ -1681,7 +1732,7 @@ local target_buffs_predefined = {
     -- haunt
     [403501] = {
         apply = function(loadout, effects, buff)
-            if buff.src and buff.src == "player" then
+            if not buff.src and buff.src == "player" then
                 effects.by_school.target_spell_dmg_taken_ot[magic_school.shadow] =
                     effects.by_school.target_spell_dmg_taken_ot[magic_school.shadow] + 0.2;
 
@@ -1695,7 +1746,7 @@ local target_buffs_predefined = {
     -- corruption
     [172] = {
         apply = function(loadout, effects, buff)
-            if buff.src and buff.src == "player" then
+            if not buff.src and buff.src == "player" then
                 effects.raw.target_num_afflictions = effects.raw.target_num_afflictions + 1;
                 effects.raw.target_num_shadow_afflictions = effects.raw.target_num_shadow_afflictions + 1;
             end
@@ -1717,7 +1768,7 @@ local target_buffs_predefined = {
     -- lake of fire
     [403650] = {
         apply = function(loadout, effects, buff)
-            if buff.src and buff.src == "player" then
+            if not buff.src or buff.src == "player" then
                 effects.raw.target_num_afflictions = effects.raw.target_num_afflictions + 1;
                 effects.by_school.target_spell_dmg_taken[magic_school.fire] =
                     (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]) * 1.5 - 1.0;
@@ -1848,7 +1899,7 @@ local target_buffs_predefined = {
                     (1.0 + effects.by_school.target_spell_dmg_taken[i]) * 1.11 - 1.0;
                 effects.by_school.target_res[i] = effects.by_school.target_res[i] + 0.75
             end
-            if buff.src and buff.src == "player" then
+            if not buff.src and buff.src == "player" then
                 effects.raw.target_num_afflictions = effects.raw.target_num_afflictions + 1;
             end
         end,
@@ -1868,7 +1919,7 @@ local target_buffs_predefined = {
     -- immolate
     [348] = {
         apply = function(loadout, effects, buff)
-            if buff.src and buff.src == "player" then
+            if not buff.src and buff.src == "player" then
                 effects.raw.target_num_afflictions = effects.raw.target_num_afflictions + 1;
             end
         end,
@@ -1885,28 +1936,31 @@ alias_buff(target_buffs_predefined, 980, 172, false);
 alias_buff(target_buffs_predefined, 18265, 172, false);
 alias_buff(target_buffs_predefined, 427717, 172, false);
 
-alias_buff(target_buffs_predefined, 25890, 19979, false); -- greater blessing of light
+--alias_buff(target_buffs_predefined, 25890, 19979, false); -- greater blessing of light
+
+alias_buffs_by_table(target_buffs_predefined, lookups.amp_magic_id_to_hp);
+alias_buffs_by_table(target_buffs_predefined, lookups.damp_magic_id_to_hp);
+alias_buffs_by_table(target_buffs_predefined, lookups.bol_id_to_hl);
+alias_buffs_by_table(target_buffs_predefined, lookups.coe_id_to_mod);
+alias_buffs_by_table(target_buffs_predefined, lookups.cos_id_to_mod);
+alias_buffs_by_table(target_buffs_predefined, lookups.isb_to_vuln);
 
 local buffs = {};
 for k, v in pairs(buffs_predefined) do
-    --if bit.band(filter_flags_active, v.filter) ~= 0 then
     if v.filter == bit.band(filter_flags_active, v.filter) then
         local buff_lname = GetSpellInfo(k);
-        if buff_lname then
-            buffs[buff_lname] = v;
-            buffs[buff_lname].id = k;
-        end
+        buffs[k] = v;
+        buffs[k].lname = buff_lname;
+        buffs[k].id = k;
     end
 end
 local target_buffs = {};
 for k, v in pairs(target_buffs_predefined) do
-    --if bit.band(filter_flags_active, v.filter) ~= 0 then
     if v.filter == bit.band(filter_flags_active, v.filter) then
         local buff_lname = GetSpellInfo(k);
-        if buff_lname then
-            target_buffs[buff_lname] = v;
-            target_buffs[buff_lname].id = k;
-        end
+        target_buffs[k] = v;
+        target_buffs[k].lname = buff_lname;
+        target_buffs[k].id = k;
     end
 end
 
@@ -1926,51 +1980,44 @@ local function detect_buffs(loadout)
     for k, v in pairs(loadout.dynamic_buffs) do
         local i = 1;
         while true do
-            local name, icon_tex, count, _, _, exp_time, src, _, _, spell_id = UnitBuff(k, i);
-            if not name then
+            local _, _, count, _, _, exp_time, src, _, _, spell_id = UnitBuff(k, i);
+            if not spell_id then
                 break;
             end
             if not exp_time then
                 exp_time = 0.0;
             end
-            -- if multiple buffs with same name, prioritize buff_id that exists in the buffs list
-            if not v[name] or buffs_predefined[spell_id] then
-                v[name] = { count = count, id = spell_id, src = src, dur = exp_time - GetTime() };
-            end
+            v[spell_id] = { count = count, id = spell_id, src = src, dur = exp_time - GetTime() };
             i = i + 1;
         end
         local i = 1;
         while true do
-            local name, _, count, _, _, exp_time, src, _, _, spell_id = UnitDebuff(k, i);
-            if not name then
+            local _, _, count, _, _, exp_time, src, _, _, spell_id = UnitDebuff(k, i);
+            if not spell_id then
                 break;
             end
             if not exp_time then
                 exp_time = 0.0;
             end
-            -- if multiple buffs with same name, prioritize player applied
-            if not v[name] or v[name].src ~= "player" then
-                v[name] = { count = count, id = spell_id, src = src, dur = exp_time - GetTime() };
-            end
+            v[spell_id] = { count = count, id = spell_id, src = src, dur = exp_time - GetTime() };
             i = i + 1;
         end
     end
     if race == "Troll" and loadout.target_creature_type == "Beast" then
         local racial_id = 20557;
-        local lname = GetSpellInfo(racial_id);
-        loadout.dynamic_buffs["target"][lname] = { count = 1, id = racial_id, nil, nil };
+        loadout.dynamic_buffs["target"][racial_id] = { count = 1, id = racial_id, nil, nil };
     end
     local _, _, _, enchant_id = GetWeaponEnchantInfo();
-    local wep_enchant_id_to_buff = lookups.wep_enchant_id_to_buff;
+    local wep_enchant_id_to_buff = lookups.wep_enchant_id_to_buff.map;
     if enchant_id and wep_enchant_id_to_buff[enchant_id] then
-        local lname = GetSpellInfo(wep_enchant_id_to_buff[enchant_id]);
-        loadout.dynamic_buffs["player"][lname] = { count = 1, id = wep_enchant_id_to_buff[enchant_id], nil, nil };
+
+        local buff_id = wep_enchant_id_to_buff[enchant_id];
+        loadout.dynamic_buffs["player"][buff_id] = { count = 1, id = buff_id, nil, nil };
     end
 end
 
 local function apply_buffs(loadout, effects)
     for k, v in pairs(loadout.dynamic_buffs["player"]) do
-        --if buffs[k] and bit.band(filter_flags_active, buffs[k].filter) ~= 0 then
         if buffs[k] then
             buffs[k].apply(loadout, effects, v);
         end
@@ -2010,7 +2057,7 @@ local function apply_buffs(loadout, effects)
             end
         end
 
-        if class == "PALADIN" and loadout.target_buffs[lookups.spellname_beacon_of_light] then
+        if class == "PALADIN" and loadout.target_buffs[lookups.beacon_of_light] then
             loadout.beacon = true;
         end
     end
@@ -2029,29 +2076,13 @@ local function apply_buffs(loadout, effects)
     end
 end
 
-local function is_buff_up(loadout, unit, buff_name)
-    if unit == "player" then
-        return loadout.dynamic_buffs[unit][buff_name] ~= nil or
-            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_name]);
+local function is_buff_up(loadout, unit, buff_id, only_self_buff)
+    if only_self_buff then
+        return loadout.dynamic_buffs[unit][buff_id] ~= nil or
+            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_id]);
     else
-        return loadout.dynamic_buffs[unit][buff_name] ~= nil or
-            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_name]);
-    end
-end
-
-local function get_buff(loadout, unit, buff_name)
-    if unit == "player" then
-        local unit_buff = loadout.dynamic_buffs[unit][buff_name];
-        if not unit_buff and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
-            unit_buff = loadout.buffs[buff_name];
-        end
-        return unit_buff;
-    else
-        local unit_buff = loadout.dynamic_buffs[unit][buff_name];
-        if not unit_buff and bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_name] then
-            unit_buff = target_buffs[buff_name];
-        end
-        return unit_buff;
+        return loadout.dynamic_buffs[unit][buff_id] ~= nil or
+            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_id]);
     end
 end
 
@@ -2064,6 +2095,5 @@ buffs_export.detect_buffs = detect_buffs;
 buffs_export.apply_buffs = apply_buffs;
 buffs_export.non_stackable_effects = non_stackable_effects;
 buffs_export.is_buff_up = is_buff_up;
-buffs_export.get_buff = get_buff;
 
 swc.buffs = buffs_export;

@@ -28,8 +28,8 @@ local tooltip_stat_display      = swc.tooltip.tooltip_stat_display;
 local settings = {};
 
 local function default_sw_settings()
-    local settings = {};
-    settings.ability_icon_overlay = 
+    local default = {};
+    default.ability_icon_overlay =
         bit.bor(
                 --icon_stat_display.normal, 
                 --icon_stat_display.crit, 
@@ -37,9 +37,9 @@ local function default_sw_settings()
                 icon_stat_display.show_heal_variant
                 );
 
-    settings.ability_tooltip = 
-        bit.bor(tooltip_stat_display.normal, 
-                tooltip_stat_display.crit, 
+    default.ability_tooltip =
+        bit.bor(tooltip_stat_display.normal,
+                tooltip_stat_display.crit,
                 tooltip_stat_display.ot,
                 tooltip_stat_display.ot_crit,
                 tooltip_stat_display.avg_cost,
@@ -51,17 +51,18 @@ local function default_sw_settings()
                 tooltip_stat_display.stat_weights,
                 tooltip_stat_display.cast_until_oom);
 
-    settings.icon_overlay_update_freq = 3;
-    settings.icon_overlay_font_size = 8;
-    settings.icon_overlay_offset = 0.0;
-    settings.icon_overlay_disable = false;
-    settings.icon_overlay_mana_abilities = true;
-    settings.icon_overlay_old_rank = false;
-    settings.show_tooltip_only_when_shift = false;
-    settings.clear_original_tooltip = false;
-    settings.libstub_minimap_icon = { hide = false };
+    default.icon_overlay_update_freq = 3;
+    default.icon_overlay_font_size = 8;
+    default.icon_overlay_offset = 0.0;
+    default.icon_overlay_disable = false;
+    default.icon_overlay_mana_abilities = true;
+    default.icon_overlay_old_rank = false;
+    default.show_tooltip_only_when_shift = false;
+    default.clear_original_tooltip = false;
+    default.libstub_minimap_icon = { hide = false };
+    default.version_saved = swc.core.version_id;
 
-    return settings;
+    return default;
 end
 
 local function save_sw_settings()
