@@ -2730,10 +2730,8 @@ local function load_sw_ui()
     end
 
 
-    print("last saved", type(__sw__persistent_data_per_char.settings.version_saved), __sw__persistent_data_per_char.settings.version_saved);
     if type(__sw__persistent_data_per_char.settings.version_saved) ~= "number" or __sw__persistent_data_per_char.settings.version_saved < 30307 then
-    -- version changes how loadout buffs are stored; use default
-    print("resetting loadouts");
+        -- Important: version changes how loadout buffs are stored; must default
         __sw__persistent_data_per_char.loadouts = nil;
     end
 

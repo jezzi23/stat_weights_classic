@@ -79,6 +79,10 @@ swc.ext.unregister_spell = function(spell_id)
     end
 end
 
+swc.ext.currently_casting_spell_id = function()
+    return swc.core.currently_casting_spell_id;
+end
+
 local function init_frame_overlay(frame_info)
 
     local offsets = {-3, -1.5, 0};
@@ -156,6 +160,9 @@ local function try_register_frame(action_id, frame_name)
         local spell_id = spell_id_of_action(action_id);
         if spell_id ~= 0 then
             active_overlays[action_id] = spell_id;
+            if spell_id == 5019 then
+                swc.core.action_id_of_wand = action_id;
+            end
         end
         action_id_frames[action_id].spell_id = spell_id;
         init_frame_overlay(action_id_frames[action_id]);
@@ -259,7 +266,7 @@ local function gather_spell_icons()
     scan_action_frames();
 end
 
-local function reassign_overlay_icon_spell(action_id, spell_id, action_button_frame)
+local function reassign_overlay_icon_spell(action_id, spell_id)
 
     if action_id_frames[action_id].frame then
         if spell_id == 0 then
@@ -272,6 +279,9 @@ local function reassign_overlay_icon_spell(action_id, spell_id, action_button_fr
             active_overlays[action_id] = spell_id;
         end
         action_id_frames[action_id].spell_id = spell_id;
+        if spell_id == 5019 then
+            swc.core.action_id_of_wand = action_id;
+        end
     end
 end
 
@@ -294,13 +304,13 @@ local function reassign_overlay_icon(action_id)
         local mirrored_action_id = action_id_of_button(mirrored_action_button_frame);
         if mirrored_action_id == action_id then
             -- was mirrored, update that as well
-            reassign_overlay_icon_spell(mirrored_bar_id, spell_id, mirrored_action_button_frame)
+            reassign_overlay_icon_spell(mirrored_bar_id, spell_id)
         end
     end
     local button_frame = action_id_frames[action_id].frame; 
 
     if button_frame then
-        reassign_overlay_icon_spell(action_id, spell_id, button_frame)
+        reassign_overlay_icon_spell(action_id, spell_id)
     end
 end
 
@@ -322,7 +332,7 @@ local function on_special_action_bar_changed()
                 active_overlays[i] = spell_id;
             end
 
-            reassign_overlay_icon_spell(i, spell_id, frame);
+            reassign_overlay_icon_spell(i, spell_id);
         end
     end
 
@@ -587,6 +597,7 @@ local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
     if bit.band(spell.flags, spell_flags.heal) ~= 0 then
         spell_variant = spell_cache[spell_id].heal;
     end
+
     if not spell_variant.seq then
 
         spell_variant.seq = -1;
@@ -831,11 +842,11 @@ end
 
 local function update_overlay()
 
-    local loadout, effects = nil
+    local loadout, effects = nil;
     if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
         loadout, effects = active_loadout_and_effects();
     else
-        loadout, _, effects = active_loadout_and_effects_diffed_from_ui()
+        loadout, _, effects = active_loadout_and_effects_diffed_from_ui();
     end
 
     local eval_flags = 0;
@@ -849,6 +860,15 @@ local function update_overlay()
             if spells[k].healing_version then
                 cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
             end
+        end
+    end
+
+    local k = swc.core.currently_casting_spell_id;
+
+    if spells[k] and bit.band(spells[k].flags, spell_flags.mana_regen) == 0 then
+        cache_spell(spells[k], k, loadout, effects, assume_single_target);
+        if spells[k].healing_version then
+            cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
         end
     end
 

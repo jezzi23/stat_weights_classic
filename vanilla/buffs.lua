@@ -135,7 +135,7 @@ local function alias_buffs_by_table(buffs_list, buff_alias_ids, original_id)
     local src_id = original_id or buff_alias_ids.default;
     for k, _ in pairs(buff_alias_ids.map) do
         if k ~= src_id then
-            alias_buff(buffs_list, k, src_id, false);
+            alias_buff(buffs_list, k, src_id, true);
         end
     end
 end
@@ -2078,11 +2078,11 @@ end
 
 local function is_buff_up(loadout, unit, buff_id, only_self_buff)
     if only_self_buff then
-        return loadout.dynamic_buffs[unit][buff_id] ~= nil or
-            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_id]);
+        return (unit ~= nil and loadout.dynamic_buffs[unit][buff_id] ~= nil) or
+            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_id] ~= nil);
     else
-        return loadout.dynamic_buffs[unit][buff_id] ~= nil or
-            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_id]);
+        return (unit ~= nil and loadout.dynamic_buffs[unit][buff_id] ~= nil) or
+            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_id] ~= nil);
     end
 end
 

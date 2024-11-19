@@ -418,11 +418,11 @@ local function dynamic_loadout(loadout)
     loadout.melee_crit = GetCritChance()*0.01;
 
 
-    loadout.player_name = UnitName("player"); 
-    loadout.target_name = UnitName("target"); 
-    loadout.mouseover_name = UnitName("mouseover"); 
+    loadout.player_name = UnitName("player");
+    loadout.target_name = UnitName("target");
+    loadout.mouseover_name = UnitName("mouseover");
 
-    loadout.hostile_towards = nil; 
+    loadout.hostile_towards = nil;
     loadout.friendly_towards = "player";
 
     loadout.flags =

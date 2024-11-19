@@ -26,6 +26,9 @@ local utils                     = swc.utils;
 
 local wowhead_talent_code       = swc.talents.wowhead_talent_code;
 
+local spells                    = swc.abilities.spells;
+local spell_flags               = swc.abilities.spell_flags;
+
 local font                      = swc.ui.font;
 local load_sw_ui                = swc.ui.load_sw_ui;
 local create_sw_base_gui        = swc.ui.create_sw_base_gui;
@@ -90,6 +93,9 @@ core.sequence_counter = 0;
 core.addon_running_time = 0;
 
 core.beacon_snapshot_time = -1000;
+core.currently_casting_spell_id = 0;
+core.gcd_locked_after_cast_dur_rem = 0;
+core.action_id_of_wand = 0;
 
 
 local function class_supported()
@@ -98,12 +104,56 @@ local function class_supported()
 end
 local class_is_supported = class_supported();
 
-local addon_msg_swc_id = "__SWC"
+local addon_msg_swc_id = "__SWC";
+
+local function set_current_casting_spell(spell_id)
+    if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
+        core.currently_casting_spell_id = spell_id;
+    else
+        core.currently_casting_spell_id = 0;
+    end
+end
 
 local event_dispatch = {
-    ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, msg, msg2, msg3)
-        if msg3 == 53563 or msg3 == 407613 then -- beacon
-            core.beacon_snapshot_time = core.addon_running_time;
+    --["COMBAT_LOG_EVENT_UNFILTERED"] = function(self)
+    --
+    --    local arg1, event, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15 = CombatLogGetCurrentEventInfo();
+    --    print(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
+    --    if event == "SPELL_CAST_SUCCESS" then
+    --    end
+    --end,
+    --["UNIT_SPELLCAST_SUCCEEDED"] = function(self, caster, _, spell_id)
+    --    -- This seems to not be working at all in vanilla
+    --    if caster == "player" then
+    --        if spell_id == 53563 or spell_id == 407613 then -- beacon
+    --            core.beacon_snapshot_time = core.addon_running_time;
+    --        end
+    --        if core.currently_casting_spell_id == 0 then
+    --            -- must have been an instant
+    --            core.gcd_locked_after_cast_dur_rem = 1.5;
+    --        else
+    --        end
+    --        set_current_casting_spell(spell_id);
+    --    end
+    --end,
+    ["UNIT_SPELLCAST_CHANNEL_START"] = function(self, caster, _, spell_id)
+        if caster == "player" then
+            set_current_casting_spell(spell_id);
+        end
+    end,
+    ["UNIT_SPELLCAST_CHANNEL_STOP"] = function(self, caster, _, spell_id)
+        if caster == "player" then
+            core.currently_casting_spell_id = 0;
+        end
+    end,
+    ["UNIT_SPELLCAST_START"] = function(self, caster, _, spell_id)
+        if caster == "player" then
+            set_current_casting_spell(spell_id);
+        end
+    end,
+    ["UNIT_SPELLCAST_STOP"] = function(self, caster, _, spell_id)
+        if caster == "player" then
+            core.currently_casting_spell_id = 0;
         end
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
@@ -257,12 +307,34 @@ local timestamp = 0;
 
 local pname = UnitName("player");
 
+local function spell_tracking(dt)
+    if core.gcd_locked_after_cast_dur_rem <= 1.5 then
+        core.gcd_locked_after_cast_dur_rem = core.gcd_locked_after_cast_dur_rem - dt;
+    end
+    if core.gcd_locked_after_cast_dur_rem < 0.0 then
+        core.currently_casting_spell_id = 0;
+        core.gcd_locked_after_cast_dur_rem = 2.0;
+    end
+
+    if core.action_id_of_wand ~= 0 then
+        if IsAutoRepeatAction(core.action_id_of_wand) then
+            core.currently_casting_spell_id = 5019;
+        elseif core.currently_casting_spell_id == 5019 then
+            core.currently_casting_spell_id = 0;
+        end
+    end
+end
+
 local function main_update()
     local dt = 1.0 / sw_snapshot_loadout_update_freq;
 
     local t = GetTime();
 
-    core.addon_running_time = core.addon_running_time + t - timestamp;
+    local t_elapsed = t - timestamp;
+
+    core.addon_running_time = core.addon_running_time + t_elapsed;
+
+    spell_tracking(t_elapsed);
 
     update_overlay();
     if core.addon_message_on_update then

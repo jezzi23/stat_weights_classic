@@ -265,8 +265,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         benefit_id = spell.benefits_from_spell;
     end
 
-    stats.crit = loadout.spell_crit_by_school[spell.school] +
-        effects.by_school.spell_crit[spell.school];
+    stats.crit = loadout.spell_crit_by_school[spell.school] + effects.by_school.spell_crit[spell.school];
 
     stats.ot_crit = 0.0;
     if effects.ability.crit[benefit_id] then
@@ -857,8 +856,12 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
 
             if isb_buff_val and isb_pts ~= 0 then
+
                 target_vuln_mod = target_vuln_mod / (1.0 + isb_buff_val);
-                stats.hit_inflation = isb_buff_val * isb_pts*0.04*isb_uptime;
+
+                stats.hit_inflation = stats.hit_inflation + (1.0 + isb_buff_val)/(1.0 + isb_pts*0.04*isb_uptime) - 1;
+            else
+                stats.hit_inflation = stats.hit_inflation / (1.0 + isb_pts*0.04*isb_uptime);
             end
             target_vuln_mod = target_vuln_mod * (1.0 + isb_pts*0.04*isb_uptime);
         end
@@ -1414,16 +1417,15 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.effect_per_cost = math.huge;
     end
 
+    info.min_noncrit_if_hit = info.min_noncrit_if_hit * stats.hit_inflation;
+    info.max_noncrit_if_hit = info.max_noncrit_if_hit * stats.hit_inflation;
+    info.min_crit_if_hit = info.min_crit_if_hit       * stats.hit_inflation;
+    info.max_crit_if_hit = info.max_crit_if_hit       * stats.hit_inflation;
 
-    --info.min_noncrit_if_hit = info.min_noncrit_if_hit * stats.hit_inflation;
-    --info.max_noncrit_if_hit = info.max_noncrit_if_hit * stats.hit_inflation;
-    --info.min_crit_if_hit = info.min_crit_if_hit       * stats.hit_inflation;
-    --info.max_crit_if_hit = info.max_crit_if_hit       * stats.hit_inflation;
-
-    --info.ot_if_hit = info.ot_if_hit                   * stats.hit_inflation;
-    --info.ot_if_hit_max = info.ot_if_hit_max           * stats.hit_inflation;
-    --info.ot_if_crit = info.ot_if_crit                 * stats.hit_inflation;
-    --info.ot_if_crit_max = info.ot_if_crit_max         * stats.hit_inflation;
+    info.ot_if_hit = info.ot_if_hit                   * stats.hit_inflation;
+    info.ot_if_hit_max = info.ot_if_hit_max           * stats.hit_inflation;
+    info.ot_if_crit = info.ot_if_crit                 * stats.hit_inflation;
+    info.ot_if_crit_max = info.ot_if_crit_max         * stats.hit_inflation;
 
 end
 
