@@ -499,6 +499,7 @@ end
 swc.ext.disable_addon_message_on_update = function()
     core.addon_message_on_update = false;
 end
+swc.ext.version_id = core.version_id;
 
 __SWC = swc.ext;
 
