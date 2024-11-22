@@ -25,6 +25,7 @@ local _, swc = ...;
 
 local spell_cost                                    = swc.utils.spell_cost;
 local spell_cast_time                               = swc.utils.spell_cast_time;
+local effect_colors                                 = swc.utils.effect_colors;
 
 local spells                                        = swc.abilities.spells;
 local spell_flags                                   = swc.abilities.spell_flags;
@@ -345,89 +346,89 @@ local function update_icon_overlay_settings()
 
     sw_frame.settings_frame.icon_overlay = {};
 
-    local index = 1; 
+    local index = 1;
 
     if sw_frame.settings_frame.icon_normal_effect:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.normal,
-            color = {232.0/255, 225.0/255, 32.0/255}
+            color = effect_colors.normal,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_crit_effect:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.crit,
-            color = {252.0/255, 69.0/255, 3.0/255}
+            color = effect_colors.crit,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_expected_effect:GetChecked() then 
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.expected,
-            color = {255.0/256, 128/256, 0}
+            color = effect_colors.expectation,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_effect_per_sec:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.effect_per_sec,
-            color = {255.0/256, 128/256, 0}
+            color = effect_colors.effect_per_sec,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_effect_per_cost:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.effect_per_cost,
-            color = {0.0, 1.0, 1.0}
+            color = effect_colors.effect_per_cost,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_avg_cost:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.avg_cost,
-            color = {0.0, 1.0, 1.0}
+            color = effect_colors.avg_cost,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_avg_cast:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.avg_cast,
-            color = {215/256, 83/256, 234/256}
+            color = effect_colors.avg_cast,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_hit:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.hit,
-            color = {232.0/255, 225.0/255, 32.0/255}
+            color = effect_colors.normal,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_crit:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.crit_chance,
-            color = {252.0/255, 69.0/255, 3.0/255}
+            color = effect_colors.crit,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_effect_until_oom:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.effect_until_oom,
-            color = {255.0/256, 128/256, 0}
+            color = effect_colors.effect_until_oom,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_casts_until_oom:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.casts_until_oom,
-            color = {0.0, 1.0, 0.0}
+            color = effect_colors.casts_until_oom,
         };
         index = index + 1;
     end
     if sw_frame.settings_frame.icon_time_until_oom:GetChecked() then
         sw_frame.settings_frame.icon_overlay[index] = {
             label_type = icon_stat_display.time_until_oom,
-            color = {0.0, 1.0, 0.0}
+            color = effect_colors.time_until_oom,
         };
         index = index + 1;
     end
@@ -504,7 +505,7 @@ local function format_overlay_number(val, max_accuracy_digits)
     elseif (val < 1000000000.0) then
         return string.format("%.1fm", val/1000000);
     else
-        return "inf";
+        return "∞";
     end
 end
 
@@ -631,7 +632,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         frame_info.overlay_frames[3]:SetText("!!!");
 
         for i = 1, 3 do
-            frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255); 
+            frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255);
             frame_info.overlay_frames[i]:Show();
         end
         
@@ -651,7 +652,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
                 idx = 1;
             end
             frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
-            frame_info.overlay_frames[idx]:SetTextColor(0.0, 1.0, 1.0);
+            frame_info.overlay_frames[idx]:SetTextColor(effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
             frame_info.overlay_frames[idx]:Show();
         end
 
@@ -662,8 +663,8 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
                 overlay_label_handler[sw_frame.settings_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
-                                                          sw_frame.settings_frame.icon_overlay[i].color[2], 
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1],
+                                                          sw_frame.settings_frame.icon_overlay[i].color[2],
                                                           sw_frame.settings_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
@@ -726,8 +727,8 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
 
                 overlay_label_handler[sw_frame.settings_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1], 
-                                                          sw_frame.settings_frame.icon_overlay[i].color[2], 
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1],
+                                                          sw_frame.settings_frame.icon_overlay[i].color[2],
                                                           sw_frame.settings_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();

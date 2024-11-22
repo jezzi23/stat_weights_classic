@@ -40,8 +40,6 @@ local function default_sw_settings()
     default.ability_tooltip =
         bit.bor(tooltip_stat_display.normal,
                 tooltip_stat_display.crit,
-                tooltip_stat_display.ot,
-                tooltip_stat_display.ot_crit,
                 tooltip_stat_display.avg_cost,
                 tooltip_stat_display.avg_cast,
                 tooltip_stat_display.expected,
@@ -49,7 +47,8 @@ local function default_sw_settings()
                 tooltip_stat_display.effect_per_cost,
                 tooltip_stat_display.cost_per_sec,
                 tooltip_stat_display.stat_weights,
-                tooltip_stat_display.cast_until_oom);
+                tooltip_stat_display.cast_until_oom
+                );
 
     default.icon_overlay_update_freq = 3;
     default.icon_overlay_font_size = 8;
@@ -125,12 +124,6 @@ local function save_sw_settings()
     if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.crit);
     end
-    if sw_frame.settings_frame.tooltip_normal_ot:GetChecked() then
-        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.ot);
-    end
-    if sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
-        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.ot_crit);
-    end
     if sw_frame.settings_frame.tooltip_expected_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.expected);
     end
@@ -146,9 +139,6 @@ local function save_sw_settings()
     if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.stat_weights);
     end
-    if not sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
-        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.sp_effect_calc);
-    end
     if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cost);
     end
@@ -160,6 +150,9 @@ local function save_sw_settings()
     end
     if not sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.sp_effect_calc);
+    end
+    if not sw_frame.settings_frame.tooltip_dynamic_tip:GetChecked() then
+        tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.dynamic_tip);
     end
 
     __sw__persistent_data_per_char.settings.icon_overlay_disable = sw_frame.settings_frame.icon_overlay_disable:GetChecked();

@@ -1,4 +1,4 @@
-## Interface: 11504
+## Interface: 11505
 ## Title: Stat Weights Classic Vanilla
 ## Notes: Advanced ability information, icon overlays and more
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char

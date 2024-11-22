@@ -39,6 +39,7 @@ local icon_stat_display                         = swc.overlay.icon_stat_display;
 local loadout_flags                             = swc.utils.loadout_flags;
 local class                                     = swc.utils.class;
 local deep_table_copy                           = swc.utils.deep_table_copy;
+local effect_colors                             = swc.utils.effect_colors;
 
 local empty_loadout                             = swc.loadout.empty_loadout;
 local empty_effects                             = swc.loadout.empty_effects;
@@ -650,13 +651,17 @@ local function sw_activate_tab(tab_index)
     end
 end
 
-local function create_sw_checkbox(name, parent, line_pos_index, y_offset, text, check_func)
+local function create_sw_checkbox(name, parent, line_pos_index, y_offset, text, check_func, color)
 
     local checkbox_frame = CreateFrame("CheckButton", name, parent, "ChatConfigCheckButtonTemplate"); 
     local x_spacing = 180;
     local x_pad = 10;
     checkbox_frame:SetPoint("TOPLEFT", x_pad + (line_pos_index - 1) * x_spacing, y_offset);
-    getglobal(checkbox_frame:GetName() .. 'Text'):SetText(text);
+    local txt = getglobal(checkbox_frame:GetName() .. 'Text');
+    txt:SetText(text);
+    if color then
+        txt:SetTextColor(color[1], color[2], color[3]);
+    end
     if check_func then
         checkbox_frame:SetScript("OnClick", check_func);
     end
@@ -800,50 +805,50 @@ local function create_sw_gui_settings_frame()
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 12;
     sw_frame.settings_frame.icon_normal_effect = 
-        create_sw_checkbox("sw_icon_normal_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Normal effect", icon_checkbox_func);
+        create_sw_checkbox("sw_icon_normal_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                           "Normal effect", icon_checkbox_func, effect_colors.normal);
     sw_frame.settings_frame.icon_crit_effect = 
-        create_sw_checkbox("sw_icon_crit_effect", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Critical effect", icon_checkbox_func); 
+        create_sw_checkbox("sw_icon_crit_effect", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                           "Critical effect", icon_checkbox_func, effect_colors.crit);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_expected_effect = 
-        create_sw_checkbox("sw_icon_expected_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Expected effect", icon_checkbox_func);  
+        create_sw_checkbox("sw_icon_expected_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                           "Expected effect", icon_checkbox_func, effect_colors.expectation);
     getglobal(sw_frame.settings_frame.icon_expected_effect:GetName()).tooltip = 
         "Expected effect is the DMG or Heal dealt on average for a single cast considering miss chance, crit chance, spell power etc. This equates to your DPS or HPS number multiplied with the ability's cast time"
 
     sw_frame.settings_frame.icon_effect_per_sec = 
-        create_sw_checkbox("sw_icon_effect_per_sec", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Effect per sec", icon_checkbox_func);  
+        create_sw_checkbox("sw_icon_effect_per_sec", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                           "Effect per sec", icon_checkbox_func, effect_colors.effect_per_sec);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_effect_per_cost = 
-        create_sw_checkbox("sw_icon_effect_per_costs", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Effect per cost", icon_checkbox_func);  
+        create_sw_checkbox("sw_icon_effect_per_costs", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                           "Effect per cost", icon_checkbox_func, effect_colors.effect_per_cost);
     sw_frame.settings_frame.icon_avg_cost = 
-        create_sw_checkbox("sw_icon_avg_cost", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Expected cost", icon_checkbox_func);  
+        create_sw_checkbox("sw_icon_avg_cost", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                           "Expected cost", icon_checkbox_func, effect_colors.avg_cost);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.icon_avg_cast = 
-        create_sw_checkbox("sw_icon_avg_cast", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Expected cast time", icon_checkbox_func);
+        create_sw_checkbox("sw_icon_avg_cast", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                           "Expected cast time", icon_checkbox_func, effect_colors.avg_cast);
     sw_frame.settings_frame.icon_hit = 
-        create_sw_checkbox("sw_icon_hit", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Hit chance", icon_checkbox_func);  
+        create_sw_checkbox("sw_icon_hit", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                           "Hit chance", icon_checkbox_func, effect_colors.normal);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
-    sw_frame.settings_frame.icon_crit = 
-        create_sw_checkbox("sw_icon_crit_chance", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Critical chance", icon_checkbox_func);  
-    sw_frame.settings_frame.icon_casts_until_oom = 
-        create_sw_checkbox("sw_icon_casts_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Casts until OOM", icon_checkbox_func);  
+    sw_frame.settings_frame.icon_crit =
+        create_sw_checkbox("sw_icon_crit_chance", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                           "Critical chance", icon_checkbox_func, effect_colors.crit);
+    sw_frame.settings_frame.icon_effect_until_oom =
+        create_sw_checkbox("sw_icon_effect_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                           "Effect until OOM", icon_checkbox_func, effect_colors.effect_until_oom);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.icon_casts_until_oom =
+        create_sw_checkbox("sw_icon_casts_until_oom", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                           "Casts until OOM", icon_checkbox_func, effect_colors.casts_until_oom);
 
-    sw_frame.settings_frame.icon_effect_until_oom = 
-        create_sw_checkbox("sw_icon_effect_until_oom", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                           "Effect until OOM", icon_checkbox_func);  
-    sw_frame.settings_frame.icon_time_until_oom = 
-        create_sw_checkbox("sw_icon_time_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Time until OOM", icon_checkbox_func);  
+    sw_frame.settings_frame.icon_time_until_oom =
+        create_sw_checkbox("sw_icon_time_until_oom", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                           "Time until OOM", icon_checkbox_func, effect_colors.time_until_oom);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 10;
@@ -862,7 +867,9 @@ local function create_sw_gui_settings_frame()
 
     sw_frame.settings_frame.icon_mana_overlay = 
         create_sw_checkbox("sw_icon_mana_overlay", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                           "Show mana restoration", nil);
+                           "Show mana restoration", nil, effect_colors.avg_cost);
+    getglobal(sw_frame.settings_frame.icon_mana_overlay:GetName()).tooltip = 
+        "Puts mana restoration amount on overlay for spells like Evocation";
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
 
     sw_frame.settings_frame.icon_heal_variant = 
@@ -880,7 +887,6 @@ local function create_sw_gui_settings_frame()
     sw_frame.settings_frame.icon_overlay_disable:SetScript("OnClick", function(self)
             
         swc.overlay.clear_overlays();
-        
     end);
 
     sw_frame.settings_frame.icon_top_clearance = 
@@ -901,14 +907,10 @@ local function create_sw_gui_settings_frame()
 
 
     sw_frame.settings_frame.icon_top_clearance:SetScript("OnClick", function(self)
-            
         update_icon_overlay_settings();
-        
     end);
     sw_frame.settings_frame.icon_bottom_clearance:SetScript("OnClick", function(self)
-            
         update_icon_overlay_settings();
-        
     end);
 
 
@@ -1185,22 +1187,21 @@ local function create_sw_gui_settings_frame()
         CreateFrame("Button", nil, sw_frame.settings_frame, "UIPanelButtonTemplate");
     sw_frame.settings_frame.preset_default_button:SetScript("OnClick", function(self)
 
-    sw_frame.settings_frame.tooltip_addon_name:SetChecked(true);
-    sw_frame.settings_frame.tooltip_loadout_info:SetChecked(true);
-    sw_frame.settings_frame.tooltip_spell_rank:SetChecked(false);
-    sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
-    sw_frame.settings_frame.tooltip_crit_effect:SetChecked(true);
-    sw_frame.settings_frame.tooltip_normal_ot:SetChecked(true);
-    sw_frame.settings_frame.tooltip_crit_ot:SetChecked(true);
-    sw_frame.settings_frame.tooltip_expected_effect:SetChecked(true);
-    sw_frame.settings_frame.tooltip_effect_per_sec:SetChecked(true);
-    sw_frame.settings_frame.tooltip_effect_per_cost:SetChecked(true);
-    sw_frame.settings_frame.tooltip_cost_per_sec:SetChecked(true);
-    sw_frame.settings_frame.tooltip_stat_weights:SetChecked(true);
-    sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);
-    sw_frame.settings_frame.tooltip_avg_cast:SetChecked(true);
-    sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(true);
-    sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(true);
+        sw_frame.settings_frame.tooltip_addon_name:SetChecked(true);
+        sw_frame.settings_frame.tooltip_loadout_info:SetChecked(true);
+        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(false);
+        sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
+        sw_frame.settings_frame.tooltip_crit_effect:SetChecked(true);
+        sw_frame.settings_frame.tooltip_expected_effect:SetChecked(true);
+        sw_frame.settings_frame.tooltip_effect_per_sec:SetChecked(true);
+        sw_frame.settings_frame.tooltip_effect_per_cost:SetChecked(true);
+        sw_frame.settings_frame.tooltip_cost_per_sec:SetChecked(true);
+        sw_frame.settings_frame.tooltip_stat_weights:SetChecked(true);
+        sw_frame.settings_frame.tooltip_avg_cost:SetChecked(true);
+        sw_frame.settings_frame.tooltip_avg_cast:SetChecked(true);
+        sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(true);
+        sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(true);
+        sw_frame.settings_frame.tooltip_dynamic_tip:SetChecked(true);
 
     end);
     sw_frame.settings_frame.preset_default_button:SetPoint("TOPLEFT", 220, sw_frame.settings_frame.y_offset + 8);
@@ -1211,22 +1212,21 @@ local function create_sw_gui_settings_frame()
         CreateFrame("Button", nil, sw_frame.settings_frame, "UIPanelButtonTemplate");
     sw_frame.settings_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
 
-    sw_frame.settings_frame.tooltip_addon_name:SetChecked(false);
-    sw_frame.settings_frame.tooltip_loadout_info:SetChecked(true);
-    sw_frame.settings_frame.tooltip_spell_rank:SetChecked(false);
-    sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
-    sw_frame.settings_frame.tooltip_crit_effect:SetChecked(true);
-    sw_frame.settings_frame.tooltip_normal_ot:SetChecked(true);
-    sw_frame.settings_frame.tooltip_crit_ot:SetChecked(true);
-    sw_frame.settings_frame.tooltip_expected_effect:SetChecked(true);
-    sw_frame.settings_frame.tooltip_effect_per_sec:SetChecked(true);
-    sw_frame.settings_frame.tooltip_effect_per_cost:SetChecked(true);
-    sw_frame.settings_frame.tooltip_cost_per_sec:SetChecked(false);
-    sw_frame.settings_frame.tooltip_stat_weights:SetChecked(false);
-    sw_frame.settings_frame.tooltip_avg_cost:SetChecked(false);
-    sw_frame.settings_frame.tooltip_avg_cast:SetChecked(false);
-    sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(false);
-    sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(false);
+        sw_frame.settings_frame.tooltip_addon_name:SetChecked(false);
+        sw_frame.settings_frame.tooltip_loadout_info:SetChecked(true);
+        sw_frame.settings_frame.tooltip_spell_rank:SetChecked(false);
+        sw_frame.settings_frame.tooltip_normal_effect:SetChecked(true);
+        sw_frame.settings_frame.tooltip_crit_effect:SetChecked(true);
+        sw_frame.settings_frame.tooltip_expected_effect:SetChecked(true);
+        sw_frame.settings_frame.tooltip_effect_per_sec:SetChecked(true);
+        sw_frame.settings_frame.tooltip_effect_per_cost:SetChecked(true);
+        sw_frame.settings_frame.tooltip_cost_per_sec:SetChecked(false);
+        sw_frame.settings_frame.tooltip_stat_weights:SetChecked(false);
+        sw_frame.settings_frame.tooltip_avg_cost:SetChecked(false);
+        sw_frame.settings_frame.tooltip_avg_cast:SetChecked(false);
+        sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(false);
+        sw_frame.settings_frame.tooltip_sp_effect_calc:SetChecked(false);
+        sw_frame.settings_frame.tooltip_dynamic_tip:SetChecked(true);
 
     end);
     sw_frame.settings_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 280, sw_frame.settings_frame.y_offset + 8);
@@ -1247,65 +1247,63 @@ local function create_sw_gui_settings_frame()
     end;
 
     sw_frame.settings_frame.tooltip_addon_name = 
-        create_sw_checkbox("sw_tooltip_addon_name", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
+        create_sw_checkbox("sw_tooltip_addon_name", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
                             "Addon name", tooltip_checkbox_func);
+    sw_frame.settings_frame.tooltip_dynamic_tip = 
+        create_sw_checkbox("sw_tooltip_dynamic_tip", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Evaluation options", tooltip_checkbox_func);
+    getglobal(sw_frame.settings_frame.tooltip_dynamic_tip:GetName()).tooltip = 
+        "For certain spells, shows hotkey to change evaluation method dynamically in the tooltip"
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.tooltip_loadout_info = 
-        create_sw_checkbox("sw_tooltip_loadout_info", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Loadout info", tooltip_checkbox_func);
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+        create_sw_checkbox("sw_tooltip_loadout_info", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Loadout info", tooltip_checkbox_func, effect_colors.addon_info);
     sw_frame.settings_frame.tooltip_spell_rank = 
-        create_sw_checkbox("sw_tooltip_spell_rank", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Spell rank info", tooltip_checkbox_func);
-
+        create_sw_checkbox("sw_tooltip_spell_rank", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Spell rank info", tooltip_checkbox_func, effect_colors.spell_rank);
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.tooltip_normal_effect = 
-        create_sw_checkbox("sw_tooltip_normal_effect", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Normal effect", tooltip_checkbox_func);
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+        create_sw_checkbox("sw_tooltip_normal_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Normal effect", tooltip_checkbox_func, effect_colors.normal);
     sw_frame.settings_frame.tooltip_crit_effect = 
-        create_sw_checkbox("sw_tooltip_crit_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Critical effect", tooltip_checkbox_func);
-    sw_frame.settings_frame.tooltip_normal_ot = 
-        create_sw_checkbox("sw_tooltip_normal_ot", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Normal over time effect", tooltip_checkbox_func);
+        create_sw_checkbox("sw_tooltip_crit_effect", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Critical effect", tooltip_checkbox_func, effect_colors.crit);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
-    sw_frame.settings_frame.tooltip_crit_ot = 
-        create_sw_checkbox("sw_tooltip_crit_ot", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Critical over time effect", tooltip_checkbox_func);
     sw_frame.settings_frame.tooltip_expected_effect = 
-        create_sw_checkbox("sw_tooltip_expected_effect", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Expected effect", tooltip_checkbox_func);
-    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+        create_sw_checkbox("sw_tooltip_expected_effect", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Expected effect", tooltip_checkbox_func, effect_colors.expectation);
     sw_frame.settings_frame.tooltip_effect_per_sec = 
-        create_sw_checkbox("sw_tooltip_effect_per_sec", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Effect per sec", tooltip_checkbox_func);
-    sw_frame.settings_frame.tooltip_effect_per_cost = 
-        create_sw_checkbox("sw_tooltip_effect_per_cost", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Effect per cost", tooltip_checkbox_func);
+        create_sw_checkbox("sw_tooltip_effect_per_sec", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Effect per sec", tooltip_checkbox_func, effect_colors.effect_per_sec);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.tooltip_effect_per_cost = 
+        create_sw_checkbox("sw_tooltip_effect_per_cost", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Effect per cost", tooltip_checkbox_func, effect_colors.effect_per_cost);
     sw_frame.settings_frame.tooltip_cost_per_sec = 
-        create_sw_checkbox("sw_tooltip_cost_per_sec", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Cost per sec", tooltip_checkbox_func);
-    sw_frame.settings_frame.tooltip_stat_weights = 
-        create_sw_checkbox("sw_tooltip_stat_weights", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Stat weights", tooltip_checkbox_func);
+        create_sw_checkbox("sw_tooltip_cost_per_sec", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Cost per sec", tooltip_checkbox_func, effect_colors.cost_per_sec);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
     sw_frame.settings_frame.tooltip_avg_cost = 
-        create_sw_checkbox("sw_tooltip_avg_cost", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Expected cost", tooltip_checkbox_func);
+        create_sw_checkbox("sw_tooltip_avg_cost", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Expected cost", tooltip_checkbox_func, effect_colors.avg_cost);
     sw_frame.settings_frame.tooltip_avg_cast = 
-        create_sw_checkbox("sw_tooltip_avg_cast", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Expected cast time", tooltip_checkbox_func);
-
+        create_sw_checkbox("sw_tooltip_avg_cast", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Expected cast time", tooltip_checkbox_func, effect_colors.avg_cast);
     sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+
     sw_frame.settings_frame.tooltip_cast_until_oom = 
-        create_sw_checkbox("sw_tooltip_cast_until_oom", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset, 
-                            "Cast until OOM", tooltip_checkbox_func);
+        create_sw_checkbox("sw_tooltip_cast_until_oom", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Cast until OOM", tooltip_checkbox_func, effect_colors.normal);
     getglobal(sw_frame.settings_frame.tooltip_cast_until_oom:GetName()).tooltip = 
         "Assumes you cast a particular ability until you are OOM with no cooldowns.";
 
     sw_frame.settings_frame.tooltip_sp_effect_calc = 
-        create_sw_checkbox("sw_tooltip_sp_effect_calc", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
-                            "Coef & SP effect calc", tooltip_checkbox_func);
+        create_sw_checkbox("sw_tooltip_sp_effect_calc", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset,
+                            "Coef & SP effect calc", tooltip_checkbox_func, effect_colors.sp_effect);
+    sw_frame.settings_frame.y_offset = sw_frame.settings_frame.y_offset - 20;
+    sw_frame.settings_frame.tooltip_stat_weights = 
+        create_sw_checkbox("sw_tooltip_stat_weights", sw_frame.settings_frame, 1, sw_frame.settings_frame.y_offset,
+                            "Stat weights", tooltip_checkbox_func, effect_colors.stat_weights);
     --if class == "WARLOCK" then    
     --    sw_frame.settings_frame.tooltip_cast_and_tap = 
     --        create_sw_checkbox("sw_tooltip_cast_and_tap", sw_frame.settings_frame, 2, sw_frame.settings_frame.y_offset, 
@@ -1327,12 +1325,6 @@ local function create_sw_gui_settings_frame()
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.crit) ~= 0 then
         sw_frame.settings_frame.tooltip_crit_effect:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.ot) ~= 0 then
-        sw_frame.settings_frame.tooltip_normal_ot:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.ot_crit) ~= 0 then
-        sw_frame.settings_frame.tooltip_crit_ot:SetChecked(true);
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.expected) ~= 0 then
         sw_frame.settings_frame.tooltip_expected_effect:SetChecked(true);
@@ -1360,6 +1352,9 @@ local function create_sw_gui_settings_frame()
     end
     if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_until_oom) ~= 0 then
         sw_frame.settings_frame.tooltip_cast_until_oom:SetChecked(true);
+    end
+    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.dynamic_tip) == 0 then
+        sw_frame.settings_frame.tooltip_dynamic_tip:SetChecked(true);
     end
     --if class == "WARLOCK" then
         --if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_and_tap) ~= 0 then
@@ -2597,18 +2592,11 @@ local function create_sw_base_gui()
     sw_frame.loadouts_frame = CreateFrame("ScrollFrame", "sw_loadout_frame ", sw_frame);
     sw_frame.stat_comparison_frame = CreateFrame("ScrollFrame", "sw_stat_comparison_frame", sw_frame);
 
-    --sw_frame:RegisterEvent("UPDATE_BONUS_ACTIONBAR");
-    --sw_frame:RegisterEvent("ACTIONBAR_UPDATE_STATE");
     for k, v in pairs(swc.core.event_dispatch) do
-        
         if not swc.core.event_dispatch_client_exceptions[k] or
                 swc.core.event_dispatch_client_exceptions[k] == swc.core.expansion_loaded then
-
             sw_frame:RegisterEvent(k);
         end
-    end
-    if class ~= "PALADIN" then
-        sw_frame:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED");
     end
 
     sw_frame:SetWidth(400);
@@ -2678,9 +2666,6 @@ local function load_sw_ui()
         __sw__persistent_data_per_char.settings = nil;
         __sw__persistent_data_per_char.loadouts = nil;
     end
-
-    
-
 
     local default_settings = default_sw_settings();
     if not __sw__persistent_data_per_char.settings then

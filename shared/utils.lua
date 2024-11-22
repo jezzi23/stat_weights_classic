@@ -113,6 +113,23 @@ local function add_all_spell_crit(effects, amount, inactive)
     end
 end
 
+local effect_colors = {
+    normal                  = { 232 / 255, 225 / 255,  32 / 255 },
+    crit                    = { 252 / 255,  69 / 255,   3 / 255 },
+    expectation             = { 255 / 255, 128 / 255,   0 / 255 },
+    effect_per_sec          = { 255 / 255, 128 / 255,   0 / 255 },
+    avg_cast                = { 215 / 255,  83 / 255, 234 / 255 },
+    avg_cost                = {   0 / 255, 255 / 255, 255 / 255 },
+    effect_per_cost         = {   0 / 255, 255 / 255, 255 / 255 },
+    cost_per_sec            = {   0 / 255, 255 / 255, 255 / 255 },
+    effect_until_oom        = { 255 / 255, 128 / 255,   0 / 255 },
+    casts_until_oom         = {   0 / 255, 255 / 255,   0 / 255 },
+    time_until_oom          = {   0 / 255, 255 / 255,   0 / 255 },
+    sp_effect               = { 138 / 255, 134 / 255, 125 / 255 },
+    stat_weights            = {   0 / 255, 255 / 255,   0 / 255 },
+    spell_rank              = { 138 / 255, 134 / 255, 125 / 255 },
+    addon_info              = { 138 / 255, 134 / 255, 125 / 255 },
+};
 
 utils.ensure_exists_and_mul = ensure_exists_and_mul;
 utils.ensure_exists_and_add = ensure_exists_and_add;
@@ -128,6 +145,7 @@ utils.loadout_flags = loadout_flags;
 utils.spell_cost = spell_cost;
 utils.spell_cast_time = spell_cast_time;
 utils.add_all_spell_crit = add_all_spell_crit;
+utils.effect_colors = effect_colors;
 
 local addon_name, swc = ...;
 swc.utils = utils;

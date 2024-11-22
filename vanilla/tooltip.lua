@@ -31,6 +31,7 @@ local best_rank_by_lvl      = swc.abilities.best_rank_by_lvl;
 local loadout_flags         = swc.utils.loadout_flags;
 local spell_cost            = swc.utils.spell_cost;
 local spell_cast_time       = swc.utils.spell_cast_time;
+local effect_colors         = swc.utils.effect_colors;
 
 local set_tiers             = swc.equipment.set_tiers;
 
@@ -100,8 +101,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     local effect = "";
     local effect_per_sec = "";
     local effect_per_cost = "";
+    local cost_per_sec = "";
     local effect_per_sec_per_sp = "";
-    local sp_name = "";
 
     if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
         effect = "Heal";
@@ -109,14 +110,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         effect_per_cost = "Heal per Mana";
         cost_per_sec = "Mana per sec";
         effect_per_sec_per_sp = "Repeated casts HPS per SP";
-        sp_name = "Spell power";
     else
         effect = "Damage";
         effect_per_sec = "DPS";
         effect_per_cost = "Damage per Mana";
         cost_per_sec = "Mana per sec";
         effect_per_sec_per_sp = "Repeated casts DPS per SP";
-        sp_name = "Spell power";
     end
 
     begin_tooltip_section(tooltip, spell, spell_id);
@@ -131,13 +130,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             tooltip:AddLine(string.format("%s%s | Target: %.0f%% HP",
                     loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
                 ),
-                138 / 256, 134 / 256, 125 / 256);
+                effect_colors.addon_info[1], effect_colors.addon_info[2], effect_colors.addon_info[3]);
         else
             tooltip:AddLine(string.format("%s%s | Target: %dx | LVL %d | %.0f%% HP | %d RES",
                     loadout.name, clvl_specified, loadout.unbounded_aoe_targets, loadout.target_lvl,
                     loadout.enemy_hp_perc * 100, stats.target_resi
                 ),
-                138 / 256, 134 / 256, 125 / 256);
+                effect_colors.addon_info[1], effect_colors.addon_info[2], effect_colors.addon_info[3]);
         end
     end
     if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() and not repeated_tooltip_on then
@@ -155,7 +154,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
 
         tooltip:AddLine(string.format("Spell Rank: %d %s", spell.rank, next_rank_str),
-            138 / 256, 134 / 256, 125 / 256);
+            138 / 255, 134 / 255, 125 / 255);
     end
 
     if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 or
@@ -201,14 +200,14 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             hit_str,
                             math.floor(eval.spell.min_noncrit_if_hit),
                             math.ceil(eval.spell.max_noncrit_if_hit)),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 -- heal spells with real direct range
                 else
                     tooltip:AddLine(string.format("%s: %d-%d",
                             effect,
                             math.floor(eval.spell.min_noncrit_if_hit),
                             math.ceil(eval.spell.max_noncrit_if_hit)),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
 
                 end
                 if bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
@@ -228,7 +227,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                             eval.spell.max_noncrit_if_hit,
                                                             bounces,
                                                             falloff),
-                                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                     elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
 
                         local bounces = 2;
@@ -244,7 +243,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                             eval.spell.max_noncrit_if_hit,
                                                             bounces,
                                                             falloff),
-                                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                     elseif spell.base_id == spell_name_to_id["Healing Wave"] and 
                         (loadout.num_set_pieces[set_tiers.pve_1] >= 8 or
                         loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6) then
@@ -255,7 +254,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                             eval.spell.max_noncrit_if_hit,
                                                             bounces,
                                                             falloff),
-                                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                     end
                 end
             else
@@ -265,18 +264,18 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             hit_str,
                             eval.spell.min_noncrit_if_hit),
                         --string.format("%.0f", eval.spell.min_noncrit_if_hit)),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 else
                     if eval.spell.absorb ~= 0 then
                         tooltip:AddLine(string.format("Absorb: %.1f",
                                 eval.spell.absorb),
-                            232.0 / 255, 225.0 / 255, 32.0 / 255);
+                            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                     end
                     if eval.spell.min_noncrit_if_hit ~= 0 then
                         tooltip:AddLine(string.format("%s: %.1f",
                                 effect,
                                 eval.spell.min_noncrit_if_hit),
-                            232.0 / 255, 225.0 / 255, 32.0 / 255);
+                            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                     end
                 end
             end
@@ -288,12 +287,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         eval.spell["direct_description" .. i],
                         math.floor(eval.spell["min_noncrit_if_hit" .. i]),
                         math.ceil(eval.spell["max_noncrit_if_hit" .. i])),
-                    232.0 / 255, 225.0 / 255, 32.0 / 255);
+                    effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
             elseif eval.spell["min_noncrit_if_hit" .. i] ~= 0 then
                 tooltip:AddLine(string.format("%s: %.1f",
                         eval.spell["direct_description" .. i],
                         eval.spell["min_noncrit_if_hit" .. i]),
-                    232.0 / 255, 225.0 / 255, 32.0 / 255);
+                    effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
             end
         end
     end
@@ -314,7 +313,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.floor(eval.spell.min_crit_if_hit),
                             math.ceil(eval.spell.max_crit_if_hit),
                             effect_type_str),
-                        252.0 / 255, 69.0 / 255, 3.0 / 255);
+                        effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 elseif eval.spell.min_crit_if_hit ~= 0 then
 
                     tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f + %s",
@@ -322,7 +321,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             crit_mod,
                             eval.spell.min_crit_if_hit,
                             effect_type_str),
-                        252.0 / 255, 69.0 / 255, 3.0 / 255);
+                        effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 end
             elseif eval.spell.min_crit_if_hit ~= eval.spell.max_crit_if_hit then
                 tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %d-%d",
@@ -330,13 +329,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         stats.crit_mod,
                         math.floor(eval.spell.min_crit_if_hit),
                         math.ceil(eval.spell.max_crit_if_hit)),
-                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
             elseif eval.spell.min_crit_if_hit ~= 0 then
                 tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f",
                         stats.crit * 100,
                         stats.crit_mod,
                         eval.spell.min_crit_if_hit),
-                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
             end
 
             if bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
@@ -355,7 +354,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                         eval.spell.max_crit_if_hit,
                                                         bounces,
                                                         falloff),
-                                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 elseif spell.base_id == spell_name_to_id["Chain Lightning"] then
                     local bounces = 2;
                     local falloff = 0.7;
@@ -370,7 +369,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                         eval.spell.max_crit_if_hit,
                                                         bounces,
                                                         falloff),
-                                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 elseif spell.base_id == spell_name_to_id["Healing Wave"] and 
                     (loadout.num_set_pieces[set_tiers.pve_1] >= 8 or
                     loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6) then
@@ -381,7 +380,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                                         eval.spell.max_crit_if_hit,
                                                         bounces,
                                                         falloff),
-                                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 end
             end
         end
@@ -393,18 +392,18 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         eval.spell["crit" .. i] * 100,
                         math.floor(eval.spell["min_crit_if_hit" .. i]),
                         math.ceil(eval.spell["max_crit_if_hit" .. i])),
-                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
             else
                 tooltip:AddLine(string.format("%s (%.2f%%): %.1f",
                         eval.spell["direct_description" .. i],
                         eval.spell["crit" .. i] * 100,
                         eval.spell["min_crit_if_hit" .. i]),
-                    252.0 / 255, 69.0 / 255, 3.0 / 255);
+                    effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
             end
         end
     end
 
-    if sw_frame.settings_frame.tooltip_normal_ot:GetChecked() and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
+    if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
         if eval.spell.ot_if_hit ~= 0 then
             if stats.target_avg_resi_dot > 0 then
                 hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit * 100, stats.target_avg_resi_dot * 100);
@@ -426,7 +425,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             (1.5 * dmg_wo_sp + dmg_from_sp) / eval.spell.ot_ticks,
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 elseif spell.base_id == spell_name_to_id["Starshards"] then
                     local dmg_from_sp = stats.ot_coef * stats.spell_ot_mod * stats.spell_power * eval.spell.ot_ticks;
                     local dmg_wo_sp = (eval.spell.ot_if_hit - dmg_from_sp);
@@ -440,7 +440,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             ((4 / 3) * dmg_wo_sp + dmg_from_sp) / eval.spell.ot_ticks,
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
                     tooltip:AddLine(string.format("%s %s: %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                             effect,
@@ -452,7 +452,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.ceil(eval.spell.ot_if_hit_max / eval.spell.ot_ticks),
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 else
                     tooltip:AddLine(string.format("%s %s: %.1f over %.1fs (%.1f every %.1fs x %d)",
                             effect,
@@ -462,7 +462,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             eval.spell.ot_if_hit / eval.spell.ot_ticks,
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 end
             else
                 -- wild growth
@@ -483,7 +483,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             ((-3 * 0.1425 + 1.0) * heal_wo_sp + heal_from_sp) / eval.spell.ot_ticks,
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 elseif bit.band(spell.flags, spell_flags.over_time_range) ~= 0 then
                     tooltip:AddLine(string.format("%s: %d-%d over %.1fs (%d-%d every %.1fs x %d)",
                             effect,
@@ -494,7 +494,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.ceil(eval.spell.ot_if_hit_max / eval.spell.ot_ticks),
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 else
                     tooltip:AddLine(string.format("%s: %.1f over %.1fs (%.1f every %.1fs x %d)",
                             effect,
@@ -503,7 +503,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             eval.spell.ot_if_hit_max / eval.spell.ot_ticks,
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 end
             end
         end
@@ -519,7 +519,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.ceil(eval.spell["ot_if_hit_max" .. i] / eval.spell["ot_ticks" .. i]),
                             eval.spell["ot_freq" .. i],
                             eval.spell["ot_ticks" .. i]),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 else
                     tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.1fs (%.1f every %.1fs x %d)",
                             eval.spell["ot_description" .. i],
@@ -529,13 +529,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             eval.spell["ot_if_hit" .. i] / eval.spell["ot_ticks" .. i],
                             eval.spell["ot_freq" .. i],
                             eval.spell["ot_ticks" .. i]),
-                        232.0 / 255, 225.0 / 255, 32.0 / 255);
+                        effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 end
             end
         end
 
 
-        if sw_frame.settings_frame.tooltip_crit_ot:GetChecked() then
+        if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
             if stats.ot_crit ~= 0.0 and eval.spell.ot_if_crit ~= 0 then
                 local ot_crit_mod = stats.ot_crit_mod;
                 if stats.special_crit_mod_tracked ~= 0 then
@@ -553,7 +553,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             math.ceil(eval.spell.ot_if_crit_max / eval.spell.ot_ticks),
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        252.0 / 255, 69.0 / 255, 3.0 / 255);
+                        effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 else
                     tooltip:AddLine(string.format("Critical (%.2f%%||%.2fx): %.1f over %.1fs (%.1f every %.1fs x %d)",
                             stats.ot_crit * 100,
@@ -563,7 +563,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                             eval.spell.ot_if_crit / eval.spell.ot_ticks,
                             eval.spell.ot_freq,
                             eval.spell.ot_ticks),
-                        252.0 / 255, 69.0 / 255, 3.0 / 255);
+                        effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                 end
             end
 
@@ -580,7 +580,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                 math.ceil(eval.spell["ot_if_crit_max" .. i] / eval.spell["ot_ticks" .. i]),
                                 eval.spell["ot_freq" .. i],
                                 eval.spell["ot_ticks" .. i]),
-                            252.0 / 255, 69.0 / 255, 3.0 / 255);
+                            effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                     else
                         tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.1fs (%.1f every %.1fs x %d)",
                                 eval.spell["ot_description" .. i],
@@ -590,7 +590,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                                 eval.spell["ot_if_crit" .. i] / eval.spell["ot_ticks" .. i],
                                 eval.spell["ot_freq" .. i],
                                 eval.spell["ot_ticks" .. i]),
-                            252.0 / 255, 69.0 / 255, 3.0 / 255);
+                            effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
                     end
                 end
             end
@@ -632,9 +632,9 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 extra_info_multi = "(" .. extra_info_multi .. " | " .. aoe_ratio .. ")";
             end
             tooltip:AddLine(string.format("Expected: %.1f %s", eval.spell.expectation_st, extra_info_st),
-                255.0 / 256, 128.0 / 256, 0);
+                effect_colors.expectation[1], effect_colors.expectation[2], effect_colors.expectation[3]);
             tooltip:AddLine(string.format("Optimistic: %.1f %s", eval.spell.expectation, extra_info_multi),
-                255.0 / 256, 128.0 / 256, 0);
+                effect_colors.expectation[1], effect_colors.expectation[2], effect_colors.expectation[3]);
         else
             if extra_info_st ~= "" then
                 extra_info_st = "(" .. extra_info_st .. ")";
@@ -643,7 +643,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 extra_info_multi = "(" .. extra_info_multi .. ")";
             end
             tooltip:AddLine("Expected" .. string.format(": %.1f %s", eval.spell.expectation, extra_info_st),
-                255.0 / 256, 128.0 / 256, 0);
+                effect_colors.expectation[1], effect_colors.expectation[2], effect_colors.expectation[3]);
         end
     end
 
@@ -657,7 +657,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         tooltip:AddLine(string.format("%s: %.1f by execution time %s",
                 effect_per_sec,
                 eval.spell.effect_per_sec, periodic_part),
-            255.0 / 256, 128.0 / 256, 0);
+            effect_colors.effect_per_sec[1], effect_colors.effect_per_sec[2], effect_colors.effect_per_sec[3]);
     end
     if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() and not repeated_tooltip_on then
         local tooltip_cast = spell_cast_time(spell_id);
@@ -665,10 +665,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             if stats.cast_time_nogcd ~= stats.cast_time then
                 tooltip:AddLine(
                     string.format("Expected Cast Time: %.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
-                    215 / 256, 83 / 256, 234 / 256);
+                    effect_colors.avg_cast[1], effect_colors.avg_cast[2], effect_colors.avg_cast[3]);
             else
-                tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time), 215 / 256, 83 / 256,
-                    234 / 256);
+                tooltip:AddLine(string.format("Expected Cast Time: %.3f sec", stats.cast_time),
+                    effect_colors.avg_cast[1], effect_colors.avg_cast[2], effect_colors.avg_cast[3]);
             end
         end
     end
@@ -681,18 +681,19 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     0.0,
                     0.0);
             end
-            tooltip:AddLine(string.format("Expected Cost: %.1f", stats.cost), 0.0, 1.0, 1.0);
+            tooltip:AddLine(string.format("Expected Cost: %.1f", stats.cost), 
+                    effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
         end
     end
     if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
-        tooltip:AddLine(effect_per_cost .. ": " .. string.format("%.2f", eval.spell.effect_per_cost), 0.0, 1.0, 1.0);
+        tooltip:AddLine(effect_per_cost .. ": " .. string.format("%.2f", eval.spell.effect_per_cost),
+                        effect_colors.effect_per_cost[1], effect_colors.effect_per_cost[2], effect_colors.effect_per_cost[3]);
     end
     if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
         if not tooltip_cost or tooltip_cost ~= stats.cost or not repeated_tooltip_on then
             tooltip:AddLine(
                 cost_per_sec .. ": " .. string.format("- %.1f out | + %.1f in", eval.spell.cost_per_sec, eval.spell.mp1),
-                0.0,
-                1.0, 1.0);
+                effect_colors.cost_per_sec[1], effect_colors.cost_per_sec[2], effect_colors.cost_per_sec[3]);
         end
     end
 
@@ -700,10 +701,10 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         tooltip:AddLine(
             string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom,
                 eval.spell.num_casts_until_oom, eval.spell.time_until_oom),
-            232.0 / 255, 225.0 / 255, 32.0 / 255);
+            effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
         if loadout.mana ~= eval.spell.mana then
             tooltip:AddLine(string.format("                                   casting from %d mana", eval.spell.mana),
-                232.0 / 255, 225.0 / 255, 32.0 / 255);
+                effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
         end
     end
     if sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
@@ -714,7 +715,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     stats.spell_power,
                     stats.coef * stats.spell_mod * stats.spell_power
                 ),
-                138 / 256, 134 / 256, 125 / 256);
+                effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
         end
         if stats.ot_coef > 0 and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
             tooltip:AddLine(string.format("Periodic: %d ticks * %.3f coef * %.3f mod * %d SP",
@@ -723,12 +724,12 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     stats.spell_ot_mod,
                     stats.spell_power_ot
                 ),
-                138 / 256, 134 / 256, 125 / 256);
+                effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
             tooltip:AddLine(string.format("            = %d ticks * %.1f = %.1f",
                     eval.spell.ot_ticks,
                     stats.ot_coef * stats.spell_ot_mod * stats.spell_power_ot,
                     stats.ot_coef * stats.spell_ot_mod * stats.spell_power_ot * eval.spell.ot_ticks),
-                138 / 256, 134 / 256, 125 / 256);
+                effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
         end
     end
 
@@ -737,7 +738,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             tooltip:AddLine(
                 effect_per_sec_per_sp ..
                 ": " .. string.format("%.3f, weighing", eval.infinite_cast.effect_per_sec_per_sp),
-                0.0, 1.0, 0.0);
+                effect_colors.stat_weights[1], effect_colors.stat_weights[2], effect_colors.stat_weights[3]);
             local stat_weights = {};
             stat_weights[1] = { weight = 1.0, str = "SP" };
             stat_weights[2] = { weight = eval.infinite_cast.sp_per_crit, str = "Crit" };
@@ -775,7 +776,8 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                     stat_weights_str = stat_weights_str .. "\n|";
                 end
             end
-            tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
+            tooltip:AddLine(stat_weights_str,
+                effect_colors.stat_weights[1], effect_colors.stat_weights[2], effect_colors.stat_weights[3]);
         end
 
         if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() and eval.spell.cost_per_sec > 0 then
@@ -783,7 +785,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 tooltip:AddLine(
                     string.format("%s until OOM per SP: %.3f, weighing", effect,
                         eval.cast_until_oom.effect_until_oom_per_sp),
-                    0.0, 1.0, 0.0);
+                    effect_colors.stat_weights[1], effect_colors.stat_weights[2], effect_colors.stat_weights[3]);
                 local stat_weights = {};
                 stat_weights[1] = { weight = 1.0, str = "SP" };
                 stat_weights[2] = { weight = eval.cast_until_oom.sp_per_crit, str = "Crit" };
@@ -812,30 +814,33 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                         stat_weights_str = stat_weights_str .. "\n|";
                     end
                 end
-                tooltip:AddLine(stat_weights_str, 0.0, 1.0, 0.0);
+                tooltip:AddLine(stat_weights_str,
+                    effect_colors.stat_weights[1], effect_colors.stat_weights[2], effect_colors.stat_weights[3]);
             end
         end
     end
+    if sw_frame.settings_frame.tooltip_dynamic_tip:GetChecked()  then
 
-    local evaluation_options = "";
-    if eval.spell.expectation_direct ~= 0 and eval.spell.expected_ot ~= 0 then
-        evaluation_options = "CTRL facing north=periodic, south=direct";
-    end
-
-    if eval.spell.expectation ~= eval.spell.expectation_st then
-        if evaluation_options == "" then
-            evaluation_options = "ALT for 1.00x effect";
-        else
-            evaluation_options = evaluation_options .. " | ALT for 1.00x";
+        local evaluation_options = "";
+        if eval.spell.expectation_direct ~= 0 and eval.spell.expected_ot ~= 0 then
+            evaluation_options = "CTRL facing north=periodic, south=direct";
         end
-    end
+
+        if eval.spell.expectation ~= eval.spell.expectation_st then
+            if evaluation_options == "" then
+                evaluation_options = "ALT for 1.00x effect";
+            else
+                evaluation_options = evaluation_options .. " | ALT for 1.00x";
+            end
+        end
 
 
-    if evaluation_options ~= "" then
-        tooltip:AddLine("To isolate: Hold " .. evaluation_options, 1.0, 1.0, 1.0);
-    end
-    if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, swc.calc.evaluation_flags.offhand) == 0 then
-        tooltip:AddLine("Hold ALT key to show for offhand", 1.0, 1.0, 1.0);
+        if evaluation_options ~= "" then
+            tooltip:AddLine("To isolate: Hold " .. evaluation_options, 1.0, 1.0, 1.0);
+        end
+        if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, swc.calc.evaluation_flags.offhand) == 0 then
+            tooltip:AddLine("Hold ALT key to show for offhand", 1.0, 1.0, 1.0);
+        end
     end
 
     end_tooltip_section(tooltip);

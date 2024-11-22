@@ -52,7 +52,7 @@ swc.core                        = core;
 
 core.sw_addon_name              = "Stat Weights Classic";
 
-local version_id                = 30307;
+local version_id                = 30308;
 core.version_id                 = version_id;
 local version                   = tostring(version_id);
 core.version                    = tonumber(version:sub(1, 1)) ..
@@ -94,7 +94,7 @@ core.addon_running_time = 0;
 
 core.beacon_snapshot_time = -1000;
 core.currently_casting_spell_id = 0;
-core.gcd_locked_after_cast_dur_rem = 0;
+core.cast_expire_timer = 0;
 core.action_id_of_wand = 0;
 
 
@@ -108,6 +108,7 @@ local addon_msg_swc_id = "__SWC";
 
 local function set_current_casting_spell(spell_id)
     if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
+        core.cast_expire_timer = math.max(2.5, 2 * spells[spell_id].cast_time);
         core.currently_casting_spell_id = spell_id;
     else
         core.currently_casting_spell_id = 0;
@@ -115,27 +116,14 @@ local function set_current_casting_spell(spell_id)
 end
 
 local event_dispatch = {
-    --["COMBAT_LOG_EVENT_UNFILTERED"] = function(self)
-    --
-    --    local arg1, event, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15 = CombatLogGetCurrentEventInfo();
-    --    print(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
-    --    if event == "SPELL_CAST_SUCCESS" then
-    --    end
-    --end,
-    --["UNIT_SPELLCAST_SUCCEEDED"] = function(self, caster, _, spell_id)
-    --    -- This seems to not be working at all in vanilla
-    --    if caster == "player" then
-    --        if spell_id == 53563 or spell_id == 407613 then -- beacon
-    --            core.beacon_snapshot_time = core.addon_running_time;
-    --        end
-    --        if core.currently_casting_spell_id == 0 then
-    --            -- must have been an instant
-    --            core.gcd_locked_after_cast_dur_rem = 1.5;
-    --        else
-    --        end
-    --        set_current_casting_spell(spell_id);
-    --    end
-    --end,
+    ["UNIT_SPELLCAST_SUCCEEDED"] = function(self, caster, _, spell_id)
+        if caster == "player" then
+            if spell_id == 53563 or spell_id == 407613 then -- beacon
+                core.beacon_snapshot_time = core.addon_running_time;
+            end
+            set_current_casting_spell(spell_id);
+        end
+    end,
     ["UNIT_SPELLCAST_CHANNEL_START"] = function(self, caster, _, spell_id)
         if caster == "player" then
             set_current_casting_spell(spell_id);
@@ -308,17 +296,14 @@ local timestamp = 0;
 local pname = UnitName("player");
 
 local function spell_tracking(dt)
-    if core.gcd_locked_after_cast_dur_rem <= 1.5 then
-        core.gcd_locked_after_cast_dur_rem = core.gcd_locked_after_cast_dur_rem - dt;
-    end
-    if core.gcd_locked_after_cast_dur_rem < 0.0 then
+    core.cast_expire_timer = core.cast_expire_timer - dt;
+    if core.cast_expire_timer < 0.0 then
         core.currently_casting_spell_id = 0;
-        core.gcd_locked_after_cast_dur_rem = 2.0;
     end
 
     if core.action_id_of_wand ~= 0 then
         if IsAutoRepeatAction(core.action_id_of_wand) then
-            core.currently_casting_spell_id = 5019;
+            set_current_casting_spell(5019);
         elseif core.currently_casting_spell_id == 5019 then
             core.currently_casting_spell_id = 0;
         end

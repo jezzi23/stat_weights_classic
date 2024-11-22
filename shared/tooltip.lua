@@ -49,6 +49,7 @@ local tooltip_stat_display = {
     loadout_info        = bit.lshift(1,16), -- negate default
     sp_effect_calc      = bit.lshift(1,17), -- negate default
     addon_name          = bit.lshift(1,18), -- negate default
+    dynamic_tip         = bit.lshift(1,19), -- negate default
 };
 
 local function sort_stat_weights(stat_weights, num_weights) 
