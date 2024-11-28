@@ -80,17 +80,20 @@ end
 
 local function empty_effects(effects)
 
+    effects.mul = {};
+
     effects.by_school = {};
     effects.by_school.spell_dmg_hit = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.spell_dmg_mod = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.spell_dmg_mod_add = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.spell_crit = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.spell_crit_mod = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.target_spell_dmg_taken = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.target_spell_dmg_taken_ot = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.target_mod_res= {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.target_mod_res = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.cost_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.mul.by_school = {};
+    effects.mul.by_school.target_vuln_dmg = {1, 1, 1, 1, 1, 1, 1};
+    effects.mul.by_school.target_vuln_dmg_ot = {1, 1, 1, 1, 1, 1, 1};
+    effects.mul.by_school.spell_dmg_mod = {1, 1, 1, 1, 1, 1, 1};
 
     effects.by_attribute =  {};
     effects.by_attribute.stats = {0, 0, 0, 0, 0};
@@ -100,13 +103,8 @@ local function empty_effects(effects)
     effects.by_attribute.crit_from_stat_mod = {0, 0, 0, 0, 0};
 
     effects.raw = {};
-
     effects.raw.spell_heal_mod = 0;
-    effects.raw.spell_heal_mod_mul = 0;
     effects.raw.spell_heal_mod_base = 0;
-    effects.raw.spell_dmg_mod = 0;
-    effects.raw.spell_dmg_mod_mul = 0;
-    effects.raw.target_healing_taken = 0;
     effects.raw.mana_mod = 0;
     effects.raw.mana_mod_active = 0;
     effects.raw.mana = 0;
@@ -117,6 +115,11 @@ local function empty_effects(effects)
     effects.raw.spell_power = 0;
     effects.raw.spell_dmg = 0;
     effects.raw.healing_power = 0;
+
+    effects.mul.raw = {};
+    effects.mul.raw.spell_dmg_mod = 1.0;
+    effects.mul.raw.target_vuln_heal = 1.0;
+    effects.mul.raw.spell_heal_mod = 1.0;
 
     effects.raw.ot_mod = 0;
 
@@ -162,22 +165,20 @@ local function empty_effects(effects)
     effects.ability.coef_ot_mod = {};
     effects.ability.effect_ot_mod = {};
     effects.ability.effect_mod_only_heal = {};
-    effects.ability.vuln_mod = {};
-    effects.ability.vuln_ot_mod = {};
-
+    effects.mul.ability = {};
+    effects.mul.ability.vuln_mod = {};
+    effects.mul.ability.vuln_mod_ot = {};
 end
 
 local function zero_effects(effects)
-    for k, v in pairs(effects.raw) do
+    -- addable effects
+    for k, _ in pairs(effects.raw) do
         effects.raw[k] = 0.0;
     end
+
     for _, e in pairs(effects.ability) do
-        for k, v in pairs(e) do
-            if v == 0.0 then
-                e[k] = nil;
-            else
-                e[k] = 0.0;
-            end
+        for k, _ in pairs(e) do
+            e[k] = 0.0;
         end
     end
     for _, e in pairs(effects.by_school) do
@@ -190,10 +191,27 @@ local function zero_effects(effects)
             e[i] = 0.0;
         end
     end
-end
 
-local function loadout_copy(loadout)
-    return deep_table_copy(loadout);
+    for _, e in pairs(effects.by_school) do
+        for i = 1,7 do
+            e[i] = 0.0;
+        end
+    end
+    -- multiplicative effects
+    for k, _ in pairs(effects.mul.raw) do
+        effects.mul.raw[k] = 1.0;
+    end
+
+    for _, e in pairs(effects.mul.by_school) do
+        for i = 1,7 do
+            e[i] = 1.0;
+        end
+    end
+    for _, e in pairs(effects.mul.ability) do
+        for k, _ in pairs(e) do
+            e[k] = 1.0;
+        end
+    end
 end
 
 local function effects_add(dst, src)
@@ -225,6 +243,30 @@ local function effects_add(dst, src)
         if dst.by_attribute[k] then
             for i = 1,5 do
                 dst.by_attribute[k][i] = dst.by_attribute[k][i] + v[i];
+            end
+        end
+    end
+    -- multiplicative
+    for k, v in pairs(src.mul.raw) do
+        if dst.mul.raw[k] then
+            dst.mul.raw[k] = dst.mul.raw[k] * v;
+        end
+    end
+    for k, v in pairs(src.mul.by_school) do
+
+        if dst.mul.by_school[k] then
+            for i = 1,7 do
+                dst.mul.by_school[k][i] = dst.mul.by_school[k][i] * v[i];
+            end
+        end
+    end
+    for k, v in pairs(src.mul.ability) do
+        if dst.mul.ability[k] then
+            for kk, vv in pairs(v) do
+                if not dst.mul.ability[k][kk] then
+                   dst.mul.ability[k][kk] = 1.0;
+                end
+                dst.mul.ability[k][kk] = dst.mul.ability[k][kk] * vv;
             end
         end
     end
@@ -362,9 +404,9 @@ local function dynamic_loadout(loadout)
     end
 
     for i = 1, 5 do
-        local _, stat, _, _ = UnitStat("player", i);
+        local _, s, _, _ = UnitStat("player", i);
 
-        loadout.stats[i] = stat;
+        loadout.stats[i] = s;
     end
 
     loadout.max_mana = UnitPowerMax("player", 0);
@@ -481,7 +523,7 @@ local function dynamic_loadout(loadout)
 end
 
 local function active_loadout_entry()
-    return sw_frame.loadouts_frame.lhs_list.loadouts[sw_frame.loadouts_frame.lhs_list.active_loadout];
+    return sw_frame.loadout_frame.lhs_list.loadouts[sw_frame.loadout_frame.lhs_list.active_loadout];
 end
 
 local function active_loadout()
@@ -533,7 +575,7 @@ local function active_loadout_and_effects_diffed_from_ui()
 
     local loadout, effects = active_loadout_and_effects();
 
-    local diff = effects_from_ui_diff(sw_frame.stat_comparison_frame);
+    local diff = effects_from_ui_diff(sw_frame.calculator_frame);
 
     local effects_diffed = deep_table_copy(effects);
     swc.loadout.effects_diff(loadout, effects_diffed, diff);

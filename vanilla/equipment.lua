@@ -22,7 +22,7 @@
 
 local _, swc = ...;
 
-local ensure_exists_and_add             = swc.utils.ensure_exists_and_add;
+local spell_mod_add             = swc.utils.spell_mod_add;
 local class                             = swc.utils.class;
 
 local spell_name_to_id                  = swc.abilities.spell_name_to_id;
@@ -370,10 +370,10 @@ local function create_set_effects()
         set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Flash Heal"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Flash Heal"], 0.1, 0.0);
                 end
                 if num_pieces >= 8 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.25, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.25, 0.0);
                 end
             end,
             [set_tiers.pve_2] = function(num_pieces, loadout, effects)
@@ -383,17 +383,17 @@ local function create_set_effects()
             end,
             [set_tiers.pve_2_5_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Shadow Word: Pain"], 0.05, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Shadow Word: Pain"], 0.05, 0.0);
                 end
             end,
             [set_tiers.pve_2_5_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Renew"], 1, 0.0);
+                    spell_mod_add(effects.ability.extra_ticks, spell_name_to_id["Renew"], 1, 0.0);
                 end
             end,
             [set_tiers.pve_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Renew"], 0.12, 0.0);
+                    spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Renew"], 0.12, 0.0);
                 end
             end,
             [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
@@ -403,12 +403,12 @@ local function create_set_effects()
             end,
             [set_tiers.sod_final_pve_1_heal] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Flash Heal"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Greater Heal"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Flash Heal"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Greater Heal"], 0.1, 0.0);
                 end
                 if num_pieces >= 6 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.25, 0.0);
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Circle of Healing"], 0.25, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Prayer of Healing"], 0.25, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Circle of Healing"], 0.25, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
@@ -418,7 +418,7 @@ local function create_set_effects()
             end,
             [set_tiers.sod_final_pve_zg] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Power Word: Shield"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Power Word: Shield"], 0.1, 0.0);
                 end
             end,
         };
@@ -427,7 +427,7 @@ local function create_set_effects()
         set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Thorns"], 4, 0.0);
+                    spell_mod_add(effects.ability.flat_add, spell_name_to_id["Thorns"], 4, 0.0);
                 end
             end,
             [set_tiers.pve_2] = function(num_pieces, loadout, effects)
@@ -435,30 +435,30 @@ local function create_set_effects()
                     effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.15;
                 end
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Regrowth"], 0.2, 0.0);
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Regrowth"], 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], 0.2, 0.0);
                 end
                 if num_pieces >= 8 then
-                    ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Rejuvenation"], 1, 0.0);
+                    spell_mod_add(effects.ability.extra_ticks, spell_name_to_id["Rejuvenation"], 1, 0.0);
                 end
             end,
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
                 end
             end,
             [set_tiers.pve_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 4 then
                     local spells = spell_names_to_id({"Healing Touch", "Regrowth", "Rejuvenation", "Tranquility", "Nourish"});
                     for k, v in pairs(spells) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, 0.03, 0.0);
+                        spell_mod_add(effects.ability.cost_mod, v, 0.03, 0.0);
                     end
                 end
             end,
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.02, 0.0);
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.02, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.02, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.02, 0.0);
                 end
             end,
             [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
@@ -468,37 +468,37 @@ local function create_set_effects()
             end,
             [set_tiers.sod_p3_t1_dmg] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.03, 0.0);
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.03, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.03, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Thorns"], 1.0, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Thorns"], 1.0, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_1_heal] = function(num_pieces, loadout, effects)
                 if num_pieces >= 6 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Tranquility"], 1.0, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Tranquility"], 1.0, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 0.25, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.25, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 0.25, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.25, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
                 if num_pieces >= 6 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wild Growth"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Wild Growth"], 0.1, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_zg] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Starfire"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Starfire"], 0.5, 0.0);
                 end
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.1, 0.0);
                 end
             end,
         };
@@ -512,14 +512,14 @@ local function create_set_effects()
             end,
             [set_tiers.pve_2_5_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Chain Heal"], 0.4, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Chain Heal"], 0.4, 0.0);
                 end
             end,
             [set_tiers.pve_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
                     local spells = spell_names_to_id({"Healing Stream Totem", "Magma Totem", "Searing Totem", "Mana Tide", "Fire Nova Totem"});
                     for k, v in pairs(spells) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, 0.03, 0.0);
+                        spell_mod_add(effects.ability.cost_mod, v, 0.03, 0.0);
                     end
                 end
             end,
@@ -527,7 +527,7 @@ local function create_set_effects()
                 if num_pieces >= 4 then
                     local shocks = spell_names_to_id({"Earth Shock", "Flame Shock", "Frost Shock"});
                     for k, v in pairs(shocks) do
-                        ensure_exists_and_add(effects.ability.crit, v, 0.02, 0.0);
+                        spell_mod_add(effects.ability.crit, v, 0.02, 0.0);
                     end
                 end
             end,
@@ -535,24 +535,24 @@ local function create_set_effects()
                 if num_pieces >= 4 then
                     local shocks = spell_names_to_id({"Earth Shock", "Flame Shock", "Frost Shock"});
                     for k, v in pairs(shocks) do
-                        ensure_exists_and_add(effects.ability.crit, v, 0.02, 0.0);
+                        spell_mod_add(effects.ability.crit, v, 0.02, 0.0);
                     end
                 end
             end,
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.2, 0.0);
                 end
             end,
             [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0);
+                    spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0);
                 end
             end,
             [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
                 if num_pieces >= 6 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], 0.2, 0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Chain Lightning"], 0.2, 0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Chain Heal"], 0.2, 0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Chain Lightning"], 0.2, 0);
                 end
             end,
         };
@@ -561,59 +561,59 @@ local function create_set_effects()
         set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], 0.15, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], 0.15, 0.0);
                 end
                 if num_pieces >= 8 then
                     local shadow = spell_names_to_id({"Curse of Doom", "Death Coil", "Curse of Agony", "Drain Life", "Corruption", "Shadow Ward", "Drain Soul"});
                     for k, v in pairs(shadow) do
-                        ensure_exists_and_add(effects.ability.cost_mod, v, 0.15, 0.0);
+                        spell_mod_add(effects.ability.cost_mod, v, 0.15, 0.0);
                     end
                 end
             end,
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.02, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.02, 0.0);
                 end
             end,
             [set_tiers.pve_2_5_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.effect_mod_base, spell_name_to_id["Immolate"], 0.05, 0.0);
+                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Immolate"], 0.05, 0.0);
                 end
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.cost_mod, spell_name_to_id["Shadow Bolt"], 0.15, 0.0);
+                    spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Shadow Bolt"], 0.15, 0.0);
                 end
             end,
             [set_tiers.pve_3] = function(num_pieces, loadout, effects)
                 if num_pieces >= 4 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.12, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.12, 0.0);
                 end
             end,
             [set_tiers.pvp_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], 0.2, 0.0);
                 end
             end,
             [set_tiers.pvp_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], 0.2, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 0.5, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Curse of Agony"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Rain of Fire"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Drain Soul"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Siphon Life"], 0.1, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_ot_mod, spell_name_to_id["Shadowflame"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Corruption"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Drain Life"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Curse of Agony"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Rain of Fire"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Drain Soul"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Siphon Life"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_ot_mod, spell_name_to_id["Shadowflame"], 0.1, 0.0);
                 end
             end,
         };
@@ -631,18 +631,18 @@ local function create_set_effects()
             end,
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Flamestrike"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Flamestrike"], 0.5, 0.0);
                 end
             end,
             [set_tiers.pve_2_5_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Mana Shield"], 0.15, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Mana Shield"], 0.15, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_zg] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Frostbolt"], 0.65, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Spellfrost Bolt"], 0.65, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Frostbolt"], 0.65, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Spellfrost Bolt"], 0.65, 0.0);
                 end
             end,
         };
@@ -655,29 +655,29 @@ local function create_set_effects()
                     effects.raw.mp5 = effects.raw.mp5 + 4;
                 end
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.1, 0.0);
                 end
             end,
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.02, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.02, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.05, 0.0);
+                    spell_mod_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.05, 0.0);
                 end
                 if num_pieces >= 4 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Consecration"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Consecration"], 0.5, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_zg] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Holy Shock"], 0.5, 0.0);
-                    ensure_exists_and_add(effects.ability.effect_mod_only_heal, spell_name_to_id["Holy Shock"], -0.5, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Holy Shock"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.effect_mod_only_heal, spell_name_to_id["Holy Shock"], -0.5, 0.0);
                 end
                 if num_pieces >= 5 then
-                    ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Exorcism"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Exorcism"], 0.5, 0.0);
                 end
             end,
         };
@@ -696,72 +696,72 @@ local function create_relics()
     if class == "PALADIN" then
         return {
             [23201] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 53, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 53, 0.0);
             end,
             [23202] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 53, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 53, 0.0);
             end,
             [23006] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 83, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Flash of Light"], 83, 0.0);
             end,
         };
     elseif class == "SHAMAN" then
         return {
             [22395] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Earth Shock"], 30, 0.0);
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Flame Shock"], 30, 0.0);
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Frost Shock"], 30, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Earth Shock"], 30, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Flame Shock"], 30, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Frost Shock"], 30, 0.0);
             end,
             [23200] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 53, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 53, 0.0);
             end,
             [22396] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 80, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Lesser Healing Wave"], 80, 0.0);
             end,
             [23199] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 33, 0.0);
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Lightning Bolt"], 33, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Chain Lightning"], 33, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Lightning Bolt"], 33, 0.0);
             end,
             [23005] = function(effects)
-                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Lesser Healing Wave"], 10, 0.0);
+                spell_mod_add(effects.ability.refund, spell_name_to_id["Lesser Healing Wave"], 10, 0.0);
             end,
             [215436] = function(effects)
-                ensure_exists_and_add(effects.ability.cost_flat, spell_name_to_id["Flame Shock"], 10, 0.0);
+                spell_mod_add(effects.ability.cost_flat, spell_name_to_id["Flame Shock"], 10, 0.0);
             end,
             [228179] = function(effects)
-                ensure_exists_and_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0.0);
+                spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Rain"], 1.0, 0.0);
             end,
             [228176] = function(effects)
-                ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.1, 0.0);
+                spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Lightning Bolt"], 0.1, 0.0);
             end,
         };
     elseif class == "DRUID" then
         return {
             [22398] = function(effects)
-                ensure_exists_and_add(effects.ability.sp, spell_name_to_id["Rejuvenation"], 50, 0.0);
+                spell_mod_add(effects.ability.sp, spell_name_to_id["Rejuvenation"], 50, 0.0);
             end,
             [23197] = function(effects)
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Moonfire"], 0.17, 0.0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Sunfire"], 0.17, 0.0);
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.17, 0.0);
+                spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Moonfire"], 0.17, 0.0);
+                spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Sunfire"], 0.17, 0.0);
+                spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Starfall"], 0.17, 0.0);
             end,
             [22399] = function(effects)
-                ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Healing Touch"], 0.15, 0.0);
-                ensure_exists_and_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], 0.15, 0.0);
+                spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Healing Touch"], 0.15, 0.0);
+                spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], 0.15, 0.0);
             end,
             [23004] = function(effects)
-                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Healing Touch"], 25, 0.0);
-                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Nourish"], 25, 0.0);
+                spell_mod_add(effects.ability.refund, spell_name_to_id["Healing Touch"], 25, 0.0);
+                spell_mod_add(effects.ability.refund, spell_name_to_id["Nourish"], 25, 0.0);
             end,
             [216490] = function(effects)
-                ensure_exists_and_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.02, 0.0);
+                spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Wrath"], 0.02, 0.0);
             end,
             [228183] = function(effects)
-                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Regrowth"], 25, 0.0);
-                ensure_exists_and_add(effects.ability.refund, spell_name_to_id["Nourish"], 25, 0.0);
+                spell_mod_add(effects.ability.refund, spell_name_to_id["Regrowth"], 25, 0.0);
+                spell_mod_add(effects.ability.refund, spell_name_to_id["Nourish"], 25, 0.0);
             end,
             [228180] = function(effects)
-                ensure_exists_and_add(effects.ability.extra_ticks, spell_name_to_id["Insect Swarm"], 6, 0.0);
+                spell_mod_add(effects.ability.extra_ticks, spell_name_to_id["Insect Swarm"], 6, 0.0);
             end,
         };
     else 
@@ -780,23 +780,23 @@ local function create_items()
     if class == "PRIEST" then
         return {
             [19594] = function(effects)
-                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Power Word: Shield"], 35, 0.0);
+                spell_mod_add(effects.ability.flat_add, spell_name_to_id["Power Word: Shield"], 35, 0.0);
             end,
             [231332] = function(effects)
-                ensure_exists_and_add(effects.ability.flat_add, spell_name_to_id["Power Word: Shield"], 25, 0.0);
+                spell_mod_add(effects.ability.flat_add, spell_name_to_id["Power Word: Shield"], 25, 0.0);
             end,
         };
     elseif class == "DRUID" then
         return {
             [231316] = function(effects)
-                ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.02, 0.0);
-                ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.02, 0.0);
+                spell_mod_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.02, 0.0);
+                spell_mod_add(effects.ability.crit, spell_name_to_id["Starfire"], 0.02, 0.0);
             end,
         };
     elseif class == "PALADIN" then
         return {
             [231328] = function(effects)
-                ensure_exists_and_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.02, 0.0);
+                spell_mod_add(effects.ability.crit, spell_name_to_id["Holy Shock"], 0.02, 0.0);
             end,
         };
     else

@@ -70,105 +70,105 @@ local function save_sw_settings()
     local tooltip_settings = 0;
 
 
-    if sw_frame.settings_frame.icon_normal_effect:GetChecked() then
+    if sw_frame.tooltip_frame.icon_normal_effect:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.normal);
     end
-    if sw_frame.settings_frame.icon_crit_effect:GetChecked() then
+    if sw_frame.tooltip_frame.icon_crit_effect:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.crit);
     end
-    if sw_frame.settings_frame.icon_expected_effect:GetChecked() then
+    if sw_frame.tooltip_frame.icon_expected_effect:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.expected);
     end
-    if sw_frame.settings_frame.icon_effect_per_sec:GetChecked() then
+    if sw_frame.tooltip_frame.icon_effect_per_sec:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.effect_per_sec);
     end
-    if sw_frame.settings_frame.icon_effect_per_cost:GetChecked() then
+    if sw_frame.tooltip_frame.icon_effect_per_cost:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.effect_per_cost);
     end
-    if sw_frame.settings_frame.icon_avg_cost:GetChecked() then
+    if sw_frame.tooltip_frame.icon_avg_cost:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.avg_cost);
     end
-    if sw_frame.settings_frame.icon_avg_cast:GetChecked() then
+    if sw_frame.tooltip_frame.icon_avg_cast:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.avg_cast);
     end
-    if sw_frame.settings_frame.icon_hit:GetChecked() then
+    if sw_frame.tooltip_frame.icon_hit:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.hit);
     end
-    if sw_frame.settings_frame.icon_crit:GetChecked() then
+    if sw_frame.tooltip_frame.icon_crit:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.crit_chance);
     end
-    if sw_frame.settings_frame.icon_casts_until_oom:GetChecked() then
+    if sw_frame.tooltip_frame.icon_casts_until_oom:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.casts_until_oom);
     end
-    if sw_frame.settings_frame.icon_effect_until_oom:GetChecked() then
+    if sw_frame.tooltip_frame.icon_effect_until_oom:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.effect_until_oom);
     end
-    if sw_frame.settings_frame.icon_time_until_oom:GetChecked() then
+    if sw_frame.tooltip_frame.icon_time_until_oom:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.time_until_oom);
     end
-    if sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+    if sw_frame.tooltip_frame.icon_heal_variant:GetChecked() then
         icon_overlay_settings = bit.bor(icon_overlay_settings, icon_stat_display.show_heal_variant);
     end
-    if not sw_frame.settings_frame.tooltip_addon_name:GetChecked() then
+    if not sw_frame.tooltip_frame.tooltip_addon_name:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.addon_name);
     end
-    if not sw_frame.settings_frame.tooltip_loadout_info:GetChecked() then
+    if not sw_frame.tooltip_frame.tooltip_loadout_info:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.loadout_info);
     end
-    if sw_frame.settings_frame.tooltip_spell_rank:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_spell_rank:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.spell_rank);
     end
-    if sw_frame.settings_frame.tooltip_normal_effect:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_normal_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.normal);
     end
-    if sw_frame.settings_frame.tooltip_crit_effect:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_crit_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.crit);
     end
-    if sw_frame.settings_frame.tooltip_expected_effect:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_expected_effect:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.expected);
     end
-    if sw_frame.settings_frame.tooltip_effect_per_sec:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_effect_per_sec:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.effect_per_sec);
     end
-    if sw_frame.settings_frame.tooltip_effect_per_cost:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_effect_per_cost:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.effect_per_cost);
     end
-    if sw_frame.settings_frame.tooltip_cost_per_sec:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_cost_per_sec:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cost_per_sec);
     end
-    if sw_frame.settings_frame.tooltip_stat_weights:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_stat_weights:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.stat_weights);
     end
-    if sw_frame.settings_frame.tooltip_avg_cost:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_avg_cost:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cost);
     end
-    if sw_frame.settings_frame.tooltip_avg_cast:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_avg_cast:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.avg_cast);
     end
-    if sw_frame.settings_frame.tooltip_cast_until_oom:GetChecked() then
+    if sw_frame.tooltip_frame.tooltip_cast_until_oom:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.cast_until_oom);
     end
-    if not sw_frame.settings_frame.tooltip_sp_effect_calc:GetChecked() then
+    if not sw_frame.tooltip_frame.tooltip_sp_effect_calc:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.sp_effect_calc);
     end
-    if not sw_frame.settings_frame.tooltip_dynamic_tip:GetChecked() then
+    if not sw_frame.tooltip_frame.tooltip_dynamic_tip:GetChecked() then
         tooltip_settings = bit.bor(tooltip_settings, tooltip_stat_display.dynamic_tip);
     end
 
-    __sw__persistent_data_per_char.settings.icon_overlay_disable = sw_frame.settings_frame.icon_overlay_disable:GetChecked();
-    __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities = sw_frame.settings_frame.icon_mana_overlay:GetChecked();
-    __sw__persistent_data_per_char.settings.icon_overlay_old_rank = sw_frame.settings_frame.icon_old_rank_warning:GetChecked();
-    __sw__persistent_data_per_char.settings.icon_show_single_target_only = sw_frame.settings_frame.icon_show_single_target_only:GetChecked();
-    __sw__persistent_data_per_char.settings.icon_bottom_clearance = sw_frame.settings_frame.icon_bottom_clearance:GetChecked();
-    __sw__persistent_data_per_char.settings.icon_top_clearance = sw_frame.settings_frame.icon_top_clearance:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_overlay_disable = sw_frame.tooltip_frame.icon_overlay_disable:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities = sw_frame.tooltip_frame.icon_mana_overlay:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_overlay_old_rank = sw_frame.tooltip_frame.icon_old_rank_warning:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_show_single_target_only = sw_frame.tooltip_frame.icon_show_single_target_only:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_bottom_clearance = sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked();
+    __sw__persistent_data_per_char.settings.icon_top_clearance = sw_frame.tooltip_frame.icon_top_clearance:GetChecked();
 
     __sw__persistent_data_per_char.settings.ability_icon_overlay = icon_overlay_settings;
     __sw__persistent_data_per_char.settings.ability_tooltip = tooltip_settings;
-    __sw__persistent_data_per_char.settings.show_tooltip_only_when_shift = sw_frame.settings_frame.show_tooltip_only_when_shift;
-    __sw__persistent_data_per_char.settings.clear_original_tooltip = sw_frame.settings_frame.clear_original_tooltip;
+    __sw__persistent_data_per_char.settings.show_tooltip_only_when_shift = sw_frame.tooltip_frame.show_tooltip_only_when_shift;
+    __sw__persistent_data_per_char.settings.clear_original_tooltip = sw_frame.tooltip_frame.clear_original_tooltip;
     __sw__persistent_data_per_char.settings.icon_overlay_update_freq = sw_snapshot_loadout_update_freq;
-    __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.settings_frame.icon_overlay_font_size;
-    __sw__persistent_data_per_char.settings.icon_overlay_offset = sw_frame.settings_frame.icon_overlay_offset;
+    __sw__persistent_data_per_char.settings.icon_overlay_font_size = sw_frame.tooltip_frame.icon_overlay_font_size;
+    __sw__persistent_data_per_char.settings.icon_overlay_offset = sw_frame.tooltip_frame.icon_overlay_offset;
 
     __sw__persistent_data_per_char.settings.version_saved = swc.core.version_id;
 end

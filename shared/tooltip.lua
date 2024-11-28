@@ -68,7 +68,7 @@ end
 local function begin_tooltip_section(tooltip, spell)
 
     
-    if sw_frame.settings_frame.clear_original_tooltip or tooltip ~= GameTooltip or not GetSpellInfo(spell.base_id) then
+    if sw_frame.tooltip_frame.clear_original_tooltip or tooltip ~= GameTooltip or not GetSpellInfo(spell.base_id) then
         local txt_left = getglobal("GameTooltipTextLeft1");
         if txt_left then
 
@@ -84,10 +84,10 @@ local function begin_tooltip_section(tooltip, spell)
 
     if tooltip == GameTooltip then
 
-        if sw_frame.settings_frame.tooltip_addon_name:GetChecked() then
+        if sw_frame.tooltip_frame.tooltip_addon_name:GetChecked() then
             tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
         end
-        if sw_frame.stat_comparison_frame:IsShown() and sw_frame:IsShown() then
+        if sw_frame.calculator_frame:IsShown() and sw_frame:IsShown() then
             tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
         end
     else
@@ -148,11 +148,11 @@ local function update_tooltip(tooltip)
     if not swc.core.__sw__debug__ and tooltip:IsShown() then
         local spell_name, id = tooltip:GetSpell();
 
-        if spells[id] and IsControlKeyDown() and sw_frame.stat_comparison_frame:IsShown() and 
-                not sw_frame.stat_comparison_frame.spells[id] and
+        if spells[id] and IsControlKeyDown() and sw_frame.calculator_frame:IsShown() and 
+                not sw_frame.calculator_frame.spells[id] and
                 bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
 
-            sw_frame.stat_comparison_frame.spells[id] = {
+            sw_frame.calculator_frame.spells[id] = {
                 name = spell_name
             };
 
@@ -168,8 +168,8 @@ local function update_tooltip(tooltip)
             end
             if id == sw_frame.spell_viewer_invalid_spell_id then
                 tooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
-            elseif sw_frame.settings_frame.clear_original_tooltip then
-                if (not sw_frame.settings_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
+            elseif sw_frame.tooltip_frame.clear_original_tooltip then
+                if (not sw_frame.tooltip_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
                     tooltip:SetSpellByID(clear_tooltip_refresh_id);
                 else
                     tooltip:SetSpellByID(spell_id_of_cleared_tooltip);
@@ -192,7 +192,7 @@ local function append_tooltip_spell_info(is_fake)
         spell_id = spell_id_of_cleared_tooltip;
     elseif spell_id == sw_frame.spell_viewer_invalid_spell_id then
         spell_id = tonumber(sw_frame.spell_id_viewer_editbox:GetText());
-    elseif sw_frame.settings_frame.clear_original_tooltip and (not sw_frame.settings_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
+    elseif sw_frame.tooltip_frame.clear_original_tooltip and (not sw_frame.tooltip_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
         if spells[spell_id] then
             spell_id_of_cleared_tooltip = spell_id;
             GameTooltip:ClearLines();
@@ -207,7 +207,7 @@ local function append_tooltip_spell_info(is_fake)
         return;
     end
 
-    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
+    if not sw_frame.calculator_frame:IsShown() or not sw_frame:IsShown() then
 
         local loadout, effects = active_loadout_and_effects();
         swc.tooltip.tooltip_spell_info(GameTooltip, spell, loadout, effects, nil, spell_id);

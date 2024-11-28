@@ -331,29 +331,26 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     stats.hit_inflation = 1.0; -- inflate hit value visually while not contributing to expectation
 
-    local target_vuln_mod = 1.0;
-    local target_vuln_ot_mod = 1.0;
-
-    if effects.ability.vuln_mod[benefit_id] then
-        target_vuln_mod = target_vuln_mod * (1.0 + effects.ability.vuln_mod[benefit_id]);
+    local target_vuln_mod_mul = 1.0;
+    if effects.mul.ability.vuln_mod[benefit_id] then
+        target_vuln_mod_mul = target_vuln_mod_mul * effects.mul.ability.vuln_mod[benefit_id];
     end
 
-    target_vuln_ot_mod = target_vuln_mod;
+    local target_vuln_mod_ot_mul = target_vuln_mod_mul;
 
-    if effects.ability.vuln_ot_mod[benefit_id] then
-        target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.ability.vuln_ot_mod[benefit_id]);
+    if effects.mul.ability.vuln_mod_ot[benefit_id] then
+        target_vuln_mod_ot_mul = target_vuln_mod_ot_mul * effects.mul.ability.vuln_mod_ot[benefit_id];
     end
 
-    local global_mod = 1.0;
     stats.spell_mod = 1.0;
     stats.spell_ot_mod = 1.0;
     stats.flat_addition = 0;
     stats.effect_mod = 0.0;
     stats.spell_mod_base = 1.0; -- modifier than only works on spell base
-    stats.spell_dmg_mod_mul = effects.raw.spell_dmg_mod_mul;
+    stats.spell_dmg_mod_mul = effects.mul.raw.spell_dmg_mod;
     stats.regen_while_casting = effects.raw.regen_while_casting;
-    local spell_dmg_mod_school_add = effects.by_school.spell_dmg_mod_add[spell.school];
     local spell_dmg_mod_school = effects.by_school.spell_dmg_mod[spell.school];
+    local spell_dmg_mod_school_mul = effects.mul.by_school.spell_dmg_mod[spell.school];
 
     local resource_refund = effects.raw.resource_refund;
 
@@ -398,7 +395,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             spell.base_min = 0;
             spell.base_max = 0;
         end
-        spell_dmg_mod_school_add = spell_dmg_mod_school_add - stats.effect_mod;
+        spell_dmg_mod_school = spell_dmg_mod_school - stats.effect_mod;
     end
     local cost_mod_base = effects.raw.cost_mod_base;
     if effects.ability.cost_mod_base[benefit_id] then
@@ -754,9 +751,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             local pts = loadout.talents_table:pts(2, 3);
             if pts ~= 0 and spell.school == magic_school.fire and spell.base_min ~= 0 then
                 -- % ignite double dips in % multipliers
-                local double_dip = (1.0 + stats.spell_dmg_mod_mul) *
-                (1.0 + effects.by_school.spell_dmg_mod[magic_school.fire]) *
-                (1.0 + effects.by_school.target_spell_dmg_taken[magic_school.fire]);
+                local double_dip = stats.spell_dmg_mod_mul *
+                effects.mul.by_school.spell_dmg_mod[magic_school.fire] *
+                effects.mul.by_school.target_vuln_dmg[magic_school.fire];
 
                 add_extra_periodic_effect(stats,
                                           bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
@@ -766,8 +763,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 stats.cost = loadout.mana;
                 cost_mod = 1.0;
 
-                spell_dmg_mod_school = (1.0 + spell_dmg_mod_school) *
-                (1.0 + 3 * loadout.mana / math.max(1, loadout.max_mana)) - 1.0;
+                spell_dmg_mod_school_mul = spell_dmg_mod_school_mul *
+                (1.0 + 3 * loadout.mana / math.max(1, loadout.max_mana));
             end
 
             if loadout.num_set_pieces[set_tiers.pve_2] >= 8 and
@@ -781,7 +778,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 stats.crit = math.max(0.0, math.min(1.0, stats.crit + pts * 0.1));
 
                 if benefit_id == spell_name_to_id["Ice Lance"] then
-                    target_vuln_mod = target_vuln_mod * 3;
+                    target_vuln_mod_mul = target_vuln_mod_mul * 3;
                 end
             end
             if loadout.runes[rune_ids.overheat] and
@@ -828,20 +825,20 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         if loadout.runes[swc.talents.rune_ids.soul_siphon] then
             if benefit_id == spell_name_to_id["Drain Soul"] then
                 if loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.2 then
-                    target_vuln_ot_mod = target_vuln_ot_mod *
+                    target_vuln_mod_ot_mul = target_vuln_mod_ot_mul *
                     math.min(1.5, 1.0 + 0.5 * effects.raw.target_num_shadow_afflictions);
                 else
-                    target_vuln_ot_mod = target_vuln_ot_mod *
+                    target_vuln_mod_ot_mul = target_vuln_mod_ot_mul *
                     math.min(1.18, 1.0 + 0.06 * effects.raw.target_num_shadow_afflictions);
                 end
             elseif benefit_id == spell_name_to_id["Drain Life"] then
-                target_vuln_ot_mod = target_vuln_ot_mod *
+                target_vuln_mod_ot_mul = target_vuln_mod_ot_mul *
                 math.min(1.18, 1.0 + 0.06 * effects.raw.target_num_shadow_afflictions);
             end
         end
         if benefit_id == spell_name_to_id["Shadow Bolt"] then
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
-                target_vuln_mod = target_vuln_mod * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
+                target_vuln_mod_mul = target_vuln_mod_mul * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
             end
             local isb_buff_val = nil;
             for k, v in pairs(lookups.isb_to_vuln) do
@@ -857,13 +854,13 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
             if isb_buff_val and isb_pts ~= 0 then
 
-                target_vuln_mod = target_vuln_mod / (1.0 + isb_buff_val);
+                target_vuln_mod_mul = target_vuln_mod_mul / (1.0 + isb_buff_val);
 
                 stats.hit_inflation = stats.hit_inflation + (1.0 + isb_buff_val)/(1.0 + isb_pts*0.04*isb_uptime) - 1;
             else
                 stats.hit_inflation = stats.hit_inflation / (1.0 + isb_pts*0.04*isb_uptime);
             end
-            target_vuln_mod = target_vuln_mod * (1.0 + isb_pts*0.04*isb_uptime);
+            target_vuln_mod_mul = target_vuln_mod_mul * (1.0 + isb_pts*0.04*isb_uptime);
         end
     end
 
@@ -886,81 +883,84 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
         stats.spell_mod_base = stats.spell_mod_base + effects.raw.spell_heal_mod_base;
 
-        target_vuln_mod = target_vuln_mod * (1.0 + effects.raw.target_healing_taken);
-        target_vuln_ot_mod = target_vuln_ot_mod * (1.0 + effects.raw.target_healing_taken);
+        target_vuln_mod_mul = target_vuln_mod_mul * effects.mul.raw.target_vuln_heal;
+        target_vuln_mod_ot_mul = target_vuln_mod_ot_mul * effects.mul.raw.target_vuln_heal;
 
-        stats.spell_mod = target_vuln_mod * global_mod *
-            (1.0 + effects.raw.spell_heal_mod_mul)
+        stats.spell_mod =
+            target_vuln_mod_mul
+            *
+            effects.mul.raw.spell_heal_mod
             *
             (1.0 + stats.effect_mod + effects.raw.spell_heal_mod + effects.ability.effect_mod_only_heal[benefit_id]);
-        stats.spell_ot_mod = target_vuln_ot_mod * global_mod *
-            (1.0 + effects.raw.spell_heal_mod_mul)
+        stats.spell_ot_mod =
+        target_vuln_mod_ot_mul
+            *
+            effects.mul.raw.spell_heal_mod
             *
             (1.0 + stats.effect_mod + effects.ability.effect_ot_mod[benefit_id] + effects.raw.spell_heal_mod + effects.raw.ot_mod);
     elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
         stats.spell_mod_base = stats.spell_mod_base + effects.raw.spell_heal_mod_base;
 
-        stats.spell_mod = target_vuln_mod * global_mod *
-            (1.0 + stats.effect_mod);
+        stats.spell_mod =
+            target_vuln_mod_mul * (1.0 + stats.effect_mod);
 
-        stats.spell_ot_mod = target_vuln_mod * global_mod *
+        stats.spell_ot_mod = target_vuln_mod_mul *
             ((1.0 + stats.effect_mod + effects.ability.effect_ot_mod[benefit_id]));
         -- hacky special case for power word: shield glyph as it scales with healing
-        stats.spell_heal_mod = (1.0 + effects.raw.spell_heal_mod_mul)
+        stats.spell_heal_mod = effects.mul.raw.spell_heal_mod
             *
             (1.0 + effects.ability.effect_ot_mod[benefit_id] + effects.raw.spell_heal_mod);
     else
-        target_vuln_mod = target_vuln_mod * (1.0 + effects.by_school.target_spell_dmg_taken[spell.school]);
+        -- damage spell
+        target_vuln_mod_mul = target_vuln_mod_mul * effects.mul.by_school.target_vuln_dmg[spell.school];
 
+        local spell_dmg_mod_school_ot_mul = spell_dmg_mod_school_mul;
         local spell_dmg_mod_school_ot = spell_dmg_mod_school;
-        local spell_dmg_mod_school_add_ot = spell_dmg_mod_school_add;
+
         if bit.band(spell.flags, spell_flags.special_periodic_school) ~= 0 then
+            spell_dmg_mod_school_ot_mul = effects.mul.by_school.spell_dmg_mod[spell.multi_school[1]];
             spell_dmg_mod_school_ot = effects.by_school.spell_dmg_mod[spell.multi_school[1]];
-            spell_dmg_mod_school_add_ot = effects.by_school.spell_dmg_mod_add[spell.multi_school[1]];
-            target_vuln_ot_mod = target_vuln_ot_mod *
-            (1.0 + effects.by_school.target_spell_dmg_taken[spell.multi_school[1]] + effects.by_school.target_spell_dmg_taken_ot[spell.multi_school[1]]);
+            target_vuln_mod_ot_mul = target_vuln_mod_ot_mul *
+                effects.mul.by_school.target_vuln_dmg[spell.multi_school[1]] * effects.mul.by_school.target_vuln_dmg_ot[spell.multi_school[1]];
         else
-            target_vuln_ot_mod = target_vuln_ot_mod *
-            (1.0 + effects.by_school.target_spell_dmg_taken[spell.school] + effects.by_school.target_spell_dmg_taken_ot[spell.school]);
+            target_vuln_mod_ot_mul = target_vuln_mod_ot_mul *
+                effects.mul.by_school.target_vuln_dmg[spell.school] * effects.mul.by_school.target_vuln_dmg_ot[spell.school];
         end
 
-
-        -- TODO: unknown how double dipping works with e.g. curse of elements
+        -- multischool dipping
         if bit.band(spell.flags, spell_flags.multi_school) ~= 0 then
             for _, v in pairs(spell.multi_school) do
-                spell_dmg_mod_school = (1.0 + spell_dmg_mod_school) *
-                (1.0 + effects.by_school.spell_dmg_mod[v] - effects.by_school.spell_dmg_mod[magic_school.physical]) - 1.0;
-                spell_dmg_mod_school_add = spell_dmg_mod_school_add + effects.by_school.spell_dmg_mod_add[v] -
-                effects.by_school.spell_dmg_mod_add[magic_school.physical];
+                spell_dmg_mod_school_mul = spell_dmg_mod_school_mul *
+                    (1.0 + effects.mul.by_school.spell_dmg_mod[v] - effects.mul.by_school.spell_dmg_mod[magic_school.physical]);
+                spell_dmg_mod_school = spell_dmg_mod_school + effects.by_school.spell_dmg_mod[v] -
+                effects.by_school.spell_dmg_mod[magic_school.physical];
 
-                target_vuln_mod = target_vuln_mod *
-                (1.0 + effects.by_school.target_spell_dmg_taken[v] - effects.by_school.target_spell_dmg_taken[magic_school.physical]);
-                target_vuln_ot_mod = target_vuln_ot_mod *
-                (1.0 + effects.by_school.target_spell_dmg_taken[v] + effects.by_school.target_spell_dmg_taken_ot[v] - (effects.by_school.target_spell_dmg_taken[magic_school.physical] + effects.by_school.target_spell_dmg_taken_ot[magic_school.physical]));
+                target_vuln_mod_mul = target_vuln_mod_mul *
+                (1.0 + effects.mul.by_school.target_vuln_dmg[v] - effects.mul.by_school.target_vuln_dmg[magic_school.physical]);
+                target_vuln_mod_ot_mul = target_vuln_mod_ot_mul *
+                (1.0 + effects.mul.by_school.target_vuln_dmg[v] + effects.mul.by_school.target_vuln_dmg_ot[v] - (effects.mul.by_school.target_vuln_dmg[magic_school.physical] + effects.mul.by_school.target_vuln_dmg_ot[magic_school.physical]));
             end
+            spell_dmg_mod_school_ot_mul = spell_dmg_mod_school_mul;
             spell_dmg_mod_school_ot = spell_dmg_mod_school;
-            spell_dmg_mod_school_add_ot = spell_dmg_mod_school_add;
         end
 
-        stats.spell_mod = target_vuln_mod * global_mod
+        stats.spell_mod =
+            target_vuln_mod_mul
             *
-            (1.0 + stats.spell_dmg_mod_mul)
+            stats.spell_dmg_mod_mul
             *
-            (1.0 + spell_dmg_mod_school)
+            spell_dmg_mod_school_mul
             *
-            (1.0 + effects.raw.spell_dmg_mod)
-            *
-            (1.0 + stats.effect_mod + spell_dmg_mod_school_add);
+            (1.0 + stats.effect_mod + spell_dmg_mod_school);
 
-        stats.spell_ot_mod = target_vuln_ot_mod * global_mod
+        stats.spell_ot_mod =
+            target_vuln_mod_ot_mul
             *
-            (1.0 + stats.spell_dmg_mod_mul)
+            stats.spell_dmg_mod_mul
             *
-            (1.0 + spell_dmg_mod_school_ot)
+            spell_dmg_mod_school_ot_mul
             *
-            (1.0 + effects.raw.spell_dmg_mod)
-            *
-            (1.0 + stats.effect_mod + effects.ability.effect_ot_mod[benefit_id] + spell_dmg_mod_school_add_ot + effects.raw.ot_mod);
+            (1.0 + stats.effect_mod + effects.ability.effect_ot_mod[benefit_id] + spell_dmg_mod_school_ot + effects.raw.ot_mod);
     end
 
     if bit.band(spell.flags, spell_flags.alias) ~= 0 then

@@ -8843,7 +8843,7 @@ local function create_spells()
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.aoe,
                     spell_flags.cd, spell_flags.unbounded_aoe_ot,
                     spell_flags.unbounded_aoe_direct, spell_flags.exception_coef, spell_flags.destruction,
-                    spell_flags.affliction),
+                    spell_flags.affliction, spell_flags.multi_school),
                 school              = magic_school.shadow,
                 coef                = 0.2,
                 over_time_coef      = 0.13,

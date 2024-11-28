@@ -26,20 +26,18 @@ local _, class = UnitClass("player");
 local _, race = UnitRace("player");
 local faction, _ = UnitFactionGroup("player");
 
-local function ensure_exists_and_add(table, key, add, default_if_not_exists)
+local function spell_mod_add(table, key, add)
     if not table[key] then
-        table[key] = default_if_not_exists + add;
-    else
-        table[key] = table[key] + add;
+        table[key] = 0.0;
     end
+     table[key] = table[key] + add;
 end
 
-local function ensure_exists_and_mul(table, key, mul, default_if_not_exists)
+local function spell_mod_mul(table, key, mul)
     if not table[key] then
-        table[key] = default_if_not_exists * mul;
-    else
-        table[key] = table[key] * mul;
+        table[key] = 1.0
     end
+    table[key] = table[key] * mul;
 end
 
 local function deep_table_copy(obj, seen)
@@ -71,7 +69,7 @@ local loadout_flags = {
     always_max_mana                     = bit.lshift(1, 8),
     custom_lvl                          = bit.lshift(1, 9),
     target_pvp                          = bit.lshift(1, 10),
-    
+
 };
 
 local function spell_cost(spell_id)
@@ -131,8 +129,8 @@ local effect_colors = {
     addon_info              = { 138 / 255, 134 / 255, 125 / 255 },
 };
 
-utils.ensure_exists_and_mul = ensure_exists_and_mul;
-utils.ensure_exists_and_add = ensure_exists_and_add;
+utils.spell_mod_mul = spell_mod_mul;
+utils.spell_mod_add = spell_mod_add;
 utils.beacon_snapshot_time = beacon_snapshot_time;
 utils.addon_running_time = addon_running_time;
 utils.class = class;

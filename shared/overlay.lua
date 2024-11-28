@@ -97,8 +97,8 @@ local function init_frame_overlay(frame_info)
     end
     for i = 1, 3 do
         frame_info.overlay_frames[i]:SetFont(
-            swc.ui.icon_overlay_font, sw_frame.settings_frame.icon_overlay_font_size, "THICKOUTLINE");
-        frame_info.overlay_frames[i]:SetPoint(anchors[i], sw_frame.settings_frame.icon_overlay_offset + 1.0, offsets[i]);
+            swc.ui.icon_overlay_font, sw_frame.tooltip_frame.icon_overlay_font_size, "THICKOUTLINE");
+        frame_info.overlay_frames[i]:SetPoint(anchors[i], sw_frame.tooltip_frame.icon_overlay_offset + 1.0, offsets[i]);
     end
 end
 
@@ -341,92 +341,92 @@ end
 
 local function update_icon_overlay_settings()
 
-    mana_cost_overlay = sw_frame.settings_frame.icon_avg_cost:GetChecked() or sw_frame.settings_frame.icon_casts_until_oom:GetChecked() or sw_frame.settings_frame.icon_time_until_oom:GetChecked();
-    cast_speed_overlay = sw_frame.settings_frame.icon_avg_cast:GetChecked();
+    mana_cost_overlay = sw_frame.tooltip_frame.icon_avg_cost:GetChecked() or sw_frame.tooltip_frame.icon_casts_until_oom:GetChecked() or sw_frame.tooltip_frame.icon_time_until_oom:GetChecked();
+    cast_speed_overlay = sw_frame.tooltip_frame.icon_avg_cast:GetChecked();
 
-    sw_frame.settings_frame.icon_overlay = {};
+    sw_frame.tooltip_frame.icon_overlay = {};
 
     local index = 1;
 
-    if sw_frame.settings_frame.icon_normal_effect:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_normal_effect:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.normal,
             color = effect_colors.normal,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_crit_effect:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_crit_effect:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.crit,
             color = effect_colors.crit,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_expected_effect:GetChecked() then 
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_expected_effect:GetChecked() then 
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.expected,
             color = effect_colors.expectation,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_effect_per_sec:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_effect_per_sec:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.effect_per_sec,
             color = effect_colors.effect_per_sec,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_effect_per_cost:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_effect_per_cost:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.effect_per_cost,
             color = effect_colors.effect_per_cost,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_avg_cost:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_avg_cost:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.avg_cost,
             color = effect_colors.avg_cost,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_avg_cast:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_avg_cast:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.avg_cast,
             color = effect_colors.avg_cast,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_hit:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_hit:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.hit,
             color = effect_colors.normal,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_crit:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_crit:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.crit_chance,
             color = effect_colors.crit,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_effect_until_oom:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_effect_until_oom:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.effect_until_oom,
             color = effect_colors.effect_until_oom,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_casts_until_oom:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_casts_until_oom:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.casts_until_oom,
             color = effect_colors.casts_until_oom,
         };
         index = index + 1;
     end
-    if sw_frame.settings_frame.icon_time_until_oom:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[index] = {
+    if sw_frame.tooltip_frame.icon_time_until_oom:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[index] = {
             label_type = icon_stat_display.time_until_oom,
             color = effect_colors.time_until_oom,
         };
@@ -434,28 +434,28 @@ local function update_icon_overlay_settings()
     end
 
     -- if 1, do bottom
-    if not sw_frame.settings_frame.icon_overlay[2] then
-        sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[1];
-        sw_frame.settings_frame.icon_overlay[1] = nil;
+    if not sw_frame.tooltip_frame.icon_overlay[2] then
+        sw_frame.tooltip_frame.icon_overlay[3] = sw_frame.tooltip_frame.icon_overlay[1];
+        sw_frame.tooltip_frame.icon_overlay[1] = nil;
     -- if 2, do top and bottom
-    elseif not sw_frame.settings_frame.icon_overlay[3] then
-        sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[2];
-        sw_frame.settings_frame.icon_overlay[2] = nil;
+    elseif not sw_frame.tooltip_frame.icon_overlay[3] then
+        sw_frame.tooltip_frame.icon_overlay[3] = sw_frame.tooltip_frame.icon_overlay[2];
+        sw_frame.tooltip_frame.icon_overlay[2] = nil;
     end
 
-    if sw_frame.settings_frame.icon_bottom_clearance:GetChecked() then
-        sw_frame.settings_frame.icon_overlay[2] = sw_frame.settings_frame.icon_overlay[1];
-        sw_frame.settings_frame.icon_overlay[1] = sw_frame.settings_frame.icon_overlay[3];
-        sw_frame.settings_frame.icon_overlay[3] = nil;
+    if sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() then
+        sw_frame.tooltip_frame.icon_overlay[2] = sw_frame.tooltip_frame.icon_overlay[1];
+        sw_frame.tooltip_frame.icon_overlay[1] = sw_frame.tooltip_frame.icon_overlay[3];
+        sw_frame.tooltip_frame.icon_overlay[3] = nil;
     end
 
-    if sw_frame.settings_frame.icon_top_clearance:GetChecked() then
-        if sw_frame.settings_frame.icon_bottom_clearance:GetChecked() then
-            sw_frame.settings_frame.icon_overlay[2] = sw_frame.settings_frame.icon_overlay[1];
+    if sw_frame.tooltip_frame.icon_top_clearance:GetChecked() then
+        if sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() then
+            sw_frame.tooltip_frame.icon_overlay[2] = sw_frame.tooltip_frame.icon_overlay[1];
         else
-            sw_frame.settings_frame.icon_overlay[3] = sw_frame.settings_frame.icon_overlay[1] or sw_frame.settings_frame.icon_overlay[3];
+            sw_frame.tooltip_frame.icon_overlay[3] = sw_frame.tooltip_frame.icon_overlay[1] or sw_frame.tooltip_frame.icon_overlay[3];
         end
-        sw_frame.settings_frame.icon_overlay[1] = nil;
+        sw_frame.tooltip_frame.icon_overlay[1] = nil;
     end
 
     sw_num_icon_overlay_fields_active = index - 1;
@@ -463,7 +463,7 @@ local function update_icon_overlay_settings()
     -- hide existing overlay frames that should no longer exist
     for i = 1, 3 do
 
-        if not sw_frame.settings_frame.icon_overlay[i] then
+        if not sw_frame.tooltip_frame.icon_overlay[i] then
             for k, v in pairs(spell_book_frames) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
@@ -621,7 +621,7 @@ end
 
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, eval_flags)
 
-    if sw_frame.settings_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
+    if sw_frame.tooltip_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
 
         frame_info.overlay_frames[1]:SetPoint("TOP", 1, -3);
         frame_info.overlay_frames[2]:SetPoint("CENTER", 1, -1.5);
@@ -644,11 +644,11 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
 
 
-        if sw_frame.settings_frame.icon_mana_overlay:GetChecked() then
+        if sw_frame.tooltip_frame.icon_mana_overlay:GetChecked() then
             local idx = 3;
-            if sw_frame.settings_frame.icon_bottom_clearance:GetChecked() and sw_frame.settings_frame.icon_top_clearance:GetChecked() then
+            if sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() and sw_frame.tooltip_frame.icon_top_clearance:GetChecked() then
                 idx = 2;
-            elseif sw_frame.settings_frame.icon_bottom_clearance:GetChecked() then
+            elseif sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() then
                 idx = 1;
             end
             frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
@@ -659,13 +659,13 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     elseif sw_num_icon_overlay_fields_active > 0 then
         for i = 1, 3 do
             
-            if sw_frame.settings_frame.icon_overlay[i] then
+            if sw_frame.tooltip_frame.icon_overlay[i] then
 
-                overlay_label_handler[sw_frame.settings_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[sw_frame.tooltip_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1],
-                                                          sw_frame.settings_frame.icon_overlay[i].color[2],
-                                                          sw_frame.settings_frame.icon_overlay[i].color[3]);
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.tooltip_frame.icon_overlay[i].color[1],
+                                                          sw_frame.tooltip_frame.icon_overlay[i].color[2],
+                                                          sw_frame.tooltip_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
             end
@@ -718,18 +718,18 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
     if sw_num_icon_overlay_fields_active > 0 then
         for i = 1, 3 do
             
-            if sw_frame.settings_frame.icon_overlay[i] and 
-                bit.band(sw_frame.settings_frame.icon_overlay[i].label_type,
+            if sw_frame.tooltip_frame.icon_overlay[i] and 
+                bit.band(sw_frame.tooltip_frame.icon_overlay[i].label_type,
                          bit.bor(icon_stat_display.avg_cost,
                                  icon_stat_display.avg_cast,
                                  icon_stat_display.casts_until_oom,
                                  icon_stat_display.time_until_oom)) ~= 0 then
 
-                overlay_label_handler[sw_frame.settings_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[sw_frame.tooltip_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.settings_frame.icon_overlay[i].color[1],
-                                                          sw_frame.settings_frame.icon_overlay[i].color[2],
-                                                          sw_frame.settings_frame.icon_overlay[i].color[3]);
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.tooltip_frame.icon_overlay[i].color[1],
+                                                          sw_frame.tooltip_frame.icon_overlay[i].color[2],
+                                                          sw_frame.tooltip_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
             end
@@ -796,7 +796,7 @@ local function update_spell_icons(loadout, effects, eval_flags)
                         end
                     else
                         -- TODO: icon overlay not working for healing version checkbox
-                        if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                        if spells[id].healing_version and sw_frame.tooltip_frame.icon_heal_variant:GetChecked() then
                             update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
                         else
                             update_spell_icon_frame(v, spells[id], id, loadout, effects, eval_flags);
@@ -830,7 +830,7 @@ local function update_spell_icons(loadout, effects, eval_flags)
 
             elseif id ~= 0 and v.frame:IsShown() then
 
-                if spells[id].healing_version and sw_frame.settings_frame.icon_heal_variant:GetChecked() then
+                if spells[id].healing_version and sw_frame.tooltip_frame.icon_heal_variant:GetChecked() then
                     update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
                 else
                     update_spell_icon_frame(v, spells[id], id, loadout, effects, eval_flags);
@@ -844,14 +844,14 @@ end
 local function update_overlay()
 
     local loadout, effects = nil;
-    if not sw_frame.stat_comparison_frame:IsShown() or not sw_frame:IsShown() then
+    if not sw_frame.calculator_frame:IsShown() or not sw_frame:IsShown() then
         loadout, effects = active_loadout_and_effects();
     else
         loadout, _, effects = active_loadout_and_effects_diffed_from_ui();
     end
 
     local eval_flags = 0;
-    if sw_frame.settings_frame.icon_show_single_target_only:GetChecked() then
+    if sw_frame.tooltip_frame.icon_show_single_target_only:GetChecked() then
         eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
     end
 
@@ -873,7 +873,7 @@ local function update_overlay()
         end
     end
 
-    if not sw_frame.settings_frame.icon_overlay_disable:GetChecked() then
+    if not sw_frame.tooltip_frame.icon_overlay_disable:GetChecked() then
 
         update_spell_icons(loadout, effects, eval_flags);
     end
