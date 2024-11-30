@@ -129,13 +129,13 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             tooltip:AddLine(string.format("%s%s | Target: %.0f%% HP",
                     loadout.name, clvl_specified, loadout.friendly_hp_perc * 100
                 ),
-                effect_colors.addon_info[1], effect_colors.addon_info[2], effect_colors.addon_info[3]);
+                effect_colors.loadout_info[1], effect_colors.loadout_info[2], effect_colors.loadout_info[3]);
         else
             tooltip:AddLine(string.format("%s%s | Target: %dx | LVL %d | %.0f%% HP | %d RES",
                     loadout.name, clvl_specified, loadout.unbounded_aoe_targets, loadout.target_lvl,
                     loadout.enemy_hp_perc * 100, stats.target_resi
                 ),
-                effect_colors.addon_info[1], effect_colors.addon_info[2], effect_colors.addon_info[3]);
+                effect_colors.loadout_info[1], effect_colors.loadout_info[2], effect_colors.loadout_info[3]);
         end
     end
     if sw_frame.tooltip_frame.tooltip_spell_rank:GetChecked() and not repeated_tooltip_on then

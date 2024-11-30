@@ -31,7 +31,7 @@ local spell_flags               = swc.abilities.spell_flags;
 
 local font                      = swc.ui.font;
 local load_sw_ui                = swc.ui.load_sw_ui;
-local create_sw_base_gui        = swc.ui.create_sw_base_gui;
+local create_sw_base_ui         = swc.ui.create_sw_base_ui;
 local sw_activate_tab           = swc.ui.sw_activate_tab;
 local update_loadouts_rhs       = swc.ui.update_loadouts_rhs;
 
@@ -146,8 +146,7 @@ local event_dispatch = {
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
         if msg == "StatWeightsClassic" then
-            if __sw__persistent_data_per_char and __sw__persistent_data_per_char.settings and not __sw__persistent_data_per_char.settings.version_saved
-                and core.expansion_loaded ~= core.expansions.wotlk then
+            if __sw__persistent_data_per_char and  not __sw__persistent_data_per_char.version_saved then
                 core.__sw__use_defaults__ = true;
             end
             load_sw_ui();
@@ -344,7 +343,7 @@ local function refresh_tooltip()
 end
 
 if class_is_supported then
-    create_sw_base_gui();
+    create_sw_base_ui();
 
     C_Timer.After(1.0, main_update);
     C_Timer.After(1.0, refresh_tooltip);

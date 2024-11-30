@@ -852,6 +852,9 @@ local function create_talents()
             [108] = {
                 apply = function(loadout, effects, pts)
                     for k, v in pairs(spell_names_to_id({ "Lightning Bolt", "Chain Lightning" })) do
+                        if pts == 5 then
+                            pts = 6;
+                        end
                         spell_mod_add(effects.ability.crit, v, 0.01 * pts, 0.0);
                     end
                 end

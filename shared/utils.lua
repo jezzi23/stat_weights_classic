@@ -126,7 +126,7 @@ local effect_colors = {
     sp_effect               = { 138 / 255, 134 / 255, 125 / 255 },
     stat_weights            = {   0 / 255, 255 / 255,   0 / 255 },
     spell_rank              = { 138 / 255, 134 / 255, 125 / 255 },
-    addon_info              = { 138 / 255, 134 / 255, 125 / 255 },
+    loadout_info            = { 138 / 255, 134 / 255, 125 / 255 },
 };
 
 utils.spell_mod_mul = spell_mod_mul;

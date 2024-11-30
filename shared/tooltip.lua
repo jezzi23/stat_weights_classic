@@ -40,7 +40,6 @@ local tooltip_stat_display = {
     effect_per_cost     = bit.lshift(1,7),
     cost_per_sec        = bit.lshift(1,8),
     stat_weights        = bit.lshift(1,9),
-    more_details        = bit.lshift(1,10), -- not used anymore, was not default
     avg_cost            = bit.lshift(1,11),
     avg_cast            = bit.lshift(1,12),
     cast_until_oom      = bit.lshift(1,13),
@@ -50,6 +49,10 @@ local tooltip_stat_display = {
     sp_effect_calc      = bit.lshift(1,17), -- negate default
     addon_name          = bit.lshift(1,18), -- negate default
     dynamic_tip         = bit.lshift(1,19), -- negate default
+};
+
+local tooltip_settings = {
+    show_tooltip_only_when_shift    = bit.lshift(1,1),
 };
 
 local function sort_stat_weights(stat_weights, num_weights) 

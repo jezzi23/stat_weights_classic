@@ -1,12 +1,28 @@
 ## Interface: 11505
 ## Title: Stat Weights Classic Vanilla
-## Notes: Advanced ability information, icon overlays and more
+## Notes: Calculates spell info and presents in tooltip or overlay
 ## SavedVariablesPerCharacter: __sw__persistent_data_per_char
+## SavedVariables: __sw__persistent_data
 
-libs/LibStub/Libstub.lua
-libs/CallbackHandler-1.0/CallbackHandler-1.0.xml
-libs/LibDataBroker-1.1/LibDataBroker-1.1.lua
-libs/LibDBIcon-1.0/LibDBIcon-1.0.lua
+lib/LibStub/Libstub.lua
+lib/CallbackHandler-1.0/CallbackHandler-1.0.xml
+lib/LibDataBroker-1.1/LibDataBroker-1.1.lua
+lib/LibDBIcon-1.0/LibDBIcon-1.0.lua
+
+locale/default.lua
+locale/ptBR.lua
+locale/zhCN.lua
+locale/enCN.lua
+locale/frFR.lua
+locale/deDE.lua
+locale/itIT.lua
+locale/esMX.lua
+locale/ptPT.lua
+locale/koKR.lua
+locale/ruRU.lua
+locale/esES.lua
+locale/zhTW.lua
+locale/enTW.lua
 
 shared/utils.lua
 vanilla/abilities.lua

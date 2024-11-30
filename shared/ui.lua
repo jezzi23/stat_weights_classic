@@ -66,7 +66,7 @@ local ui = {};
 
 local sw_frame = {};
 
-local icon_overlay_font = "Interface\\AddOns\\StatWeightsClassic\\fonts\\Oswald-Bold.ttf";
+local icon_overlay_font = "Interface\\AddOns\\StatWeightsClassic\\font\\Oswald-Bold.ttf";
 local font = "GameFontHighlightSmall";
 
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
@@ -719,7 +719,6 @@ local function create_sw_spell_id_viewer()
     if swc.core.__sw__test_all_spells then
         sw_frame.spell_id_viewer_editbox:SetText(pairs(spells)(spells));
     end
-    
 
     sw_frame.spell_id_viewer_editbox_label = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.spell_id_viewer_editbox_label:SetFontObject(font);
@@ -760,137 +759,349 @@ local function create_sw_spell_id_viewer()
     sw_frame.spell_icon:SetScript("OnLeave", tooltip_viewer_off);
 end
 
-local function create_sw_gui_tooltip_frame(y_offset)
+local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, func)
+    --  assume max 2 columns
+    for i, v in pairs(buttons_info) do
+        local f = CreateFrame("CheckButton", "sw_frame_"..v.txt, sw_frame.tooltip_frame, "ChatConfigCheckButtonTemplate");
+        f._settings_id = v.id;
 
-    -- content frame for settings
-    sw_frame.tooltip_frame.y_offset = -35;
+        local x_spacing = 240;
+        local x_pad = 10;
+        local x = x_pad;
+        x = x_pad + x_spacing * (i-1)%num_columns;
+        f:SetPoint("TOPLEFT", x, y_offset);
+        local txt = getglobal(f:GetName() .. 'Text');
+        txt:SetText(v.txt);
+        if v.color then
+            txt:SetTextColor(v.color[1], v.color[2], v.color[3]);
+        end
+        if v.tooltip then
+            getglobal(f:GetName()).tooltip = v.tooltip;
+        end
+        if f.func then
+            f:SetScript("OnClick", f.func);
+        elseif func then
+            f:SetScript("OnClick", func);
+        else
+            f:SetScript("OnClick", function(self)
+                __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
+                if func then
+                    func(self);
+                end
+            end);
+        end
 
-    sw_frame.tooltip_frame.icon_settings_label = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.icon_settings_label:SetFontObject(font);
-    sw_frame.tooltip_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.icon_settings_label:SetText("Ability Icon Overlay Display Options (max 3)");
-    sw_frame.tooltip_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+        if i%num_columns == 0 then
+            parent_frame.y_offset = parent_frame.y_offset - 20;
+        end
+    end
+end
 
-    sw_frame.tooltip_frame.icons_num_checked = 0;
+local function create_sw_ui_tooltip_frame(y_offset)
+
+    sw_frame.tooltip_frame.num_tooltip_toggled = 0;
+
+    local tooltip_setting_checks = {
+        {
+            id = "tooltip_disable",
+            txt = "Disable tooltip",
+        },
+        {
+            id = "tooltip_shift_to_show",
+            txt = "Require SHIFT to show extended tooltip"
+        },
+        {
+            id = "tooltip_clear_original",
+            txt = "Clear original tooltip",
+        }
+    };
+
+    sw_frame.tooltip_frame.tooltip_settings_label_misc = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetFontObject(font);
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetText("Miscellaneous Settings");
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    multi_row_checkbutton(tooltip_setting_checks, sw_frame.tooltip_frame, 2);
+
+    local tooltip_components = {
+        {
+            id = "tooltip_display_addon_name",
+            txt = "Addon Name"
+        },
+        {
+            id = "tooltip_display_dynamic_tip",
+            txt = "Evaluation options",
+            tooltip = "For certain spells, shows hotkey to change evaluation method dynamically in the tooltip.";
+        },
+        {
+            id = "tooltip_display_loadout_info",
+            txt = "Loadout info",
+            color = effect_colors.addon_info,
+        },
+        {
+            id = "tooltip_display_spell_rank",
+            txt = "Spell rank info",
+            color = effect_colors.spell_rank,
+        },
+        {
+            id = "tooltip_display_spell_id",
+            txt = "Spell id",
+            color = effect_colors.spell_rank,
+        },
+        {
+            id = "tooltip_display_hit",
+            txt = "Hit & resist",
+            color = effect_colors.normal
+        },
+        {
+            id = "tooltip_display_normal",
+            txt = "Normal effect",
+            color = effect_colors.normal
+        },
+        {
+            id = "tooltip_display_normal_hit_combined",
+            txt = "Normal effect & hit info combined",
+            color = effect_colors.normal
+        },
+        {
+            id = "tooltip_display_crit",
+            txt = "Critical chance & modifier",
+            color = effect_colors.crit_effect
+        },
+        {
+            id = "tooltip_display_crit_combined",
+            txt = "Critical effect & chance combined",
+            color = effect_colors.crit_effect
+        },
+        {
+            id = "tooltip_display_expected",
+            txt = "Expected effect",
+            color = effect_colors.expectation
+        },
+        {
+            id = "tooltip_display_effect_per_sec",
+            txt = "Effect per second",
+            color = effect_colors.effect_per_sec
+        },
+        {
+            id = "tooltip_display_effect_per_cost",
+            txt = "Effect per cost",
+            color = effect_colors.effect_per_cost
+        },
+        {
+            id = "tooltip_display_cost_per_sec",
+            txt = "Cost per second" ,
+            color = effect_colors.cost_per_second
+        },
+        {
+            id = "tooltip_display_avg_cost",
+            txt = "Expected cost",
+            color = effect_colors.avg_cost,
+        },
+        {
+            id = "tooltip_display_avg_cast",
+            txt = "Expected execution time",
+            color = effect_colors.avg_cast,
+        },
+        {
+            id = "tooltip_display_cast_until_oom",
+            txt = "Casts until OOM",
+            color = effect_colors.normal,
+            tooltip = "Assumes you cast a particular ability until you are OOM with no cooldowns."
+        },
+        {
+            id = "tooltip_display_sp_effect_calc",
+            txt = "Coef & SP effect calculation",
+            color = effect_colors.sp_effect,
+        },
+        {
+            id = "tooltip_display_sp_effect_ratio",
+            txt = "SP to base effect ratio",
+            color = effect_colors.sp_effect,
+        },
+        {
+            id = "tooltip_display_stat_weights",
+            txt = "Stat weights",
+            color = effect_colors.stat_weights
+        },
+        --tooltip_display_cast_and_tap       
+    };
+
+    local tooltip_toggle = function(self)
+
+        local checked = self:GetChecked();
+        if checked then
+
+            if sw_frame.tooltip_frame.num_tooltip_toggled == 0 then
+                sw_frame.tooltip_frame.tooltip_disable:SetChecked(false);
+            end
+            sw_frame.tooltip_frame.num_tooltip_toggled = sw_frame.tooltip_frame.num_tooltip_toggled + 1;
+        else
+            sw_frame.tooltip_frame.num_tooltip_toggled = sw_frame.tooltip_frame.num_tooltip_toggled - 1;
+            if sw_frame.tooltip_frame.num_tooltip_toggled == 0 then
+                sw_frame.tooltip_frame.tooltip_disable:SetChecked(true);
+            end
+        end
+        __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
+    end;
+
+    multi_row_checkbutton(tooltip_components, sw_frame.tooltip_frame, 2);
+
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 25;
+end
+
+local function create_sw_ui_overlay_frame()
+    --new
+    sw_frame.overlay_frame.icon_settings_label = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.overlay_frame.icon_settings_label:SetFontObject(font);
+    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
+    sw_frame.overlay_frame.icon_settings_label:SetText("Overlay Configuration");
+    sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.overlay_frame.icon_settings_label = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.overlay_frame.icon_settings_label:SetFontObject(font);
+    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
+    sw_frame.overlay_frame.icon_settings_label:SetText("L[Ability icon overlay components (max 3)]");
+    sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 12;
+
+    sw_frame.overlay_frame.icons_num_checked = 0;
 
     local icon_checkbox_func = function(self)
 
         if sw_num_icon_overlay_fields_active >= 3 then
-            self:SetChecked(false); 
+            self:SetChecked(false);
+        else
+            __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
         end
         update_icon_overlay_settings();
     end;
 
+    local overlay_components = {
+        {
+            id = "overlay_display_normal",
+            txt = "Normal effect",
+            color = effect_colors.normal,
+        },
+        {
+            id = "overlay_display_crit",
+            txt = "Critical effect",
+            color = effect_colors.crit,
+        },
+        {
+            id = "overlay_display_expected",
+            txt = "Expected effect",
+            color = effect_colors.expectation,
+            tooltip = "Expected effect is the DMG or Heal dealt on average for a single cast considering miss chance, crit chance, spell power etc. This equates to your DPS or HPS number multiplied by the ability's execution time"
+        },
+        {
+            id = "overlay_display_effect_per_sec",
+            txt = "Effect per sec",
+            color = effect_colors.effect_per_sec,
+        },
+        {
+            id = "overlay_display_effect_per_cost",
+            txt = "Effect per cost",
+            color = effect_colors.effect_per_cost
+        },
+        {
+            id = "overlay_display_avg_cost",
+            txt = "Expected cost",
+            color = effect_colors.avg_cost
+        },
+        {
+            id = "overlay_display_actual_cost",
+            txt = "Actual cost",
+            color = effect_colors.avg_cost
+        },
+        {
+            id = "overlay_display_avg_cast",
+            txt = "Expected execution time",
+            color = effect_colors.avg_cast
+        },
+        {
+            id = "overlay_display_actual_cast",
+            txt = "Actual execution time",
+            color = effect_colors.avg_cast
+        },
+        {
+            id = "overlay_display_hit",
+            txt = "Hit chance",
+            color = effect_colors.expectation
+        },
+        {
+            id = "overlay_display_crit_chance",
+            txt = "Critical chance",
+            color = effect_colors.crit
+        },
+        {
+            id = "overlay_display_effect_until_oom",
+            txt = "Effect until OOM" ,
+            color = effect_colors.effect_until_oom
+        },
+        {
+            id = "overlay_display_casts_until_oom",
+            txt = "Casts until OOM",
+            color = effect_colors.casts_until_oom
+        },
+        {
+            id = "overlay_display_time_until_oom",
+            txt = "Time until OOM",
+            color = effect_colors.time_until_oom,
+        },
+    };
+
+    multi_row_checkbutton(overlay_components, sw_frame.overlay_frame, 2);
+
+
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 10;
+    sw_frame.overlay_frame.icon_settings_label = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.overlay_frame.icon_settings_label:SetFontObject(font);
+    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
+    sw_frame.overlay_frame.icon_settings_label:SetText("Ability Icon Overlay Configuration");
+    sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
     sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 12;
-    sw_frame.tooltip_frame.icon_normal_effect = 
-        create_sw_checkbox("sw_icon_normal_effect", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                           "Normal effect", icon_checkbox_func, effect_colors.normal);
-    sw_frame.tooltip_frame.icon_crit_effect = 
-        create_sw_checkbox("sw_icon_crit_effect", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Critical effect", icon_checkbox_func, effect_colors.crit);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.icon_expected_effect = 
-        create_sw_checkbox("sw_icon_expected_effect", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                           "Expected effect", icon_checkbox_func, effect_colors.expectation);
-    getglobal(sw_frame.tooltip_frame.icon_expected_effect:GetName()).tooltip = 
-        "Expected effect is the DMG or Heal dealt on average for a single cast considering miss chance, crit chance, spell power etc. This equates to your DPS or HPS number multiplied with the ability's cast time"
 
-    sw_frame.tooltip_frame.icon_effect_per_sec = 
-        create_sw_checkbox("sw_icon_effect_per_sec", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Effect per sec", icon_checkbox_func, effect_colors.effect_per_sec);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.icon_effect_per_cost = 
-        create_sw_checkbox("sw_icon_effect_per_costs", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                           "Effect per cost", icon_checkbox_func, effect_colors.effect_per_cost);
-    sw_frame.tooltip_frame.icon_avg_cost = 
-        create_sw_checkbox("sw_icon_avg_cost", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Expected cost", icon_checkbox_func, effect_colors.avg_cost);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.icon_avg_cast = 
-        create_sw_checkbox("sw_icon_avg_cast", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                           "Expected cast time", icon_checkbox_func, effect_colors.avg_cast);
-    sw_frame.tooltip_frame.icon_hit = 
-        create_sw_checkbox("sw_icon_hit", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Hit chance", icon_checkbox_func, effect_colors.normal);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.icon_crit =
-        create_sw_checkbox("sw_icon_crit_chance", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                           "Critical chance", icon_checkbox_func, effect_colors.crit);
-    sw_frame.tooltip_frame.icon_effect_until_oom =
-        create_sw_checkbox("sw_icon_effect_until_oom", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Effect until OOM", icon_checkbox_func, effect_colors.effect_until_oom);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.icon_casts_until_oom =
-        create_sw_checkbox("sw_icon_casts_until_oom", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                           "Casts until OOM", icon_checkbox_func, effect_colors.casts_until_oom);
+    local overlay_settings_checks = {
+        {
+            id = "overlay_disable",
+            txt = "Disable action bar overlay",
+            func = function()
+                __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
+                swc.overlay.clear_overlays();
+            end
+        },
+        {
+            id = "overlay_old_rank",
+            txt = "Old rank warning",
+            color = effect_colors.crit,
+        },
+        {
+            id = "overlay_mana_abilities",
+            txt = "Show mana restorative spells ",
+            color = effect_colors.avg_cost,
+            tooltip = "Puts mana restoration amount on overlay for spells like Evocation."
+        },
+        {
+            id = "overlay_single_effect_only",
+            txt = "Show for 1x effect",
+            tooltip = "Numbers derived from expected effect is displayed as 1.0x effect instead of optimistic 5.0x for Prayer of Healing as an example.";
+        },
+        {
+            id = "icon_top_clearance",
+            txt = "Icon top clearance",
+        },
+        {
+            id = "icon_bottom_clearance",
+            txt = "Icon bottom clearance",
+        },
+    };
 
-    sw_frame.tooltip_frame.icon_time_until_oom =
-        create_sw_checkbox("sw_icon_time_until_oom", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Time until OOM", icon_checkbox_func, effect_colors.time_until_oom);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 10;
-
-    sw_frame.tooltip_frame.icon_settings_label = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.icon_settings_label:SetFontObject(font);
-    sw_frame.tooltip_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.icon_settings_label:SetText("Ability Icon Overlay Configuration");
-    sw_frame.tooltip_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
-
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 12;
-
-    sw_frame.tooltip_frame.icon_overlay_disable = 
-        create_sw_checkbox("sw_icon_overlay_disable", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset, 
-                           "Disable all overlays", nil);
-
-    sw_frame.tooltip_frame.icon_mana_overlay = 
-        create_sw_checkbox("sw_icon_mana_overlay", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset, 
-                           "Show mana restoration", nil, effect_colors.avg_cost);
-    getglobal(sw_frame.tooltip_frame.icon_mana_overlay:GetName()).tooltip = 
-        "Puts mana restoration amount on overlay for spells like Evocation";
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-
-    sw_frame.tooltip_frame.icon_heal_variant = 
-        create_sw_checkbox("sw_icon_heal_variant", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset, 
-                           "Show healing for hybrids", nil);
-
-    getglobal(sw_frame.tooltip_frame.icon_heal_variant:GetName()).tooltip = 
-        "Shows healing instead of damage for hybrid spells like Holy Nova or Penance.";
-
-    sw_frame.tooltip_frame.icon_old_rank_warning = 
-        create_sw_checkbox("sw_icon_old_rank_warning", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset, 
-                           "Old rank warning", nil);  
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-
-    sw_frame.tooltip_frame.icon_overlay_disable:SetScript("OnClick", function(self)
-            
-        swc.overlay.clear_overlays();
-    end);
-
-    sw_frame.tooltip_frame.icon_top_clearance = 
-        create_sw_checkbox("sw_icon_top_clearance", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset, 
-                           "Top clearance", nil);  
-
-    sw_frame.tooltip_frame.icon_bottom_clearance = 
-        create_sw_checkbox("sw_icon_bottom_clearance", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset, 
-                           "Bottom clearance", nil);  
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-
-   sw_frame.tooltip_frame.icon_show_single_target_only = 
-        create_sw_checkbox("sw_icon_show_single_target_only", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset, 
-                           "Show single target only", nil);
-
-    getglobal(sw_frame.tooltip_frame.icon_show_single_target_only:GetName()).tooltip = 
-        "Expectation is displayed as 1.0x effect instead of 5.0x for Prayer of Healing as an example.";
-
-
-    sw_frame.tooltip_frame.icon_top_clearance:SetScript("OnClick", function(self)
-        update_icon_overlay_settings();
-    end);
-    sw_frame.tooltip_frame.icon_bottom_clearance:SetScript("OnClick", function(self)
-        update_icon_overlay_settings();
-    end);
-
+    multi_row_checkbutton(overlay_settings_checks, sw_frame.overlay_frame, 2);
 
     sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 30;
     sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
@@ -903,11 +1114,6 @@ local function create_sw_gui_tooltip_frame(y_offset)
     sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.tooltip_frame.y_offset);
     sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetText("Hz (higher = more responsive overlay)");
 
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox = CreateFrame("EditBox", nil, sw_frame.tooltip_frame, "InputBoxTemplate");
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetPoint("TOPLEFT", 120, sw_frame.tooltip_frame.y_offset + 3);
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetText("");
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetSize(40, 15);
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetAutoFocus(false);
 
     local hz_editbox = function(self)
 
@@ -1393,7 +1599,7 @@ local function create_sw_gui_tooltip_frame(y_offset)
     end
 end
 
-local function create_sw_gui_calculator_frame()
+local function create_sw_ui_calculator_frame()
 
     sw_frame.calculator_frame.line_y_offset = -20;
 
@@ -1744,7 +1950,7 @@ local function create_loadout_buff_checkbutton(buffs_table, buff_id, buff_info, 
     return buffs_table[index].checkbutton;
 end
 
-local function create_sw_gui_loadout_frame()
+local function create_sw_ui_loadout_frame()
 
     sw_frame.loadout_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadout_frame);
     sw_frame.loadout_frame.lhs_list:SetWidth(180);
@@ -2533,7 +2739,7 @@ local function create_sw_gui_loadout_frame()
     end);
 end
 
-local function create_sw_base_gui()
+local function create_sw_base_ui()
 
     sw_frame = CreateFrame("Frame", "sw_frame", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
 
@@ -2563,9 +2769,9 @@ local function create_sw_base_gui()
 
     for _, v in pairs({"tooltip_frame", "overlay_frame", "loadout_frame", "calculator_frame", "profile_frame"}) do
         sw_frame[v] = CreateFrame("ScrollFrame", "sw_"..v, sw_frame);
-        sw_frame[v]:SetPoint("TOP", sw_frame, 0, -tabbed_child_frames_y_offset);
+        sw_frame[v]:SetPoint("TOP", sw_frame, 0, -tabbed_child_frames_y_offset-35);
         sw_frame[v]:SetWidth(width-x_margin*2);
-        sw_frame[v]:SetHeight(height-tabbed_child_frames_y_offset);
+        sw_frame[v]:SetHeight(height-tabbed_child_frames_y_offset-35-5);
     end
 
     for k, _ in pairs(swc.core.event_dispatch) do
@@ -2582,16 +2788,13 @@ local function create_sw_base_gui()
 
     create_sw_spell_id_viewer();
 
-
-    sw_frame.libstub_icon_checkbox = CreateFrame("CheckButton", "sw_show_minimap_button", sw_frame, "ChatConfigCheckButtonTemplate"); 
+    sw_frame.libstub_icon_checkbox = CreateFrame("CheckButton", "sw_show_minimap_button", sw_frame, "ChatConfigCheckButtonTemplate");
     sw_frame.libstub_icon_checkbox:SetPoint("TOPRIGHT", sw_frame, -100, 0);
     sw_frame.libstub_icon_checkbox:SetScript("OnClick", function(self)
-        __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide = not self:GetChecked();
-        if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-            libstub_icon:Hide(swc.core.sw_addon_name);
-
-        else
+        if self:GetChecked() then
             libstub_icon:Show(swc.core.sw_addon_name);
+        else
+            libstub_icon:Hide(swc.core.sw_addon_name);
         end
     end);
     sw_frame.libstub_icon_checkbox_txt = sw_frame:CreateFontString(nil, "OVERLAY");
@@ -2660,7 +2863,7 @@ local function create_sw_base_gui()
     sw_frame.tabs[i]:SetPoint("TOPLEFT", 335, -25);
     sw_frame.tabs[i]:SetWidth(150);
     sw_frame.tabs[i]:SetHeight(25);
-    sw_frame.tabs[i]:SetText("Profiles");
+    sw_frame.tabs[i]:SetText("Profile");
     sw_frame.tabs[i]:SetScript("OnClick", function(self)
         sw_activate_tab(self);
     end);
@@ -2674,7 +2877,7 @@ end
 
 local function load_sw_ui()
 
-    create_sw_gui_calculator_frame();
+    create_sw_ui_calculator_frame();
 
     if not __sw__persistent_data_per_char then
         __sw__persistent_data_per_char = {};
@@ -2697,16 +2900,14 @@ local function load_sw_ui()
         end
     end
 
-    create_sw_gui_tooltip_frame();
-
     if libstub_data_broker then
         local sw_launcher = libstub_data_broker:NewDataObject(swc.core.sw_addon_name, {
             type = "launcher",
             icon = "Interface\\Icons\\spell_fire_elementaldevastation",
             OnClick = function(self, button)
                 if button == "MiddleButton" then
-                    print("destroying")
-                    sw_frame.libstub_icon_checkbox:SetChecked(false);
+
+                    sw_frame.libstub_icon_checkbox:Click();
                 else
                     if sw_frame:IsShown() then
                          sw_frame:Hide();
@@ -2729,21 +2930,19 @@ local function load_sw_ui()
         end
     end
 
-    if __sw__persistent_data_per_char.settings.libstub_minimap_icon.hide then
-        libstub_icon:Hide(swc.core.sw_addon_name);
-    else
+    if __sw__persistent_data_per_char.settings.libstub_minimap_icon_show then
         libstub_icon:Show(swc.core.sw_addon_name);
         sw_frame.libstub_icon_checkbox:SetChecked(true);
+    else
+        libstub_icon:Hide(swc.core.sw_addon_name);
     end
 
 
-    if type(__sw__persistent_data_per_char.settings.version_saved) ~= "number" or __sw__persistent_data_per_char.settings.version_saved < 30307 then
-        -- Important: version changes how loadout buffs are stored; must default
-        __sw__persistent_data_per_char.loadouts = nil;
-    end
+    create_sw_ui_tooltip_frame();
 
-    create_sw_gui_loadout_frame();
+    create_sw_ui_overlay_frame();
 
+    create_sw_ui_loadout_frame();
 
     if not __sw__persistent_data_per_char.loadouts or not __sw__persistent_data_per_char.loadouts.num_loadouts  then
         -- load defaults
@@ -2832,7 +3031,7 @@ end
 ui.font                                 = font;
 ui.load_sw_ui                           = load_sw_ui;
 ui.icon_overlay_font                    = icon_overlay_font;
-ui.create_sw_base_gui                   = create_sw_base_gui;
+ui.create_sw_base_ui                    = create_sw_base_ui;
 ui.effects_from_ui                      = effects_from_ui;
 ui.update_and_display_spell_diffs       = update_and_display_spell_diffs;
 ui.sw_activate_tab                      = sw_activate_tab;
