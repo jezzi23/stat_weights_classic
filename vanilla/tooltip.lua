@@ -40,9 +40,11 @@ local rune_ids              = swc.talents.rune_ids;
 local stats_for_spell       = swc.calc.stats_for_spell;
 local evaluate_spell        = swc.calc.evaluate_spell;
 
-local sort_stat_weights     = swc.tooltip.sort_stat_weights
-local begin_tooltip_section = swc.tooltip.begin_tooltip_section
-local end_tooltip_section   = swc.tooltip.end_tooltip_section
+local sort_stat_weights     = swc.tooltip.sort_stat_weights;
+local begin_tooltip_section = swc.tooltip.begin_tooltip_section;
+local end_tooltip_section   = swc.tooltip.end_tooltip_section;
+
+local config                = swc.config;
 
 -------------------------------------------------------------------------------
 
@@ -121,7 +123,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
 
     local clvl_specified = "";
 
-    if sw_frame.tooltip_frame.tooltip_loadout_info:GetChecked() then
+    if config.settings.tooltip_display_loadout_info then
         if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
             clvl_specified = string.format(" (clvl: %d)", loadout.lvl);
         end
@@ -138,7 +140,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 effect_colors.loadout_info[1], effect_colors.loadout_info[2], effect_colors.loadout_info[3]);
         end
     end
-    if sw_frame.tooltip_frame.tooltip_spell_rank:GetChecked() and not repeated_tooltip_on then
+    if config.settings.tooltip_display_spell_rank_ and not repeated_tooltip_on then
         local next_rank_str = "";
         local best_rank, highest_rank = best_rank_by_lvl(spell.base_id, loadout.lvl);
         local next_rank = next_spell_rank(spell);
@@ -189,7 +191,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit * 100, stats.target_avg_resi * 100);
     end
 
-    if sw_frame.tooltip_frame.tooltip_normal_effect:GetChecked() and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
+    if config.settings.tooltip_display_normal_hit_combined and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
         if eval.spell.min_noncrit_if_hit + eval.spell.absorb ~= 0 then
             if eval.spell.min_noncrit_if_hit ~= eval.spell.max_noncrit_if_hit then
                 -- dmg spells with real direct range
@@ -291,7 +293,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             end
         end
     end
-    if sw_frame.tooltip_frame.tooltip_crit_effect:GetChecked() and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
+    if config.settings.tooltip_display_crit_combined and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
         if stats.crit ~= 0 and eval.spell.min_crit_if_hit + eval.spell.absorb ~= 0 and stats.crit ~= 0 then
             local effect_type_str = nil;
             if eval.spell.min_crit_if_hit ~= 0 and stats.special_crit_mod_tracked ~= 0 and
@@ -395,7 +397,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
-    if sw_frame.tooltip_frame.tooltip_normal_effect:GetChecked() and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
+    if config.settings.tooltip_display_normal_hit_combined and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
         if eval.spell.ot_if_hit ~= 0 then
             if stats.target_avg_resi_dot > 0 then
                 hit_str = string.format("(%.1f%%hit||%.1f%%resist)", stats.hit * 100, stats.target_avg_resi_dot * 100);
@@ -527,7 +529,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
 
 
-        if sw_frame.tooltip_frame.tooltip_crit_effect:GetChecked() then
+        if config.settings.tooltip_display_crit_combined then
             if stats.ot_crit ~= 0.0 and eval.spell.ot_if_crit ~= 0 then
                 local ot_crit_mod = stats.ot_crit_mod;
                 if stats.special_crit_mod_tracked ~= 0 then
@@ -589,7 +591,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
-    if sw_frame.tooltip_frame.tooltip_expected_effect:GetChecked() then
+    if config.settings.tooltip_display_expected then
         local extra_info_st = "";
         local extra_info_multi = "";
 
@@ -639,7 +641,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
-    if sw_frame.tooltip_frame.tooltip_effect_per_sec:GetChecked() then
+    if config.settings.tooltip_display_effect_per_sec then
         local periodic_part = "";
         if eval.spell.effect_per_dur ~= 0 and eval.spell.effect_per_dur ~= eval.spell.effect_per_sec then
             periodic_part = string.format("| %.1f periodic for %d sec", eval.spell.effect_per_dur,
@@ -651,7 +653,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 eval.spell.effect_per_sec, periodic_part),
             effect_colors.effect_per_sec[1], effect_colors.effect_per_sec[2], effect_colors.effect_per_sec[3]);
     end
-    if sw_frame.tooltip_frame.tooltip_avg_cast:GetChecked() and not repeated_tooltip_on then
+    if config.settings.tooltip_display_avg_cast and not repeated_tooltip_on then
         local tooltip_cast = spell_cast_time(spell_id);
         if bit.band(spell_flags.instant, spell.flags) == 0 and (not tooltip_cast or tooltip_cast ~= stats.cast_time_nogcd) then
             if stats.cast_time_nogcd ~= stats.cast_time then
@@ -665,7 +667,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
     local tooltip_cost = spell_cost(spell_id);
-    if sw_frame.tooltip_frame.tooltip_avg_cost:GetChecked() then
+    if config.settings.tooltip_display_avg_cost then
         if not tooltip_cost or tooltip_cost ~= stats.cost or repeated_tooltip_on then
             if loadout.lvl ~= UnitLevel("player") and bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
                 tooltip:AddLine(
@@ -677,11 +679,11 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
         end
     end
-    if sw_frame.tooltip_frame.tooltip_effect_per_cost:GetChecked() then
+    if config.settings.tooltip_display_effect_per_cost then
         tooltip:AddLine(effect_per_cost .. ": " .. string.format("%.2f", eval.spell.effect_per_cost),
             effect_colors.effect_per_cost[1], effect_colors.effect_per_cost[2], effect_colors.effect_per_cost[3]);
     end
-    if sw_frame.tooltip_frame.tooltip_cost_per_sec:GetChecked() then
+    if config.settings.tooltip_display_effect_per_cast then
         if not tooltip_cost or tooltip_cost ~= stats.cost or not repeated_tooltip_on then
             tooltip:AddLine(
                 cost_per_sec .. ": " .. string.format("- %.1f out | + %.1f in", eval.spell.cost_per_sec, eval.spell.mp1),
@@ -689,7 +691,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
-    if sw_frame.tooltip_frame.tooltip_cast_until_oom:GetChecked() then
+    if config.settings.tooltip_display_cast_until_oom then
         tooltip:AddLine(
             string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, eval.spell.effect_until_oom,
                 eval.spell.num_casts_until_oom, eval.spell.time_until_oom),
@@ -699,7 +701,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
         end
     end
-    if sw_frame.tooltip_frame.tooltip_sp_effect_calc:GetChecked() then
+    if config.settings.tooltip_display_sp_effect_calc then
         if stats.coef > 0 and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
             tooltip:AddLine(string.format("Direct:    %.3f coef * %.3f mod * %d SP = %.1f",
                     stats.coef,
@@ -725,7 +727,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
 
-    if sw_frame.tooltip_frame.tooltip_stat_weights:GetChecked() and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
+    if config.settings.tooltip_display_stat_weights and bit.band(spell.flags, spell_flags.mana_regen) == 0 then
         if eval.infinite_cast.effect_per_sec_per_sp > 0 then
             tooltip:AddLine(
                 effect_per_sec_per_sp ..
@@ -772,7 +774,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 effect_colors.stat_weights[1], effect_colors.stat_weights[2], effect_colors.stat_weights[3]);
         end
 
-        if sw_frame.tooltip_frame.tooltip_cast_until_oom:GetChecked() and eval.spell.cost_per_sec > 0 then
+        if config.settings.tooltip_display_cast_until_oom and eval.spell.cost_per_sec > 0 then
             if eval.cast_until_oom.effect_until_oom_per_sp > 0 then
                 tooltip:AddLine(
                     string.format("%s until OOM per SP: %.3f, weighing", effect,
@@ -811,7 +813,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             end
         end
     end
-    if sw_frame.tooltip_frame.tooltip_dynamic_tip:GetChecked() then
+    if config.settings.tooltip_display_dynamic_tip then
         local evaluation_options = "";
         if eval.spell.expectation_direct ~= 0 and eval.spell.expected_ot ~= 0 then
             evaluation_options = "CTRL facing north=periodic, south=direct";

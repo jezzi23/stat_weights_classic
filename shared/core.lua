@@ -35,7 +35,8 @@ local create_sw_base_ui         = swc.ui.create_sw_base_ui;
 local sw_activate_tab           = swc.ui.sw_activate_tab;
 local update_loadouts_rhs       = swc.ui.update_loadouts_rhs;
 
-local save_sw_settings          = swc.settings.save_sw_settings;
+local load_config               = swc.config.load_config;
+local set_active_settings       = swc.config.set_active_settings;
 
 local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
 local update_overlay            = swc.overlay.update_overlay;
@@ -52,11 +53,12 @@ swc.core                        = core;
 
 core.sw_addon_name              = "Stat Weights Classic";
 
-local version_id                = 30308;
+--local version_id              = 10000;
+local version_id                = 00101;
 core.version_id                 = version_id;
 local version                   = tostring(version_id);
-core.version                    = tonumber(version:sub(1, 1)) ..
-    "." .. tonumber(version:sub(2, 3)) .. "." .. tonumber(version:sub(4, 5));
+core.version                    = (tonumber(version:sub(1, 1)) or 0) ..
+    "." .. (tonumber(version:sub(2, 3)) or 0) .. "." .. (tonumber(version:sub(4, 5)) or 0);
 
 core.expansions                 = {
     vanilla = 1,
@@ -96,7 +98,6 @@ core.beacon_snapshot_time = -1000;
 core.currently_casting_spell_id = 0;
 core.cast_expire_timer = 0;
 core.action_id_of_wand = 0;
-
 
 local function class_supported()
     return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
@@ -146,41 +147,20 @@ local event_dispatch = {
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
         if msg == "StatWeightsClassic" then
-            if __sw__persistent_data_per_char and  not __sw__persistent_data_per_char.version_saved then
-                core.__sw__use_defaults__ = true;
-            end
+            print("loading config");
+            load_config();
+            print("set settings");
+            set_active_settings();
+            print("loading ui");
             load_sw_ui();
+            print("made ui");
         end
     end,
     ["PLAYER_LOGOUT"] = function(self, msg, msg2, msg3)
-        if core.__sw__use_defaults__ then
-            __sw__persistent_data_per_char = nil;
-            return;
-        end
-
-        -- clear previous ui elements from spells table
-        __sw__persistent_data_per_char.stat_comparison_spells = {};
-        for k, v in pairs(self.stat_comparison_frame.spells) do
-            __sw__persistent_data_per_char.stat_comparison_spells[k] = {};
-            __sw__persistent_data_per_char.stat_comparison_spells[k].name = v.name;
-        end
-        __sw__persistent_data_per_char.sim_type = self.stat_comparison_frame.sim_type;
-
-        __sw__persistent_data_per_char.loadouts = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list = {};
-        for k, v in pairs(self.loadouts_frame.lhs_list.loadouts) do
-            __sw__persistent_data_per_char.loadouts.loadouts_list[k] = {};
-            __sw__persistent_data_per_char.loadouts.loadouts_list[k].loadout = v.loadout;
-            __sw__persistent_data_per_char.loadouts.loadouts_list[k].equipped = v.equipped;
-        end
-        __sw__persistent_data_per_char.loadouts.active_loadout = self.loadouts_frame.lhs_list.active_loadout;
-        __sw__persistent_data_per_char.loadouts.num_loadouts = self.loadouts_frame.lhs_list.num_loadouts;
-
-        -- save settings from ui
-        save_sw_settings();
+        save_config();
     end,
     ["PLAYER_LOGIN"] = function(self, msg, msg2, msg3)
-        swc.core.setup_action_bar_needed = true;
+        core.setup_action_bar_needed = true;
         core.sw_addon_loaded = true;
 
         if core.expansion_loaded == core.expansions.vanilla and C_Engraving.IsEngravingEnabled then
@@ -196,7 +176,7 @@ local event_dispatch = {
             end
         end
         C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_swc_id)
-        if core.__sw__debug__ or core.__sw__use_defaults__ or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
+        if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             for i = 1, 10 do
                 print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
             end
@@ -239,12 +219,15 @@ local event_dispatch = {
         end
     end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
+
+        set_active_settings()
         core.update_action_bar_needed = true;
         core.talents_update_needed = true;
     end,
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
         local loadout = active_loadout();
 
+        set_active_settings();
         if bit.band(loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
             loadout.talents_code = wowhead_talent_code();
             core.talents_update_needed = true;
@@ -462,7 +445,8 @@ local function command(msg, editbox)
         elseif msg == "compare" or msg == "sc" or msg == "stat compare" or msg == "stat" or msg == "calc" or msg == "calculator" then
             sw_activate_tab(3);
         elseif msg == "reset" then
-            core.__sw__use_defaults__ = 1;
+            core.use_char_defaults = 1;
+            core.use_acc_defaults = 1;
             ReloadUI();
         else
             sw_activate_tab(2);
@@ -488,6 +472,6 @@ swc.ext.version_id = core.version_id;
 __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
---core.__sw__use_defaults__ = 1;
+--core.swc.core.use_char_defaults = 1;
 --core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;

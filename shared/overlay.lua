@@ -36,6 +36,8 @@ local active_loadout_and_effects_diffed_from_ui     = swc.loadout.active_loadout
 local stats_for_spell                               = swc.calc.stats_for_spell;
 local spell_info                                    = swc.calc.spell_info;
 local cast_until_oom                                = swc.calc.cast_until_oom;
+
+local config                                        = swc.config;
 --------------------------------------------------------------------------------
 local overlay = {};
 
@@ -52,8 +54,6 @@ local icon_stat_display = {
     casts_until_oom         = bit.lshift(1,10),
     effect_until_oom        = bit.lshift(1,11),
     time_until_oom          = bit.lshift(1,12),
-
-    show_heal_variant       = bit.lshift(1,20),
 };
 
 local active_overlays = {};
@@ -97,8 +97,8 @@ local function init_frame_overlay(frame_info)
     end
     for i = 1, 3 do
         frame_info.overlay_frames[i]:SetFont(
-            swc.ui.icon_overlay_font, sw_frame.tooltip_frame.icon_overlay_font_size, "THICKOUTLINE");
-        frame_info.overlay_frames[i]:SetPoint(anchors[i], sw_frame.tooltip_frame.icon_overlay_offset + 1.0, offsets[i]);
+            swc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
+        frame_info.overlay_frames[i]:SetPoint(anchors[i], config.settings.overlay_offset + 1.0, offsets[i]);
     end
 end
 
@@ -341,129 +341,54 @@ end
 
 local function update_icon_overlay_settings()
 
-    mana_cost_overlay = sw_frame.tooltip_frame.icon_avg_cost:GetChecked() or sw_frame.tooltip_frame.icon_casts_until_oom:GetChecked() or sw_frame.tooltip_frame.icon_time_until_oom:GetChecked();
-    cast_speed_overlay = sw_frame.tooltip_frame.icon_avg_cast:GetChecked();
+    mana_cost_overlay = config.settings.overlay_display_avg_cost or config.settings.overlay_display_casts_until_oom or config.settings.overlay_display_time_until_oom;
+    cast_speed_overlay = config.settings.overlay_display_avg_cast;
 
-    sw_frame.tooltip_frame.icon_overlay = {};
+    sw_frame.overlay_frame.icon_overlay = {};
 
     local index = 1;
 
-    if sw_frame.tooltip_frame.icon_normal_effect:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.normal,
-            color = effect_colors.normal,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_crit_effect:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.crit,
-            color = effect_colors.crit,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_expected_effect:GetChecked() then 
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.expected,
-            color = effect_colors.expectation,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_effect_per_sec:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.effect_per_sec,
-            color = effect_colors.effect_per_sec,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_effect_per_cost:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.effect_per_cost,
-            color = effect_colors.effect_per_cost,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_avg_cost:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.avg_cost,
-            color = effect_colors.avg_cost,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_avg_cast:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.avg_cast,
-            color = effect_colors.avg_cast,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_hit:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.hit,
-            color = effect_colors.normal,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_crit:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.crit_chance,
-            color = effect_colors.crit,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_effect_until_oom:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.effect_until_oom,
-            color = effect_colors.effect_until_oom,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_casts_until_oom:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.casts_until_oom,
-            color = effect_colors.casts_until_oom,
-        };
-        index = index + 1;
-    end
-    if sw_frame.tooltip_frame.icon_time_until_oom:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[index] = {
-            label_type = icon_stat_display.time_until_oom,
-            color = effect_colors.time_until_oom,
-        };
-        index = index + 1;
+    for k, v in pairs(sw_frame.overlay_frame.overlay_components) do
+        if config.settings[k] then
+            sw_frame.overlay_frame.icon_overlay[index] = {
+                label_type = k,
+                color = v
+            };
+            index = index + 1;
+        end
     end
 
     -- if 1, do bottom
-    if not sw_frame.tooltip_frame.icon_overlay[2] then
-        sw_frame.tooltip_frame.icon_overlay[3] = sw_frame.tooltip_frame.icon_overlay[1];
-        sw_frame.tooltip_frame.icon_overlay[1] = nil;
+    if not sw_frame.overlay_frame.icon_overlay[2] then
+        sw_frame.overlay_frame.icon_overlay[3] = sw_frame.overlay_frame.icon_overlay[1];
+        sw_frame.overlay_frame.icon_overlay[1] = nil;
     -- if 2, do top and bottom
-    elseif not sw_frame.tooltip_frame.icon_overlay[3] then
-        sw_frame.tooltip_frame.icon_overlay[3] = sw_frame.tooltip_frame.icon_overlay[2];
-        sw_frame.tooltip_frame.icon_overlay[2] = nil;
+    elseif not sw_frame.overlay_frame.icon_overlay[3] then
+        sw_frame.overlay_frame.icon_overlay[3] = sw_frame.overlay_frame.icon_overlay[2];
+        sw_frame.overlay_frame.icon_overlay[2] = nil;
     end
 
-    if sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() then
-        sw_frame.tooltip_frame.icon_overlay[2] = sw_frame.tooltip_frame.icon_overlay[1];
-        sw_frame.tooltip_frame.icon_overlay[1] = sw_frame.tooltip_frame.icon_overlay[3];
-        sw_frame.tooltip_frame.icon_overlay[3] = nil;
+    if config.settings.overlay_bottom_clearance then
+        sw_frame.overlay_frame.icon_overlay[2] = sw_frame.overlay_frame.icon_overlay[1];
+        sw_frame.overlay_frame.icon_overlay[1] = sw_frame.overlay_frame.icon_overlay[3];
+        sw_frame.overlay_frame.icon_overlay[3] = nil;
     end
 
-    if sw_frame.tooltip_frame.icon_top_clearance:GetChecked() then
-        if sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() then
-            sw_frame.tooltip_frame.icon_overlay[2] = sw_frame.tooltip_frame.icon_overlay[1];
+    if config.settings.overlay_top_clearance then
+        if config.settings.overlay_bottom_clearance then
+            sw_frame.overlay_frame.icon_overlay[2] = sw_frame.overlay_frame.icon_overlay[1];
         else
-            sw_frame.tooltip_frame.icon_overlay[3] = sw_frame.tooltip_frame.icon_overlay[1] or sw_frame.tooltip_frame.icon_overlay[3];
+            sw_frame.overlay_frame.icon_overlay[3] = sw_frame.overlay_frame.icon_overlay[1] or sw_frame.overlay_frame.icon_overlay[3];
         end
-        sw_frame.tooltip_frame.icon_overlay[1] = nil;
+        sw_frame.overlay_frame.icon_overlay[1] = nil;
     end
 
-    sw_num_icon_overlay_fields_active = index - 1;
+    --sw_num_icon_overlay_fields_active = index - 1;
 
     -- hide existing overlay frames that should no longer exist
     for i = 1, 3 do
 
-        if not sw_frame.tooltip_frame.icon_overlay[i] then
+        if not sw_frame.overlay_frame.icon_overlay[i] then
             for k, v in pairs(spell_book_frames) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
@@ -510,11 +435,11 @@ local function format_overlay_number(val, max_accuracy_digits)
 end
 
 local overlay_label_handler = {
-    [icon_stat_display.normal] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_normal = function(frame_overlay, spell, spell_effect, stats)
         local val = 0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) + 0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb;
         frame_overlay:SetText(format_overlay_number(val, 1));
     end,
-    [icon_stat_display.crit] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_crit = function(frame_overlay, spell, spell_effect, stats)
 
         local crit_sum = 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
                                0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max);
@@ -524,41 +449,41 @@ local overlay_label_handler = {
             frame_overlay:SetText("");
         end
     end,
-    [icon_stat_display.expected] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_expected = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(format_overlay_number(spell_effect.expectation, 1));
     end,
-    [icon_stat_display.effect_per_sec] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_effect_per_sec = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.effect_per_sec == math.huge then
             frame_overlay:SetText("inf");
         else
             frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_sec, 1));
         end
     end,
-    [icon_stat_display.effect_per_cost] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_effect_per_cost = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_cost, 2));
     end,
-    [icon_stat_display.avg_cost] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_avg_cost = function(frame_overlay, spell, spell_effect, stats)
         if stats.cost >= 0 then
             frame_overlay:SetText(string.format("%d", stats.cost));
         else
             frame_overlay:SetText("");
         end
     end,
-    [icon_stat_display.avg_cast] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_avg_cast = function(frame_overlay, spell, spell_effect, stats)
         if stats.cast_time > 0 then
             frame_overlay:SetText(format_overlay_number(stats.cast_time, 2));
         else
             frame_overlay:SetText("");
         end
     end,
-    [icon_stat_display.hit] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_hit = function(frame_overlay, spell, spell_effect, stats)
          if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             frame_overlay:SetText(string.format("%d%%", 100*stats.hit));
         else
             frame_overlay:SetText("");
         end
     end,
-    [icon_stat_display.crit_chance] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_crit_chance = function(frame_overlay, spell, spell_effect, stats)
 
         if stats.crit ~= 0 and spell_effect.total_ot_if_crit + spell_effect.total_min_crit_if_hit > 0 then
             frame_overlay:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
@@ -566,7 +491,7 @@ local overlay_label_handler = {
             frame_overlay:SetText("");
         end
     end,
-    [icon_stat_display.casts_until_oom] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_casts_until_oom = function(frame_overlay, spell, spell_effect, stats)
 
         if spell_effect.num_casts_until_oom >= 0 then
             frame_overlay:SetText(format_overlay_number(spell_effect.num_casts_until_oom, 1));
@@ -575,10 +500,10 @@ local overlay_label_handler = {
         end
 
     end,
-    [icon_stat_display.effect_until_oom] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_effect_until_oom = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(format_overlay_number(spell_effect.effect_until_oom, 0));
     end,
-    [icon_stat_display.time_until_oom] = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_time_until_oom = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.time_until_oom >= 0 then
             frame_overlay:SetText(format_overlay_number(spell_effect.time_until_oom, 2));
         else
@@ -621,7 +546,7 @@ end
 
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, eval_flags)
 
-    if sw_frame.tooltip_frame.icon_old_rank_warning:GetChecked() and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
+    if config.settings.overlay_old_rank and loadout.lvl > spell.lvl_outdated and not __sw__debug__ then
 
         frame_info.overlay_frames[1]:SetPoint("TOP", 1, -3);
         frame_info.overlay_frames[2]:SetPoint("CENTER", 1, -1.5);
@@ -644,11 +569,11 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
     if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
 
 
-        if sw_frame.tooltip_frame.icon_mana_overlay:GetChecked() then
+        if config.settings.overlay_mana_abilities then
             local idx = 3;
-            if sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() and sw_frame.tooltip_frame.icon_top_clearance:GetChecked() then
+            if config.settings.overlay_bottom_clearance and config.settings.overlay_top_clearance then
                 idx = 2;
-            elseif sw_frame.tooltip_frame.icon_bottom_clearance:GetChecked() then
+            elseif config.settings.overlay_bottom_clearance then
                 idx = 1;
             end
             frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
@@ -656,16 +581,16 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
             frame_info.overlay_frames[idx]:Show();
         end
 
-    elseif sw_num_icon_overlay_fields_active > 0 then
+    elseif sw_frame.overlay_frame.num_overlay_components_toggled > 0 then
         for i = 1, 3 do
             
-            if sw_frame.tooltip_frame.icon_overlay[i] then
+            if sw_frame.overlay_frame.icon_overlay[i] then
 
-                overlay_label_handler[sw_frame.tooltip_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[sw_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.tooltip_frame.icon_overlay[i].color[1],
-                                                          sw_frame.tooltip_frame.icon_overlay[i].color[2],
-                                                          sw_frame.tooltip_frame.icon_overlay[i].color[3]);
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.overlay_frame.icon_overlay[i].color[1],
+                                                          sw_frame.overlay_frame.icon_overlay[i].color[2],
+                                                          sw_frame.overlay_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
             end
@@ -715,21 +640,21 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
         end
     end
 
-    if sw_num_icon_overlay_fields_active > 0 then
+    if sw_frame.overlay_frame.num_overlay_components_toggled > 0 then
         for i = 1, 3 do
             
-            if sw_frame.tooltip_frame.icon_overlay[i] and 
-                bit.band(sw_frame.tooltip_frame.icon_overlay[i].label_type,
+            if sw_frame.overlay_frame.icon_overlay[i] and 
+                bit.band(sw_frame.overlay_frame.icon_overlay[i].label_type,
                          bit.bor(icon_stat_display.avg_cost,
                                  icon_stat_display.avg_cast,
                                  icon_stat_display.casts_until_oom,
                                  icon_stat_display.time_until_oom)) ~= 0 then
 
-                overlay_label_handler[sw_frame.tooltip_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[sw_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.tooltip_frame.icon_overlay[i].color[1],
-                                                          sw_frame.tooltip_frame.icon_overlay[i].color[2],
-                                                          sw_frame.tooltip_frame.icon_overlay[i].color[3]);
+                frame_info.overlay_frames[i]:SetTextColor(sw_frame.overlay_frame.icon_overlay[i].color[1],
+                                                          sw_frame.overlay_frame.icon_overlay[i].color[2],
+                                                          sw_frame.overlay_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
             end
@@ -796,7 +721,7 @@ local function update_spell_icons(loadout, effects, eval_flags)
                         end
                     else
                         -- TODO: icon overlay not working for healing version checkbox
-                        if spells[id].healing_version and sw_frame.tooltip_frame.icon_heal_variant:GetChecked() then
+                        if spells[id].healing_version and config.settings.overlay_prioritize_heal then
                             update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
                         else
                             update_spell_icon_frame(v, spells[id], id, loadout, effects, eval_flags);
@@ -806,7 +731,6 @@ local function update_spell_icons(loadout, effects, eval_flags)
             end
         end
     end
-
 
     -- update action bar icons
     --for k, v in pairs(action_id_frames) do
@@ -830,7 +754,8 @@ local function update_spell_icons(loadout, effects, eval_flags)
 
             elseif id ~= 0 and v.frame:IsShown() then
 
-                if spells[id].healing_version and sw_frame.tooltip_frame.icon_heal_variant:GetChecked() then
+
+                if spells[id].healing_version and config.settings.overlay_prioritize_heal then
                     update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
                 else
                     update_spell_icon_frame(v, spells[id], id, loadout, effects, eval_flags);
@@ -851,7 +776,7 @@ local function update_overlay()
     end
 
     local eval_flags = 0;
-    if sw_frame.tooltip_frame.icon_show_single_target_only:GetChecked() then
+    if config.settings.overlay_single_effect_only then
         eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
     end
 
@@ -873,7 +798,7 @@ local function update_overlay()
         end
     end
 
-    if not sw_frame.tooltip_frame.icon_overlay_disable:GetChecked() then
+    if not config.settings.overlay_disable then
 
         update_spell_icons(loadout, effects, eval_flags);
     end

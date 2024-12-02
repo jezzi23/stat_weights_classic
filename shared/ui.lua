@@ -31,10 +31,7 @@ local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_cod
 
 local simulation_type                           = swc.calc.simulation_type;
 
-local default_sw_settings                       = swc.settings.default_sw_settings;
-
 local update_icon_overlay_settings              = swc.overlay.update_icon_overlay_settings
-local icon_stat_display                         = swc.overlay.icon_stat_display;
 
 local loadout_flags                             = swc.utils.loadout_flags;
 local class                                     = swc.utils.class;
@@ -43,7 +40,6 @@ local effect_colors                             = swc.utils.effect_colors;
 
 local empty_loadout                             = swc.loadout.empty_loadout;
 local empty_effects                             = swc.loadout.empty_effects;
-local default_loadout                           = swc.loadout.default_loadout;
 local active_loadout                            = swc.loadout.active_loadout;
 local active_loadout_entry                      = swc.loadout.active_loadout_entry;
 local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
@@ -53,13 +49,13 @@ local spell_info                                = swc.calc.spell_info;
 local cast_until_oom                            = swc.calc.cast_until_oom;
 local spell_diff                                = swc.calc.spell_diff;
 
-local tooltip_stat_display                      = swc.tooltip.tooltip_stat_display;
-
 local buff_filters                              = swc.buffs.buff_filters;
 local filter_flags_active                       = swc.buffs.filter_flags_active;
 local buff_category                             = swc.buffs.buff_category;
 local buffs                                     = swc.buffs.buffs;
 local target_buffs                              = swc.buffs.target_buffs;
+
+local config                                    = swc.config;
 
 -------------------------------------------------------------------------
 local ui = {};
@@ -762,14 +758,16 @@ end
 local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, func)
     --  assume max 2 columns
     for i, v in pairs(buttons_info) do
-        local f = CreateFrame("CheckButton", "sw_frame_"..v.txt, sw_frame.tooltip_frame, "ChatConfigCheckButtonTemplate");
+        local f = CreateFrame("CheckButton", "sw_frame_"..v.id, parent_frame, "ChatConfigCheckButtonTemplate");
         f._settings_id = v.id;
 
-        local x_spacing = 240;
+        local x_spacing = 0;
+        if i%num_columns == 0 then
+            x_spacing = 230;
+        end
         local x_pad = 10;
-        local x = x_pad;
-        x = x_pad + x_spacing * (i-1)%num_columns;
-        f:SetPoint("TOPLEFT", x, y_offset);
+        local x = x_pad + x_spacing;
+        f:SetPoint("TOPLEFT", x, parent_frame.y_offset);
         local txt = getglobal(f:GetName() .. 'Text');
         txt:SetText(v.txt);
         if v.color then
@@ -784,7 +782,7 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
             f:SetScript("OnClick", func);
         else
             f:SetScript("OnClick", function(self)
-                __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
+                config.settings[self._settings_id] = self:GetChecked();
                 if func then
                     func(self);
                 end
@@ -797,9 +795,17 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
     end
 end
 
-local function create_sw_ui_tooltip_frame(y_offset)
+
+local function create_sw_ui_spells_frame()
+end
+
+local function create_sw_ui_tooltip_frame()
+
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 5;
 
     sw_frame.tooltip_frame.num_tooltip_toggled = 0;
+
+    sw_frame.tooltip_frame.checkboxes = {};
 
     local tooltip_setting_checks = {
         {
@@ -808,7 +814,7 @@ local function create_sw_ui_tooltip_frame(y_offset)
         },
         {
             id = "tooltip_shift_to_show",
-            txt = "Require SHIFT to show extended tooltip"
+            txt = "Require SHIFT to show tooltip"
         },
         {
             id = "tooltip_clear_original",
@@ -817,12 +823,97 @@ local function create_sw_ui_tooltip_frame(y_offset)
     };
 
     sw_frame.tooltip_frame.tooltip_settings_label_misc = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetFontObject(font);
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetText("Miscellaneous Settings");
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetFont("Fonts\\FRIZQT__.TTF", 12);
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
+    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetText("Tooltip settings");
     sw_frame.tooltip_frame.tooltip_settings_label_misc:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 15;
     multi_row_checkbutton(tooltip_setting_checks, sw_frame.tooltip_frame, 2);
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 30;
+
+    sw_frame.tooltip_frame.tooltip_settings_label = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.tooltip_frame.tooltip_settings_label:SetFont("Fonts\\FRIZQT__.TTF", 12);
+    sw_frame.tooltip_frame.tooltip_settings_label:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
+    sw_frame.tooltip_frame.tooltip_settings_label:SetText("Tooltip display options         Presets:");
+    sw_frame.tooltip_frame.tooltip_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 10;
+    sw_frame.tooltip_frame.preset_default_button =
+        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    sw_frame.tooltip_frame.preset_default_button:SetScript("OnClick", function(self)
+
+        --sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
+
+    end);
+    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 230, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_default_button:SetText("Minimalistic");
+    sw_frame.tooltip_frame.preset_default_button:SetWidth(90);
+
+    sw_frame.tooltip_frame.preset_minimalistic_button =
+        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
+
+        --sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
+
+    end);
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 320, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetText("Default");
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(70);
+
+    sw_frame.tooltip_frame.preset_detailed_button =
+        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    sw_frame.tooltip_frame.preset_detailed_button:SetScript("OnClick", function(self)
+
+        --sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
+        --sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(false);
+        --sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
+
+    end);
+    sw_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 390, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_detailed_button:SetText("Detailed");
+    sw_frame.tooltip_frame.preset_detailed_button:SetWidth(80);
 
     local tooltip_components = {
         {
@@ -867,12 +958,12 @@ local function create_sw_ui_tooltip_frame(y_offset)
         {
             id = "tooltip_display_crit",
             txt = "Critical chance & modifier",
-            color = effect_colors.crit_effect
+            color = effect_colors.crit
         },
         {
             id = "tooltip_display_crit_combined",
             txt = "Critical effect & chance combined",
-            color = effect_colors.crit_effect
+            color = effect_colors.crit
         },
         {
             id = "tooltip_display_expected",
@@ -927,57 +1018,241 @@ local function create_sw_ui_tooltip_frame(y_offset)
         },
         --tooltip_display_cast_and_tap       
     };
-
     local tooltip_toggle = function(self)
 
         local checked = self:GetChecked();
         if checked then
 
             if sw_frame.tooltip_frame.num_tooltip_toggled == 0 then
-                sw_frame.tooltip_frame.tooltip_disable:SetChecked(false);
+                sw_frame_tooltip_disable:SetChecked(false);
             end
             sw_frame.tooltip_frame.num_tooltip_toggled = sw_frame.tooltip_frame.num_tooltip_toggled + 1;
         else
             sw_frame.tooltip_frame.num_tooltip_toggled = sw_frame.tooltip_frame.num_tooltip_toggled - 1;
             if sw_frame.tooltip_frame.num_tooltip_toggled == 0 then
-                sw_frame.tooltip_frame.tooltip_disable:SetChecked(true);
+                sw_frame_tooltip_disable:SetChecked(true);
             end
         end
-        __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
+        config.settings[self._settings_id] = self:GetChecked();
     end;
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 15;
+    multi_row_checkbutton(tooltip_components, sw_frame.tooltip_frame, 2, tooltip_toggle);
 
-    multi_row_checkbutton(tooltip_components, sw_frame.tooltip_frame, 2);
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 25;
+    --sw_frame.tooltip_frame.reset_addon_button =
+    --    CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    --sw_frame.tooltip_frame.reset_addon_button:SetScript("OnClick", function(self)
+    --    swc.core.use_char_defaults = 1;
+    --    ReloadUI();
+    --end);
+    --sw_frame.tooltip_frame.reset_addon_button:SetPoint("TOPLEFT", 10, sw_frame.tooltip_frame.y_offset);
+    --sw_frame.tooltip_frame.reset_addon_button:SetText("Reset all to default (UI Reload)");
+    --sw_frame.tooltip_frame.reset_addon_button:SetWidth(190);
 end
 
 local function create_sw_ui_overlay_frame()
-    --new
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 5;
     sw_frame.overlay_frame.icon_settings_label = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.overlay_frame.icon_settings_label:SetFontObject(font);
-    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
-    sw_frame.overlay_frame.icon_settings_label:SetText("Overlay Configuration");
+    sw_frame.overlay_frame.icon_settings_label:SetFont("Fonts\\FRIZQT__.TTF", 12)
+    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 0, sw_frame.overlay_frame.y_offset);
+    sw_frame.overlay_frame.icon_settings_label:SetText("Spell overlay settings");
     sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.overlay_frame.icon_settings_label = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.overlay_frame.icon_settings_label:SetFontObject(font);
-    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
-    sw_frame.overlay_frame.icon_settings_label:SetText("L[Ability icon overlay components (max 3)]");
-    sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 15;
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 12;
+    local overlay_settings_checks = {
+        {
+            id = "overlay_disable",
+            txt = "Disable action bar overlay",
+            func = function()
+                config.settings[self._settings_id] = self:GetChecked();
+                swc.overlay.clear_overlays();
+            end
+        },
+        {
+            id = "overlay_old_rank",
+            txt = "Old rank warning",
+            color = effect_colors.crit,
+        },
+        {
+            id = "overlay_mana_abilities",
+            txt = "Show mana restorative spells ",
+            color = effect_colors.avg_cost,
+            tooltip = "Puts mana restoration amount on overlay for spells like Evocation."
+        },
+        {
+            id = "overlay_single_effect_only",
+            txt = "Show for 1x effect",
+            tooltip = "Numbers derived from expected effect is displayed as 1.0x effect instead of optimistic 5.0x for Prayer of Healing as an example.";
+        },
+        {
+            id = "icon_top_clearance",
+            txt = "Icon top clearance",
+        },
+        {
+            id = "icon_bottom_clearance",
+            txt = "Icon bottom clearance",
+        },
+        {
+            id = "overlay_prioritize_heal",
+            txt = "Prioritize heal for hybrid spells",
+        },
+    };
 
-    sw_frame.overlay_frame.icons_num_checked = 0;
+    multi_row_checkbutton(overlay_settings_checks, sw_frame.overlay_frame, 2);
+
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 30;
+
+    local f = CreateFrame("Slider", "sw_frame_overlay_update_freq", sw_frame.overlay_frame, "UISliderTemplate");
+    f:SetOrientation('HORIZONTAL');
+    f:SetPoint("TOPLEFT", 250, sw_frame.overlay_frame.y_offset+4);
+    f:SetMinMaxValues(1, 30)
+    f:SetValueStep(1)
+    f:SetWidth(175)
+    f:SetHeight(20)
+    f:SetScript("OnValueChanged", function(self, val)
+        p_char.overlay_update_freq = val;
+    end);
+
+    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f_txt:SetFontObject(font)
+    f_txt:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset)
+    f_txt:SetText("Update frequency (higher = more responsive)");
+
+    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f_txt:SetFontObject(font)
+    f_txt:SetPoint("TOPLEFT", 455, sw_frame.overlay_frame.y_offset)
+    f_txt:SetText("Hz")
+
+    local f_val = nil;
+
+    -- move to reconf
+    f:SetValue(config.settings.overlay_font_size);
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 25;
+
+    f = CreateFrame("Slider", nil, sw_frame.overlay_frame, "UISliderTemplate");
+    f:SetOrientation('HORIZONTAL');
+    f:SetPoint("TOPLEFT", 250, sw_frame.overlay_frame.y_offset+4);
+    f:SetMinMaxValues(2, 24)
+    f:SetValueStep(1)
+    f:SetWidth(175)
+    f:SetHeight(20)
+    f:SetValue(config.settings.overlay_font_size);
+
+    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f_txt:SetFontObject(font)
+    f_txt:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset)
+    f_txt:SetText("Font size")
+    --sw_frame.overlay_frame.icon_overlay_font_size = config.settings.overlay_font_size;
+
+
+    f.val_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f.val_txt:SetFontObject(font)
+    f.val_txt:SetPoint("TOPLEFT", 430, sw_frame.overlay_frame.y_offset)
+    f.val_txt:SetText(string.format("%.2fx", config.settings.overlay_font_size));
+    f:SetScript("OnValueChanged", function(self, val)
+        config.settings.overlay_font_size = val;
+
+        self.val_txt:SetText(string.format("%.2fx", config.settings.overlay_font_size));
+
+        for _, v in pairs(swc.overlay.spell_book_frames) do
+            if v.frame then
+                local spell_name = v.frame.SpellName:GetText();
+                local spell_rank_name = v.frame.SpellSubName:GetText();
+                local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
+                for i = 1, 3 do
+                    v.overlay_frames[i]:SetFont(
+                        icon_overlay_font, val, "THICKOUTLINE");
+                end
+            end
+        end
+        for _, v in pairs(swc.overlay.action_id_frames) do
+            if v.frame then
+                for i = 1, 3 do
+                    v.overlay_frames[i]:SetFont(
+                        icon_overlay_font, val, "THICKOUTLINE");
+                end
+            end
+        end
+
+    end);
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 25;
+    f = CreateFrame("Slider", nil, sw_frame.overlay_frame, "UISliderTemplate");
+    f:SetOrientation('HORIZONTAL');
+    f:SetPoint("TOPLEFT", 250, sw_frame.overlay_frame.y_offset+4);
+    f:SetMinMaxValues(-15, 15);
+    f:SetWidth(175)
+    f:SetHeight(20)
+    f:SetValue(config.settings.overlay_offset);
+
+    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f_txt:SetFontObject(font)
+    f_txt:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset)
+    f_txt:SetText("Horizontal offset")
+
+
+    f.val_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f.val_txt:SetFontObject(font)
+    f.val_txt:SetPoint("TOPLEFT", 430, sw_frame.overlay_frame.y_offset)
+    f.val_txt:SetText(string.format("%.1f", config.settings.overlay_offset))
+
+
+    f:SetValueStep(0.1);
+    f:SetScript("OnValueChanged", function(self, val)
+        config.settings.overlay_offset = val;
+
+        self.val_txt:SetText(string.format("%.1f", val))
+        swc.core.setup_action_bar_needed = true;
+        swc.overlay.update_overlay();
+    end);
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 20;
+
+    sw_frame.overlay_frame.icon_components_settings_label = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.overlay_frame.icon_components_settings_label:SetFont("Fonts\\FRIZQT__.TTF", 12);
+    sw_frame.overlay_frame.icon_components_settings_label:SetPoint("TOPLEFT", 0, sw_frame.overlay_frame.y_offset);
+    sw_frame.overlay_frame.icon_components_settings_label:SetText("Spell overlay components (max 3)");
+    sw_frame.overlay_frame.icon_components_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 15;
+
+    sw_frame.overlay_frame.num_overlay_components_toggled = 0;
+    sw_frame.overlay_frame.num_overlay_special_toggled = 0;
 
     local icon_checkbox_func = function(self)
 
-        if sw_num_icon_overlay_fields_active >= 3 then
-            self:SetChecked(false);
+        config.settings.overlay_disable = false;
+        sw_frame_overlay_disable:SetChecked(false);
+
+        local checked = self:GetChecked();
+        if checked then
+
+            sw_frame.overlay_frame.num_overlay_components_toggled = sw_frame.overlay_frame.num_overlay_components_toggled + 1;
         else
-            __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
+            sw_frame.overlay_frame.num_overlay_components_toggled = sw_frame.overlay_frame.num_overlay_components_toggled - 1;
+        end
+
+        if sw_frame.overlay_frame.num_overlay_components_toggled > 3 then
+            -- toggled fourth
+            self:SetChecked(false);
+            sw_frame.overlay_frame.num_overlay_components_toggled = 3;
+        elseif sw_frame.overlay_frame.num_overlay_components_toggled == 0 then
+            config.settings.overlay_disable = true;
+        else
+            config.settings[self._settings_id] = checked;
         end
         update_icon_overlay_settings();
     end;
+
+    local special_overlay_component_func = function(self)
+
+        icon_checkbox_func(self);
+        print("lol");
+    end
 
     local overlay_components = {
         {
@@ -1000,6 +1275,7 @@ local function create_sw_ui_overlay_frame()
             id = "overlay_display_effect_per_sec",
             txt = "Effect per sec",
             color = effect_colors.effect_per_sec,
+            func = special_overlay_component_func
         },
         {
             id = "overlay_display_effect_per_cost",
@@ -1053,550 +1329,55 @@ local function create_sw_ui_overlay_frame()
         },
     };
 
-    multi_row_checkbutton(overlay_components, sw_frame.overlay_frame, 2);
+    multi_row_checkbutton(overlay_components, sw_frame.overlay_frame, 2, icon_checkbox_func);
 
+    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 15;
 
-
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 10;
-    sw_frame.overlay_frame.icon_settings_label = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.overlay_frame.icon_settings_label:SetFontObject(font);
-    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
-    sw_frame.overlay_frame.icon_settings_label:SetText("Ability Icon Overlay Configuration");
-    sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
-
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 12;
-
-    local overlay_settings_checks = {
-        {
-            id = "overlay_disable",
-            txt = "Disable action bar overlay",
-            func = function()
-                __sw__persistent_data_per_char.settings[self._settings_id] = self:GetChecked();
-                swc.overlay.clear_overlays();
-            end
-        },
-        {
-            id = "overlay_old_rank",
-            txt = "Old rank warning",
-            color = effect_colors.crit,
-        },
-        {
-            id = "overlay_mana_abilities",
-            txt = "Show mana restorative spells ",
-            color = effect_colors.avg_cost,
-            tooltip = "Puts mana restoration amount on overlay for spells like Evocation."
-        },
-        {
-            id = "overlay_single_effect_only",
-            txt = "Show for 1x effect",
-            tooltip = "Numbers derived from expected effect is displayed as 1.0x effect instead of optimistic 5.0x for Prayer of Healing as an example.";
-        },
-        {
-            id = "icon_top_clearance",
-            txt = "Icon top clearance",
-        },
-        {
-            id = "icon_bottom_clearance",
-            txt = "Icon bottom clearance",
-        },
-    };
-
-    multi_row_checkbutton(overlay_settings_checks, sw_frame.overlay_frame, 2);
-
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 30;
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetText("Update frequency");
-
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.icon_settings_update_freq_label_lhs:SetText("Hz (higher = more responsive overlay)");
-
-
-    local hz_editbox = function(self)
-
-        local hz = tonumber(self:GetText());
-        if hz and hz >= 0.01 and hz <= 300 then
-            sw_snapshot_loadout_update_freq = hz;
-        else
-            self:SetText("3"); 
-            sw_snapshot_loadout_update_freq = 3;
-        end
-
-    	self:ClearFocus();
-        self:HighlightText(0,0);
+    sw_frame.overlay_frame.overlay_components = {};
+    for k, v in pairs(overlay_components) do
+        sw_frame.overlay_frame.overlay_components[v.id] = v.color;
     end
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 25;
+    --sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 30;
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetText("Update frequency");
 
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetScript("OnEnterPressed", hz_editbox);
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetScript("OnEscapePressed", hz_editbox);
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetScript("OnEditFocusLost", hz_editbox);
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetScript("OnTextChanged", function(self)
-        local hz = tonumber(self:GetText());
-        if hz and hz >= 0.01 and hz <= 300 then
-
-            sw_snapshot_loadout_update_freq = tonumber(hz);
-        end
-
-    end);
-
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider =
-        CreateFrame("Slider", nil, sw_frame.tooltip_frame, "UISliderTemplate");
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetOrientation('HORIZONTAL');
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetPoint("TOPLEFT", 65, sw_frame.tooltip_frame.y_offset+4);
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetMinMaxValues(2, 24)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetWidth(60)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetHeight(20)
-
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_text = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY")
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_text:SetFontObject(font)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_text:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_text:SetText("Font size")
-    sw_frame.tooltip_frame.icon_overlay_font_size = __sw__persistent_data_per_char.settings.icon_overlay_font_size;
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetValue(sw_frame.tooltip_frame.icon_overlay_font_size);
-
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_val = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY")
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_val:SetFontObject(font)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_val:SetPoint("TOPLEFT", 130, sw_frame.tooltip_frame.y_offset)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2fx", sw_frame.tooltip_frame.icon_overlay_font_size))
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetValueStep(1)
-    sw_frame.tooltip_frame.icon_overlay_font_size_slider:SetScript("OnValueChanged", function(self, val)
-        sw_frame.tooltip_frame.icon_overlay_font_size = val;
-
-        for k, v in pairs(swc.overlay.spell_book_frames) do
-            if v.frame then
-                local spell_name = v.frame.SpellName:GetText();
-                local spell_rank_name = v.frame.SpellSubName:GetText();
-                local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
-                for i = 1, 3 do
-                    v.overlay_frames[i]:SetFont(
-                        icon_overlay_font, sw_frame.tooltip_frame.icon_overlay_font_size, "THICKOUTLINE");
-                end
-            end
-        end
-        for k, v in pairs(swc.overlay.action_id_frames) do
-            if v.frame then
-                for i = 1, 3 do
-                    v.overlay_frames[i]:SetFont(
-                        icon_overlay_font, sw_frame.tooltip_frame.icon_overlay_font_size, "THICKOUTLINE");
-                end
-            end
-        end
-
-        sw_frame.tooltip_frame.icon_overlay_font_size_slider_val:SetText(string.format("%.2fx", sw_frame.tooltip_frame.icon_overlay_font_size))
-    end);
-
-    sw_frame.tooltip_frame.icon_overlay_offset_slider =
-        CreateFrame("Slider", nil, sw_frame.tooltip_frame, "UISliderTemplate");
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetOrientation('HORIZONTAL');
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetPoint("TOPLEFT", 270, sw_frame.tooltip_frame.y_offset+4);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetMinMaxValues(-15, 15);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetWidth(60)
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetHeight(20)
-
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_text = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY")
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_text:SetFontObject(font)
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_text:SetPoint("TOPLEFT", 180, sw_frame.tooltip_frame.y_offset)
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_text:SetText("Horizontal offset")
-    sw_frame.tooltip_frame.icon_overlay_offset = __sw__persistent_data_per_char.settings.icon_overlay_offset;
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetValue(sw_frame.tooltip_frame.icon_overlay_offset);
-
-    
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val = CreateFrame("EditBox", nil, sw_frame.tooltip_frame, "InputBoxTemplate");
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetPoint("TOPLEFT", 340, sw_frame.tooltip_frame.y_offset)
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetText(string.format("%.1f", sw_frame.tooltip_frame.icon_overlay_offset))
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetAutoFocus(false)
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetSize(35, 10);
-
-    local offset_edit = function(self)
-        local offset = tonumber(self:GetText());
-        if offset and offset >= -15 and offset <= 15 then
-
-            sw_frame.tooltip_frame.icon_overlay_offset = offset;
-            sw_frame.tooltip_frame.icon_overlay_offset_slider:SetValue(offset);
-        else
-            self:SetText("0.0"); 
-            sw_frame.tooltip_frame.icon_overlay_offset = 0.0;
-            sw_frame.tooltip_frame.icon_overlay_offset_slider:SetValue(0.0);
-
-        end
-
-    	self:ClearFocus();
-        self:HighlightText(0,0);
-    end;
-
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetScript("OnEnterPressed", offset_edit);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetScript("OnEscapePressed", offset_edit);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetScript("OnEditFocusLost", offset_edit);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetScript("OnTextChanged", function(self)
-        local offset = tonumber(self:GetText());
-        if offset and offset >= -15 and offset <= 15 then
-            sw_frame.tooltip_frame.icon_overlay_offset = offset;
-
-            swc.core.setup_action_bar_needed = true;
-            --sw_frame.tooltip_frame.icon_overlay_offset_slider:SetValue(offset);
-        end
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.overlay_frame.y_offset);
+    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetText("Hz (higher = more responsive overlay)");
 
 
-    end);
+    --local hz_editbox = function(self)
 
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetValueStep(0.1);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetValue(sw_frame.tooltip_frame.icon_overlay_offset);
-    sw_frame.tooltip_frame.icon_overlay_offset_slider:SetScript("OnValueChanged", function(self, val)
-        sw_frame.tooltip_frame.icon_overlay_offset = val;
+    --    local hz = tonumber(self:GetText());
+    --    if hz and hz >= 0.01 and hz <= 300 then
+    --        sw_snapshot_loadout_update_freq = hz;
+    --    else
+    --        self:SetText("3"); 
+    --        sw_snapshot_loadout_update_freq = 3;
+    --    end
 
-        sw_frame.tooltip_frame.icon_overlay_offset_slider_val:SetText(string.format("%.1f", sw_frame.tooltip_frame.icon_overlay_offset))
-        swc.core.setup_action_bar_needed = true;
-        swc.overlay.update_overlay();
-    end);
-
-    local num_icon_overlay_checks = 0;
-    -- set checkboxes for _icon options as  according to persistent data per char
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.normal) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_normal_effect:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.crit) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_crit_effect:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.expected) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_expected_effect:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.effect_per_sec) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_effect_per_sec:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.effect_per_cost) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_effect_per_cost:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.avg_cost) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_avg_cost:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.avg_cast) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_avg_cast:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.hit) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_hit:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.crit_chance) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_crit:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.casts_until_oom) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_casts_until_oom:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.effect_until_oom) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_effect_until_oom:SetChecked(true);
-        end
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.time_until_oom) ~= 0 then
-        if num_icon_overlay_checks < 3 then
-            num_icon_overlay_checks = num_icon_overlay_checks + 1;
-            sw_frame.tooltip_frame.icon_time_until_oom:SetChecked(true);
-        end
-    end
-    sw_frame.tooltip_frame.icons_num_checked = num_icon_overlay_checks;
-
-    if bit.band(__sw__persistent_data_per_char.settings.ability_icon_overlay, icon_stat_display.show_heal_variant) ~= 0 then
-        sw_frame.tooltip_frame.icon_heal_variant:SetChecked(true);
-    end
-
-    if __sw__persistent_data_per_char.settings.icon_overlay_disable then
-        sw_frame.tooltip_frame.icon_overlay_disable:SetChecked(true);
-    end
-
-    if __sw__persistent_data_per_char.settings.icon_overlay_mana_abilities then
-        sw_frame.tooltip_frame.icon_mana_overlay:SetChecked(true);
-    end
-
-    if __sw__persistent_data_per_char.settings.icon_overlay_old_rank then
-        sw_frame.tooltip_frame.icon_old_rank_warning:SetChecked(true);
-    end
-
-    if __sw__persistent_data_per_char.settings.icon_show_single_target_only then
-        sw_frame.tooltip_frame.icon_show_single_target_only:SetChecked(true);
-    end
-
-    if __sw__persistent_data_per_char.settings.icon_top_clearance then
-        sw_frame.tooltip_frame.icon_top_clearance:SetChecked(true);
-    end
-    if __sw__persistent_data_per_char.settings.icon_bottom_clearance then
-        sw_frame.tooltip_frame.icon_bottom_clearance:SetChecked(true);
-    end
-
-    sw_snapshot_loadout_update_freq = __sw__persistent_data_per_char.settings.icon_overlay_update_freq;
-    sw_frame.tooltip_frame.icon_settings_update_freq_editbox:SetText(""..sw_snapshot_loadout_update_freq);
-
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 30;
-
-    sw_frame.tooltip_frame.tooltip_settings_label = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.tooltip_settings_label:SetFontObject(font);
-    sw_frame.tooltip_frame.tooltip_settings_label:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.tooltip_settings_label:SetText("Ability Tooltip Display Options.   Presets:");
-    sw_frame.tooltip_frame.tooltip_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
-
-    sw_frame.tooltip_frame.preset_default_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_default_button:SetScript("OnClick", function(self)
-
-        sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
-
-    end);
-    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 220, sw_frame.tooltip_frame.y_offset + 8);
-    sw_frame.tooltip_frame.preset_default_button:SetText("Default");
-    sw_frame.tooltip_frame.preset_default_button:SetWidth(60);
-
-    sw_frame.tooltip_frame.preset_minimalistic_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
-
-        sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
-        sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(false);
-        sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
-
-    end);
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 280, sw_frame.tooltip_frame.y_offset + 8);
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetText("Minimalistic");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(93);
-
-
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 12;
-
-    -- tooltip options
-    sw_frame.tooltip_frame.tooltip_num_checked = 0;
-    local tooltip_checkbox_func = function(self)
-        if self:GetChecked() then
-            sw_frame.tooltip_frame.tooltip_num_checked = sw_frame.tooltip_frame.tooltip_num_checked + 1;
-        else
-            sw_frame.tooltip_frame.tooltip_num_checked = sw_frame.tooltip_frame.tooltip_num_checked - 1;
-        end
-    end;
-
-    sw_frame.tooltip_frame.tooltip_addon_name = 
-        create_sw_checkbox("sw_tooltip_addon_name", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Addon name", tooltip_checkbox_func);
-    sw_frame.tooltip_frame.tooltip_dynamic_tip = 
-        create_sw_checkbox("sw_tooltip_dynamic_tip", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Evaluation options", tooltip_checkbox_func);
-    getglobal(sw_frame.tooltip_frame.tooltip_dynamic_tip:GetName()).tooltip = 
-        "For certain spells, shows hotkey to change evaluation method dynamically in the tooltip"
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.tooltip_loadout_info = 
-        create_sw_checkbox("sw_tooltip_loadout_info", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Loadout info", tooltip_checkbox_func, effect_colors.addon_info);
-    sw_frame.tooltip_frame.tooltip_spell_rank = 
-        create_sw_checkbox("sw_tooltip_spell_rank", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Spell rank info", tooltip_checkbox_func, effect_colors.spell_rank);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.tooltip_normal_effect = 
-        create_sw_checkbox("sw_tooltip_normal_effect", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Normal effect", tooltip_checkbox_func, effect_colors.normal);
-    sw_frame.tooltip_frame.tooltip_crit_effect = 
-        create_sw_checkbox("sw_tooltip_crit_effect", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Critical effect", tooltip_checkbox_func, effect_colors.crit);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.tooltip_expected_effect = 
-        create_sw_checkbox("sw_tooltip_expected_effect", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Expected effect", tooltip_checkbox_func, effect_colors.expectation);
-    sw_frame.tooltip_frame.tooltip_effect_per_sec = 
-        create_sw_checkbox("sw_tooltip_effect_per_sec", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Effect per sec", tooltip_checkbox_func, effect_colors.effect_per_sec);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.tooltip_effect_per_cost = 
-        create_sw_checkbox("sw_tooltip_effect_per_cost", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Effect per cost", tooltip_checkbox_func, effect_colors.effect_per_cost);
-    sw_frame.tooltip_frame.tooltip_cost_per_sec = 
-        create_sw_checkbox("sw_tooltip_cost_per_sec", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Cost per sec", tooltip_checkbox_func, effect_colors.cost_per_sec);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.tooltip_avg_cost = 
-        create_sw_checkbox("sw_tooltip_avg_cost", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Expected cost", tooltip_checkbox_func, effect_colors.avg_cost);
-    sw_frame.tooltip_frame.tooltip_avg_cast = 
-        create_sw_checkbox("sw_tooltip_avg_cast", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Expected cast time", tooltip_checkbox_func, effect_colors.avg_cast);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-
-    sw_frame.tooltip_frame.tooltip_cast_until_oom = 
-        create_sw_checkbox("sw_tooltip_cast_until_oom", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Cast until OOM", tooltip_checkbox_func, effect_colors.normal);
-    getglobal(sw_frame.tooltip_frame.tooltip_cast_until_oom:GetName()).tooltip = 
-        "Assumes you cast a particular ability until you are OOM with no cooldowns.";
-
-    sw_frame.tooltip_frame.tooltip_sp_effect_calc = 
-        create_sw_checkbox("sw_tooltip_sp_effect_calc", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                            "Coef & SP effect calc", tooltip_checkbox_func, effect_colors.sp_effect);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    sw_frame.tooltip_frame.tooltip_stat_weights = 
-        create_sw_checkbox("sw_tooltip_stat_weights", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset,
-                            "Stat weights", tooltip_checkbox_func, effect_colors.stat_weights);
-    --if class == "WARLOCK" then    
-    --    sw_frame.tooltip_frame.tooltip_cast_and_tap = 
-    --        create_sw_checkbox("sw_tooltip_cast_and_tap", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset, 
-    --                            "Cast and Lifetap", tooltip_checkbox_func);
+    --	self:ClearFocus();
+    --    self:HighlightText(0,0);
     --end
 
-    -- set tooltip options as according to saved persistent data
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.addon_name) == 0 then
-        sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.loadout_info) == 0 then
-        sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.spell_rank) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.normal) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.crit) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.expected) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.effect_per_sec) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.effect_per_cost) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cost_per_sec) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.stat_weights) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.sp_effect_calc) == 0 then
-        sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cost) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.avg_cast) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_until_oom) ~= 0 then
-        sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(true);
-    end
-    if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.dynamic_tip) == 0 then
-        sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
-    end
-    --if class == "WARLOCK" then
-        --if bit.band(__sw__persistent_data_per_char.settings.ability_tooltip, tooltip_stat_display.cast_and_tap) ~= 0 then
-        --    sw_frame.tooltip_frame.tooltip_cast_and_tap:SetChecked(true);
-        --end
-    --end
+    --sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 25;
 
-    for i = 1, 32 do
-        if bit.band(bit.lshift(1, i), __sw__persistent_data_per_char.settings.ability_tooltip) ~= 0 then
-            sw_frame.tooltip_frame.tooltip_num_checked = sw_frame.tooltip_frame.tooltip_num_checked + 1;
-        end
-    end;
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 25;
-    
-    sw_frame.tooltip_frame.tooltip_settings_label_misc = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetFontObject(font);
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetPoint("TOPLEFT", 15, sw_frame.tooltip_frame.y_offset);
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetText("Miscellaneous Settings");
-    sw_frame.tooltip_frame.tooltip_settings_label_misc:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnEnterPressed", hz_editbox);
+    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnEscapePressed", hz_editbox);
+    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnEditFocusLost", hz_editbox);
+    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnTextChanged", function(self)
+    --    local hz = tonumber(self:GetText());
+    --    if hz and hz >= 0.01 and hz <= 300 then
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 15;
-    sw_frame.tooltip_frame.show_tooltip_only_when_shift_button = 
-        create_sw_checkbox("sw_settings_show_tooltip_only_when_shift_button", sw_frame.tooltip_frame, 2, sw_frame.tooltip_frame.y_offset,
-                           "Hold SHIFT to show tooltip", function(self)
-        sw_frame.tooltip_frame.show_tooltip_only_when_shift = self:GetChecked();
-    end);
-    sw_frame.tooltip_frame.show_tooltip_only_when_shift = 
-        __sw__persistent_data_per_char.settings.show_tooltip_only_when_shift;
-    sw_frame.tooltip_frame.show_tooltip_only_when_shift_button:SetChecked(
-        sw_frame.tooltip_frame.show_tooltip_only_when_shift
-    );
+    --        sw_snapshot_loadout_update_freq = tonumber(hz);
+    --    end
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
+    --end);
 
-    sw_frame.tooltip_frame.clear_original_tooltip_button = 
-        create_sw_checkbox("sw_settings_clear_original_tooltip", sw_frame.tooltip_frame, 1, sw_frame.tooltip_frame.y_offset, 
-                           "Clear original tooltip", function(self)
-        sw_frame.tooltip_frame.clear_original_tooltip = self:GetChecked();
-    end);
-    sw_frame.tooltip_frame.clear_original_tooltip = 
-        __sw__persistent_data_per_char.settings.clear_original_tooltip;
-    sw_frame.tooltip_frame.clear_original_tooltip_button:SetChecked(
-        sw_frame.tooltip_frame.clear_original_tooltip
-    );
-
-    sw_frame.tooltip_frame.reset_addon_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.reset_addon_button:SetScript("OnClick", function(self)
-        swc.core.__sw__use_defaults__ = 1;
-        ReloadUI();
-    end);
-    sw_frame.tooltip_frame.reset_addon_button:SetPoint("TOPLEFT", 190, sw_frame.tooltip_frame.y_offset - 4);
-    sw_frame.tooltip_frame.reset_addon_button:SetText("Reset all to default (UI Reload)");
-    sw_frame.tooltip_frame.reset_addon_button:SetWidth(190);
-
-    if swc.core.expansion_loaded ~= swc.core.expansions.vanilla then
-        sw_frame.tooltip_frame.icon_show_single_target_only:Hide();
-    end
 end
 
 local function create_sw_ui_calculator_frame()
@@ -2767,11 +2548,12 @@ local function create_sw_base_ui()
     local tabbed_child_frames_y_offset = 20;
     local x_margin = 15;
 
-    for _, v in pairs({"tooltip_frame", "overlay_frame", "loadout_frame", "calculator_frame", "profile_frame"}) do
+    for _, v in pairs({"spells_frame", "tooltip_frame", "overlay_frame", "loadout_frame", "calculator_frame", "profile_frame"}) do
         sw_frame[v] = CreateFrame("ScrollFrame", "sw_"..v, sw_frame);
         sw_frame[v]:SetPoint("TOP", sw_frame, 0, -tabbed_child_frames_y_offset-35);
         sw_frame[v]:SetWidth(width-x_margin*2);
         sw_frame[v]:SetHeight(height-tabbed_child_frames_y_offset-35-5);
+        sw_frame[v].y_offset = 0;
     end
 
     for k, _ in pairs(swc.core.event_dispatch) do
@@ -2789,7 +2571,7 @@ local function create_sw_base_ui()
     create_sw_spell_id_viewer();
 
     sw_frame.libstub_icon_checkbox = CreateFrame("CheckButton", "sw_show_minimap_button", sw_frame, "ChatConfigCheckButtonTemplate");
-    sw_frame.libstub_icon_checkbox:SetPoint("TOPRIGHT", sw_frame, -100, 0);
+    sw_frame.libstub_icon_checkbox:SetPoint("TOPRIGHT", sw_frame, -110, 0);
     sw_frame.libstub_icon_checkbox:SetScript("OnClick", function(self)
         if self:GetChecked() then
             libstub_icon:Show(swc.core.sw_addon_name);
@@ -2799,8 +2581,8 @@ local function create_sw_base_ui()
     end);
     sw_frame.libstub_icon_checkbox_txt = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.libstub_icon_checkbox_txt:SetFontObject(font);
-    sw_frame.libstub_icon_checkbox_txt:SetText("Minimap Button");
-    sw_frame.libstub_icon_checkbox_txt:SetPoint("TOPRIGHT", sw_frame, -20, -6);
+    sw_frame.libstub_icon_checkbox_txt:SetText("Minimap button");
+    sw_frame.libstub_icon_checkbox_txt:SetPoint("TOPRIGHT", sw_frame, -30, -6);
 
 
     sw_frame.tabs = {};
@@ -2809,6 +2591,19 @@ local function create_sw_base_ui()
 
     sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
     sw_frame.tabs[i]:SetPoint("TOPLEFT", 10, -25);
+    sw_frame.tabs[i]:SetWidth(116);
+    sw_frame.tabs[i]:SetHeight(25);
+    sw_frame.tabs[i]:SetText("Spells");
+    sw_frame.tabs[i]:SetID(1);
+    sw_frame.tabs[i]:SetScript("OnClick", function(self)
+        sw_activate_tab(self);
+    end);
+    sw_frame.tabs[i].frame_to_open = sw_frame.spells_frame;
+    PanelTemplates_TabResize(sw_frame.tabs[i], 0)
+
+    i = i + 1;
+    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
+    sw_frame.tabs[i]:SetPoint("TOPLEFT", 75, -25);
     sw_frame.tabs[i]:SetWidth(116);
     sw_frame.tabs[i]:SetHeight(25);
     sw_frame.tabs[i]:SetText("Tooltip");
@@ -2821,11 +2616,11 @@ local function create_sw_base_ui()
 
     i = i + 1;
     sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetPoint("TOPLEFT", 85, -25);
+    sw_frame.tabs[i]:SetPoint("TOPLEFT", 145, -25);
     sw_frame.tabs[i]:SetWidth(116);
     sw_frame.tabs[i]:SetHeight(25);
     sw_frame.tabs[i]:SetText("Overlay");
-    sw_frame.tabs[i]:SetID(2);
+    sw_frame.tabs[i]:SetID(i);
     sw_frame.tabs[i]:SetScript("OnClick", function(self)
         sw_activate_tab(self);
     end);
@@ -2834,7 +2629,7 @@ local function create_sw_base_ui()
 
     i = i + 1;
     sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetPoint("TOPLEFT", 165, -25);
+    sw_frame.tabs[i]:SetPoint("TOPLEFT", 220, -25);
     sw_frame.tabs[i]:SetWidth(150);
     sw_frame.tabs[i]:SetHeight(25);
     sw_frame.tabs[i]:SetText("Loadout");
@@ -2847,7 +2642,7 @@ local function create_sw_base_ui()
 
     i = i + 1;
     sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetPoint("TOPLEFT", 245, -25);
+    sw_frame.tabs[i]:SetPoint("TOPLEFT", 298, -25);
     sw_frame.tabs[i]:SetWidth(150);
     sw_frame.tabs[i]:SetHeight(25);
     sw_frame.tabs[i]:SetText("Calculator");
@@ -2860,7 +2655,7 @@ local function create_sw_base_ui()
 
     i = i + 1;
     sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetPoint("TOPLEFT", 335, -25);
+    sw_frame.tabs[i]:SetPoint("TOPLEFT", 385, -25);
     sw_frame.tabs[i]:SetWidth(150);
     sw_frame.tabs[i]:SetHeight(25);
     sw_frame.tabs[i]:SetText("Profile");
@@ -2877,28 +2672,9 @@ end
 
 local function load_sw_ui()
 
+    create_sw_ui_spells_frame();
+
     create_sw_ui_calculator_frame();
-
-    if not __sw__persistent_data_per_char then
-        __sw__persistent_data_per_char = {};
-
-    end
-    if swc.core.__sw__use_defaults__ then
-        __sw__persistent_data_per_char.settings = nil;
-        __sw__persistent_data_per_char.loadouts = nil;
-    end
-
-    local default_settings = default_sw_settings();
-    if not __sw__persistent_data_per_char.settings then
-        __sw__persistent_data_per_char.settings = default_settings;
-    else
-        -- allows old clients with old settings to pick up on settings in newer versions
-        for k, v in pairs(default_settings) do
-            if __sw__persistent_data_per_char.settings[k] == nil then
-                __sw__persistent_data_per_char.settings[k] = v;
-            end
-        end
-    end
 
     if libstub_data_broker then
         local sw_launcher = libstub_data_broker:NewDataObject(swc.core.sw_addon_name, {
@@ -2926,15 +2702,15 @@ local function load_sw_ui()
             end,
         });
         if libstub_icon then
-            libstub_icon:Register(swc.core.sw_addon_name, sw_launcher, __sw__persistent_data_per_char.settings.libstub_minimap_icon);
+            libstub_icon:Register(swc.core.sw_addon_name, sw_launcher, config.settings.libstub_minimap_icon);
         end
     end
 
-    if __sw__persistent_data_per_char.settings.libstub_minimap_icon_show then
+    if config.settings.libstub_minimap_icon.hide then
+        libstub_icon:Hide(swc.core.sw_addon_name);
+    else
         libstub_icon:Show(swc.core.sw_addon_name);
         sw_frame.libstub_icon_checkbox:SetChecked(true);
-    else
-        libstub_icon:Hide(swc.core.sw_addon_name);
     end
 
 
@@ -2944,40 +2720,40 @@ local function load_sw_ui()
 
     create_sw_ui_loadout_frame();
 
-    if not __sw__persistent_data_per_char.loadouts or not __sw__persistent_data_per_char.loadouts.num_loadouts  then
-        -- load defaults
-        __sw__persistent_data_per_char.loadouts = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list = {};
+    --if not p_char.loadouts or not p_char.loadouts.num_loadouts  then
+    --    -- load defaults
+    --    p_char.loadouts = {};
+    --    p_char.loadouts.loadouts_list = {};
 
-        __sw__persistent_data_per_char.loadouts.loadouts_list[1] = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list[1].loadout = empty_loadout();
-        default_loadout(__sw__persistent_data_per_char.loadouts.loadouts_list[1].loadout);
-        __sw__persistent_data_per_char.loadouts.loadouts_list[1].equipped = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list[1].talented = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list[1].final_effects = {};
-        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[1].equipped);
-        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[1].talented);
-        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[1].final_effects);
-        __sw__persistent_data_per_char.loadouts.active_loadout = 1;
+    --    p_char.loadouts.loadouts_list[1] = {};
+    --    p_char.loadouts.loadouts_list[1].loadout = empty_loadout();
+    --    default_loadout(p_char.loadouts.loadouts_list[1].loadout);
+    --    p_char.loadouts.loadouts_list[1].equipped = {};
+    --    p_char.loadouts.loadouts_list[1].talented = {};
+    --    p_char.loadouts.loadouts_list[1].final_effects = {};
+    --    empty_effects(p_char.loadouts.loadouts_list[1].equipped);
+    --    empty_effects(p_char.loadouts.loadouts_list[1].talented);
+    --    empty_effects(p_char.loadouts.loadouts_list[1].final_effects);
+    --    p_char.loadouts.active_loadout = 1;
 
-        -- add secondary PVP loadout with lvl diff of 0 by default
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2] = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout = empty_loadout();
-        default_loadout(__sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout);
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout.default_target_lvl_diff = 0;
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2].loadout.name = "PVP";
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2].equipped = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2].talented = {};
-        __sw__persistent_data_per_char.loadouts.loadouts_list[2].final_effects = {};
-        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[2].equipped);
-        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[2].talented);
-        empty_effects(__sw__persistent_data_per_char.loadouts.loadouts_list[2].final_effects);
+    --    -- add secondary PVP loadout with lvl diff of 0 by default
+    --    p_char.loadouts.loadouts_list[2] = {};
+    --    p_char.loadouts.loadouts_list[2].loadout = empty_loadout();
+    --    default_loadout(p_char.loadouts.loadouts_list[2].loadout);
+    --    p_char.loadouts.loadouts_list[2].loadout.default_target_lvl_diff = 0;
+    --    p_char.loadouts.loadouts_list[2].loadout.name = "PVP";
+    --    p_char.loadouts.loadouts_list[2].equipped = {};
+    --    p_char.loadouts.loadouts_list[2].talented = {};
+    --    p_char.loadouts.loadouts_list[2].final_effects = {};
+    --    empty_effects(p_char.loadouts.loadouts_list[2].equipped);
+    --    empty_effects(p_char.loadouts.loadouts_list[2].talented);
+    --    empty_effects(p_char.loadouts.loadouts_list[2].final_effects);
 
-        __sw__persistent_data_per_char.loadouts.num_loadouts = 2;
-    end
+    --    p_char.loadouts.num_loadouts = 2;
+    --end
 
     sw_frame.loadout_frame.lhs_list.loadouts = {};
-    for k, v in pairs(__sw__persistent_data_per_char.loadouts.loadouts_list) do
+    for k, v in pairs(p_char.loadouts.loadouts_list) do
         sw_frame.loadout_frame.lhs_list.loadouts[k] = {};
         sw_frame.loadout_frame.lhs_list.loadouts[k].loadout = empty_loadout();
         for kk, vv in pairs(v.loadout) do
@@ -2994,18 +2770,18 @@ local function load_sw_ui()
         empty_effects(sw_frame.loadout_frame.lhs_list.loadouts[k].final_effects);
     end
 
-    sw_frame.loadout_frame.lhs_list.active_loadout = __sw__persistent_data_per_char.loadouts.active_loadout;
-    sw_frame.loadout_frame.lhs_list.num_loadouts = __sw__persistent_data_per_char.loadouts.num_loadouts;
+    sw_frame.loadout_frame.lhs_list.active_loadout = p_char.loadouts.active_loadout;
+    sw_frame.loadout_frame.lhs_list.num_loadouts = p_char.loadouts.num_loadouts;
 
     update_loadouts_lhs();
 
     sw_frame.loadout_frame.lhs_list.loadouts[
         sw_frame.loadout_frame.lhs_list.active_loadout].check_button:SetChecked(true);
 
-    if not __sw__persistent_data_per_char.sim_type or swc.core.__sw__use_defaults__ then
+    if not p_char.sim_type or swc.core.use_char_defaults then
         sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
     else
-        sw_frame.calculator_frame.sim_type = __sw__persistent_data_per_char.sim_type;
+        sw_frame.calculator_frame.sim_type = p_char.sim_type;
     end
     if sw_frame.calculator_frame.sim_type  == simulation_type.spam_cast then
         sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Show();
@@ -3016,9 +2792,9 @@ local function load_sw_ui()
     end
     sw_frame.calculator_frame.sim_type_button.init_func();
 
-    if __sw__persistent_data_per_char.stat_comparison_spells and not swc.core.__sw__use_defaults__ then
+    if p_char.stat_comparison_spells and not swc.core.use_char_defaults then
 
-        sw_frame.calculator_frame.spells = __sw__persistent_data_per_char.stat_comparison_spells;
+        sw_frame.calculator_frame.spells = p_char.stat_comparison_spells;
 
         update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
     end

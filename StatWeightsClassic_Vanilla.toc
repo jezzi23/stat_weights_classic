@@ -1,8 +1,8 @@
 ## Interface: 11505
 ## Title: Stat Weights Classic Vanilla
 ## Notes: Calculates spell info and presents in tooltip or overlay
-## SavedVariablesPerCharacter: __sw__persistent_data_per_char
-## SavedVariables: __sw__persistent_data
+## SavedVariablesPerCharacter: p_char
+## SavedVariables: p_acc
 
 lib/LibStub/Libstub.lua
 lib/CallbackHandler-1.0/CallbackHandler-1.0.xml
@@ -31,10 +31,10 @@ vanilla/buffs.lua
 vanilla/talents.lua
 shared/loadout.lua
 vanilla/loadout.lua
+shared/config.lua
 vanilla/calc.lua
 shared/tooltip.lua
 vanilla/tooltip.lua
 shared/overlay.lua
-shared/settings.lua
 shared/ui.lua
 shared/core.lua

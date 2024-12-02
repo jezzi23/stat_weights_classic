@@ -27,33 +27,10 @@ local spell_flags                               = swc.abilities.spell_flags;
 
 local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
 local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
+
+local config                                    = swc.config;
 -------------------------------------------------------------------------------
 local tooltip_export = {};
-
-local tooltip_stat_display = {
-    normal              = bit.lshift(1,1),
-    crit                = bit.lshift(1,2),
-    ot                  = bit.lshift(1,3),
-    ot_crit             = bit.lshift(1,4),
-    expected            = bit.lshift(1,5),
-    effect_per_sec      = bit.lshift(1,6),
-    effect_per_cost     = bit.lshift(1,7),
-    cost_per_sec        = bit.lshift(1,8),
-    stat_weights        = bit.lshift(1,9),
-    avg_cost            = bit.lshift(1,11),
-    avg_cast            = bit.lshift(1,12),
-    cast_until_oom      = bit.lshift(1,13),
-    cast_and_tap        = bit.lshift(1,14),
-    spell_rank          = bit.lshift(1,15),
-    loadout_info        = bit.lshift(1,16), -- negate default
-    sp_effect_calc      = bit.lshift(1,17), -- negate default
-    addon_name          = bit.lshift(1,18), -- negate default
-    dynamic_tip         = bit.lshift(1,19), -- negate default
-};
-
-local tooltip_settings = {
-    show_tooltip_only_when_shift    = bit.lshift(1,1),
-};
 
 local function sort_stat_weights(stat_weights, num_weights) 
     
@@ -87,7 +64,7 @@ local function begin_tooltip_section(tooltip, spell)
 
     if tooltip == GameTooltip then
 
-        if sw_frame.tooltip_frame.tooltip_addon_name:GetChecked() then
+        if config.settings.tooltip_display_addon_name then
             tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
         end
         if sw_frame.calculator_frame:IsShown() and sw_frame:IsShown() then
