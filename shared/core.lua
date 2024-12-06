@@ -33,9 +33,11 @@ local font                      = swc.ui.font;
 local load_sw_ui                = swc.ui.load_sw_ui;
 local create_sw_base_ui         = swc.ui.create_sw_base_ui;
 local sw_activate_tab           = swc.ui.sw_activate_tab;
-local update_loadouts_rhs       = swc.ui.update_loadouts_rhs;
+local update_buffs_frame       = swc.ui.update_buffs_frame;
+local update_profile_frame      = swc.ui.update_profile_frame;
 
 local load_config               = swc.config.load_config;
+local save_config               = swc.config.save_config;
 local set_active_settings       = swc.config.set_active_settings;
 
 local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
@@ -54,7 +56,8 @@ swc.core                        = core;
 core.sw_addon_name              = "Stat Weights Classic";
 
 --local version_id              = 10000;
-local version_id                = 00101;
+--local version_id                = 00101;
+local version_id                = 30309;
 core.version_id                 = version_id;
 local version                   = tostring(version_id);
 core.version                    = (tonumber(version:sub(1, 1)) or 0) ..
@@ -81,9 +84,6 @@ if C_Engraving and C_Engraving.IsEngravingEnabled() then
     core.client_deviation = bit.bor(core.client_deviation, core.client_deviation_flags.sod);
 end
 
-sw_snapshot_loadout_update_freq = 1;
-sw_num_icon_overlay_fields_active = 0;
-
 core.talents_update_needed = true;
 core.equipment_update_needed = true;
 core.special_action_bar_changed = true;
@@ -93,11 +93,13 @@ core.addon_message_on_update = false;
 
 core.sequence_counter = 0;
 core.addon_running_time = 0;
+core.active_spec = 1;
 
 core.beacon_snapshot_time = -1000;
 core.currently_casting_spell_id = 0;
 core.cast_expire_timer = 0;
 core.action_id_of_wand = 0;
+
 
 local function class_supported()
     return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
@@ -147,14 +149,15 @@ local event_dispatch = {
     end,
     ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
         if msg == "StatWeightsClassic" then
-            print("loading config");
             load_config();
-            print("set settings");
-            set_active_settings();
-            print("loading ui");
+            core.active_spec = GetActiveTalentGroup();
+            set_active_settings(core.active_spec);
             load_sw_ui();
-            print("made ui");
+            swc.config.activate_settings();
+            update_profile_frame()
+            update_loadout_frame();
         end
+
     end,
     ["PLAYER_LOGOUT"] = function(self, msg, msg2, msg3)
         save_config();
@@ -181,6 +184,7 @@ local event_dispatch = {
                 print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
             end
         end
+
     end,
     ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
         if not core.sw_addon_loaded then
@@ -220,9 +224,11 @@ local event_dispatch = {
     end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
 
-        set_active_settings()
+        core.active_spec = GetActiveTalentGroup();
+        set_active_settings(core.active_spec)
         core.update_action_bar_needed = true;
         core.talents_update_needed = true;
+        update_profile_frame();
     end,
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
         local loadout = active_loadout();
@@ -231,7 +237,7 @@ local event_dispatch = {
         if bit.band(loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
             loadout.talents_code = wowhead_talent_code();
             core.talents_update_needed = true;
-            update_loadouts_rhs();
+            update_buffs_frame();
         end
     end,
     ["PLAYER_EQUIPMENT_CHANGED"] = function(self, msg, msg2, msg3)
@@ -293,7 +299,7 @@ local function spell_tracking(dt)
 end
 
 local function main_update()
-    local dt = 1.0 / sw_snapshot_loadout_update_freq;
+    local dt = 1.0 / swc.config.settings.overlay_update_freq;
 
     local t = GetTime();
 

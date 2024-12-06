@@ -523,7 +523,7 @@ local function dynamic_loadout(loadout)
 end
 
 local function active_loadout_entry()
-    return sw_frame.loadout_frame.lhs_list.loadouts[sw_frame.loadout_frame.lhs_list.active_loadout];
+    return sw_frame.loadout_frame.loadouts[sw_frame.loadout_frame.active_loadout];
 end
 
 local function active_loadout()

@@ -352,7 +352,8 @@ local function update_icon_overlay_settings()
         if config.settings[k] then
             sw_frame.overlay_frame.icon_overlay[index] = {
                 label_type = k,
-                color = v
+                color = v.color,
+                optional_evaluation = v.optional_evaluation,
             };
             index = index + 1;
         end
@@ -469,7 +470,21 @@ local overlay_label_handler = {
             frame_overlay:SetText("");
         end
     end,
+    overlay_display_actual_cost = function(frame_overlay, spell, spell_effect, stats)
+        if stats.cost >= 0 then
+            frame_overlay:SetText(string.format("%d", stats.cost));
+        else
+            frame_overlay:SetText("");
+        end
+    end,
     overlay_display_avg_cast = function(frame_overlay, spell, spell_effect, stats)
+        if stats.cast_time > 0 then
+            frame_overlay:SetText(format_overlay_number(stats.cast_time, 2));
+        else
+            frame_overlay:SetText("");
+        end
+    end,
+    overlay_display_actual_cast = function(frame_overlay, spell, spell_effect, stats)
         if stats.cast_time > 0 then
             frame_overlay:SetText(format_overlay_number(stats.cast_time, 2));
         else
@@ -642,13 +657,7 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
 
     if sw_frame.overlay_frame.num_overlay_components_toggled > 0 then
         for i = 1, 3 do
-            
-            if sw_frame.overlay_frame.icon_overlay[i] and 
-                bit.band(sw_frame.overlay_frame.icon_overlay[i].label_type,
-                         bit.bor(icon_stat_display.avg_cost,
-                                 icon_stat_display.avg_cast,
-                                 icon_stat_display.casts_until_oom,
-                                 icon_stat_display.time_until_oom)) ~= 0 then
+            if sw_frame.overlay_frame.icon_overlay[i] and sw_frame.overlay_frame.icon_overlay[i].optional_evaluation then
 
                 overlay_label_handler[sw_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 

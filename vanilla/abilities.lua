@@ -9290,6 +9290,10 @@ elseif class == "MAGE" then
         spell_names_to_id({ "Fireball", "Spellfrost Bolt", "Frostfire Bolt" });
 end
 
+--local id_to_lname = {};
+--for k in pairs(spells) do
+--end
+
 local addon_name, swc = ...;
 local abilities = {};
 

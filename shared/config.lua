@@ -85,6 +85,8 @@ local default_settings = {
     overlay_font_size                   = 8,
     overlay_offset                      = 0.0,
 
+    profiles_dual_spec                  = false,
+
     -- general
     libstub_minimap_icon                = { hide = false },
 };
@@ -108,35 +110,40 @@ local function load_persistent_data(persistent_data, template_data)
     end
 end
 
-local default_profiles = {
-    num_profiles = 1,
-    settings_list = {
-        ["Default"] = swc.utils.deep_table_copy(default_settings)
-    }
-};
+local function default_profile()
+    return {
+        settings = swc.utils.deep_table_copy(default_settings)
+    };
+end
+
+-- persistent account data template
+local function default_p_acc()
+    return {
+        profiles = {
+            ["Default"] = default_profile()
+        }
+    };
+end
 
 local function load_config()
     if not p_acc then
-        swc.core.use_acc_defaults = true;
-        p_acc = { profiles = {} };
+        --swc.core.use_acc_defaults = true;
+        p_acc = {};
     end
-    load_persistent_data(p_acc.profiles, default_profiles);
-    for k, v in pairs(p_acc.profiles.settings_list) do
-        load_persistent_data(v, default_settings);
+    load_persistent_data(p_acc, default_p_acc());
+    for _, v in pairs(p_acc.profiles) do
+        load_persistent_data(v, default_profile());
+    end
+    for _, v in pairs(p_acc.profiles) do
+        load_persistent_data(v.settings, default_settings);
     end
 
     -- load settings
     if not p_char then
-        swc.core.use_char_defaults = true;
+        --swc.core.use_char_defaults = true;
         p_char = {};
         p_char.main_spec_profile = "Default";
         p_char.second_spec_profile = "Default";
-    end
-    if not p_acc.profiles.settings_list[p_char.main_spec_profile] then
-        p_char.main_spec_profile = next(p_acc.profiles.settings_list);
-    end
-    if not p_acc.profiles.settings_list[p_char.second_spec_profile] then
-        p_char.second_spec_profile = next(p_acc.profiles.settings_list);
     end
 
     -- load loadouts
@@ -173,15 +180,43 @@ local function load_config()
     end
 end
 
-local function set_active_settings()
-    -- TODO: dual spec
-    local active_profile = p_char.main_spec_profile;
-    -- active settings
-    config.settings = p_acc.profiles.settings_list[active_profile];
+local spec_keys = {
+    [1] = "main_spec_profile",
+    [2] = "second_spec_profile",
+};
 
+local function set_active_settings(spec)
+    for k, v in pairs(spec_keys) do
+        if not p_acc.profiles[p_char[v]] then
+            p_char[v] = next(p_acc.profiles);
+        end
 
+        if spec == k then
+            config.settings = p_acc.profiles[p_char[v]].settings;
+        end
+    end
+    config.active_profile_name = p_char[spec_keys[swc.core.active_spec]];
+end
+
+local function activate_settings()
     for k, v in pairs(config.settings) do
-        print(k, v);
+        local f = getglobal("sw_frame_setting_" .. k);
+        if f then
+            local ft = f._type;
+            if ft == "CheckButton" then
+                if f:GetChecked() ~= v then
+                    f:Click();
+                end
+            elseif ft == "Slider" then
+                if f:GetValue() ~= v then
+                    f:SetValue(v);
+                end
+            end
+        end
+    end
+
+    if sw_frame.libstub_icon_checkbox:GetChecked() == config.settings.libstub_minimap_icon.hide then
+        sw_frame.libstub_icon_checkbox:Click();
     end
 end
 
@@ -199,27 +234,49 @@ local function save_config()
 
     -- clear previous ui elements from spells table
     p_char.stat_comparison_spells = {};
-    for k, v in pairs(self.stat_comparison_frame.spells) do
+    for k, v in pairs(sw_frame.calculator_frame.spells) do
         p_char.stat_comparison_spells[k] = {};
         p_char.stat_comparison_spells[k].name = v.name;
     end
-    p_char.sim_type = self.stat_comparison_frame.sim_type;
+    p_char.sim_type = sw_frame.calculator_frame.sim_type;
 
     p_char.loadouts = {};
     p_char.loadouts.loadouts_list = {};
-    for k, v in pairs(self.loadouts_frame.lhs_list.loadouts) do
+    for k, v in pairs(sw_frame.loadout_frame.loadouts) do
         p_char.loadouts.loadouts_list[k] = {};
         p_char.loadouts.loadouts_list[k].loadout = v.loadout;
         p_char.loadouts.loadouts_list[k].equipped = v.equipped;
     end
-    p_char.loadouts.active_loadout = self.loadouts_frame.lhs_list.active_loadout;
-    p_char.loadouts.num_loadouts = self.loadouts_frame.lhs_list.num_loadouts;
+    p_char.loadouts.active_loadout = sw_frame.loadout_frame.active_loadout;
+    p_char.loadouts.num_loadouts = sw_frame.loadout_frame.num_loadouts;
+end
+
+local function new_profile(profile_name, profile_to_copy)
+    if p_acc.profiles[profile_name] or profile_name == "" then
+        return false;
+    end
+    p_acc.profiles[profile_name] = {};
+    load_persistent_data(p_acc.profiles[profile_name], profile_to_copy);
+    p_acc.profiles[profile_name].settings = swc.utils.deep_table_copy(profile_to_copy.settings);
+    return true;
+end
+local function new_profile_from_default(profile_name)
+    return new_profile(profile_name, default_profile());
+end
+
+local function new_profile_from_active_copy(profile_name)
+    return new_profile(profile_name, p_acc.profiles[config.active_profile_name]);
 end
 
 
+config.new_profile_from_default = new_profile_from_default;
+config.new_profile_from_active_copy = new_profile_from_active_copy;
 config.load_settings = load_settings;
 config.load_config = load_config;
 config.save_config = save_config;
 config.set_active_settings = set_active_settings;
+config.activate_settings = activate_settings;
+config.active_profile_name = active_profile_name;
+config.spec_keys = spec_keys;
 
 swc.config = config;

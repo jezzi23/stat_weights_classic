@@ -76,7 +76,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
     end
 
     if sw_frame.tooltip_frame.tooltip_num_checked == 0 or
-        (sw_frame.tooltip_frame.show_tooltip_only_when_shift and not IsShiftKeyDown()) then
+        (config.settings.tooltip_shift_to_show and not IsShiftKeyDown()) then
         return;
     end
 
@@ -140,7 +140,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
                 effect_colors.loadout_info[1], effect_colors.loadout_info[2], effect_colors.loadout_info[3]);
         end
     end
-    if config.settings.tooltip_display_spell_rank_ and not repeated_tooltip_on then
+    if config.settings.tooltip_display_spell_rank and not repeated_tooltip_on then
         local next_rank_str = "";
         local best_rank, highest_rank = best_rank_by_lvl(spell.base_id, loadout.lvl);
         local next_rank = next_spell_rank(spell);

@@ -1,6 +1,6 @@
 ## Interface: 11505
 ## Title: Stat Weights Classic Vanilla
-## Notes: Calculates spell info and presents in tooltip or overlay
+## Notes: All things spells!
 ## SavedVariablesPerCharacter: p_char
 ## SavedVariables: p_acc
 

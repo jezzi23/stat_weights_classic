@@ -48,7 +48,7 @@ end
 local function begin_tooltip_section(tooltip, spell)
 
     
-    if sw_frame.tooltip_frame.clear_original_tooltip or tooltip ~= GameTooltip or not GetSpellInfo(spell.base_id) then
+    if config.settings.tooltip_clear_original or tooltip ~= GameTooltip or not GetSpellInfo(spell.base_id) then
         local txt_left = getglobal("GameTooltipTextLeft1");
         if txt_left then
 
@@ -116,7 +116,7 @@ local clear_tooltip_refresh_id = 463;
 local function update_tooltip(tooltip)
 
 
-    if swc.core.__sw__test_all_spells and sw_frame:IsShown() then
+    if swc.core.__sw__test_all_spells and sw_frame.spells_frame:IsShown() then
 
         spell_jump_key = spell_jump_itr(spells, spell_jump_key);
         if not spell_jump_key then
@@ -125,7 +125,9 @@ local function update_tooltip(tooltip)
         sw_frame.spell_id_viewer_editbox:SetText(tostring(spell_jump_key));
     end
     --tooltips update dynamically without debug setting
-    if not swc.core.__sw__debug__ and tooltip:IsShown() then
+    if not (PlayerTalentFrame and MouseIsOver(PlayerTalentFrame)) and
+        not swc.core.__sw__debug__ and tooltip:IsShown() then
+
         local spell_name, id = tooltip:GetSpell();
 
         if spells[id] and IsControlKeyDown() and sw_frame.calculator_frame:IsShown() and 
@@ -148,8 +150,8 @@ local function update_tooltip(tooltip)
             end
             if id == sw_frame.spell_viewer_invalid_spell_id then
                 tooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
-            elseif sw_frame.tooltip_frame.clear_original_tooltip then
-                if (not sw_frame.tooltip_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
+            elseif config.settings.tooltip_clear_original then
+                if (not config.settings.tooltip_shift_to_show or IsShiftKeyDown()) then
                     tooltip:SetSpellByID(clear_tooltip_refresh_id);
                 else
                     tooltip:SetSpellByID(spell_id_of_cleared_tooltip);
@@ -172,7 +174,7 @@ local function append_tooltip_spell_info(is_fake)
         spell_id = spell_id_of_cleared_tooltip;
     elseif spell_id == sw_frame.spell_viewer_invalid_spell_id then
         spell_id = tonumber(sw_frame.spell_id_viewer_editbox:GetText());
-    elseif sw_frame.tooltip_frame.clear_original_tooltip and (not sw_frame.tooltip_frame.show_tooltip_only_when_shift or IsShiftKeyDown()) then
+    elseif config.settings.tooltip_clear_original and (not config.settings.tooltip_shift_to_show or IsShiftKeyDown()) then
         if spells[spell_id] then
             spell_id_of_cleared_tooltip = spell_id;
             GameTooltip:ClearLines();
