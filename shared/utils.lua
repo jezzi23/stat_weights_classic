@@ -58,20 +58,6 @@ local stat = {
     spirit = 5
 };
 
-local loadout_flags = {
-    is_dynamic_loadout                  = bit.lshift(1, 1),
-    always_assume_buffs                 = bit.lshift(1, 2),
-    --use_dynamic_target_lvl              = bit.lshift(1, 3),
-    has_target                          = bit.lshift(1, 4),
-    target_snared                       = bit.lshift(1, 5),
-    target_frozen                       = bit.lshift(1, 6),
-    target_friendly                     = bit.lshift(1, 7),
-    always_max_mana                     = bit.lshift(1, 8),
-    custom_lvl                          = bit.lshift(1, 9),
-    target_pvp                          = bit.lshift(1, 10),
-
-};
-
 local function spell_cost(spell_id)
 
     local costs = GetSpellPowerCost(spell_id);
@@ -112,6 +98,7 @@ local function add_all_spell_crit(effects, amount, inactive)
 end
 
 local effect_colors = {
+    hit                     = { 232 / 255, 225 / 255,  32 / 255 },
     normal                  = { 232 / 255, 225 / 255,  32 / 255 },
     crit                    = { 252 / 255,  69 / 255,   3 / 255 },
     expectation             = { 255 / 255, 128 / 255,   0 / 255 },
@@ -139,13 +126,12 @@ utils.faction = faction;
 utils.deep_table_copy = deep_table_copy;
 utils.stat = stat;
 utils.stat_ids_in_ui = stat_ids_in_ui;
-utils.loadout_flags = loadout_flags;
 utils.spell_cost = spell_cost;
 utils.spell_cast_time = spell_cast_time;
 utils.add_all_spell_crit = add_all_spell_crit;
 utils.effect_colors = effect_colors;
 
-local addon_name, swc = ...;
+local _, swc = ...;
 swc.utils = utils;
 swc.ext = {};
 

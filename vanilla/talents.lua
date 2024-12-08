@@ -27,6 +27,8 @@ local class                 = swc.utils.class;
 local stat                  = swc.utils.stat;
 local add_all_spell_crit    = swc.utils.add_all_spell_crit;
 
+local config                = swc.config;
+
 local magic_school          = swc.abilities.magic_school;
 local spell_name_to_id      = swc.abilities.spell_name_to_id;
 local spell_names_to_id     = swc.abilities.spell_names_to_id;
@@ -1349,14 +1351,14 @@ local function talent_table(wowhead_code)
 end
 
 local function apply_talents(loadout, effects)
-    local dynamic_talents, dynamic_runes = talent_table(loadout.talents_code);
+    local dynamic_talents, dynamic_runes = talent_table(config.loadout.talents_code);
     local custom_talents, custom_runes = nil, nil;
 
-    if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
+    if not config.loadout.use_custom_talents then
         loadout.talents_table = dynamic_talents;
         loadout.runes = dynamic_runes;
     else
-        custom_talents, custom_runes = talent_table(loadout.custom_talents_code);
+        custom_talents, custom_runes = talent_table(config.loadout.custom_talents_code);
         loadout.talents_table = custom_talents;
         loadout.runes = custom_runes;
     end
@@ -1371,7 +1373,7 @@ local function apply_talents(loadout, effects)
             end
         end
     end
-    if bit.band(loadout.flags, swc.utils.loadout_flags.is_dynamic_loadout) ~= 0 then
+    if not config.loadout.use_custom_talents then
         for i = 1, 3 do
             for j = 1, 29 do
                 local id = i * 100 + j;

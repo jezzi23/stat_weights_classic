@@ -33,21 +33,22 @@ local font                      = swc.ui.font;
 local load_sw_ui                = swc.ui.load_sw_ui;
 local create_sw_base_ui         = swc.ui.create_sw_base_ui;
 local sw_activate_tab           = swc.ui.sw_activate_tab;
-local update_buffs_frame       = swc.ui.update_buffs_frame;
+local update_buffs_frame        = swc.ui.update_buffs_frame;
 local update_profile_frame      = swc.ui.update_profile_frame;
 
+local config                    = swc.config;
 local load_config               = swc.config.load_config;
 local save_config               = swc.config.save_config;
 local set_active_settings       = swc.config.set_active_settings;
+local set_active_loadout        = swc.config.set_active_loadout;
+local activate_settings         = swc.config.activate_settings;
+local activate_loadout_config   = swc.config.activate_loadout_config;
 
 local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
 local update_overlay            = swc.overlay.update_overlay;
 
 local update_tooltip            = swc.tooltip.update_tooltip;
 local append_tooltip_spell_info = swc.tooltip.append_tooltip_spell_info;
-
-local active_loadout            = swc.loadout.active_loadout;
-local active_loadout_entry      = swc.loadout.active_loadout_entry;
 
 -------------------------------------------------------------------------
 local core                      = {};
@@ -152,8 +153,10 @@ local event_dispatch = {
             load_config();
             core.active_spec = GetActiveTalentGroup();
             set_active_settings(core.active_spec);
+            set_active_loadout(p_char.active_loadout);
             load_sw_ui();
-            swc.config.activate_settings();
+            activate_settings();
+            activate_loadout_config();
             update_profile_frame()
             update_loadout_frame();
         end
@@ -231,11 +234,10 @@ local event_dispatch = {
         update_profile_frame();
     end,
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
-        local loadout = active_loadout();
 
         set_active_settings();
-        if bit.band(loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
-            loadout.talents_code = wowhead_talent_code();
+        if not config.loadout.use_custom_talents then
+            config.loadout.talents_code = wowhead_talent_code();
             core.talents_update_needed = true;
             update_buffs_frame();
         end
@@ -247,17 +249,17 @@ local event_dispatch = {
         core.equipment_update_needed = true;
     end,
     ["GLYPH_ADDED"] = function(self, msg, msg2, msg3)
-        if bit.band(active_loadout_entry().loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
+        if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
     end,
     ["GLYPH_REMOVED"] = function(self, msg, msg2, msg3)
-        if bit.band(active_loadout_entry().loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
+        if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
     end,
     ["GLYPH_UPDATED"] = function(self, msg, msg2, msg3)
-        if bit.band(active_loadout_entry().loadout.flags, utils.loadout_flags.is_dynamic_loadout) ~= 0 then
+        if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
     end,

@@ -31,13 +31,15 @@ local best_rank_by_lvl  = swc.abilities.best_rank_by_lvl;
 
 local rune_ids          = swc.talents.rune_ids;
 
+local config            = swc.config;
+
 local stat              = swc.utils.stat;
-local loadout_flags     = swc.utils.loadout_flags;
 local class             = swc.utils.class;
 local deep_table_copy   = swc.utils.deep_table_copy;
 
 local effects_zero_diff = swc.loadout.effects_zero_diff;
 local effects_diff      = swc.loadout.effects_diff;
+local loadout_flags     = swc.loadout.loadout_flags;
 
 local set_tiers         = swc.equipment.set_tiers;
 
@@ -438,13 +440,13 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
         -- mod res by school currently used to snapshot equipment and set bonuses
         stats.target_resi = math.min(loadout.lvl * 5,
-            math.max(0, loadout.target_res - res_pen_by_school));
+            math.max(0, config.loadout.target_res - res_pen_by_school));
 
         if bit.band(spell.flags, spell_flags.special_periodic_school) ~= 0 then
             res_pen_by_school = effects.by_school.target_res[spell.multi_school[1]];
         end
         stats.target_resi_dot = math.min(loadout.lvl * 5,
-            math.max(0, loadout.target_res - res_pen_by_school));
+            math.max(0, config.loadout.target_res - res_pen_by_school));
 
 
         if bit.band(spell.flags, spell_flags.binary) ~= 0 then
@@ -456,11 +458,11 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 base_resi = npc_lvl_resi_base(loadout.lvl, loadout.target_lvl);
             end
             stats.target_resi = math.min(loadout.lvl * 5,
-                math.max(base_resi, loadout.target_res - effects.by_school.target_res[spell.school] + base_resi));
+                math.max(base_resi, config.loadout.target_res - effects.by_school.target_res[spell.school] + base_resi));
             stats.target_avg_resi = target_avg_magical_mitigation_non_binary(loadout.lvl, stats.target_resi);
 
             stats.target_resi_dot = math.min(loadout.lvl * 5,
-                math.max(base_resi, loadout.target_res - res_pen_by_school + base_resi));
+                math.max(base_resi, config.loadout.target_res - res_pen_by_school + base_resi));
             stats.target_avg_resi_dot = target_avg_magical_mitigation_non_binary(loadout.lvl, stats.target_resi_dot);
         end
 
@@ -1269,14 +1271,21 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.ot_duration = stats.cast_time;
     end
 
+    info.min_noncrit_if_hit_base =
+        (base_min * stats.spell_mod_base + stats.flat_addition) * stats.spell_mod;
+    info.max_noncrit_if_hit_base =
+        (base_max * stats.spell_mod_base + stats.flat_addition) * stats.spell_mod;
+
     info.min_noncrit_if_hit =
-        (base_min * stats.spell_mod_base + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
+        info.min_noncrit_if_hit_base + stats.spell_power * stats.coef  * stats.spell_mod;
     info.max_noncrit_if_hit =
-        (base_max * stats.spell_mod_base + stats.spell_power * stats.coef + stats.flat_addition) * stats.spell_mod;
+        info.max_noncrit_if_hit_base + stats.spell_power * stats.coef * stats.spell_mod;
 
     info.min_crit_if_hit = info.min_noncrit_if_hit * stats.crit_mod;
     info.max_crit_if_hit = info.max_noncrit_if_hit * stats.crit_mod;
 
+    info.ot_if_hit_base = 0.0;
+    info.ot_if_hit_max_base = 0.0;
     info.ot_if_hit = 0.0;
     info.ot_if_hit_max = 0.0;
     info.ot_if_crit = 0.0;
@@ -1289,10 +1298,13 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
         info.ot_ticks = base_ot_num_ticks + stats.ot_extra_ticks;
 
-        info.ot_if_hit = (base_ot_tick * stats.spell_mod_base + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) *
-        info.ot_ticks * stats.spell_ot_mod;
-        info.ot_if_hit_max = (base_ot_tick_max * stats.spell_mod_base + ot_coef_per_tick * stats.spell_power_ot + stats.flat_addition_ot) *
-        info.ot_ticks * stats.spell_ot_mod;
+        info.ot_if_hit_base = (base_ot_tick * stats.spell_mod_base + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
+
+        info.ot_if_hit = info.ot_if_hit_base + ot_coef_per_tick * stats.spell_power_ot * info.ot_ticks * stats.spell_ot_mod;
+
+        info.ot_if_hit_max_base = (base_ot_tick_max * stats.spell_mod_base + stats.flat_addition_ot) * info.ot_ticks * stats.spell_ot_mod;
+
+        info.ot_if_hit_max = info.ot_if_hit_max_base + ot_coef_per_tick * stats.spell_power_ot * info.ot_ticks * stats.spell_ot_mod;
 
         if stats.ot_crit > 0 then
             info.ot_if_crit = info.ot_if_hit * stats.ot_crit_mod;
@@ -1303,7 +1315,6 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
     resolve_extra_spell_effects(info, stats);
 
     calc_expectation(info, spell, stats, loadout, num_unbounded_targets);
-
 
     if original_spell_id ~= spell.base_id then
         -- using alias for swiftmend/conflagrate
@@ -1437,7 +1448,7 @@ end
 local function cast_until_oom(spell_effect, stats, loadout, effects, calculating_weights)
     calculating_weights = calculating_weights or false;
 
-    local mana = loadout.mana + loadout.extra_mana + effects.raw.mana;
+    local mana = loadout.mana + config.loadout.extra_mana + effects.raw.mana;
 
     -- src: https://wowwiki-archive.fandom.com/wiki/Spirit
     -- without mp5
@@ -1457,7 +1468,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     calculating_weights = true;
 
     -- TODO: don't use this when stat comparison is open
-    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 and not calculating_weights then
+    if not config.loadout.use_custom_talents and not calculating_weights then
         -- the mana regen calculation is correct, but use GetManaRegen() to detect
         -- niche MP5 sources dynamically
         local _, x = GetManaRegen()
@@ -1596,7 +1607,7 @@ if class == "SHAMAN" then
                 if loadout.dynamic_buffs["player"][lookups.lightning_shield] then
                     ls_stacks = loadout.dynamic_buffs["player"][lookups.lightning_shield].count;
                     ls_stacks = ls_stacks - 3;
-                elseif bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[lookups.lightning_shield] then
+                elseif config.loadout.force_apply_buffs and loadout.buffs[lookups.lightning_shield] then
                     ls_stacks = 9 - 3;
                 end
                 if ls_stacks > 0 then
@@ -1706,7 +1717,7 @@ elseif class == "DRUID" then
 
             local num_ticks = 4;
             local hot_spell = spells[best_rank_by_lvl(spell_name_to_id["Rejuvenation"], loadout.lvl)];
-            if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+            if not loadout.force_apply_buffs then
                 local rejuv_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.rejuvenation];
                 local regrowth_buff = loadout.dynamic_buffs[loadout.friendly_towards][lookups.regrowth];
                 -- TODO VANILLA: maybe swiftmend uses remaining ticks so could take that into account

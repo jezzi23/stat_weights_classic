@@ -25,13 +25,13 @@ locale/zhTW.lua
 locale/enTW.lua
 
 shared/utils.lua
+shared/config.lua
 vanilla/abilities.lua
+shared/loadout.lua
+vanilla/loadout.lua
 vanilla/equipment.lua
 vanilla/buffs.lua
 vanilla/talents.lua
-shared/loadout.lua
-vanilla/loadout.lua
-shared/config.lua
 vanilla/calc.lua
 shared/tooltip.lua
 vanilla/tooltip.lua

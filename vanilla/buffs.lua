@@ -29,8 +29,11 @@ local stat                  = swc.utils.stat;
 local class                 = swc.utils.class;
 local race                  = swc.utils.race;
 local faction               = swc.utils.faction;
-local loadout_flags         = swc.utils.loadout_flags;
 local add_all_spell_crit    = swc.utils.add_all_spell_crit;
+
+local loadout_flags         = swc.loadout.loadout_flags;
+
+local config                = swc.config;
 
 local magic_school          = swc.abilities.magic_school;
 local spell_name_to_id      = swc.abilities.spell_name_to_id;
@@ -2044,19 +2047,19 @@ local function apply_buffs(loadout, effects)
         loadout.beacon = nil
     end
 
-    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
-        for k, _ in pairs(loadout.buffs) do
+    if config.loadout.force_apply_buffs then
+        for k, _ in pairs(config.loadout.buffs) do
             if not loadout.dynamic_buffs["player"][k] and buffs[k] then
                 buffs[k].apply(loadout, effects, buffs[k], true);
             end
         end
-        for k, _ in pairs(loadout.target_buffs) do
+        for k, _ in pairs(config.loadout.target_buffs) do
             if not target_buffs_applied[k] then
                 target_buffs[k].apply(loadout, effects, target_buffs[k], true);
             end
         end
 
-        if class == "PALADIN" and loadout.target_buffs[lookups.beacon_of_light] then
+        if class == "PALADIN" and config.loadout.target_buffs[lookups.beacon_of_light] then
             loadout.beacon = true;
         end
     end
@@ -2078,10 +2081,10 @@ end
 local function is_buff_up(loadout, unit, buff_id, only_self_buff)
     if only_self_buff then
         return (unit ~= nil and loadout.dynamic_buffs[unit][buff_id] ~= nil) or
-            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.buffs[buff_id] ~= nil);
+            (config.loadout.force_apply_buffs and config.loadout.buffs[buff_id] ~= nil);
     else
         return (unit ~= nil and loadout.dynamic_buffs[unit][buff_id] ~= nil) or
-            (bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 and loadout.target_buffs[buff_id] ~= nil);
+            (config.loadout.force_apply_buffs and config.loadout.target_buffs[buff_id] ~= nil);
     end
 end
 

@@ -20,50 +20,40 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local addon_name, swc = ...;
+local _, swc = ...;
 
 local stat                              = swc.utils.stat;
 local deep_table_copy                   = swc.utils.deep_table_copy;
-local loadout_flags                     = swc.utils.loadout_flags;
 
-local apply_buffs                       = swc.buffs.apply_buffs;
-local detect_buffs                      = swc.buffs.detect_buffs;
-
-local apply_equipment                   = swc.equipment.apply_equipment;
-
-local apply_talents                     = swc.talents.apply_talents;
-local wowhead_talent_code               = swc.talents.wowhead_talent_code;
+local config                            = swc.config;
 
 --------------------------------------------------------------------------------
 local loadout_export = {};
 
+local loadout_flags = {
+    has_target                          = bit.lshift(1, 1),
+    target_snared                       = bit.lshift(1, 2),
+    target_frozen                       = bit.lshift(1, 3),
+    target_friendly                     = bit.lshift(1, 4),
+    target_pvp                          = bit.lshift(1, 5),
+};
+
 local function empty_loadout()
 
     return {
-        flags = loadout_flags.is_dynamic_loadout;
-        name = "Empty";
-        talents_code = "",
-        custom_talents_code = "",
-        talents_table = {},
-        lvl = 1,
+        flags = 0,
+
+        lvl = 0,
         target_lvl = 0,
-        default_target_lvl_diff = 3,
-        target_hp_perc_default = 1.0,
-        target_res = 0,
-        target_creature_type = "",
-        unbounded_aoe_targets = 1,
+        talents_table = "",
 
-        buffs = {},
-        target_buffs = {},
-
-        stats = {0, 0, 0, 0, 0},
         mana = 0,
-        max_mana = 0,
-        extra_mana = 0,
+        stats = {0, 0, 0, 0, 0},
 
         haste_rating = 0.0,
         crit_rating = 0.0,
         hit_rating = 0.0,
+        target_creature_type = "",
 
         spell_dmg_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_dmg_hit_by_school = {0, 0, 0, 0, 0, 0, 0},
@@ -286,7 +276,7 @@ local function effects_zero_diff()
     };
 end
 
-local function effects_from_ui_diff(frame) 
+local function effects_from_ui_diff(frame)
 
     local stats = frame.stats;
     local diff = effects_zero_diff();
@@ -296,7 +286,7 @@ local function effects_from_ui_diff(frame)
 
 
         local expr_str = v.editbox:GetText();
-        
+
         local is_whitespace_expr = expr_str and string.match(expr_str, "%S") == nil;
         --local is_whitespace_expr = string.format(expr_str, "[^ \t\n]") == nil;
         local is_valid_expr = string.match(expr_str, "[^-+0123456789. ()]") == nil
@@ -391,15 +381,9 @@ local function print_loadout(loadout, effects)
     print(str);
 end
 
-local function default_loadout(loadout)
-
-    loadout.name = "Default";
-    loadout.flags = bit.bor(loadout.flags, loadout_flags.is_dynamic_loadout);
-end
-
 local function dynamic_loadout(loadout)
 
-    if bit.band(loadout.flags, loadout_flags.custom_lvl) == 0 then
+    if not config.loadout.use_custom_lvl then
         loadout.lvl = UnitLevel("player");
     end
 
@@ -412,7 +396,7 @@ local function dynamic_loadout(loadout)
     loadout.max_mana = UnitPowerMax("player", 0);
     loadout.mana = loadout.max_mana;
 
-    if bit.band(loadout.flags, loadout_flags.always_max_mana) == 0 then
+    if not config.loadout.always_max_mana then
         loadout.mana = UnitPower("player", 0);
     end
 
@@ -473,10 +457,10 @@ local function dynamic_loadout(loadout)
                                          bit.bnot(loadout_flags.target_frozen),
                                          bit.bnot(loadout_flags.target_friendly),
                                          bit.bnot(loadout_flags.target_pvp)));
-    loadout.enemy_hp_perc = loadout.target_hp_perc_default;
-    loadout.friendly_hp_perc = loadout.target_hp_perc_default;
+    loadout.enemy_hp_perc = config.loadout.default_target_hp_perc*0.01;
+    loadout.friendly_hp_perc = config.loadout.default_target_hp_perc*0.01;
 
-    loadout.target_lvl = loadout.default_target_lvl_diff + loadout.lvl;
+    loadout.target_lvl = config.loadout.default_target_lvl_diff + loadout.lvl;
 
     loadout.target_creature_type = "";
 
@@ -493,7 +477,7 @@ local function dynamic_loadout(loadout)
         end
 
         loadout.target_creature_type = UnitCreatureType("target");
-        
+
         if bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
             local target_lvl = UnitLevel("target");
             if target_lvl == -1 then
@@ -517,57 +501,57 @@ local function dynamic_loadout(loadout)
     if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
         loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("target"), 1);
     end
-    
-
-    detect_buffs(loadout);
-end
-
-local function active_loadout_entry()
-    return sw_frame.loadout_frame.loadouts[sw_frame.loadout_frame.active_loadout];
+    swc.buffs.detect_buffs(loadout);
 end
 
 local function active_loadout()
-    return active_loadout_entry().loadout;
+    return base_loadout;
 end
 
 function __sw_active_loadout()
-    return active_loadout();
+    return base_loadout;
 end
 
+local base_loadout = empty_loadout();
+local equipped = {};
+local talented = {};
+local final_effects = {};
+empty_effects(equipped);
+empty_effects(talented);
+empty_effects(final_effects);
 
 local function active_loadout_and_effects()
 
-    local loadout_entry = active_loadout_entry();
-    dynamic_loadout(loadout_entry.loadout);
+    dynamic_loadout(base_loadout);
 
     if swc.core.equipment_update_needed then
-        zero_effects(loadout_entry.equipped);
-        local equipment_api_worked = apply_equipment(loadout_entry.loadout, loadout_entry.equipped);
+        zero_effects(equipped);
+        local equipment_api_worked = swc.equipment.apply_equipment(base_loadout, equipped);
         -- need eq update again next because api failed
         swc.core.equipment_update_needed = not equipment_api_worked;
         swc.core.talents_update_needed = true;
     end
 
     if swc.core.talents_update_needed or
-        (loadout_entry.loadout.talents_code == "_" and UnitLevel("player") >= 10) -- workaround around edge case when the talents query won't work shortly after logging in
+        (config.loadout.talents_code == "_" and UnitLevel("player") >= 10) -- workaround around edge case when the talents query won't work shortly after logging in
         then
 
-        loadout_entry.loadout.talents_code = wowhead_talent_code();
+        config.loadout.talents_code = swc.talents.wowhead_talent_code();
 
-        zero_effects(loadout_entry.talented);
-        effects_add(loadout_entry.talented, loadout_entry.equipped);
-        apply_talents(loadout_entry.loadout, loadout_entry.talented);
+        zero_effects(talented);
+        effects_add(talented, equipped);
+        swc.talents.apply_talents(base_loadout, talented);
 
         swc.core.talents_update_needed = false;
     end
 
     -- equipment and talents updates above are rare
 
-    zero_effects(loadout_entry.final_effects);
-    effects_add(loadout_entry.final_effects, loadout_entry.talented);
-    apply_buffs(loadout_entry.loadout, loadout_entry.final_effects);
+    zero_effects(final_effects);
+    effects_add(final_effects, talented);
+    swc.buffs.apply_buffs(base_loadout, final_effects);
 
-    return loadout_entry.loadout, loadout_entry.final_effects;
+    return base_loadout, final_effects;
 end
 
 
@@ -583,17 +567,20 @@ local function active_loadout_and_effects_diffed_from_ui()
     return loadout, effects, effects_diffed;
 end
 
+loadout_export.equipped                                     = equipped;
+loadout_export.talented                                     = talented;
+loadout_export.final_effects                                = final_effects;
 loadout_export.print_loadout                                = print_loadout;
 loadout_export.empty_loadout                                = empty_loadout;
 loadout_export.empty_effects                                = empty_effects;
 loadout_export.effects_add                                  = effects_add;
 loadout_export.effects_zero_diff                            = effects_zero_diff;
-loadout_export.default_loadout                              = default_loadout;
 loadout_export.active_loadout                               = active_loadout;
 loadout_export.active_loadout_entry                         = active_loadout_entry;
 loadout_export.active_loadout_and_effects                   = active_loadout_and_effects;
 loadout_export.active_loadout_and_effects_diffed_from_ui    = active_loadout_and_effects_diffed_from_ui;
 loadout_export.static_loadout_from_dynamic                  = static_loadout_from_dynamic;
+loadout_export.loadout_flags                                = loadout_flags;
 
 swc.loadout = loadout_export;
 

@@ -31,15 +31,9 @@ local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_cod
 
 local simulation_type                           = swc.calc.simulation_type;
 
-local loadout_flags                             = swc.utils.loadout_flags;
 local class                                     = swc.utils.class;
-local deep_table_copy                           = swc.utils.deep_table_copy;
 local effect_colors                             = swc.utils.effect_colors;
 
-local empty_loadout                             = swc.loadout.empty_loadout;
-local empty_effects                             = swc.loadout.empty_effects;
-local active_loadout                            = swc.loadout.active_loadout;
-local active_loadout_entry                      = swc.loadout.active_loadout_entry;
 local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
 
 local stats_for_spell                           = swc.calc.stats_for_spell;
@@ -144,65 +138,64 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
     end
 
     v.name_str:SetTextColor(222/255, 192/255, 40/255);
-    
+
     if not frame.is_valid then
-    
+
         v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
         v.change:SetText("NAN");
-    
+
         v.first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
         v.first:SetText("NAN");
-    
+
         v.second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
         v.second:SetText("NAN");
-        
+
     else
-    
+
         v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
         v.first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
         v.second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
-    
+
         if diff.first < 0 then
             v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
             v.change:SetTextColor(195/255, 44/255, 11/255);
-    
+
             v.first:SetText(string.format("%.2f", diff.first));
             v.first:SetTextColor(195/255, 44/255, 11/255);
-    
+
         elseif diff.first > 0 then
 
             v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
             v.change:SetTextColor(33/255, 185/255, 21/255);
-    
+
             v.first:SetText(string.format("+%.2f", diff.first));
             v.first:SetTextColor(33/255, 185/255, 21/255);
-    
+
         else
             v.change:SetText("0 %");
             v.change:SetTextColor(1, 1, 1);
-    
+
             v.first:SetText("0");
             v.first:SetTextColor(1, 1, 1);
         end
 
         if diff.second < 0 then
-    
+
             v.second:SetText(string.format("%.2f", diff.second));
             v.second:SetTextColor(195/255, 44/255, 11/255);
         elseif diff.second > 0 then
-    
+
             v.second:SetText(string.format("+%.2f", diff.second));
             v.second:SetTextColor(33/255, 185/255, 21/255);
         else
-    
+
             v.second:SetText("0");
             v.second:SetTextColor(1, 1, 1);
         end
             
-
         if not spell.healing_version then
             v.cancel_button:SetScript("OnClick", function()
-    
+
                 v.change:Hide();
                 v.name_str:Hide();
                 v.first:Hide();
@@ -217,9 +210,9 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
 
                 frame.spells[spell_id] = nil;
                 update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
-    
+
             end);
-    
+
             v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
             v.cancel_button:SetHeight(20);
             v.cancel_button:SetWidth(25);
@@ -308,22 +301,9 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
     frame.footer:SetText("Add abilities by holding CONTROL while hovering their tooltips");
 end
 
-local function loadout_name_already_exists(name)
-
-    local already_exists = false;
-    for i = 1, sw_frame.loadout_frame.num_loadouts do
-        if name == sw_frame.loadout_frame.loadouts[i].base.name then
-            already_exists = true;
-        end
-    end
-    return already_exists;
-end
-
 local function update_buffs_frame()
 
-    local loadout = active_loadout();
-
-    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) ~= 0 then
+    if config.loadout.force_apply_buffs then
         sw_frame.loadout_frame.always_apply_buffs_button:SetChecked(true);
     else
         sw_frame.loadout_frame.always_apply_buffs_button:SetChecked(false);
@@ -332,7 +312,7 @@ local function update_buffs_frame()
     local num_checked_buffs = 0;
     local num_checked_target_buffs = 0;
     local buffs_list_alpha = 1.0;
-    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+    if not config.loadout.force_apply_buffs then
         buffs_list_alpha = 0.2;
         for k = 1, sw_frame.buffs_frame.lhs.buffs.num do
             local v = sw_frame.buffs_frame.lhs.buffs[k];
@@ -352,7 +332,7 @@ local function update_buffs_frame()
 
             local v = sw_frame.buffs_frame.lhs.buffs[k];
             if v.checkbutton.buff_type == "self" then
-                if loadout.buffs[v.checkbutton.buff_id] then
+                if config.loadout.buffs[v.checkbutton.buff_id] then
                     v.checkbutton:SetChecked(true);
                     num_checked_buffs = num_checked_buffs + 1;
                 else
@@ -366,7 +346,7 @@ local function update_buffs_frame()
 
             local v = sw_frame.buffs_frame.rhs.buffs[k];
 
-            if loadout.target_buffs[v.checkbutton.buff_id] then
+            if config.loadout.target_buffs[v.checkbutton.buff_id] then
                 v.checkbutton:SetChecked(true);
                 num_checked_target_buffs = num_checked_target_buffs + 1;
             else
@@ -418,7 +398,7 @@ local function update_buffs_frame()
     sw_frame.buffs_frame.lhs.buffs.num_checked = num_checked_buffs;
     sw_frame.buffs_frame.rhs.buffs.num_checked = num_checked_target_buffs;
 
-    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+    if not config.loadout.force_apply_buffs then
         --sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton:SetChecked(true);
         --sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton:SetChecked(true);
     else
@@ -432,12 +412,11 @@ end
 
 function update_loadout_frame()
 
+    swc.config.activate_loadout_config();
+
     sw_frame.loadout_frame.loadout_dropdown.init_func();
 
-    local loadout = active_loadout();
-
-    if sw_frame.loadout_frame.num_loadouts == 1 then
-
+    if #p_char.loadouts == 1 then
         sw_frame.loadout_frame.delete_button:Hide();
     else
         sw_frame.loadout_frame.delete_button:Show();
@@ -453,96 +432,15 @@ function update_loadout_frame()
         end
     end
 
-
     sw_frame.calculator_frame.loadout_name_label:SetText(
-        loadout.name
+        config.loadout.name
     );
-
-    sw_frame.loadout_frame.name_editbox:SetText(
-        loadout.name
-    );
-
-    sw_frame.loadout_frame.level_editbox:SetText(
-        loadout.default_target_lvl_diff
-    );
-
-    if bit.band(loadout.flags, loadout_flags.custom_lvl) ~= 0 then
-
-        sw_frame.loadout_frame.custom_lvl_checkbutton:SetChecked(true);
-        sw_frame.loadout_frame.loadout_clvl_editbox:SetText(
-            loadout.lvl
-        );
-        --sw_frame.loadout_frame.loadout_clvl_editbox:Show();
-        sw_frame.loadout_frame.loadout_clvl_editbox:SetAlpha(1.0);
-    else
-        sw_frame.loadout_frame.custom_lvl_checkbutton:SetChecked(false);
-        --sw_frame.loadout_frame.loadout_clvl_editbox:Hide();
-        sw_frame.loadout_frame.loadout_clvl_editbox:SetAlpha(0.2);
-    end
-
-    sw_frame.loadout_frame.loadout_extra_mana_editbox:SetText(
-        loadout.extra_mana
-    );
-
-    sw_frame.loadout_frame.hp_perc_label_editbox:SetText(
-        loadout.target_hp_perc_default * 100
-    );
-
-    if sw_frame.loadout_frame.target_res_editbox then
-        sw_frame.loadout_frame.target_res_editbox:SetText(
-            loadout.target_res
-        );
-    end
-
-    sw_frame.loadout_frame.loadout_unbounded_aoe_targets_editbox:SetText(loadout.unbounded_aoe_targets);
-
-    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) ~= 0 then
-
-        sw_frame.loadout_frame.talent_editbox:SetText(
-            wowhead_talent_link(loadout.talents_code)
-        );
-        sw_frame.loadout_frame.talent_editbox:SetAlpha(0.2);
-        sw_frame.loadout_frame.dynamic_button:SetChecked(false);
-    else
-
-        sw_frame.loadout_frame.talent_editbox:SetText(
-            wowhead_talent_link(loadout.custom_talents_code)
-        );
-        sw_frame.loadout_frame.talent_editbox:SetAlpha(1.0);
-        sw_frame.loadout_frame.dynamic_button:SetChecked(true);
-    end
 
     update_buffs_frame();
+
+    update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
 end
 
-local function create_new_loadout_as_copy(loadout_entry, name)
-
-    if name == "" then
-        return false;
-    end
-    for _, v in pairs(sw_frame.loadout_frame.loadout) do
-        if v.loadout.name == name then
-            return false;
-        end
-    end
-
-    sw_frame.loadout_frame.num_loadouts = sw_frame.loadout_frame.num_loadouts + 1;
-    sw_frame.loadout_frame.active_loadout = sw_frame.loadout_frame.num_loadouts;
-
-    sw_frame.loadout_frame.loadouts[sw_frame.loadout_frame.num_loadouts] = {};
-    local new_entry = sw_frame.loadout_frame.loadouts[sw_frame.loadout_frame.num_loadouts];
-    new_entry.loadout = deep_table_copy(loadout_entry.loadout);
-    new_entry.equipped = deep_table_copy(loadout_entry.equipped);
-    new_entry.talented = {};
-    empty_effects(new_entry.talented);
-    new_entry.final_effects = {};
-    empty_effects(new_entry.final_effects);
-
-    swc.core.talents_update_needed = true;
-
-    new_entry.loadout.name = name;
-    return true
-end
 
 local function sw_activate_tab(tab_window)
 
@@ -754,82 +652,6 @@ local function create_sw_ui_tooltip_frame()
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 10;
-    sw_frame.tooltip_frame.preset_default_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_default_button:SetScript("OnClick", function(self)
-
-        --sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
-
-    end);
-    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 230, sw_frame.tooltip_frame.y_offset+14);
-    sw_frame.tooltip_frame.preset_default_button:SetText("Minimalistic");
-    sw_frame.tooltip_frame.preset_default_button:SetWidth(90);
-
-    sw_frame.tooltip_frame.preset_minimalistic_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
-
-        --sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
-
-    end);
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 320, sw_frame.tooltip_frame.y_offset+14);
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetText("Default");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(70);
-
-    sw_frame.tooltip_frame.preset_detailed_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_detailed_button:SetScript("OnClick", function(self)
-
-        --sw_frame.tooltip_frame.tooltip_addon_name:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_loadout_info:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_spell_rank:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_normal_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_crit_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_expected_effect:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_effect_per_sec:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_effect_per_cost:SetChecked(true);
-        --sw_frame.tooltip_frame.tooltip_cost_per_sec:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_stat_weights:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_avg_cost:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_avg_cast:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_cast_until_oom:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_sp_effect_calc:SetChecked(false);
-        --sw_frame.tooltip_frame.tooltip_dynamic_tip:SetChecked(true);
-
-    end);
-    sw_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 390, sw_frame.tooltip_frame.y_offset+14);
-    sw_frame.tooltip_frame.preset_detailed_button:SetText("Detailed");
-    sw_frame.tooltip_frame.preset_detailed_button:SetWidth(80);
-
     local tooltip_components = {
         {
             id = "tooltip_display_addon_name",
@@ -857,7 +679,7 @@ local function create_sw_ui_tooltip_frame()
         },
         {
             id = "tooltip_display_hit",
-            txt = "Hit & resist",
+            txt = "Hit & resist chance",
             color = effect_colors.normal
         },
         {
@@ -871,8 +693,13 @@ local function create_sw_ui_tooltip_frame()
             color = effect_colors.normal
         },
         {
-            id = "tooltip_display_crit",
+            id = "tooltip_display_crit_chance",
             txt = "Critical chance & modifier",
+            color = effect_colors.crit
+        },
+        {
+            id = "tooltip_display_crit",
+            txt = "Critical effect",
             color = effect_colors.crit
         },
         {
@@ -898,7 +725,7 @@ local function create_sw_ui_tooltip_frame()
         {
             id = "tooltip_display_cost_per_sec",
             txt = "Cost per second" ,
-            color = effect_colors.cost_per_second
+            color = effect_colors.cost_per_sec
         },
         {
             id = "tooltip_display_avg_cost",
@@ -927,12 +754,95 @@ local function create_sw_ui_tooltip_frame()
             color = effect_colors.sp_effect,
         },
         {
-            id = "tooltip_display_stat_weights",
-            txt = "Stat weights",
+            id = "tooltip_display_stat_weights_dps",
+            txt = "Stat weights: Effect per sec",
+            color = effect_colors.stat_weights
+        },
+        {
+            id = "tooltip_display_stat_weights_doom",
+            txt = "Stat weights: Effect until OOM",
             color = effect_colors.stat_weights
         },
         --tooltip_display_cast_and_tap       
     };
+
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 10;
+    sw_frame.tooltip_frame.preset_minimalistic_button =
+        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
+
+        for _, v in pairs(tooltip_components) do
+            local f = getglobal("sw_frame_setting_"..v.id);
+            if f:GetChecked() then
+                f:Click();
+            end
+        end
+        getglobal("sw_frame_setting_tooltip_display_expected"):Click();
+        getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
+        getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
+
+    end);
+
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 230, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetText("Minimalistic");
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(90);
+
+    sw_frame.tooltip_frame.preset_default_button =
+        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    sw_frame.tooltip_frame.preset_default_button:SetScript("OnClick", function(self)
+
+        for _, v in pairs(tooltip_components) do
+            local f = getglobal("sw_frame_setting_"..v.id);
+            if f:GetChecked() then
+                f:Click();
+            end
+        end
+
+        getglobal("sw_frame_setting_tooltip_display_addon_name"):Click();
+        getglobal("sw_frame_setting_tooltip_display_loadout_info"):Click();
+        getglobal("sw_frame_setting_tooltip_display_normal_hit_combined"):Click();
+        getglobal("sw_frame_setting_tooltip_display_crit_combined"):Click();
+        getglobal("sw_frame_setting_tooltip_display_expected"):Click();
+        getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
+        getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("sw_frame_setting_tooltip_display_dynamic_tip"):Click();
+    end);
+    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 320, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_default_button:SetText("Default");
+    sw_frame.tooltip_frame.preset_default_button:SetWidth(70);
+
+    sw_frame.tooltip_frame.preset_detailed_button =
+        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
+    sw_frame.tooltip_frame.preset_detailed_button:SetScript("OnClick", function(self)
+
+        for _, v in pairs(tooltip_components) do
+            local f = getglobal("sw_frame_setting_"..v.id);
+            if f:GetChecked() then
+                f:Click();
+            end
+        end
+
+        getglobal("sw_frame_setting_tooltip_display_addon_name"):Click();
+        getglobal("sw_frame_setting_tooltip_display_loadout_info"):Click();
+        getglobal("sw_frame_setting_tooltip_display_spell_rank"):Click();
+        getglobal("sw_frame_setting_tooltip_display_normal_hit_combined"):Click();
+        getglobal("sw_frame_setting_tooltip_display_crit_combined"):Click();
+        getglobal("sw_frame_setting_tooltip_display_expected"):Click();
+        getglobal("sw_frame_setting_tooltip_display_avg_cost"):Click();
+        getglobal("sw_frame_setting_tooltip_display_avg_cast"):Click();
+        getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
+        getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("sw_frame_setting_tooltip_display_cost_per_sec"):Click();
+        getglobal("sw_frame_setting_tooltip_display_cast_until_oom"):Click();
+        getglobal("sw_frame_setting_tooltip_display_sp_effect_calc"):Click();
+        getglobal("sw_frame_setting_tooltip_display_sp_effect_ratio"):Click();
+        getglobal("sw_frame_setting_tooltip_display_stat_weights_dps"):Click();
+        getglobal("sw_frame_setting_tooltip_display_stat_weights_doom"):Click();
+        getglobal("sw_frame_setting_tooltip_display_dynamic_tip"):Click();
+    end);
+    sw_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 390, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_detailed_button:SetText("Detailed");
+    sw_frame.tooltip_frame.preset_detailed_button:SetWidth(80);
     local tooltip_toggle = function(self)
 
         local checked = self:GetChecked();
@@ -1268,47 +1178,6 @@ local function create_sw_ui_overlay_frame()
         }
 
     end
-
-    --sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 30;
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset);
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetText("Update frequency");
-
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetFontObject(font);
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetPoint("TOPLEFT", 170, sw_frame.overlay_frame.y_offset);
-    --sw_frame.overlay_frame.icon_settings_update_freq_label_lhs:SetText("Hz (higher = more responsive overlay)");
-
-
-    --local hz_editbox = function(self)
-
-    --    local hz = tonumber(self:GetText());
-    --    if hz and hz >= 0.01 and hz <= 300 then
-    --        sw_snapshot_loadout_update_freq = hz;
-    --    else
-    --        self:SetText("3"); 
-    --        sw_snapshot_loadout_update_freq = 3;
-    --    end
-
-    --	self:ClearFocus();
-    --    self:HighlightText(0,0);
-    --end
-
-    --sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 25;
-
-    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnEnterPressed", hz_editbox);
-    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnEscapePressed", hz_editbox);
-    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnEditFocusLost", hz_editbox);
-    --sw_frame.overlay_frame.icon_settings_update_freq_editbox:SetScript("OnTextChanged", function(self)
-    --    local hz = tonumber(self:GetText());
-    --    if hz and hz >= 0.01 and hz <= 300 then
-
-    --        sw_snapshot_loadout_update_freq = tonumber(hz);
-    --    end
-
-    --end);
-
 end
 
 local function create_sw_ui_calculator_frame()
@@ -1475,7 +1344,7 @@ local function create_sw_ui_calculator_frame()
 
         	self:ClearFocus()
         end);
-        
+
         v.editbox:SetScript("OnEscapePressed", function(self)
         	self:ClearFocus()
         end);
@@ -1681,26 +1550,23 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("Active loadout:");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    local f = 
-        CreateFrame("Button", nil, sw_frame.loadout_frame, "UIDropDownMenuTemplate");
+    local f = CreateFrame("Button", nil, sw_frame.loadout_frame, "UIDropDownMenuTemplate");
     f:SetPoint("TOPLEFT", x_pad + 80, sw_frame.loadout_frame.y_offset+6);
     f.init_func = function()
-
-        UIDropDownMenu_SetText(sw_frame.loadout_frame.loadout_dropdown, active_loadout().name);
+        UIDropDownMenu_SetText(sw_frame.loadout_frame.loadout_dropdown, config.loadout.name);
         UIDropDownMenu_Initialize(sw_frame.loadout_frame.loadout_dropdown, function()
 
             UIDropDownMenu_SetWidth(sw_frame.loadout_frame.loadout_dropdown, 130);
 
-            for k, v in pairs(sw_frame.loadout_frame.loadouts) do
+            for k, v in pairs(p_char.loadouts) do
                 UIDropDownMenu_AddButton({
-                        text = v.loadout.name,
-                        checked = sw_frame.loadout_frame.active_loadout == k,
+                        text = v.name,
+                        checked = p_char.active_loadout == k,
                         func = function()
                             swc.core.talents_update_needed = true;
                             swc.core.equipment_update_needed = true;
 
-                            sw_frame.loadout_frame.active_loadout = k;
-
+                            config.set_active_loadout(k);
                             update_loadout_frame();
                         end
                     }
@@ -1716,16 +1582,15 @@ local function create_sw_ui_loadout_frame()
     f:SetText("Rename");
     f:SetTextColor(1.0, 1.0, 1.0);
 
-    f = CreateFrame("EditBox", "sw_loadout_name_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_name", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 315, sw_frame.loadout_frame.y_offset+2);
-    f:SetText("");
     f:SetSize(70, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
 
         local txt = self:GetText();
-        active_loadout().name = txt;
-
+        config.loadout.name = txt;
         update_loadout_frame();
     end
     f:SetScript("OnEnterPressed", function(self)
@@ -1739,27 +1604,25 @@ local function create_sw_ui_loadout_frame()
     f:SetScript("OnTextChanged", editbox_save);
     sw_frame.loadout_frame.name_editbox = f;
 
-    f = CreateFrame("Button", "sw_loadouts_delete_button", sw_frame.loadout_frame, "UIPanelButtonTemplate");
+    f = CreateFrame("Button", "sw_frame_loadouts_delete_button", sw_frame.loadout_frame, "UIPanelButtonTemplate");
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 390, sw_frame.loadout_frame.y_offset+6);
     f:SetText("Delete");
     f:SetSize(80, 25);
     f:SetScript("OnClick", function(self)
 
-        if sw_frame.loadout_frame.num_loadouts == 1 then
+        local n = #p_char.loadouts;
+        if n == 1 then
             return;
         end
 
-        for i = sw_frame.loadout_frame.num_loadouts - 1, sw_frame.loadout_frame.active_loadout, -1  do
-            sw_frame.loadout_frame.loadouts[i].loadout = sw_frame.loadout_frame.loadouts[i+1].loadout;
-            sw_frame.loadout_frame.loadouts[i].equipped_talented = sw_frame.loadout_frame.loadouts[i+1].equipped_talented;
-            sw_frame.loadout_frame.loadouts[i].buffed_equipped_talented = sw_frame.loadout_frame.loadouts[i+1].buffed_equipped_talented;
+        if n ~= active_loadout then
+            for i = p_char.active_loadout, n-1 do
+                p_char.loadouts[i] = p_char.loadouts[i+1]
+            end
         end
+        p_char.loadouts[n] = nil;
 
-        sw_frame.loadout_frame.loadouts[sw_frame.loadout_frame.num_loadouts] = nil;
-
-        sw_frame.loadout_frame.num_loadouts = sw_frame.loadout_frame.num_loadouts - 1;
-
-        sw_frame.loadout_frame.active_loadout = sw_frame.loadout_frame.num_loadouts;
+        config.set_active_loadout(1);
 
         swc.core.talents_update_needed = true;
         swc.core.equipment_update_needed = true;
@@ -1807,8 +1670,9 @@ local function create_sw_ui_loadout_frame()
     f = CreateFrame("Button", nil, sw_frame.loadout_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
 
-        if create_new_loadout_as_copy(active_loadout_entry(), name) then
+        if config.new_loadout_from_default(sw_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
             sw_frame.loadout_frame.new_loadout_name_editbox:SetText("");
+            swc.core.talents_update_needed = true;
             update_loadout_frame();
         end
     end);
@@ -1826,8 +1690,9 @@ local function create_sw_ui_loadout_frame()
 
     f = CreateFrame("Button", nil, sw_frame.loadout_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
-        if create_new_loadout_as_copy(active_loadout_entry(), name) then
+        if config.new_loadout_from_active_copy(sw_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
             sw_frame.loadout_frame.new_loadout_name_editbox:SetText("");
+            swc.core.talents_update_needed = true;
             update_loadout_frame();
         end
     end);
@@ -1845,7 +1710,8 @@ local function create_sw_ui_loadout_frame()
 
     sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 20;
 
-    f = CreateFrame("CheckButton", "sw_loadout_dynamic_check", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "sw_frame_loadout_dynamic_check", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
 
     getglobal(f:GetName()..'Text'):SetText("Custom talents");
@@ -1853,36 +1719,46 @@ local function create_sw_ui_loadout_frame()
         "Accepts a valid wowhead talents link, your loadout will use its talents, glyphs and runes instead of your active ones.";
     f:SetScript("OnClick", function(self)
 
-        local loadout_entry = active_loadout_entry();
-
         swc.core.talents_update_needed = true;
         swc.core.equipment_update_needed = true;
 
-        if self:GetChecked() then
-            loadout_entry.loadout.flags = bit.band(loadout_entry.loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
+        config.loadout.use_custom_talents = self:GetChecked();
+        if config.loadout.use_custom_talents then
+            sw_frame.loadout_frame.talent_editbox:SetText(
+                wowhead_talent_link(config.loadout.custom_talents_code)
+            );
         else
-            loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout);
+            sw_frame.loadout_frame.talent_editbox:SetText("");
         end
         update_buffs_frame();
     end);
-    sw_frame.loadout_frame.dynamic_button = f;
     sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("EditBox", "sw_loadout_talent_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_talent_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
     f:SetSize(460, 15);
     f:SetAutoFocus(false);
     editbox_config(f, function(self)
 
-        local loadout_entry = active_loadout_entry();
-        local loadout = loadout_entry.loadout;
-
         local txt = self:GetText();
 
+        print("updating talents editbox");
         swc.core.talents_update_needed = true;
 
-        if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 then
-            loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
+        if config.loadout.use_custom_talents then
+            config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
+
+            sw_frame.loadout_frame.talent_editbox:SetText(
+                wowhead_talent_link(config.loadout.custom_talents_code)
+            );
+            sw_frame.loadout_frame.talent_editbox:SetAlpha(1.0);
+        else
+
+            sw_frame.loadout_frame.talent_editbox:SetText(
+                wowhead_talent_link(config.loadout.talents_code)
+            );
+            sw_frame.loadout_frame.talent_editbox:SetAlpha(0.2);
+            sw_frame.loadout_frame.talent_editbox:SetCursorPosition(0);
         end
 
         update_loadout_frame();
@@ -1893,7 +1769,8 @@ local function create_sw_ui_loadout_frame()
 
     sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("CheckButton", "sw_loadout_custom_lvl_checkbutton", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "sw_frame_loadout_use_custom_lvl", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
     f:SetHitRectInsets(0, 0, 0, 0);
     getglobal(f:GetName()..'Text'):SetText("Custom player level");
@@ -1902,27 +1779,27 @@ local function create_sw_ui_loadout_frame()
 
     f:SetScript("OnClick", function(self)
 
-        local loadout_entry = active_loadout_entry();
-
-        if self:GetChecked() then
-            loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.custom_lvl);
+        config.loadout.use_custom_lvl = self:GetChecked();
+        if config.loadout.use_custom_lvl then
+            sw_frame.loadout_frame.loadout_clvl_editbox:Show();
         else
-            loadout_entry.loadout.flags = bit.band(loadout_entry.loadout.flags, bit.bnot(loadout_flags.custom_lvl));
+            sw_frame.loadout_frame.loadout_clvl_editbox:Hide();
         end
-        update_buffs_frame();
     end);
     sw_frame.loadout_frame.custom_lvl_checkbutton = f;
 
-    f = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_lvl", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
     f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.custom_lvl_checkbutton:GetName()..'Text'), "RIGHT", 10, 0);
     f:SetSize(50, 15);
     f:SetAutoFocus(false);
+    f:Hide();
+    f.number_editbox = true;
     local clvl_editbox_update = function(self)
-        local loadout = active_loadout();
         local lvl = tonumber(self:GetText());
         local valid = lvl and lvl >= 1 and lvl <= 100;
         if valid then
-            loadout.lvl = lvl;
+            config.loadout.lvl = lvl;
         end
         return valid;
     end
@@ -1946,28 +1823,27 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("Target level difference");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_default_target_lvl_diff", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetText("");
     f:SetSize(40, 15);
     f:SetAutoFocus(false);
-
-
+    f.number_editbox = true;
     local editbox_update = function(self)
         -- silently try to apply valid changes but don't panic while focus is on
         local lvl_diff = tonumber(self:GetText());
-        local loadout = active_loadout();
-        local valid = lvl_diff and lvl_diff == math.floor(lvl_diff) and loadout.lvl + lvl_diff >= 1 and loadout.lvl + lvl_diff <= 83;
+        local valid = lvl_diff and lvl_diff == math.floor(lvl_diff) and config.loadout.lvl + lvl_diff >= 1 and config.loadout.lvl + lvl_diff <= 83;
         if valid then
 
-            loadout.default_target_lvl_diff = lvl_diff;
+            config.loadout.default_target_lvl_diff = lvl_diff;
         end
         return valid;
     end;
     local editbox_close = function(self)
 
         if not editbox_update(self) then
-            self:SetText(""..loadout.default_target_lvl_diff); 
+            self:SetText(""..config.loadout.default_target_lvl_diff); 
         end
         self:ClearFocus();
         self:HighlightText(0,0);
@@ -1989,25 +1865,25 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("Default target HP");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_default_target_hp_perc", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetText("");
     f:SetSize(40, 15);
     f:SetAutoFocus(false);
-
+    f.number_editbox = true;
     local editbox_hp_perc_update = function(self)
         local hp_perc = tonumber(self:GetText());
-        local loadout = active_loadout();
         local valid = hp_perc and hp_perc >= 0;
         if valid then
-            loadout.target_hp_perc_default = 0.01*hp_perc;
+            config.loadout.default_target_hp_perc = hp_perc;
         end
         return valid;
     end
     local editbox_hp_perc_close = function(self)
 
         if not editbox_hp_perc_update(self) then
-            self:SetText(""..loadout.target_hp_perc_default*100); 
+            self:SetText(""..loadout.default_target_hp_perc);
         end
         self:ClearFocus();
         self:HighlightText(0,0);
@@ -2030,18 +1906,18 @@ local function create_sw_ui_loadout_frame()
         f_txt:SetText("Target resistance");
         f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-        f = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+        f = CreateFrame("EditBox", "sw_frame_loadout_target_res", sw_frame.loadout_frame, "InputBoxTemplate");
+        f._type = "EditBox";
         f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
         f:SetText("");
         f:SetSize(40, 15);
         f:SetAutoFocus(false);
-
+        f.number_editbox = true;
         local editbox_target_res_update = function(self)
             local target_res = tonumber(self:GetText());
-            local loadout = active_loadout();
             local valid = target_res and target_res >= 0;
             if valid then
-                loadout.target_res = target_res;
+                config.loadout.target_res = target_res;
             end
             return valid;
         end
@@ -2049,7 +1925,7 @@ local function create_sw_ui_loadout_frame()
 
             if not editbox_target_res_update(self) then
                 self:SetText("0");
-                loadout.target_res = 0;
+                config.loadout.target_res = 0;
             end
             self:ClearFocus();
             self:HighlightText(0,0);
@@ -2066,24 +1942,24 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("Number of targets for unbounded AOE spells");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f= CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_unbounded_aoe_targets", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetSize(40, 15);
     f:SetAutoFocus(false);
-
+    f.number_editbox = true;
     local aoe_targets_editbox_update = function(self)
-        local loadout = active_loadout();
         local targets = tonumber(self:GetText());
         local valid = targets and targets >= 1;
         if valid then
-            loadout.unbounded_aoe_targets = math.floor(targets);
+            config.loadout.unbounded_aoe_targets = math.floor(targets);
         end
         return valid;
     end
     local aoe_targets_editbox_close = function(self)
         if not aoe_targets_editbox_update(self) then
             self:SetText("1");
-            loadout.unbounded_aoe_targets = 1;
+            config.loadout.unbounded_aoe_targets = 1;
         end
     	self:ClearFocus();
         self:HighlightText(0,0);
@@ -2101,18 +1977,18 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("Extra mana for casts until OOM");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_loadout_lvl_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "sw_frame_loadout_extra_mana", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetSize(40, 15);
     f:SetAutoFocus(false);
-
+    f.number_editbox = true;
     local mana_editbox_update = function(self)
 
-        local loadout = active_loadout();
         local mana = tonumber(self:GetText());
         local valid = mana ~= nil;
         if vald then
-            loadout.extra_mana = mana;
+            config.loadout.extra_mana = mana;
         end
         return valid;
     end
@@ -2130,412 +2006,18 @@ local function create_sw_ui_loadout_frame()
 
     sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("CheckButton", "sw_loadout_max_mana", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "sw_frame_loadout_always_max_mana", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
     getglobal(f:GetName()..'Text'):SetText("Always at maximum mana");
     getglobal(f:GetName()).tooltip = 
         "Casting until OOM uses maximum mana instead of current.";
     f:SetScript("OnClick", function(self)
-        local loadout = active_loadout();
-        if self:GetChecked() then
-            loadout.flags = bit.bor(loadout.flags, loadout_flags.always_max_mana);
-        else    
-            loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.always_max_mana));
-        end
+        config.loadout.always_max_mana = self:GetChecked();
     end)
 
     sw_frame.loadout_frame.max_mana_checkbutton = f;
 
-
-    -- old
-
-    --sw_frame.loadout_frame.lhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_lhs", sw_frame.loadout_frame);
-    --sw_frame.loadout_frame.lhs_list:SetWidth(180);
-    --sw_frame.loadout_frame.lhs_list:SetHeight(600-30-200-10-25-10-20-20);
-    --sw_frame.loadout_frame.lhs_list:SetPoint("TOPLEFT", sw_frame, 0, -50);
-
-    --sw_frame.loadout_frame.lhs_list:SetScript("OnMouseWheel", function(self, dir)
-    --    local min_val, max_val = sw_frame.loadout_frame.loadouts_slider:GetMinMaxValues();
-    --    local val = sw_frame.loadout_frame.loadouts_slider:GetValue();
-    --    if val - dir >= min_val and val - dir <= max_val then
-    --        sw_frame.loadout_frame.loadouts_slider:SetValue(val - dir);
-    --        update_loadout_frame();
-    --    end
-    --end);
-
-    --sw_frame.loadout_frame.rhs_list = CreateFrame("ScrollFrame", "sw_loadout_frame_rhs", sw_frame.loadout_frame);
-    --sw_frame.loadout_frame.rhs_list:SetWidth(400-180);
-    --sw_frame.loadout_frame.rhs_list:SetHeight(600-30-30-20);
-    --sw_frame.loadout_frame.rhs_list:SetPoint("TOPLEFT", sw_frame, 180, -50);
-
-    --sw_frame.loadout_frame.loadouts_select_label = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    --sw_frame.loadout_frame.loadouts_select_label:SetFontObject(font);
-    --sw_frame.loadout_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadout_frame, 15, -2);
-    --sw_frame.loadout_frame.loadouts_select_label:SetText("Select active loadout");
-    --sw_frame.loadout_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
-
-    --sw_frame.loadout_frame.loadouts_slider =
-    --    CreateFrame("Slider", nil, sw_frame.loadout_frame.lhs_list, "UISliderTemplate");
-    --sw_frame.loadout_frame.loadouts_slider:SetOrientation('VERTICAL');
-    --sw_frame.loadout_frame.loadouts_slider:SetPoint("TOPRIGHT", 0, -14);
-    --sw_frame.loadout_frame.loadouts_slider:SetSize(15, 248);
-    --sw_frame.loadout_frame.lhs_list.num_loadouts_can_fit =
-    --    math.floor(sw_frame.loadout_frame.loadouts_slider:GetHeight()/20);
-    --sw_frame.loadout_frame.loadouts_slider:SetMinMaxValues(0, 0);
-    --sw_frame.loadout_frame.loadouts_slider:SetValue(0);
-    --sw_frame.loadout_frame.loadouts_slider:SetValueStep(1);
-    --sw_frame.loadout_frame.loadouts_slider:SetScript("OnValueChanged", function(self, val)
-    --    update_loadout_frame();
-    --end);
-
-    --sw_frame.loadout_frame.rhs_list.self_buffs_frame = 
-    --    CreateFrame("ScrollFrame", "sw_loadout_frame_rhs_self_buffs", sw_frame.loadout_frame.rhs_list);
-    --sw_frame.loadout_frame.rhs_list.self_buffs_frame:SetWidth(400-180);
-    --sw_frame.loadout_frame.rhs_list.self_buffs_frame:SetHeight(600-30-30);
-    --sw_frame.loadout_frame.rhs_list.self_buffs_frame:SetPoint("TOPLEFT", sw_frame.loadout_frame.rhs_list, 0, 0);
-
-    --sw_frame.loadout_frame.rhs_list.target_buffs_frame = 
-    --    CreateFrame("ScrollFrame", "sw_loadout_frame_rhs_target_buffs", sw_frame.loadout_frame.rhs_list);
-    --sw_frame.loadout_frame.rhs_list.target_buffs_frame:SetWidth(400-180);
-    --sw_frame.loadout_frame.rhs_list.target_buffs_frame:SetHeight(600-30-30);
-    --sw_frame.loadout_frame.rhs_list.target_buffs_frame:SetPoint("TOPLEFT", sw_frame.loadout_frame.rhs_list, 0, 0);
-    --sw_frame.loadout_frame.rhs_list.target_buffs_frame:Hide();
-
-    --sw_frame.loadout_frame.rhs_list.num_buffs_checked = 0;
-    --sw_frame.loadout_frame.rhs_list.num_target_buffs_checked = 0;
-
-    --local y_offset_lhs = 0;
-
-
-
-    --y_offset_lhs = y_offset_lhs - 20;
-
-
-    --sw_frame.loadout_frame.export_button =
-    --    CreateFrame("Button", "sw_loadouts_export_button", sw_frame.loadout_frame, "UIPanelButtonTemplate");
-    --sw_frame.loadout_frame.export_button:SetPoint("BOTTOMLEFT", sw_frame.loadout_frame, 10, y_offset_lhs);
-    --sw_frame.loadout_frame.export_button:SetText("Create loadout as a copy");
-    --sw_frame.loadout_frame.export_button:SetSize(170, 25);
-    --sw_frame.loadout_frame.export_button:SetScript("OnClick", function(self)
-
-    --    create_new_loadout_as_copy(active_loadout_entry());
-    --end);
-
-    --y_offset_lhs = y_offset_lhs - 20;
-
-    --sw_frame.loadout_frame.loadout_talent_label = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    --sw_frame.loadout_frame.loadout_talent_label:SetFontObject(font);
-    --sw_frame.loadout_frame.loadout_talent_label:SetPoint("BOTTOMLEFT", sw_frame.loadout_frame, 15, y_offset_lhs);
-    --sw_frame.loadout_frame.loadout_talent_label:SetText("Talents (Wowhead link):");
-
-    --y_offset_lhs = y_offset_lhs - 20;
-
-    --sw_frame.loadout_frame.talent_editbox = 
-    --    CreateFrame("EditBox", "sw_loadout_talent_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
-    --sw_frame.loadout_frame.talent_editbox:SetPoint("BOTTOMLEFT", sw_frame.loadout_frame, 20, y_offset_lhs - 2);
-    ----sw_frame.loadout_frame.talent_editbox:SetText("");
-    --sw_frame.loadout_frame.talent_editbox:SetSize(150, 15);
-    --sw_frame.loadout_frame.talent_editbox:SetAutoFocus(false);
-    --local talent_editbox = function(self)
-
-    --    local loadout_entry = active_loadout_entry();
-    --    local loadout = loadout_entry.loadout;
-
-    --    local txt = self:GetText();
-
-    --    swc.core.talents_update_needed = true;
-
-    --    if bit.band(loadout.flags, loadout_flags.is_dynamic_loadout) == 0 then
-    --        loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
-    --    end
-
-    --    update_loadout_frame();
-    --end
-
-    --sw_frame.loadout_frame.talent_editbox:SetScript("OnEnterPressed", function(self) 
-    --    talent_editbox(self);
-    --    self:ClearFocus();
-    --end);
-    --sw_frame.loadout_frame.talent_editbox:SetScript("OnEscapePressed", function(self) 
-    --    talent_editbox(self);
-    --    self:ClearFocus();
-    --end);
-
-    --sw_frame.loadout_frame.talent_editbox:SetScript("OnTextChanged", function(self) 
-    --    talent_editbox(self);
-    --    self:ClearFocus();
-    --end);
-
-
-    --y_offset_lhs = y_offset_lhs - 30;
-
-    --sw_frame.loadout_frame.dynamic_button = 
-    --    CreateFrame("CheckButton", "sw_loadout_dynamic_check", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
-    --sw_frame.loadout_frame.dynamic_button:SetPoint("BOTTOMLEFT", sw_frame.loadout_frame, 10, y_offset_lhs);
-
-    --if swc.core.expansion_loaded == swc.core.expansions.wotlk then
-    --    getglobal(sw_frame.loadout_frame.dynamic_button:GetName()..'Text'):SetText("Custom talents & glyphs");
-    --    getglobal(sw_frame.loadout_frame.dynamic_button:GetName()).tooltip = 
-    --        "Given a valid wowhead talents link above, your loadout will use its talents & glyphs instead of your active ones.";
-    --else
-    --    getglobal(sw_frame.loadout_frame.dynamic_button:GetName()..'Text'):SetText("Custom talents & runes");
-    --    getglobal(sw_frame.loadout_frame.dynamic_button:GetName()).tooltip = 
-    --        "Given a valid wowhead talents link above, your loadout will use its talents & runes instead of your active ones.";
-    --end
-
-    --sw_frame.loadout_frame.dynamic_button:SetScript("OnClick", function(self)
-
-    --    local loadout_entry = active_loadout_entry();
-
-    --    swc.core.talents_update_needed = true;
-    --    swc.core.equipment_update_needed = true;
-
-    --    if self:GetChecked() then
-    --        loadout_entry.loadout.flags = bit.band(loadout_entry.loadout.flags, bit.bnot(loadout_flags.is_dynamic_loadout));
-    --    else
-    --        loadout_entry.loadout.flags = bit.bor(loadout_entry.loadout.flags, loadout_flags.is_dynamic_loadout);
-    --    end
-    --    update_buffs_frame();
-    --end);
-
-    --y_offset_lhs = y_offset_lhs - 20;
-
-
-    --y_offset_lhs = y_offset_lhs - 12;
-
-
-    --y_offset_lhs = y_offset_lhs - 20;
-
-
-    --y_offset_lhs = y_offset_lhs - 20;
-
-
-    --y_offset_lhs = y_offset_lhs - 27;
-
-    --local y_offset = 0;
-
-    --sw_frame.loadout_frame.loadouts_select_label = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    --sw_frame.loadout_frame.loadouts_select_label:SetFontObject(font);
-    --sw_frame.loadout_frame.loadouts_select_label:SetPoint("TOPLEFT", sw_frame.loadout_frame, 5, -2);
-    --sw_frame.loadout_frame.loadouts_select_label:SetText("Toggle-able effects");
-    --sw_frame.loadout_frame.loadouts_select_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
-
-    --y_offset = y_offset - 15;
-
-    --sw_frame.loadout_frame.always_apply_buffs_button = 
-    --    CreateFrame("CheckButton", "sw_loadout_always_apply_buffs_button", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
-    --sw_frame.loadout_frame.always_apply_buffs_button:SetPoint("TOPLEFT", sw_frame.loadout_frame, 0, y_offset_rhs);
-    --getglobal(sw_frame.loadout_frame.always_apply_buffs_button:GetName() .. 'Text'):SetText("Apply buffs even when inactive");
-    --getglobal(sw_frame.loadout_frame.always_apply_buffs_button:GetName()).tooltip = 
-    --    "The selected buffs will be forcibly applied behind the scenes to the spell calculations";
-    --sw_frame.loadout_frame.always_apply_buffs_button:SetScript("OnClick", function(self)
-
-    --    local loadout = active_loadout();
-    --    if self:GetChecked() then
-
-    --        loadout.flags = bit.bor(loadout.flags, loadout_flags.always_assume_buffs);
-    --        loadout.buffs = {};
-    --        loadout.target_buffs = {};
-    --        
-    --    else
-    --        loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.always_assume_buffs));
-
-    --        loadout.buffs = {};
-    --        loadout.target_buffs = {};
-    --    end
-    --    update_buffs_frame();
-    --end);
-
-    --y_offset = y_offset - 15;
-
-    --local check_button_buff_func = function(self)
-
-    --    local loadout = sw_frame.loadout_frame.lhs_list.loadouts[sw_frame.loadout_frame.lhs_list.active_loadout].loadout;
-    --    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-    --        self:SetChecked(true);
-    --        return;
-    --    end
-    --    if self:GetChecked() then
-    --        if self.buff_type == "self" then
-    --            loadout.buffs[self.buff_id] = self.buff_info;
-    --            sw_frame.loadout_frame.num_checked_buffs = sw_frame.loadout_frame.num_checked_buffs + 1;
-    --        elseif self.buff_type == "target_buffs" then
-    --            loadout.target_buffs[self.buff_id] = self.buff_info;
-    --            sw_frame.loadout_frame.num_checked_target_buffs = sw_frame.loadout_frame.num_checked_target_buffs + 1;
-    --        end
-
-    --    else    
-    --        if self.buff_type == "self" then
-    --            loadout.buffs[self.buff_id] = nil;
-    --            sw_frame.loadout_frame.num_checked_buffs = sw_frame.loadout_frame.num_checked_buffs - 1;
-    --        elseif self.buff_type == "target_buffs" then
-    --            loadout.target_buffs[self.buff_id] = nil;
-    --            sw_frame.loadout_frame.num_checked_target_buffs = sw_frame.loadout_frame.num_checked_target_buffs - 1;
-    --        end
-    --    end
-
-    --    if sw_frame.loadout_frame.num_checked_buffs == 0 then
-    --        sw_frame.loadout_frame.select_all_buffs_checkbutton:SetChecked(false);
-    --    else
-    --        sw_frame.loadout_frame.select_all_buffs_checkbutton:SetChecked(true);
-    --    end
-
-    --    if sw_frame.loadout_frame.num_checked_target_buffs == 0 then
-    --        sw_frame.loadout_frame.select_all_target_buffs_checkbutton:SetChecked(false);
-    --    else
-    --        sw_frame.loadout_frame.select_all_target_buffs_checkbutton:SetChecked(true);
-    --    end
-    --end
-
-    --local y_offset_buffs = y_offset - 3;
-    --local y_offset_target_buffs = y_offset - 3;
-
-    -- add select all optoin for both buffs and debuffs
-
-    --sw_frame.loadout_frame.rhs_list.select_all_buffs_checkbutton = 
-    --    CreateFrame("CheckButton", "sw_loadout_select_all_buffs", sw_frame.loadout_frame.rhs_list.self_buffs_frame, "ChatConfigCheckButtonTemplate");
-    --sw_frame.loadout_frame.rhs_list.select_all_buffs_checkbutton:SetPoint("TOPLEFT", 20, y_offset_buffs);
-    --getglobal(sw_frame.loadout_frame.rhs_list.select_all_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
-    --getglobal(sw_frame.loadout_frame.rhs_list.select_all_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
-
-    --sw_frame.loadout_frame.rhs_list.select_all_buffs_checkbutton:SetScript("OnClick", function(self) 
-
-    --    local loadout = active_loadout();
-    --    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-    --        self:SetChecked(true)
-    --        return;
-    --    end
-    --    if self:GetChecked() then
-    --        loadout.buffs = {};
-    --        for i = 1, sw_frame.loadout_frame.rhs_list.buffs.num_buffs do
-    --            loadout.buffs[sw_frame.loadout_frame.rhs_list.buffs[i].checkbutton.buff_id] =
-    --                sw_frame.loadout_frame.rhs_list.buffs[i].checkbutton.buff_info;
-    --        end
-    --    else
-    --        loadout.buffs = {};
-    --    end
-
-    --    update_buffs_frame();
-    --end);
-
-    --sw_frame.loadout_frame.rhs_list.select_all_target_buffs_checkbutton = 
-    --    CreateFrame("CheckButton", "sw_loadout_select_all_target_buffs", sw_frame.loadout_frame.rhs_list.target_buffs_frame, "ChatConfigCheckButtonTemplate");
-    --sw_frame.loadout_frame.rhs_list.select_all_target_buffs_checkbutton:SetPoint("TOPLEFT", 20, y_offset_rhs_target_buffs);
-    --getglobal(sw_frame.loadout_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
-    --getglobal(sw_frame.loadout_frame.rhs_list.select_all_target_buffs_checkbutton:GetName() .. 'Text'):SetTextColor(1, 0, 0);
-    --sw_frame.loadout_frame.rhs_list.select_all_target_buffs_checkbutton:SetScript("OnClick", function(self)
-    --    local loadout = active_loadout();
-    --    if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
-    --        self:SetChecked(true)
-    --        return;
-    --    end
-    --    if self:GetChecked() then
-    --        for  i = 1, sw_frame.loadout_frame.rhs_list.target_buffs.num_buffs  do
-    --            loadout.target_buffs[sw_frame.loadout_frame.rhs_list.target_buffs[i].checkbutton.buff_id] =
-    --                sw_frame.loadout_frame.rhs_list.target_buffs[i].checkbutton.buff_info;
-    --        end
-    --    else
-    --        loadout.target_buffs = {};
-    --    end
-    --    update_buffs_frame();
-    --end);
-
-
-    --y_offset_rhs_buffs = y_offset_rhs_buffs - 20;
-    --y_offset_rhs_target_buffs = y_offset_rhs_target_buffs - 20;
-
-    --sw_frame.loadout_frame.rhs_list.self_buffs_y_offset_start = y_offset_rhs_buffs;
-    --sw_frame.loadout_frame.rhs_list.target_buffs_y_offset_start = y_offset_rhs_target_buffs;
-
-    ---- buffs
-    --local sorted_buffs_by_name = {};
-    --for k, v in pairs(buffs) do
-    --    if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-    --        local lname = select(1, GetSpellInfo(k));
-    --        table.insert(sorted_buffs_by_name, {lname, v.category, k});
-    --    end
-    --end
-    --table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
-    --for _, k in ipairs(sorted_buffs_by_name) do
-    --    local buff_id = k[3];
-    --    local v = buffs[buff_id];
-    --    create_loadout_buff_checkbutton(
-    --        sw_frame.loadout_frame.rhs_list.buffs, buff_id, v, "self",
-    --        sw_frame.loadout_frame.rhs_list.self_buffs_frame, check_button_buff_func
-    --    );
-    --
-    --end
-
-    ---- debuffs
-    --sorted_buffs_by_name = {};
-    --for k, v in pairs(target_buffs) do
-    --    if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-    --        local lname = select(1, GetSpellInfo(k));
-    --        table.insert(sorted_buffs_by_name, {lname, v.category, k});
-    --    end
-    --end
-    --table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
-    --for _, k in ipairs(sorted_buffs_by_name) do
-    --    local buff_id = k[3];
-    --    local v = target_buffs[buff_id];
-    --    create_loadout_buff_checkbutton(
-    --        sw_frame.loadout_frame.rhs_list.target_buffs, buff_id, v, "target_buffs",
-    --        sw_frame.loadout_frame.rhs_list.target_buffs_frame, check_button_buff_func
-    --    );
-    --end
-
-    --sw_frame.loadout_frame.self_buffs_slider =
-    --    CreateFrame("Slider", nil, sw_frame.loadout_frame.rhs_list.self_buffs_frame, "UISliderTemplate");
-    --sw_frame.loadout_frame.self_buffs_slider:SetOrientation('VERTICAL');
-    --sw_frame.loadout_frame.self_buffs_slider:SetPoint("TOPRIGHT", -10, -82);
-    --sw_frame.loadout_frame.self_buffs_slider:SetSize(15, 465);
-    --sw_frame.loadout_frame.rhs_list.buffs.num_buffs_can_fit =
-    --    math.floor(sw_frame.loadout_frame.self_buffs_slider:GetHeight()/20);
-    --sw_frame.loadout_frame.self_buffs_slider:SetMinMaxValues(
-    --    0, 
-    --    max(0, sw_frame.loadout_frame.rhs_list.buffs.num_buffs - sw_frame.loadout_frame.rhs_list.buffs.num_buffs_can_fit)
-    --);
-    --sw_frame.loadout_frame.self_buffs_slider:SetValue(0);
-    --sw_frame.loadout_frame.self_buffs_slider:SetValueStep(1);
-    --sw_frame.loadout_frame.self_buffs_slider:SetScript("OnValueChanged", function(self, val)
-
-    --    update_buffs_frame();
-    --end);
-
-    --sw_frame.loadout_frame.rhs_list.self_buffs_frame:SetScript("OnMouseWheel", function(self, dir)
-    --    local min_val, max_val = sw_frame.loadout_frame.self_buffs_slider:GetMinMaxValues();
-    --    local val = sw_frame.loadout_frame.self_buffs_slider:GetValue();
-    --    if val - dir >= min_val and val - dir <= max_val then
-    --        sw_frame.loadout_frame.self_buffs_slider:SetValue(val - dir);
-    --        update_buffs_frame();
-    --    end
-    --end);
-
-    --sw_frame.loadout_frame.target_buffs_slider =
-    --    CreateFrame("Slider", nil, sw_frame.loadout_frame.rhs_list.target_buffs_frame, "UISliderTemplate");
-    --sw_frame.loadout_frame.target_buffs_slider:SetOrientation('VERTICAL');
-    --sw_frame.loadout_frame.target_buffs_slider:SetPoint("TOPRIGHT", -10, -82);
-    --sw_frame.loadout_frame.target_buffs_slider:SetSize(15, 465);
-    --sw_frame.loadout_frame.rhs_list.target_buffs.num_buffs_can_fit = 
-    --    math.floor(sw_frame.loadout_frame.target_buffs_slider:GetHeight()/20);
-    --sw_frame.loadout_frame.target_buffs_slider:SetMinMaxValues(
-    --    0, 
-    --    max(0, sw_frame.loadout_frame.rhs_list.target_buffs.num_buffs - sw_frame.loadout_frame.rhs_list.target_buffs.num_buffs_can_fit)
-    --);
-    --sw_frame.loadout_frame.target_buffs_slider:SetValue(0);
-    --sw_frame.loadout_frame.target_buffs_slider:SetValueStep(1);
-    --sw_frame.loadout_frame.target_buffs_slider:SetScript("OnValueChanged", function(self, val)
-    --    update_buffs_frame();
-    --end);
-
-    --sw_frame.loadout_frame.rhs_list.target_buffs_frame:SetScript("OnMouseWheel", function(self, dir)
-    --    local min_val, max_val = sw_frame.loadout_frame.target_buffs_slider:GetMinMaxValues();
-    --    local val = sw_frame.loadout_frame.target_buffs_slider:GetValue();
-    --    if val - dir >= min_val and val - dir <= max_val then
-    --        sw_frame.loadout_frame.target_buffs_slider:SetValue(val - dir);
-    --        update_buffs_frame();
-    --    end
-    --end);
 end
 
 local function create_sw_ui_buffs_frame()
@@ -2549,16 +2031,10 @@ local function create_sw_ui_buffs_frame()
         "The selected buffs will be applied behind the scenes to the spell calculations";
     f:SetScript("OnClick", function(self)
 
-        local loadout = active_loadout();
         if self:GetChecked() then
-            loadout.flags = bit.bor(loadout.flags, loadout_flags.always_assume_buffs);
-            loadout.buffs = {};
-            loadout.target_buffs = {};
+            config.loadout.force_apply_buffs = true;
         else
-            loadout.flags = bit.band(loadout.flags, bit.bnot(loadout_flags.always_assume_buffs));
-
-            loadout.buffs = {};
-            loadout.target_buffs = {};
+            config.loadout.force_apply_buffs = false;
         end
         update_buffs_frame();
     end);
@@ -2606,26 +2082,25 @@ local function create_sw_ui_buffs_frame()
 
     local check_button_buff_func = function(self)
 
-        local loadout = sw_frame.loadout_frame.loadouts[sw_frame.loadout_frame.active_loadout].loadout;
-        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+        if not config.loadout.force_apply_buffs then
             self:SetChecked(true);
             return;
         end
         if self:GetChecked() then
             if self.buff_type == "self" then
-                loadout.buffs[self.buff_id] = self.buff_info;
+                config.loadout.buffs[self.buff_id] = self.buff_info;
                 sw_frame.buffs_frame.lhs.buffs.num_checked = sw_frame.buffs_frame.lhs.buffs.num_checked + 1;
             elseif self.buff_type == "target_buffs" then
-                loadout.target_buffs[self.buff_id] = self.buff_info;
+                config.loadout.target_buffs[self.buff_id] = self.buff_info;
                 sw_frame.buffs_frame.rhs.buffs.num_checked = sw_frame.buffs_frame.rhs.buffs.num_checked + 1;
             end
 
         else    
             if self.buff_type == "self" then
-                loadout.buffs[self.buff_id] = nil;
+                config.loadout.buffs[self.buff_id] = nil;
                 sw_frame.buffs_frame.lhs.buffs.num_checked = sw_frame.buffs_frame.lhs.buffs.num_checked - 1;
             elseif self.buff_type == "target_buffs" then
-                loadout.target_buffs[self.buff_id] = nil;
+                config.loadout.target_buffs[self.buff_id] = nil;
                 sw_frame.buffs_frame.rhs.buffs.num_checked = sw_frame.buffs_frame.rhs.buffs.num_checked - 1;
             end
         end
@@ -2650,18 +2125,17 @@ local function create_sw_ui_buffs_frame()
 
     f:SetScript("OnClick", function(self)
 
-        local loadout = active_loadout();
-        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+        if not config.loadout.force_apply_buffs then
             --self:SetChecked(true)
             return;
         end
         if self:GetChecked() then
             for i = 1, sw_frame.buffs_frame.lhs.buffs.num do
-                loadout.buffs[sw_frame.buffs_frame.lhs.buffs[i].checkbutton.buff_id] =
+                config.loadout.buffs[sw_frame.buffs_frame.lhs.buffs[i].checkbutton.buff_id] =
                     sw_frame.buffs_frame.lhs.buffs[i].checkbutton.buff_info;
             end
         else
-            loadout.buffs = {};
+            config.loadout.buffs = {};
         end
 
         update_buffs_frame();
@@ -2675,18 +2149,17 @@ local function create_sw_ui_buffs_frame()
 
     f:SetScript("OnClick", function(self) 
 
-        local loadout = active_loadout();
-        if bit.band(loadout.flags, loadout_flags.always_assume_buffs) == 0 then
+        if not config.loadout.force_apply_buffs then
             --self:SetChecked(true)
             return;
         end
         if self:GetChecked() then
             for i = 1, sw_frame.buffs_frame.rhs.buffs.num do
-                loadout.target_buffs[sw_frame.buffs_frame.rhs.buffs[i].checkbutton.buff_id] =
+                config.loadout.target_buffs[sw_frame.buffs_frame.rhs.buffs[i].checkbutton.buff_id] =
                     sw_frame.buffs_frame.rhs.buffs[i].checkbutton.buff_info;
             end
         else
-            loadout.target_buffs = {};
+            config.loadout.target_buffs = {};
         end
 
         update_buffs_frame();
@@ -3210,10 +2683,6 @@ end
 
 local function load_sw_ui()
 
-    create_sw_ui_spells_frame();
-
-    create_sw_ui_calculator_frame();
-
     if libstub_data_broker then
         local sw_launcher = libstub_data_broker:NewDataObject(swc.core.sw_addon_name, {
             type = "launcher",
@@ -3244,57 +2713,18 @@ local function load_sw_ui()
         end
     end
 
-
+    create_sw_ui_spells_frame();
     create_sw_ui_tooltip_frame();
-
     create_sw_ui_overlay_frame();
-
     create_sw_ui_loadout_frame();
     create_sw_ui_buffs_frame();
-
+    create_sw_ui_calculator_frame();
     create_sw_ui_profile_frame();
 
-    sw_frame.loadout_frame.loadouts = {};
-    for k, v in pairs(p_char.loadouts.loadouts_list) do
-        sw_frame.loadout_frame.loadouts[k] = {};
-        sw_frame.loadout_frame.loadouts[k].loadout = empty_loadout();
-        for kk, vv in pairs(v.loadout) do
-            -- for forward compatability: if there are changes to loadout in new version
-            -- we copy what we can from the old loadout
-            sw_frame.loadout_frame.loadouts[k].loadout[kk] = v.loadout[kk];
-        end
-
-        sw_frame.loadout_frame.loadouts[k].equipped = {};
-        sw_frame.loadout_frame.loadouts[k].talented = {};
-        sw_frame.loadout_frame.loadouts[k].final_effects = {};
-        empty_effects(sw_frame.loadout_frame.loadouts[k].equipped);
-        empty_effects(sw_frame.loadout_frame.loadouts[k].talented);
-        empty_effects(sw_frame.loadout_frame.loadouts[k].final_effects);
-    end
-
-    sw_frame.loadout_frame.active_loadout = p_char.loadouts.active_loadout;
-    sw_frame.loadout_frame.num_loadouts = p_char.loadouts.num_loadouts;
-
-    if not p_char.sim_type or swc.core.use_char_defaults then
-        sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-    else
-        sw_frame.calculator_frame.sim_type = p_char.sim_type;
-    end
-    if sw_frame.calculator_frame.sim_type  == simulation_type.spam_cast then
-        sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Show();
-        sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:Hide();
-    elseif sw_frame.calculator_frame.sim_type  == simulation_type.cast_until_oom then
-        sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Hide();
-        sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:Show();
-    end
+    sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
+    sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Show();
+    sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:Hide();
     sw_frame.calculator_frame.sim_type_button.init_func();
-
-    if p_char.stat_comparison_spells and not swc.core.use_char_defaults then
-
-        sw_frame.calculator_frame.spells = p_char.stat_comparison_spells;
-
-        update_and_display_spell_diffs(active_loadout_and_effects_diffed_from_ui());
-    end
 
     sw_activate_tab(sw_frame.tabs[1]);
     sw_frame:Hide();
