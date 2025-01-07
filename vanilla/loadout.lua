@@ -74,7 +74,16 @@ local class_to_base_crit = {
     ["MAGE"]    = 0.2,
     ["PRIEST"]  = 0.8,
     ["PALADIN"] = 3.5,
+
 };
+-- TODO: real values
+-- fill with temp trash
+for _, c in pairs({"HUNTER", "ROGUE", "WARRIOR"}) do
+    class_to_base_crit[c] = 0.0;
+    for _, v in pairs(class_to_int_to_crit_scaling) do
+        v[c] = 0.0;
+    end
+end
 
 local function int_to_crit_rating(int, loadout, effects)
 
@@ -95,6 +104,7 @@ local function int_to_crit_rating(int, loadout, effects)
         upper = 25;
         lower = 1;
     end
+    local ratio;
     if upper == 0 then
         -- this only works when equipment doesn't give % crit
         local _, intellect = UnitStat("player", 4);

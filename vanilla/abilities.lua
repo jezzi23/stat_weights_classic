@@ -1,206 +1,186 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
-
 local _, class = UnitClass("player");
 local _, race = UnitRace("player");
 
-local function spell_name_to_ids()
+local _, swc = ...;
+local abilities = {};
+
+local spids = (function()
     if class == "MAGE" then
         return {
-            ["Frostbolt"]                 = 116,
-            ["Frost Nova"]                = 122,
-            ["Cone of Cold"]              = 120,
-            ["Blizzard"]                  = 10,
-            ["Fireball"]                  = 133,
-            ["Fire Blast"]                = 2136,
-            ["Scorch"]                    = 2948,
-            ["Pyroblast"]                 = 11366,
-            ["Blast Wave"]                = 11113,
-            ["Flamestrike"]               = 2120,
-            ["Arcane Missiles"]           = 5143,
-            ["Arcane Explosion"]          = 1449,
-            ["Mana Shield"]               = 1463,
-            ["Ice Barrier"]               = 11426,
-            ["Evocation"]                 = 12051,
-            ["Arcane Blast"]              = 400574,
-            ["Arcane Surge"]              = 425124,
-            ["Ice Lance"]                 = 400640,
-            ["Living Bomb"]               = 400613,
-            ["Living Flame"]              = 401556,
-            ["Mass Regeneration"]         = 412510,
-            ["Regeneration"]              = 401417,
-            ["Frostfire Bolt"]            = 401502,
-            ["Spellfrost Bolt"]           = 412532,
-            ["Chronostatic Preservation"] = 436516,
-            ["Balefire Bolt"]             = 428878,
-            ["Deep Freeze"]               = 428739,
-            ["Temporal Anomaly"]          = 428885,
-            ["Frozen Orb"]                = 440802,
-            ["Arcane Barrage"]            = 400610,
+            frostbolt                 = 116,
+            frost_nova                = 122,
+            cone_of_cold              = 120,
+            blizzard                  = 10,
+            fireball                  = 133,
+            fire_blast                = 2136,
+            scorch                    = 2948,
+            pyroblast                 = 11366,
+            blast_wave                = 11113,
+            flamestrike               = 2120,
+            arcane_missiles           = 5143,
+            arcane_explosion          = 1449,
+            mana_shield               = 1463,
+            ice_barrier               = 11426,
+            evocation                 = 12051,
+            arcane_blast              = 400574,
+            arcane_surge              = 425124,
+            ice_lance                 = 400640,
+            living_bomb               = 400613,
+            living_flame              = 401556,
+            mass_regeneration         = 412510,
+            regeneration              = 401417,
+            frostfire_bolt            = 401502,
+            spellfrost_bolt           = 412532,
+            chronostatic_preservation = 436516,
+            balefire_bolt             = 428878,
+            deep_freeze               = 428739,
+            temporal_anomaly          = 428885,
+            frozen_orb                = 440802,
+            arcane_barrage            = 400610,
         };
     elseif class == "DRUID" then
         return {
-            ["Healing Touch"]    = 5185,
-            ["Rejuvenation"]     = 774,
-            ["Tranquility"]      = 740,
-            ["Regrowth"]         = 8936,
-            ["Moonfire"]         = 8921,
-            ["Wrath"]            = 5176,
-            ["Starfire"]         = 2912,
-            ["Insect Swarm"]     = 5570,
-            ["Hurricane"]        = 16914,
-            ["Entangling Roots"] = 339,
-            ["Innervate"]        = 29166,
-            ["Swiftmend"]        = 18562,
-            ["Thorns"]           = 467,
-            ["Lifebloom"]        = 408124,
-            ["Starsurge"]        = 417157,
-            ["Sunfire"]          = 414684,
-            ["Sunfire (Bear)"]   = 414687,
-            ["Sunfire (Cat)"]    = 414689,
-            ["Wild Growth"]      = 408120,
-            ["Nourish"]          = 408247,
-            ["Efflorescence"]    = 417149,
-            ["Starfall"]         = 439748,
+            healing_touch    = 5185,
+            rejuvenation     = 774,
+            tranquility      = 740,
+            regrowth         = 8936,
+            moonfire         = 8921,
+            wrath            = 5176,
+            starfire         = 2912,
+            insect_swarm     = 5570,
+            hurricane        = 16914,
+            entangling_roots = 339,
+            innervate        = 29166,
+            swiftmend        = 18562,
+            thorns           = 467,
+            lifebloom        = 408124,
+            starsurge        = 417157,
+            sunfire          = 414684,
+            sunfire_bear     = 414687,
+            sunfire_cat      = 414689,
+            wild_growth      = 408120,
+            nourish          = 408247,
+            efflorescence    = 417149,
+            starfall         = 439748,
         };
     elseif class == "PRIEST" then
         return {
-            ["Lesser Heal"]        = 2050,
-            ["Heal"]               = 2054,
-            ["Greater Heal"]       = 2060,
-            ["Flash Heal"]         = 2061,
-            ["Prayer of Healing"]  = 596,
-            ["Renew"]              = 139,
-            ["Power Word: Shield"] = 17,
-            ["Holy Nova"]          = 15237,
-            ["Smite"]              = 585,
-            ["Holy Fire"]          = 14914,
-            ["Mind Blast"]         = 8092,
-            ["Shadow Word: Pain"]  = 589,
-            ["Mind Flay"]          = 15407,
-            ["Devouring Plague"]   = 2944,
-            ["Lightwell"]          = 724,
-            ["Desperate Prayer"]   = 19236,
-            ["Circle of Healing"]  = 401946,
-            ["Mind Sear"]          = 413259,
-            ["Penance"]            = 402174,
-            ["Prayer of Mending"]  = 401859,
-            ["Shadow Word: Death"] = 401955,
-            ["Void Plague"]        = 425204,
-            ["Starshards"]         = 10797,
-            ["Touch of Weakness"]  = 2652,
-            ["Shadowguard"]        = 18137,
-            ["Mana Burn"]          = 8129,
-            ["Mind Spike"]         = 431655,
-            ["Dispersion"]         = 425294,
-            ["Void Zone"]          = 431681,
-            ["Shadowfiend"]        = 401977,
-            ["Binding Heal"]       = 401937,
-            ["Vampiric Touch"]     = 402668,
+            lesser_heal       = 2050,
+            heal              = 2054,
+            greater_heal      = 2060,
+            flash_heal        = 2061,
+            prayer_of_healing = 596,
+            renew             = 139,
+            power_word_shield = 17,
+            holy_nova         = 15237,
+            smite             = 585,
+            holy_fire         = 14914,
+            mind_blast        = 8092,
+            shadow_word_pain  = 589,
+            mind_flay         = 15407,
+            devouring_plague  = 2944,
+            lightwell         = 724,
+            desperate_prayer  = 19236,
+            circle_of_healing = 401946,
+            mind_sear         = 413259,
+            penance           = 402174,
+            prayer_of_mending = 401859,
+            shadow_word_death = 401955,
+            void_plague       = 425204,
+            starshards        = 10797,
+            touch_of_weakness = 2652,
+            shadowguard       = 18137,
+            mana_burn         = 8129,
+            mind_spike        = 431655,
+            dispersion        = 425294,
+            void_zone         = 431681,
+            shadowfiend       = 401977,
+            binding_heal      = 401937,
+            vampiric_touch    = 402668,
         };
     elseif class == "SHAMAN" then
         return {
-            ["Healing Stream Totem"] = 5394,
-            ["Lesser Healing Wave"]  = 8004,
-            ["Healing Wave"]         = 331,
-            ["Chain Heal"]           = 1064,
-            ["Lightning Bolt"]       = 403,
-            ["Chain Lightning"]      = 421,
-            ["Lightning Shield"]     = 324,
-            ["Earth Shock"]          = 8042,
-            ["Magma Totem"]          = 8190,
-            ["Flame Shock"]          = 8050,
-            ["Frost Shock"]          = 8056,
-            ["Fire Nova Totem"]      = 1535,
-            ["Searing Totem"]        = 3599,
-            ["Mana Tide Totem"]      = 16190,
-            ["Healing Rain"]         = 415236,
-            ["Lava Burst"]           = 408490,
-            ["Shamanistic Rage"]     = 425336,
-            ["Earth Shield"]         = 408514,
-            ["Flametongue Weapon"]   = 8024,
-            ["Frostbrand Weapon"]    = 8033,
-            ["Riptide"]              = 408521,
+            healing_stream_totem = 5394,
+            lesser_healing_wave  = 8004,
+            healing_wave         = 331,
+            chain_heal           = 1064,
+            lightning_bolt       = 403,
+            chain_lightning      = 421,
+            lightning_shield     = 324,
+            earth_shock          = 8042,
+            magma_totem          = 8190,
+            flame_shock          = 8050,
+            frost_shock          = 8056,
+            fire_nova_totem      = 1535,
+            searing_totem        = 3599,
+            mana_tide_totem      = 16190,
+            healing_rain         = 415236,
+            lava_burst           = 408490,
+            shamanistic_rage     = 425336,
+            earth_shield         = 408514,
+            flametongue_weapon   = 8024,
+            frostbrand_weapon    = 8033,
+            riptide              = 408521,
 
         };
     elseif class == "PALADIN" then
         return {
-            ["Flash of Light"]   = 19750,
-            ["Holy Light"]       = 635,
-            ["Holy Shock"]       = 20473,
-            ["Exorcism"]         = 879,
-            ["Consecration"]     = 26573,
-            ["Holy Wrath"]       = 2812,
-            ["Hammer of Wrath"]  = 24275,
-            ["Avenger's Shield"] = 407669,
-            ["Sacred Shield"]    = 412019,
-            ["Divine Light"]     = 458856,
+            flash_of_light  = 19750,
+            holy_light      = 635,
+            holy_shock      = 20473,
+            exorcism        = 879,
+            consecration    = 26573,
+            holy_wrath      = 2812,
+            hammer_of_wrath = 24275,
+            avengers_shield = 407669,
+            sacred_shield   = 412019,
+            divine_light    = 458856,
         };
     elseif class == "WARLOCK" then
         return {
-            ["Curse of Agony"]      = 980,
-            ["Death Coil"]          = 6789,
-            ["Corruption"]          = 172,
-            ["Drain Life"]          = 689,
-            ["Drain Soul"]          = 1120,
-            ["Shadow Bolt"]         = 686,
-            ["Searing Pain"]        = 5676,
-            ["Soul Fire"]           = 6353,
-            ["Hellfire"]            = 1949,
-            ["Rain of Fire"]        = 5740,
-            ["Immolate"]            = 348,
-            ["Shadowburn"]          = 17877,
-            ["Curse of Doom"]       = 603,
-            ["Inferno"]             = 1122,
-            ["Health Funnel"]       = 755,
-            ["Life Tap"]            = 1454,
-            ["Conflagrate"]         = 17962,
-            ["Shadow Ward"]         = 6229,
-            ["Siphon Life"]         = 18265,
-            ["Chaos Bolt"]          = 403629,
-            ["Haunt"]               = 403501,
-            ["Incinerate"]          = 412758,
-            ["Shadow Cleave"]       = 403835,
-            ["Shadowflame"]         = 426320,
-            ["Immolation Aura"]     = 427726,
-            ["Unstable Affliction"] = 427717,
+            curse_of_agony      = 980,
+            death_coil          = 6789,
+            corruption          = 172,
+            drain_life          = 689,
+            drain_soul          = 1120,
+            shadow_bolt         = 686,
+            searing_pain        = 5676,
+            soul_fire           = 6353,
+            hellfire            = 1949,
+            rain_of_fire        = 5740,
+            immolate            = 348,
+            shadowburn          = 17877,
+            curse_of_doom       = 603,
+            inferno             = 1122,
+            health_funnel       = 755,
+            life_tap            = 1454,
+            conflagrate         = 17962,
+            shadow_ward         = 6229,
+            siphon_life         = 18265,
+            chaos_bolt          = 403629,
+            haunt               = 403501,
+            incinerate          = 412758,
+            shadow_cleave       = 403835,
+            shadowflame         = 426320,
+            immolation_aura     = 427726,
+            unstable_affliction = 427717,
 
         };
     else
         return {};
     end
-end
+end)();
 
-local spell_name_to_id = spell_name_to_ids();
 if race == "BloodElf" then
-    spell_name_to_id["Arcane Torrent"] = 28730;
+    spids.arcane_torrent = 28730;
 end
 if class == "WARLOCK" or class == "MAGE" or class == "PRIEST" then
-    spell_name_to_id["Shoot"] = 5019;
+    spids.shoot = 5019;
 end
 
 local localized_spell_names_to_id = {};
 local english_spell_name_to_base_id = {};
-for k, v in pairs(spell_name_to_id) do
+for k, v in pairs(spids) do
     local lname = GetSpellInfo(v);
     if not lname then
         --print("spell not found: ", k,v);
@@ -221,12 +201,14 @@ local magic_school = {
 };
 
 local spell_flags = {
-    instant                 = bit.lshift(1, 0),
-    aoe                     = bit.lshift(1, 1),
-    snare                   = bit.lshift(1, 2),
+    instant = bit.lshift(0, 0), -- imply with 0.0 sec cast?
+    aoe     = bit.lshift(0, 1), -- del
+    snare   = bit.lshift(1, 2), -- del
+
+
     heal                    = bit.lshift(1, 3),
     absorb                  = bit.lshift(1, 4),
-    over_time_crit          = bit.lshift(1, 5),
+    over_time_crit          = bit.lshift(1, 5), --
     cd                      = bit.lshift(1, 6),
     over_time_range         = bit.lshift(1, 7),
     channel_missable        = bit.lshift(1, 8), -- e.g. missing mid flay only loses you one gcd instead of the whole cast
@@ -248,7 +230,7 @@ local spell_flags = {
     unbounded_aoe_ot        = bit.lshift(1, 24), -- periodic portion has unbounded aoe
     periodic_no_coef        = bit.lshift(1, 25), -- over time effects that don't scale
     binary                  = bit.lshift(1, 26), -- binary spells e.g. frostbolt can't partially resist
-    dot_resi_penetrate      = bit.lshift(1, 27), -- non binary pure dots in vanilla largely penetrate resistances at 1/10
+    resi_pen                = bit.lshift(1, 27), -- non binary pure dots in vanilla largely penetrate resistances at 1/10
     multi_school            = bit.lshift(1, 28), -- to enable double dipping behaviour, e.g. frostfire bolt
     special_periodic_school = bit.lshift(1, 29), -- periodic effect is second school
     affliction              = bit.lshift(1, 30),
@@ -1428,7 +1410,7 @@ local function create_spells()
             [12051] = {
                 base_min            = 15.0,
                 base_max            = 15.0,
-                over_time           = 0.0,
+                over_time           = 15.0,
                 over_time_tick_freq = 2,
                 over_time_duration  = 8.0,
                 cast_time           = 8.0,
@@ -1973,7 +1955,7 @@ local function create_spells()
                 lvl_req      = 26,
                 lvl_max      = 31,
                 lvl_outdated = 31,
-                lvl_scaling  = 3,
+                lvl_scaling  = 3.5,
             },
             [6778] = {
                 base_min     = 742,
@@ -1984,7 +1966,7 @@ local function create_spells()
                 lvl_req      = 32,
                 lvl_max      = 37,
                 lvl_outdated = 37,
-                lvl_scaling  = 3.4,
+                lvl_scaling  = 4.0,
             },
             [8903] = {
                 base_min     = 936,
@@ -1995,7 +1977,7 @@ local function create_spells()
                 lvl_req      = 38,
                 lvl_max      = 43,
                 lvl_outdated = 43,
-                lvl_scaling  = 3.9,
+                lvl_scaling  = 4.5,
             },
             [9758] = {
                 base_min     = 1199,
@@ -2006,7 +1988,7 @@ local function create_spells()
                 lvl_req      = 44,
                 lvl_max      = 49,
                 lvl_outdated = 49,
-                lvl_scaling  = 4.5,
+                lvl_scaling  = 5.2,
             },
             [9888] = {
                 base_min     = 1516,
@@ -2017,7 +1999,7 @@ local function create_spells()
                 lvl_req      = 50,
                 lvl_max      = 55,
                 lvl_outdated = 55,
-                lvl_scaling  = 5.1,
+                lvl_scaling  = 5.9,
             },
             [9889] = {
                 base_min     = 1890,
@@ -2028,7 +2010,7 @@ local function create_spells()
                 lvl_req      = 56,
                 lvl_max      = 61,
                 lvl_outdated = 59,
-                lvl_scaling  = 5.7,
+                lvl_scaling  = 6.6,
             },
             [25297] = {
                 base_min     = 2267,
@@ -2039,7 +2021,7 @@ local function create_spells()
                 lvl_req      = 60,
                 lvl_max      = 65,
                 lvl_outdated = 61,
-                lvl_scaling  = 6.2,
+                lvl_scaling  = 7.3,
             },
             -- rejuvenation
             [774] = {
@@ -2813,7 +2795,7 @@ local function create_spells()
             [29166] = {
                 base_min            = 4.0,
                 base_max            = 4.0,
-                over_time           = 0.0,
+                over_time           = 4.0,
                 over_time_tick_freq = 2,
                 over_time_duration  = 20.0,
                 cast_time           = 1.5,
@@ -2830,7 +2812,7 @@ local function create_spells()
             },
             -- swiftmend
             [18562] = {
-                base_min            = 0.0,
+                base_min            = 1.0,
                 base_max            = 0.0,
                 over_time           = 0.0,
                 over_time_tick_freq = 0,
@@ -4389,7 +4371,7 @@ local function create_spells()
                 lvl_req             = 4,
                 lvl_max             = 9,
                 lvl_outdated        = 9,
-                flags               = bit.bor(spell_flags.dot_resi_penetrate, spell_flags.instant),
+                flags               = bit.bor(spell_flags.resi_pen, spell_flags.instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 1.1 / 6,
@@ -4667,7 +4649,7 @@ local function create_spells()
                 lvl_req             = 20,
                 lvl_max             = 0,
                 lvl_outdated        = 27,
-                flags               = bit.bor(spell_flags.hybrid, spell_flags.binary, spell_flags.dot_resi_penetrate,
+                flags               = bit.bor(spell_flags.hybrid, spell_flags.binary, spell_flags.resi_pen,
                     spell_flags.instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
@@ -4935,7 +4917,7 @@ local function create_spells()
                 lvl_outdated        = 60,
                 cost                = 0.13,
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune, spell_flags.cd,
-                    spell_flags.dot_resi_penetrate, spell_flags.instant),
+                    spell_flags.resi_pen, spell_flags.instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0,
@@ -7402,7 +7384,7 @@ local function create_spells()
                 lvl_req             = 8,
                 lvl_max             = 17,
                 lvl_outdated        = 17,
-                flags               = bit.bor(spell_flags.curse, spell_flags.dot_resi_penetrate, spell_flags.affliction,
+                flags               = bit.bor(spell_flags.curse, spell_flags.resi_pen, spell_flags.affliction,
                     spell_flags.instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
@@ -7519,7 +7501,7 @@ local function create_spells()
                 lvl_req             = 4,
                 lvl_max             = 9,
                 lvl_outdated        = 13,
-                flags               = bit.bor(spell_flags.dot_resi_penetrate, spell_flags.affliction, spell_flags
+                flags               = bit.bor(spell_flags.resi_pen, spell_flags.affliction, spell_flags
                     .instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
@@ -7814,7 +7796,7 @@ local function create_spells()
                 lvl_req             = 30,
                 lvl_max             = 36,
                 lvl_outdated        = 37,
-                flags               = bit.bor(spell_flags.hybrid, spell_flags.binary, spell_flags.dot_resi_penetrate,
+                flags               = bit.bor(spell_flags.hybrid, spell_flags.binary, spell_flags.resi_pen,
                     spell_flags.affliction, spell_flags.instant),
                 school              = magic_school.shadow,
                 coef                = 0.0,
@@ -8895,7 +8877,7 @@ local function create_spells()
                 lvl_outdated        = 60,
                 cost                = 0.15,
                 flags               = bit.bor(spell_flags.base_mana_cost, spell_flags.sod_rune,
-                    spell_flags.dot_resi_penetrate, spell_flags.affliction, spell_flags.exception_coef),
+                    spell_flags.resi_pen, spell_flags.affliction, spell_flags.exception_coef),
                 school              = magic_school.shadow,
                 coef                = 0.0,
                 over_time_coef      = 0.2,
@@ -8967,10 +8949,6 @@ local function create_spells()
     return {};
 end
 
-local function level_scaling(lvl)
-    return math.min(1, 1 - (20 - lvl) * 0.0375);
-end
-
 local function spell_coef(spell_info, k)
     local direct_coef = math.min(1.0, math.max(1.5 / 3.5, spell_info.cast_time / 3.5));
     local ot_coef = math.min(1.0, spell_info.over_time_duration / 15.0);
@@ -9022,7 +9000,7 @@ local spells = create_spells();
 
 if class == "WARLOCK" or class == "MAGE" or class == "PRIEST" then
     spells[5019] = {
-        base_min            = 0,
+        base_min            = 1,
         base_max            = 0,
         over_time           = 0.0,
         over_time_tick_freq = 0,
@@ -9042,7 +9020,7 @@ if class == "WARLOCK" or class == "MAGE" or class == "PRIEST" then
 end
 
 local spells_by_rank = {};
-for k, v in pairs(spell_name_to_id) do
+for k, v in pairs(spids) do
     spells_by_rank[v] = {};
 end
 
@@ -9182,9 +9160,16 @@ elseif class == "WARLOCK" then
     spells[705].cast_time = 2.8;
 end
 
+local function spell_coef_lvl_adjusted(coef, lvl_req)
+    local coef_mod = 1.0;
+    if (lvl_req ~= 0) then
+        coef_mod = math.min(1, 1 - (20 - lvl_req) * 0.0375);
+    end
+    return coef * coef_mod;
+end
 
 for k, v in pairs(spells) do
-    local lvl_mod = level_scaling(v.lvl_req);
+    local lvl_mod = spell_coef_lvl_adjusted(1, v.lvl_req);
     if bit.band(v.flags, spell_flags.sod_rune) ~= 0 then
         lvl_mod = 1.0;
     end
@@ -9194,7 +9179,7 @@ for k, v in pairs(spells) do
 
     if bit.band(v.flags, spell_flags.exception_coef) == 0 then
         coef, ot_coef = spell_coef(v, k);
-    elseif v.base_id == spell_name_to_id["Entangling Roots"] then
+    elseif v.base_id == spids.entangling_roots then
         ot_coef = math.min(1.0, v.over_time_duration / 15) * 0.9 / (3 * (v.over_time_duration / v.over_time_tick_freq));
     end
 
@@ -9217,6 +9202,160 @@ for k, v in pairs(spells) do
 
         v.healing_version.coef = healing_coef;
         v.healing_version.over_time_coef = healing_ot_coef;
+    end
+end
+
+-- testing phase, merge old abilities with new, diff etc
+local function format_change(v)
+    if v.base_min ~= 0 then
+        v.value = v.base_min;
+        v.direct = {
+            base = 0,
+            min = v.base_min,
+            max = v.base_max,
+            coef = v.coef,
+            per_lvl = v.lvl_scaling,
+            per_lvl_sq = 0,
+            school1 = v.school,
+            jumps = 0,
+            jump_falloff = 0,
+        };
+    end
+    if v.over_time ~= 0 then
+        v.periodic = {
+            base = 0,
+            min = v.over_time,
+            max = v.over_time_max or v.over_time,
+            tick_time = v.over_time_tick_freq,
+            dur = v.over_time_duration,
+            coef = v.over_time_coef,
+            per_lvl = 0,
+            per_lvl_sq = 0,
+            school1 = v.school,
+            jumps = 0,
+            jump_falloff = 0,
+        };
+        --v.school = nil;
+    end
+    if v.lvl_scaling > 0 and bit.band(v.flags, spell_flags.over_time_lvl_scaling) ~= 0 then
+        v.periodic.per_lvl = v.lvl_scaling;
+    end
+
+    if v.lvl_scaling_squared then
+        -- sod
+        if v.direct then
+            v.direct.base = v.base_min;
+            v.direct.min = v.lvl_coef;
+            v.direct.max = v.lvl_coef_max;
+            v.direct.per_lvl = v.lvl_scaling;
+            v.direct.per_lvl_sq = v.lvl_scaling_squared;
+        end
+        if v.periodic then
+            v.periodic.base = v.over_time;
+            v.periodic.min = v.lvl_coef_ot;
+            v.periodic.max = v.lvl_coef_ot_max;
+            v.periodic.per_lvl = v.lvl_scaling;
+            v.periodic.per_lvl_sq = v.lvl_scaling_squared;
+        end
+    end
+
+    v.base_min = nil;
+    v.base_max = nil;
+    v.coef = nil;
+    v.school = nil;
+    v.lvl_scaling = nil;
+
+    v.lvl_coef = nil;
+    v.lvl_coef_max = nil;
+    v.lvl_coef_ot = nil;
+    v.lvl_coef_ot_max = nil;
+end
+
+for k, v in pairs(spells) do
+    format_change(v);
+    if v.healing_version then
+        format_change(v.healing_version);
+    end
+end
+
+--for k, v in pairs(spells) do
+--    if not swc.spells[k] then
+--        swc.spells[k] = v;
+--    end
+--end
+for k, v in pairs(spids) do
+    if not swc.spids[k] then
+        print("Missing spid", k, v);
+        swc.spids[k] = v;
+    end
+end
+
+spells = swc.spells;
+spell_flags = swc.spell_flags;
+spids = swc.spids;
+rank_seqs = swc.rank_seqs;
+
+
+-- MANUAL OVERWRITES OR ADDITIONS TO THE GENERATED DATA THAT NEEDS SPECIAL CARE
+swc.auto_attack_spell_id = 6603;
+spells[swc.auto_attack_spell_id] = {
+    direct = {
+        base = 0,
+        min = 1,
+        max = 1,
+        school1 = swc.schools.physical,
+        coef = 0,
+        coef_ap = 0,
+        per_lvl = 0,
+        per_lvl_sq = 0,
+        flags = bit.bor(0, swc.comp_flags.applies_mh),
+    },
+    cast_time = 0,
+    cost = 0,
+    rank = 0,
+    lvl_req = 0,
+    lvl_max = 100,
+    lvl_outdated = 100,
+    base_id = 6603,
+    gcd = 0,
+    train = 0,
+    flags = bit.bor(0, swc.spell_flags.eval, swc.spell_flags.uses_attack_speed),
+};
+-- TODO: issue spells
+-- swiftmend, effloresence
+
+-- manual overwrite list
+-- deal with lvl scaling < 20
+-- absorb 0.1
+-- holy light 0.1
+
+
+--TODO: iterate over rank list, apply coef and lvl scaling reduction at < 20
+if class == "MAGE" then
+    for _, v in pairs(rank_seqs[spids.ice_lance]) do
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.42899999022, spells[v].lvl_req);
+    end
+elseif class == "DRUID" then
+    -- temporary, swiftmend is broken due to ordering of calc
+    spells[spids.swiftmend] = nil
+    spids.swiftmend = nil
+
+    for _, v in pairs(rank_seqs[spids.lifebloom]) do
+        spells[v].periodic.coef = spell_coef_lvl_adjusted(0.051, spells[v].lvl_req);
+    end
+elseif class == "PRIEST" then
+    for _, v in pairs(rank_seqs[spids.power_word_shield]) do
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.1, spells[v].lvl_req);
+    end
+elseif class == "SHAMAN" then
+    for _, v in pairs(rank_seqs[spids.earth_shield]) do
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.27099999785, spells[v].lvl_req);
+    end
+end
+
+for k, v in pairs(spells) do
+    if not v.periodic and not v.direct and bit.band(v.flags, swc.spell_flags.eval) ~= 0 then
+        print("Warning: spell", k, "has no components yet eval flag");
     end
 end
 
@@ -9246,65 +9385,51 @@ local function best_rank_by_lvl(spell_base_id, lvl)
     return spells_by_rank[spell_base_id][best_by_lvl], spells_by_rank[spell_base_id][i - 1];
 end
 
-local function spell_names_to_id(english_names)
-    local base_ids = {};
-    for k, v in pairs(english_names) do
-        base_ids[k] = spell_name_to_id[v];
-    end
-    return base_ids;
-end
-
 local spell_groups = {};
 spell_groups.heal = {};
 spell_groups.instant = {};
 
-for k, v in pairs(spell_name_to_id) do
-    if bit.band(spells[v].flags, spell_flags.heal) ~= 0 or spells[v].healing_version then
-        spell_groups.heal[v] = v;
+for _, v in pairs(spells) do
+    if bit.band(v.flags, spell_flags.heal) ~= 0 or v.healing_version then
+        spell_groups.heal[v.base_id] = v.base_id;
     end
-    if bit.band(spells[v].flags, spell_flags.instant) ~= 0 then
-        spell_groups.instant[v] = v;
+    if bit.band(v.flags, spell_flags.instant) ~= 0 then
+        spell_groups.instant[v.base_id] = v.base_id;
     end
 end
 
 if class == "WARLOCK" then
     spell_groups.destruction = {};
-    for k, v in pairs(spell_name_to_id) do
-        if bit.band(spells[v].flags, spell_flags.destruction) ~= 0 then
-            spell_groups.destruction[v] = v;
-        end
+    for _, v in pairs(spells) do
+        --if bit.band(v.flags, spell_flags.destruction) ~= 0 then
+        --    spell_groups.destruction[v.base_id] = v.base_id;
+        --end
     end
 elseif class == "PRIEST" then
     spell_groups.serendipity_affected =
-        spell_names_to_id({ "Lesser Heal", "Heal", "Greater Heal", "Prayer of Healing" });
+    { spids.lesser_heal, spids.heal, spids.greater_heal, spids.prayer_of_healing };
     spell_groups.weakened_soul_affected =
-        spell_names_to_id({ "Flash Heal", "Lesser Heal", "Heal", "Greater Heal", "Penance" });
+    { spids.flash_heal, spids.lesser_heal, spids.heal, spids.greater_heal, spids.penance };
 elseif class == "SHAMAN" then
     spell_groups.maelstrom_affected =
-        spell_names_to_id({ "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Healing Wave", "Chain Heal",
-            "Lava Burst" });
+    { spids.lightning_bolt, spids.chain_lightning, spids.lesser_healing_wave, spids.healing_wave, spids.chain_heal,
+        spids.lava_burst };
     spell_groups.power_surge_affected =
-        spell_names_to_id({ "Chain Lightning", "Lava Burst", "Chain Heal" });
+    { spids.chain_lightning, spids.lava_burst, spids.chain_heal };
 elseif class == "MAGE" then
     spell_groups.brain_freeze_affected =
-        spell_names_to_id({ "Fireball", "Spellfrost Bolt", "Frostfire Bolt" });
+    { spids.fireball, spids.spellfrost_bolt, spids.frostfire_bolt };
 end
 
---local id_to_lname = {};
---for k in pairs(spells) do
---end
-
-local addon_name, swc = ...;
-local abilities = {};
 
 abilities.spells = spells;
-abilities.spell_name_to_id = spell_name_to_id;
-abilities.spell_names_to_id = spell_names_to_id;
 abilities.english_spell_name_to_base_id = english_spell_name_to_base_id;
 abilities.magic_school = magic_school;
 abilities.spell_flags = spell_flags;
 abilities.best_rank_by_lvl = best_rank_by_lvl;
 abilities.next_spell_rank = next_spell_rank;
 abilities.spell_groups = spell_groups;
+abilities.spids = spids;
+
 
 swc.abilities = abilities;

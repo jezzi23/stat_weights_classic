@@ -23,7 +23,7 @@
 local _, swc = ...;
 
 local spells                                    = swc.abilities.spells;
-local spell_name_to_id                          = swc.abilities.spell_name_to_id;
+local spids                                     = swc.abilities.spids;
 local spell_flags                               = swc.abilities.spell_flags;
 
 local wowhead_talent_link                       = swc.talents.wowhead_talent_link;
@@ -130,7 +130,7 @@ local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_n
         bit.band(spell.flags, spell_flags.heal) ~= 0 then
 
         v.name_str:SetText(v.name.." H "..rank_str);
-    elseif v.name == spell_name_to_id["Holy Nova"] or v.name == spell_name_to_id["Holy Shock"] or v.name == spell_name_to_id["Penance"] then
+    elseif v.name == spids.holy_nova or v.name == spids.holy_shock or v.name == spids.penance then
 
         v.name_str:SetText(v.name.." D "..rank_str);
     else
@@ -256,6 +256,7 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
     --        end
     --    end
     --end
+
 
     for random_rank, v in pairs(frame.spells) do
 
@@ -498,8 +499,8 @@ local function create_sw_spell_id_viewer()
         else
             sw_frame.spell_id_viewer_editbox_label:Hide();
         end
-        if spell_name_to_id[txt] then
-            self:SetText(tostring(spell_name_to_id[txt]));
+        if spids[txt] then
+            self:SetText(tostring(spids[txt]));
         end
         local id = tonumber(txt);
         if id and id <= bit.lshift(1, 31) and (GetSpellInfo(id) or spells[id]) then
@@ -648,14 +649,21 @@ local function create_sw_ui_tooltip_frame()
     f_txt = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
-    f_txt:SetText("Tooltip display options         Presets:");
+    f_txt:SetText("Tooltip display options:");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
+    f_txt = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
+    f_txt:SetText("Presets:");
+    f_txt:SetTextColor(1.0, 1.0, 1.0);
 
 
     local tooltip_components = {
         {
             id = "tooltip_display_addon_name",
-            txt = "Addon Name"
+            txt = "Addon & loadout name"
         },
         {
             id = "tooltip_display_dynamic_tip",
@@ -664,8 +672,8 @@ local function create_sw_ui_tooltip_frame()
         },
         {
             id = "tooltip_display_loadout_info",
-            txt = "Loadout info",
-            color = effect_colors.addon_info,
+            txt = "Target info",
+            color = effect_colors.loadout_info,
         },
         {
             id = "tooltip_display_spell_rank",
@@ -783,9 +791,9 @@ local function create_sw_ui_tooltip_frame()
 
     end);
 
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 230, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 80, sw_frame.tooltip_frame.y_offset+16);
     sw_frame.tooltip_frame.preset_minimalistic_button:SetText("Minimalistic");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(90);
+    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(120);
 
     sw_frame.tooltip_frame.preset_default_button =
         CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
@@ -807,9 +815,9 @@ local function create_sw_ui_tooltip_frame()
         getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
         getglobal("sw_frame_setting_tooltip_display_dynamic_tip"):Click();
     end);
-    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 320, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 200, sw_frame.tooltip_frame.y_offset+16);
     sw_frame.tooltip_frame.preset_default_button:SetText("Default");
-    sw_frame.tooltip_frame.preset_default_button:SetWidth(70);
+    sw_frame.tooltip_frame.preset_default_button:SetWidth(120);
 
     sw_frame.tooltip_frame.preset_detailed_button =
         CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
@@ -840,9 +848,9 @@ local function create_sw_ui_tooltip_frame()
         getglobal("sw_frame_setting_tooltip_display_stat_weights_doom"):Click();
         getglobal("sw_frame_setting_tooltip_display_dynamic_tip"):Click();
     end);
-    sw_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 390, sw_frame.tooltip_frame.y_offset+14);
+    sw_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 320, sw_frame.tooltip_frame.y_offset+16);
     sw_frame.tooltip_frame.preset_detailed_button:SetText("Detailed");
-    sw_frame.tooltip_frame.preset_detailed_button:SetWidth(80);
+    sw_frame.tooltip_frame.preset_detailed_button:SetWidth(120);
     local tooltip_toggle = function(self)
 
         local checked = self:GetChecked();
@@ -1453,25 +1461,25 @@ local function create_sw_ui_calculator_frame()
     sw_frame.calculator_frame.spells = {};
     sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
 
-    if class == "DRUID" then
-        local lname = GetSpellInfo(5185);
-        sw_frame.calculator_frame.spells[5185] = {name = lname};
-    elseif class == "MAGE" then
-        local lname = GetSpellInfo(133);
-        sw_frame.calculator_frame.spells[133] = {name = lname};
-    elseif class == "WARLOCK" then
-        local lname = GetSpellInfo(686);
-        sw_frame.calculator_frame.spells[686] = {name = lname};
-    elseif class == "PALADIN" then
-        local lname = GetSpellInfo(635);
-        sw_frame.calculator_frame.spells[635] = {name = lname};
-    elseif class == "PRIEST" then
-        local lname = GetSpellInfo(585);
-        sw_frame.calculator_frame.spells[585] = {name = lname};
-    elseif class == "SHAMAN" then
-        local lname = GetSpellInfo(403);
-        sw_frame.calculator_frame.spells[403] = {name = lname};
-    end
+    --if class == "DRUID" then
+    --    local lname = GetSpellInfo(5185);
+    --    sw_frame.calculator_frame.spells[5185] = {name = lname};
+    --elseif class == "MAGE" then
+    --    local lname = GetSpellInfo(133);
+    --    sw_frame.calculator_frame.spells[133] = {name = lname};
+    --elseif class == "WARLOCK" then
+    --    local lname = GetSpellInfo(686);
+    --    sw_frame.calculator_frame.spells[686] = {name = lname};
+    --elseif class == "PALADIN" then
+    --    local lname = GetSpellInfo(635);
+    --    sw_frame.calculator_frame.spells[635] = {name = lname};
+    --elseif class == "PRIEST" then
+    --    local lname = GetSpellInfo(585);
+    --    sw_frame.calculator_frame.spells[585] = {name = lname};
+    --elseif class == "SHAMAN" then
+    --    local lname = GetSpellInfo(403);
+    --    sw_frame.calculator_frame.spells[403] = {name = lname};
+    --end
 end
 
 local function create_loadout_buff_checkbutton(buffs_table, buff_id, buff_info, buff_type, parent_frame, func)
@@ -1741,8 +1749,6 @@ local function create_sw_ui_loadout_frame()
     editbox_config(f, function(self)
 
         local txt = self:GetText();
-
-        print("updating talents editbox");
         swc.core.talents_update_needed = true;
 
         if config.loadout.use_custom_talents then

@@ -135,6 +135,7 @@ local function empty_effects(effects)
     effects.ability = {};
     effects.ability.crit = {};
     effects.ability.crit_ot = {};
+    effects.ability.ignore_cant_crit = {};
     effects.ability.effect_mod = {};
     effects.ability.effect_mod_base = {};
     effects.ability.cast_mod = {}; -- flat before mul
@@ -155,6 +156,8 @@ local function empty_effects(effects)
     effects.ability.coef_ot_mod = {};
     effects.ability.effect_ot_mod = {};
     effects.ability.effect_mod_only_heal = {};
+    effects.ability.jumps = {};
+    effects.ability.jump_amp = {};
     effects.mul.ability = {};
     effects.mul.ability.vuln_mod = {};
     effects.mul.ability.vuln_mod_ot = {};
@@ -385,6 +388,8 @@ local function dynamic_loadout(loadout)
 
     if not config.loadout.use_custom_lvl then
         loadout.lvl = UnitLevel("player");
+    else
+        loadout.lvl = config.loadout.lvl;
     end
 
     for i = 1, 5 do
@@ -440,9 +445,26 @@ local function dynamic_loadout(loadout)
         loadout.spell_crit_by_school[i] = GetSpellCritChance(i)*0.01;
     end
     local ap_src1, ap_src2, ap_src3 = UnitAttackPower("player");
-    loadout.attack_power = ap_src1 + ap_src2 + ap_src3;
-    loadout.melee_crit = GetCritChance()*0.01;
+    loadout.ap = ap_src1 + ap_src2 + ap_src3;
+    local rap_src1, rap_src2, rap_src3 = UnitRangedAttackPower("player");
+    loadout.rap = rap_src1 + rap_src2 + rap_src3;
 
+    local r_skill_base, r_skill_mod = UnitRangedAttack("player");
+    loadout.ranged_skill = r_skill_base + r_skill_mod;
+    local m1_skill_base, m1_skill_mod, m2_skill_base, m2_skill_mod = UnitAttackBothHands("player");
+    loadout.m1_skill = m1_skill_base + m1_skill_mod;
+    loadout.m2_skill = m2_skill_base + m2_skill_mod;
+
+    loadout.melee_crit = GetCritChance()*0.01;
+    loadout.ranged_crit = GetRangedCritChance()*0.01;
+    loadout.block_value = GetShieldBlock();
+    loadout.combo_pts = math.max(1, GetComboPoints("player", "target"));
+
+    loadout.r_speed, loadout.r_min, loadout.r_max, loadout.r_pos, loadout.r_neg, loadout.r_mod = UnitRangedDamage("player");
+
+    loadout.m1_min, loadout.m1_max, loadout.m2_min, loadout.m2_max, loadout.m_pos, loadout.m_neg, loadout.m_mod = UnitDamage("player");
+
+    loadout.m1_speed, loadout.m2_speed = UnitAttackSpeed("player");
 
     loadout.player_name = UnitName("player");
     loadout.target_name = UnitName("target");

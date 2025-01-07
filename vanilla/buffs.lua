@@ -36,7 +36,7 @@ local loadout_flags         = swc.loadout.loadout_flags;
 local config                = swc.config;
 
 local magic_school          = swc.abilities.magic_school;
-local spell_name_to_id      = swc.abilities.spell_name_to_id;
+local spids                 = swc.abilities.spids;
 local spell_groups          = swc.abilities.spell_groups;
 
 local set_tiers             = swc.equipment.set_tiers;
@@ -401,7 +401,7 @@ local buffs_predefined = {
     -- zg trinket
     [24546] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Greater Heal"], 0.4);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.greater_heal, 0.4);
             for k, v in pairs(spell_groups.heal) do
                 spell_mod_add(effects.ability.cost_mod, v, 0.05);
             end
@@ -412,7 +412,7 @@ local buffs_predefined = {
     -- zg trinket
     [24499] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Lightning Shield"], 1.0);
+            spell_mod_add(effects.ability.effect_mod, spids.lightning_shield, 1.0);
         end,
         filter = buff_filters.shaman,
         category = buff_category.item,
@@ -420,8 +420,8 @@ local buffs_predefined = {
     -- zg trinket
     [24542] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Touch"], 0.4);
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Nourish"], 0.4);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.healing_touch, 0.4);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.nourish, 0.4);
             for k, v in pairs(spell_groups.heal) do
                 spell_mod_add(effects.ability.cost_mod, v, 0.05);
             end
@@ -432,7 +432,7 @@ local buffs_predefined = {
     -- amplify curse
     [18288] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Curse of Agony"], 0.5);
+            spell_mod_add(effects.ability.effect_mod_base, spids.curse_of_agony, 0.5);
         end,
         filter = buff_filters.warlock,
         category = buff_category.class,
@@ -621,14 +621,14 @@ local buffs_predefined = {
     [24858] = {
         apply = function(loadout, effects, buff, inactive)
             if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
-                spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Moonfire"], 0.5);
-                spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Sunfire"], 0.5);
+                spell_mod_add(effects.ability.cost_mod, spids.moonfire, 0.5);
+                spell_mod_add(effects.ability.cost_mod, spids.sunfire, 0.5);
 
-                spell_mod_add(effects.ability.effect_ot_mod, spell_name_to_id["Moonfire"], 1.0);
-                spell_mod_add(effects.ability.effect_ot_mod, spell_name_to_id["Sunfire"], 1.0);
+                spell_mod_add(effects.ability.effect_ot_mod, spids.moonfire, 1.0);
+                spell_mod_add(effects.ability.effect_ot_mod, spids.sunfire, 1.0);
 
                 if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 6 then
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Wild Growth"], 0.5);
+                    spell_mod_add(effects.ability.effect_mod, spids.wild_growth, 0.5);
                 end
 
                 if inactive then
@@ -726,8 +726,8 @@ local buffs_predefined = {
     ---- fury of the stormrage proc
     [414800] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Touch"], 1.00);
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Nourish"], 1.00);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.healing_touch, 1.00);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.nourish, 1.00);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
@@ -743,8 +743,8 @@ local buffs_predefined = {
             effects.by_school.spell_dmg_mod[magic_school.arcane] =
                 effects.by_school.spell_dmg_mod[magic_school.arcane] + 0.15 * stacks;
             -- arcane blast is exempt from damage increase
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Arcane Blast"], -0.15 * stacks);
-            spell_mod_add(effects.ability.cost_mod_base, spell_name_to_id["Arcane Blast"], -stacks * 1.75);
+            spell_mod_add(effects.ability.effect_mod, spids.arcane_blast, -0.15 * stacks);
+            spell_mod_add(effects.ability.cost_mod_base, spids.arcane_blast, -stacks * 1.75);
 
             effects.raw.spell_heal_mod = effects.raw.spell_heal_mod + 0.15 * stacks;
         end,
@@ -788,7 +788,7 @@ local buffs_predefined = {
     -- metamorphosis
     [403789] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], 1.0);
+            spell_mod_add(effects.ability.effect_mod, spids.life_tap, 1.0);
             effects.mul.raw.spell_dmg_mod = effects.mul.raw.spell_dmg_mod * 0.85;
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
@@ -931,8 +931,8 @@ local buffs_predefined = {
     -- surge of light
     [431666] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Smite"], 1.0);
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Flash Heal"], 1.0);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.smite, 1.0);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.flash_heal, 1.0);
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.sod),
         category = buff_category.class,
@@ -967,8 +967,8 @@ local buffs_predefined = {
     -- hot streak
     [400625] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Pyroblast"], 1.0);
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Pyroblast"], 1.0);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.pyroblast, 1.0);
+            spell_mod_add(effects.ability.cost_mod, spids.pyroblast, 1.0);
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
@@ -976,11 +976,11 @@ local buffs_predefined = {
     -- missile barrage
     [400589] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod_reduce, spell_name_to_id["Arcane Missiles"], 0.5);
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Arcane Missiles"], 1.0);
+            spell_mod_add(effects.ability.cast_mod_reduce, spids.arcane_missiles, 0.5);
+            spell_mod_add(effects.ability.cost_mod, spids.arcane_missiles, 1.0);
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 4 then
-                spell_mod_add(effects.ability.cast_mod_reduce, spell_name_to_id["Regeneration"], 0.5);
-                spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Regeneration"], 1.0);
+                spell_mod_add(effects.ability.cast_mod_reduce, spids.regeneration, 0.5);
+                spell_mod_add(effects.ability.cost_mod, spids.regeneration, 1.0);
             end
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
@@ -1007,7 +1007,7 @@ local buffs_predefined = {
                 c = 5;
             end
 
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Balefire Bolt"], c * 0.2);
+            spell_mod_add(effects.ability.effect_mod, spids.balefire_bolt, c * 0.2);
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.class,
@@ -1050,8 +1050,8 @@ local buffs_predefined = {
     -- eclipse: solar
     [408250] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Wrath"], 0.3);
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Starsurge"], 0.3);
+            spell_mod_add(effects.ability.crit, spids.wrath, 0.3);
+            spell_mod_add(effects.ability.crit, spids.starsurge, 0.3);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
@@ -1059,7 +1059,7 @@ local buffs_predefined = {
     -- eclipse: lunar
     [408255] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Starfire"], 1.0);
+            spell_mod_add(effects.ability.cast_mod, spids.starfire, 1.0);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
@@ -1139,7 +1139,7 @@ local buffs_predefined = {
     -- starsurge
     [417157] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Starfire"], 0.8);
+            spell_mod_add(effects.ability.effect_mod, spids.starfire, 0.8);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.class,
@@ -1171,9 +1171,9 @@ local buffs_predefined = {
     -- tidal waves
     [432041] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Healing Wave"], 0.3);
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Chain Heal"], 0.15);
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Lesser Healing Wave"], 0.25);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.healing_wave, 0.3);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.chain_heal, 0.15);
+            spell_mod_add(effects.ability.crit, spids.lesser_healing_wave, 0.25);
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.sod),
         category = buff_category.class,
@@ -1244,7 +1244,7 @@ local buffs_predefined = {
             if buff.src then
                 c = buff.count;
             end
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Immolate"], c * 0.5);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.immolate, c * 0.5);
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.item,
@@ -1252,7 +1252,7 @@ local buffs_predefined = {
     -- for lordaeron
     [449982] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.2);
+            spell_mod_add(effects.ability.cast_mod, spids.holy_light, 0.2);
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.sod),
         category = buff_category.item,
@@ -1313,13 +1313,13 @@ local buffs_predefined = {
     -- tree of life form
     [439733] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Lifebloom"], 0.2);
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Regrowth"], 0.2);
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Rejuvenation"], 0.2);
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Tranquility"], 0.2);
-            spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Wild Growth"], 0.2);
+            spell_mod_add(effects.ability.cost_mod, spids.lifebloom, 0.2);
+            spell_mod_add(effects.ability.cost_mod, spids.regrowth, 0.2);
+            spell_mod_add(effects.ability.cost_mod, spids.rejuvenation, 0.2);
+            spell_mod_add(effects.ability.cost_mod, spids.tranquility, 0.2);
+            spell_mod_add(effects.ability.cost_mod, spids.wild_growth, 0.2);
 
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Wild Growth"], 0.6);
+            spell_mod_add(effects.ability.effect_mod, spids.wild_growth, 0.6);
 
             if inactive then
                 swc.loadout.add_spirit_mod(loadout, effects, 0.25, 0.25);
@@ -1333,7 +1333,7 @@ local buffs_predefined = {
     -- decimation
     [440873] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Soul Fire"], 0.4);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.soul_fire, 0.4);
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.class,
@@ -1378,8 +1378,8 @@ local buffs_predefined = {
     -- melting faces
     [456549] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Mind Flay"], 1.5);
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Mind Flay"], 0.5);
+            spell_mod_add(effects.ability.cast_mod, spids.mind_flay, 1.5);
+            spell_mod_add(effects.ability.effect_mod, spids.mind_flay, 0.5);
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.sod),
         category = buff_category.item,
@@ -1387,8 +1387,8 @@ local buffs_predefined = {
     -- fire trance
     [457558] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Immolate"], 1.0);
-            spell_mod_add(effects.ability.cast_mod_mul, spell_name_to_id["Incinerate"], 1.0);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.immolate, 1.0);
+            spell_mod_add(effects.ability.cast_mod_mul, spids.incinerate, 1.0);
         end,
         filter = bit.bor(buff_filters.warlock, buff_filters.sod),
         category = buff_category.item,
@@ -1400,7 +1400,7 @@ local buffs_predefined = {
             if buff.count then
                 stacks = buff.count;
             end
-            spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Starfire"], 0.1 * stacks);
+            spell_mod_add(effects.ability.effect_mod, spids.starfire, 0.1 * stacks);
         end,
         filter = bit.bor(buff_filters.druid, buff_filters.sod),
         category = buff_category.item,
@@ -1475,13 +1475,13 @@ local buffs_predefined = {
     -- zg trinket
     [468512] = {
         apply = function(loadout, effects, buff, inactive)
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Frostbolt"], 0.05);
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Spellfrost Bolt"], 0.05);
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Frozen Orb"], 0.05);
+            spell_mod_add(effects.ability.crit, spids.frostbolt, 0.05);
+            spell_mod_add(effects.ability.crit, spids.spellfrost_bolt, 0.05);
+            spell_mod_add(effects.ability.crit, spids.frozen_orb, 0.05);
 
-            spell_mod_add(effects.ability.crit_mod, spell_name_to_id["Frostbolt"], 0.25);
-            spell_mod_add(effects.ability.crit_mod, spell_name_to_id["Spellfrost Bolt"], 0.25);
-            spell_mod_add(effects.ability.crit_mod, spell_name_to_id["Frozen Orb"], 0.25);
+            spell_mod_add(effects.ability.crit_mod, spids.frostbolt, 0.25);
+            spell_mod_add(effects.ability.crit_mod, spids.spellfrost_bolt, 0.25);
+            spell_mod_add(effects.ability.crit_mod, spids.frozen_orb, 0.25);
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.sod),
         category = buff_category.item,
@@ -1559,8 +1559,8 @@ local target_buffs_predefined = {
                 id = buff.id;
             end
 
-            spell_mod_add(effects.ability.flat_add, spell_name_to_id["Holy Light"], id_to_hl[id]);
-            spell_mod_add(effects.ability.flat_add, spell_name_to_id["Flash of Light"], id_to_fl[id]);
+            spell_mod_add(effects.ability.flat_add, spids.holy_light, id_to_hl[id]);
+            spell_mod_add(effects.ability.flat_add, spids.flash_of_light, id_to_fl[id]);
             -- NOTE: A special coef is applied to lower ranks of Holy Light and subtracted in later stage
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.friendly),
@@ -1576,7 +1576,7 @@ local target_buffs_predefined = {
                 c = 3;
             end
 
-            spell_mod_mul(effects.mul.ability.vuln_mod, spell_name_to_id["Healing Wave"], c * 0.06);
+            spell_mod_mul(effects.mul.ability.vuln_mod, spids.healing_wave, c * 0.06);
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.friendly),
         category = buff_category.class,
@@ -1761,8 +1761,8 @@ local target_buffs_predefined = {
     [589] = {
         apply = function(loadout, effects, buff)
             if not buff.src or buff.src == "player" then
-                spell_mod_mul(effects.mul.ability.vuln_mod, spell_name_to_id["Mind Blast"], 0.5);
-                spell_mod_mul(effects.mul.ability.vuln_mod, spell_name_to_id["Mind Flay"], 0.5);
+                spell_mod_mul(effects.mul.ability.vuln_mod, spids.mind_blast, 0.5);
+                spell_mod_mul(effects.mul.ability.vuln_mod, spids.mind_flay, 0.5);
             end
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.hostile),
@@ -1801,7 +1801,7 @@ local target_buffs_predefined = {
     -- flame shock (lava burst crit)
     [8050] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Lava Burst"], 1.0);
+            spell_mod_add(effects.ability.crit, spids.lava_burst, 1.0);
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.hostile),
         category = buff_category.class,
@@ -1846,7 +1846,7 @@ local target_buffs_predefined = {
     [774] = {
         apply = function(loadout, effects, buff)
             if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus) == 0 then
-                spell_mod_mul(effects.mul.ability.vuln_mod, spell_name_to_id["Nourish"], 0.2);
+                spell_mod_mul(effects.mul.ability.vuln_mod, spids.nourish, 0.2);
 
                 effects.raw.non_stackable_effect_flags =
                     bit.bor(effects.raw.non_stackable_effect_flags, non_stackable_effects.druid_nourish_bonus);
@@ -1864,7 +1864,7 @@ local target_buffs_predefined = {
             else
                 c = 3;
             end
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Mind Blast"], c * 0.3);
+            spell_mod_add(effects.ability.crit, spids.mind_blast, c * 0.3);
         end,
         filter = bit.bor(buff_filters.priest, buff_filters.sod, buff_filters.hostile),
         category = buff_category.class,
@@ -1872,7 +1872,7 @@ local target_buffs_predefined = {
     -- sacred shield
     [412019] = {
         apply = function(loadout, effects, buff)
-            spell_mod_add(effects.ability.crit, spell_name_to_id["Flash of Light"], 0.5);
+            spell_mod_add(effects.ability.crit, spids.flash_of_light, 0.5);
         end,
         filter = bit.bor(buff_filters.paladin, buff_filters.sod, buff_filters.friendly),
         category = buff_category.class,
@@ -1880,7 +1880,7 @@ local target_buffs_predefined = {
     -- riptide
     [408521] = {
         apply = function(loadout, effects, buff)
-            spell_mod_mul(effects.mul.ability.vuln_mod, spell_name_to_id["Chain Heal"], 0.25);
+            spell_mod_mul(effects.mul.ability.vuln_mod, spids.chain_heal, 0.25);
         end,
         filter = bit.bor(buff_filters.shaman, buff_filters.sod, buff_filters.friendly),
         category = buff_category.class,
@@ -1912,7 +1912,7 @@ local target_buffs_predefined = {
     [133] = {
         apply = function(loadout, effects, buff)
             if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 4 then
-                spell_mod_mul(effects.mul.ability.vuln_mod, spell_name_to_id["Pyroblast"], 0.2);
+                spell_mod_mul(effects.mul.ability.vuln_mod, spids.pyroblast, 0.2);
             end
         end,
         filter = bit.bor(buff_filters.mage, buff_filters.hostile, buff_filters.sod),

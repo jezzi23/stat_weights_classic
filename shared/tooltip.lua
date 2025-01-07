@@ -24,6 +24,7 @@ local _, swc = ...;
 
 local spells                                    = swc.abilities.spells;
 local spell_flags                               = swc.abilities.spell_flags;
+local tmp_flags                                 = swc.spell_flags;
 
 local active_loadout_and_effects                = swc.loadout.active_loadout_and_effects;
 local active_loadout_and_effects_diffed_from_ui = swc.loadout.active_loadout_and_effects_diffed_from_ui;
@@ -65,7 +66,11 @@ local function begin_tooltip_section(tooltip, spell)
     if tooltip == GameTooltip then
 
         if config.settings.tooltip_display_addon_name then
-            tooltip:AddLine("Stat Weights Classic v"..swc.core.version, 1, 1, 1);
+            local loadout_extra_info = "";
+            if config.loadout.use_custom_lvl then
+                loadout_extra_info = string.format(" (clvl %d)", config.loadout.lvl);
+            end
+            tooltip:AddLine("Stat Weights Classic v"..swc.core.version.." | "..config.loadout.name..loadout_extra_info, 1, 1, 1);
         end
         if sw_frame.calculator_frame:IsShown() and sw_frame:IsShown() then
             tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
@@ -129,8 +134,17 @@ local function update_tooltip(tooltip)
         not swc.core.__sw__debug__ and tooltip:IsShown() then
 
         local spell_name, id = tooltip:GetSpell();
+        if not spell_name then
+            -- Attack tooltip may be a dummy, so link it to its actual spell id
+            local attack_lname = GetSpellInfo(swc.auto_attack_spell_id);
+            local txt = getglobal("GameTooltipTextLeft1");
+            if txt and txt:GetText() == attack_lname then
+                spell_name = attack_lname;
+                id = swc.auto_attack_spell_id;
+            end
+        end
 
-        if spells[id] and IsControlKeyDown() and sw_frame.calculator_frame:IsShown() and 
+        if spells[id] and bit.band(spells[id].flags, tmp_flags.eval) ~= 0 and IsControlKeyDown() and sw_frame.calculator_frame:IsShown() and 
                 not sw_frame.calculator_frame.spells[id] and
                 bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
 
@@ -185,7 +199,7 @@ local function append_tooltip_spell_info(is_fake)
 
     local spell = spells[spell_id];
 
-    if not spell then
+    if not spell or bit.band(spell.flags, tmp_flags.eval) == 0 then
         return;
     end
 
@@ -203,6 +217,9 @@ local function append_tooltip_spell_info(is_fake)
         swc.tooltip.tooltip_spell_info(swc_stat_calc_tooltip, spell, loadout, effects, nil, spell_id);
     end
 end
+
+
+
 
 tooltip_export.tooltip_stat_display             = tooltip_stat_display;
 tooltip_export.sort_stat_weights                = sort_stat_weights;

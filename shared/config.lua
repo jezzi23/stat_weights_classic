@@ -131,7 +131,7 @@ local default_loadout_config = {
     talents_code = "",
     custom_talents_code = "",
 
-    force_apply_buffs = true,
+    force_apply_buffs = false,
 
     use_custom_lvl = false,
     lvl = 1,

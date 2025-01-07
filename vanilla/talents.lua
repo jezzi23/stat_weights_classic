@@ -30,8 +30,7 @@ local add_all_spell_crit    = swc.utils.add_all_spell_crit;
 local config                = swc.config;
 
 local magic_school          = swc.abilities.magic_school;
-local spell_name_to_id      = swc.abilities.spell_name_to_id;
-local spell_names_to_id     = swc.abilities.spell_names_to_id;
+local spids                 = swc.abilities.spids;
 -------------------------------------------------------------------------------
 local talents_export        = {};
 
@@ -262,7 +261,7 @@ local function create_runes()
             -- p2
             [rune_ids.empowered_renew] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.coef_ot_mod, spell_name_to_id["Renew"], 0.15, 0.0);
+                    spell_mod_add(effects.ability.coef_ot_mod, spids.renew, 0.15, 0.0);
                 end,
                 wowhead_id = "66vj"
             },
@@ -291,10 +290,10 @@ local function create_runes()
             [rune_ids.vampiric_touch] = { wowhead_id = "f6jx" },
             [rune_ids.soul_warding] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Power Word: Shield"], 0.15,
+                    spell_mod_add(effects.ability.effect_mod_base, spids.power_word_shield, 0.15,
                         0.0);
-                    spell_mod_add(effects.ability.coef_mod, spell_name_to_id["Power Word: Shield"], 0.5, 0.0);
-                    spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Power Word: Shield"], 0.15, 0.0);
+                    spell_mod_add(effects.ability.coef_mod, spids.power_word_shield, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cost_mod, spids.power_word_shield, 0.15, 0.0);
                 end,
                 wowhead_id = "f6jp"
             },
@@ -305,7 +304,7 @@ local function create_runes()
             -- p1
             [rune_ids.fury_of_the_stormrage] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Wrath"], 1.0, 0.0);
+                    spell_mod_add(effects.ability.cost_mod, spids.wrath, 1.0, 0.0);
                 end,
                 wowhead_id = "56pr"
             },
@@ -318,8 +317,8 @@ local function create_runes()
             [rune_ids.wild_growth] = { wowhead_id = "a6pc" },
             [rune_ids.lifebloom] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Rejuvenation"], 0.5, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Lifebloom"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.rejuvenation, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.lifebloom, 0.5, 0.0);
                 end,
                 wowhead_id = "76ph"
             },
@@ -336,8 +335,8 @@ local function create_runes()
             -- p3
             [rune_ids.gale_winds] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Hurricane"], 1.0, 0.0);
-                    spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Hurricane"], 0.6, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.hurricane, 1.0, 0.0);
+                    spell_mod_add(effects.ability.cost_mod, spids.hurricane, 0.6, 0.0);
                 end,
                 wowhead_id = "16y0"
             },
@@ -380,7 +379,7 @@ local function create_runes()
             },
             [rune_ids.infusion_of_light] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Holy Shock"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.holy_shock, 0.5, 0.0);
                 end,
                 wowhead_id = "66wb"
             },
@@ -397,7 +396,7 @@ local function create_runes()
             [rune_ids.hammer_of_the_righteous] = { wowhead_id = "96p1" },
             [rune_ids.lights_grace] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Holy Light"], 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.holy_light, 0.5, 0.0);
                 end,
                 wowhead_id = "97ab"
             },
@@ -438,8 +437,8 @@ local function create_runes()
             -- p3
             [rune_ids.burn] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Flame Shock"], 1.0, 0.0);
-                    spell_mod_add(effects.ability.extra_ticks, spell_name_to_id["Flame Shock"], 2, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.flame_shock, 1.0, 0.0);
+                    spell_mod_add(effects.ability.extra_ticks, spids.flame_shock, 2, 0.0);
                 end,
                 wowhead_id = "16tb"
             },
@@ -453,7 +452,7 @@ local function create_runes()
             --p4
             [rune_ids.storm_earth_and_fire] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_ot_mod, spell_name_to_id["Flame Shock"], 0.6, 0.0);
+                    spell_mod_add(effects.ability.effect_ot_mod, spids.flame_shock, 0.6, 0.0);
                 end,
                 wowhead_id = "f734"
             },
@@ -500,9 +499,9 @@ local function create_runes()
             -- p3
             [rune_ids.advanced_warding] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Mana Shield"], 1.0, 0.0);
-                    --spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Fire Ward"], 1.0, 0.0);
-                    --spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Frost Ward "], 1.0, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.mana_shield, 1.0, 0.0);
+                    --spell_mod_add(effects.ability.effect_mod, spids.fire_ward, 1.0, 0.0);
+                    --spell_mod_add(effects.ability.effect_mod, spids.frost_ward_, 1.0, 0.0);
                 end,
                 wowhead_id = "16j6"
             },
@@ -516,7 +515,7 @@ local function create_runes()
             [rune_ids.arcane_barrage] = { wowhead_id = "f6j3" },
             [rune_ids.overheat] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.crit, spell_name_to_id["Fire Blast"], 1.0, 0.0);
+                    spell_mod_add(effects.ability.crit, spids.fire_blast, 1.0, 0.0);
                 end,
                 wowhead_id = "f6je"
             },
@@ -535,7 +534,7 @@ local function create_runes()
             [rune_ids.master_channeler] = { wowhead_id = "56mv" },
             [rune_ids.shadow_bolt_volley] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Shadow Bolt"], -0.05, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.shadow_bolt, -0.05, 0.0);
                 end,
                 wowhead_id = "a6my"
             },
@@ -565,7 +564,7 @@ local function create_runes()
             [rune_ids.infernal_armor] = { wowhead_id = "f73b" },
             [rune_ids.soul_siphon] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Drain Soul"], 10, 0);
+                    spell_mod_add(effects.ability.cast_mod, spids.drain_soul, 10, 0);
                 end,
                 wowhead_id = "f7d6"
             },
@@ -581,14 +580,14 @@ local function create_talents()
         return {
             [102] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Shoot"], (pts - missing_pts) *
+                    spell_mod_add(effects.ability.effect_mod, spids.shoot, (pts - missing_pts) *
                         0.05, 0);
                 end
             },
             -- improved power word shield
             [105] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Power Word: Shield"],
+                    spell_mod_add(effects.ability.effect_mod_base, spids.power_word_shield,
                         pts * 0.05, 0.0);
                 end
             },
@@ -599,7 +598,7 @@ local function create_talents()
             },
             [111] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Mana Burn"], pts * 0.25, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.mana_burn, pts * 0.25, 0.0);
                 end
             },
             [112] = {
@@ -617,7 +616,7 @@ local function create_talents()
             },
             [202] = {
                 apply = function(loadout, effects, pts)
-                    local renew = spell_name_to_id["Renew"];
+                    local renew = spids.renew;
                     spell_mod_add(effects.ability.effect_mod_base, renew, pts * 0.05, 0.0);
                 end
             },
@@ -629,7 +628,7 @@ local function create_talents()
             },
             [205] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Smite", "Holy Fire", "Heal", "Greater Heal" });
+                    local abilities = { spids.smite, spids.holy_fire, spids.heal, spids.greater_heal };
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.cast_mod, v, pts * 0.1, 0);
                     end
@@ -638,7 +637,7 @@ local function create_talents()
             [210] = {
                 apply = function(loadout, effects, pts)
                     local abilities =
-                        spell_names_to_id({ "Lesser Heal", "Heal", "Greater Heal" });
+                        { spids.lesser_heal, spids.heal, spids.greater_heal };
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.cost_mod, v, pts * 0.05, 0);
                     end
@@ -646,7 +645,7 @@ local function create_talents()
             },
             [211] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Smite", "Holy Fire" });
+                    local abilities = { spids.smite, spids.holy_fire };
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.effect_mod_base, v, pts * 0.05, 0.0);
                     end
@@ -654,7 +653,7 @@ local function create_talents()
             },
             [212] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cost_mod, spell_name_to_id["Prayer of Healing"], pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cost_mod, spids.prayer_of_healing, pts * 0.1, 0);
                 end
             },
             [214] = {
@@ -676,7 +675,7 @@ local function create_talents()
             },
             [304] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.extra_ticks, spell_name_to_id["Shadow Word: Pain"], pts, 0.0);
+                    spell_mod_add(effects.ability.extra_ticks, spids.shadow_word_pain, pts, 0.0);
                 end
             },
             [305] = {
@@ -696,18 +695,18 @@ local function create_talents()
         return {
             [101] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Wrath"], pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod, spids.wrath, pts * 0.1, 0);
                 end
             },
             [105] = {
                 apply = function(loadout, effects, pts)
-                    local mf = spell_name_to_id["Moonfire"];
+                    local mf = spids.moonfire;
                     spell_mod_add(effects.ability.crit, mf, pts * 0.02, 0);
                     spell_mod_add(effects.ability.effect_mod_base, mf, pts * 0.02, 0.0);
-                    local sf = spell_name_to_id["Sunfire"];
+                    local sf = spids.sunfire;
                     spell_mod_add(effects.ability.crit, sf, pts * 0.02, 0);
                     spell_mod_add(effects.ability.effect_mod_base, sf, pts * 0.02, 0.0);
-                    local starfall = spell_name_to_id["Starfall"];
+                    local starfall = spids.starfall;
                     spell_mod_add(effects.ability.crit, starfall, pts * 0.02, 0);
                     spell_mod_add(effects.ability.effect_mod_base, starfall, pts * 0.02, 0.0);
                 end
@@ -724,8 +723,8 @@ local function create_talents()
             },
             [111] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Starfire", "Moonfire", "Wrath", "Starsurge", "Sunfire",
-                        "Starfall" });
+                    local abilities = { spids.starfire, spids.moonfire, spids.wrath, spids.starsurge, spids.sunfire,
+                        spids.starfall };
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.crit_mod, v, pts * 0.1, 0);
                     end
@@ -733,13 +732,13 @@ local function create_talents()
             },
             [112] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Starfire"], pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod, spids.starfire, pts * 0.1, 0);
                 end
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Moonfire", "Starfire", "Wrath", "Healing Touch", "Regrowth",
-                        "Rejuvenation", "Nourish", "Starfall" });
+                    local abilities = {spids.moonfire, spids.starfire, spids.wrath, spids.healing_touch, spids.regrowth,
+                        spids.rejuvenation, spids.nourish, spids.starfall };
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.cost_mod, v, pts * 0.03, 0);
                     end
@@ -747,8 +746,8 @@ local function create_talents()
             },
             [115] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Starfire", "Moonfire", "Wrath", "Starsurge", "Sunfire",
-                        "Starfall" });
+                    local abilities = { spids.starfire, spids.moonfire, spids.wrath, spids.starsurge, spids.sunfire,
+                        spids.starfall };
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.effect_mod_base, v, pts * 0.02, 0.0);
                     end
@@ -761,8 +760,8 @@ local function create_talents()
             },
             [303] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Healing Touch"], pts * 0.1, 0);
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Nourish"], pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod, spids.healing_touch, pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod, spids.nourish, pts * 0.1, 0);
                 end
             },
             [306] = {
@@ -774,7 +773,7 @@ local function create_talents()
             },
             [309] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Healing Touch", "Tranquility", "Nourish" });
+                    local abilities = { spids.healing_touch, spids.tranquility, spids.nourish };
 
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.cost_mod, v, pts * 0.02, 0);
@@ -783,7 +782,7 @@ local function create_talents()
             },
             [310] = {
                 apply = function(loadout, effects, pts)
-                    local rejuv = spell_name_to_id["Rejuvenation"];
+                    local rejuv = spids.rejuvenation;
                     spell_mod_add(effects.ability.effect_mod_base, rejuv, pts * 0.05, 0.0);
                 end
             },
@@ -794,8 +793,8 @@ local function create_talents()
             },
             [314] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.crit, spell_name_to_id["Regrowth"], pts * 0.1, 0);
-                    spell_mod_add(effects.ability.crit, spell_name_to_id["Nourish"], pts * 0.1, 0);
+                    spell_mod_add(effects.ability.crit, spids.regrowth, pts * 0.1, 0);
+                    spell_mod_add(effects.ability.crit, spids.nourish, pts * 0.1, 0);
                 end
             },
         };
@@ -808,7 +807,7 @@ local function create_talents()
             },
             [105] = {
                 apply = function(loadout, effects, pts)
-                    local abilities = spell_names_to_id({ "Holy Light", "Flash of Light" });
+                    local abilities = { spids.holy_light, spids.flash_of_light };
 
                     for k, v in pairs(abilities) do
                         spell_mod_add(effects.ability.effect_mod_base, v, pts * 0.04, 0.0);
@@ -828,8 +827,8 @@ local function create_talents()
         return {
             [101] = {
                 apply = function(loadout, effects, pts)
-                    local ele_abilities = spell_names_to_id({ "Earth Shock", "Frost Shock", "Flame Shock",
-                        "Lightning Bolt", "Chain Lightning" });
+                    local ele_abilities = { spids.earth_shock, spids.frost_shock, spids.flame_shock,
+                        spids.lightning_bolt, spids.chain_lightning };
                     for k, v in pairs(ele_abilities) do
                         spell_mod_add(effects.ability.cost_mod, v, pts * 0.02, 0.0);
                     end
@@ -837,8 +836,8 @@ local function create_talents()
             },
             [102] = {
                 apply = function(loadout, effects, pts)
-                    local ele_abilities = spell_names_to_id({ "Earth Shock", "Frost Shock", "Flame Shock",
-                        "Lightning Bolt", "Chain Lightning" });
+                    local ele_abilities = { spids.earth_shock, spids.frost_shock, spids.flame_shock,
+                        spids.lightning_bolt, spids.chain_lightning };
                     for k, v in pairs(ele_abilities) do
                         spell_mod_add(effects.ability.effect_mod, v, pts * 0.01, 0.0);
                     end
@@ -846,14 +845,14 @@ local function create_talents()
             },
             [105] = {
                 apply = function(loadout, effects, pts)
-                    for k, v in pairs(spell_names_to_id({ "Magma Totem", "Searing Totem", "Fire Nova Totem" })) do
+                    for k, v in pairs({ spids.magma_totem, spids.searing_totem, spids.fire_nova_totem }) do
                         spell_mod_add(effects.ability.effect_mod, v, pts * 0.05, 0.0);
                     end
                 end
             },
             [108] = {
                 apply = function(loadout, effects, pts)
-                    for k, v in pairs(spell_names_to_id({ "Lightning Bolt", "Chain Lightning" })) do
+                    for k, v in pairs({ spids.lightning_bolt, spids.chain_lightning }) do
                         if pts == 5 then
                             pts = 6;
                         end
@@ -873,7 +872,7 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts)
-                    for k, v in pairs(spell_names_to_id({ "Lightning Bolt", "Chain Lightning" })) do
+                    for k, v in pairs({ spids.lightning_bolt, spids.chain_lightning }) do
                         spell_mod_add(effects.ability.cast_mod, v, pts * 0.2, 0.0);
                     end
                 end
@@ -885,27 +884,27 @@ local function create_talents()
             },
             [206] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Lightning Shield"],
+                    spell_mod_add(effects.ability.effect_mod_base, spids.lightning_shield,
                         pts * 0.05, 0.0);
                 end
             },
             [213] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Flametongue Weapon"],
+                    spell_mod_add(effects.ability.effect_mod_base, spids.flametongue_weapon,
                         pts * 0.05, 0.0);
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Frostbrand Weapon"],
+                    spell_mod_add(effects.ability.effect_mod_base, spids.frostbrand_weapon,
                         pts * 0.05, 0.0);
                 end
             },
             [301] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Healing Wave"], pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.healing_wave, pts * 0.1, 0.0);
                 end
             },
             [302] = {
                 apply = function(loadout, effects, pts)
-                    local healing_spells = spell_names_to_id({ "Chain Heal", "Lesser Healing Wave", "Healing Wave",
-                        "Healing Rain", "Riptide", "Earth Shield" });
+                    local healing_spells = { spids.chain_heal, spids.lesser_healing_wave, spids.healing_wave,
+                        spids.healing_rain, spids.riptide, spids.earth_shield };
                     for k, v in pairs(healing_spells) do
                         spell_mod_add(effects.ability.cost_mod, v, pts * 0.01, 0.0);
                     end
@@ -913,7 +912,7 @@ local function create_talents()
             },
             [305] = {
                 apply = function(loadout, effects, pts)
-                    for k, v in pairs(spell_names_to_id({ "Healing Stream Totem", "Magma Totem", "Searing Totem", "Fire Nova Totem" })) do
+                    for k, v in pairs({ spids.healing_stream_totem, spids.magma_totem, spids.searing_totem, spids.fire_nova_totem }) do
                         spell_mod_add(effects.ability.cost_mod, v, pts * 0.05, 0.0);
                     end
                 end
@@ -930,13 +929,13 @@ local function create_talents()
             },
             [310] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Healing Stream Totem"],
+                    spell_mod_add(effects.ability.effect_mod_base, spids.healing_stream_totem,
                         pts * 0.05, 0.0);
                 end
             },
             [311] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    for k, v in pairs(spell_names_to_id({ "Lightning Shield", "Healing Wave", "Lightning Bolt", "Chain Lightning", "Lesser Healing Wave", "Chain Heal", "Earth Shield", "Riptide", "Healing Rain" })) do
+                    for k, v in pairs({ spids.lightning_shield, spids.healing_wave, spids.lightning_bolt, spids.chain_lightning, spids.lesser_healing_wave, spids.chain_heal, spids.earth_shield, spids.riptide, spids.healing_rain }) do
                         spell_mod_add(effects.ability.crit, v, pts * 0.01, 0.0);
                     end
                 end
@@ -944,9 +943,9 @@ local function create_talents()
             [314] = {
                 apply = function(loadout, effects, pts)
                     effects.raw.spell_heal_mod_base = effects.raw.spell_heal_mod_base + pts * 0.02;
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Earth Shield"], -pts * 0.02,
+                    spell_mod_add(effects.ability.effect_mod_base, spids.earth_shield, -pts * 0.02,
                         0.0);
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Healing Stream Totem"],
+                    spell_mod_add(effects.ability.effect_mod_base, spids.healing_stream_totem,
                         -pts * 0.02, 0.0);
                 end
             },
@@ -969,13 +968,13 @@ local function create_talents()
             },
             [104] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Shoot"],
+                    spell_mod_add(effects.ability.effect_mod, spids.shoot,
                         (pts - missing_pts) * 0.125, 0);
                 end
             },
             [108] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.crit, spell_name_to_id["Arcane Explosion"], pts * 0.02, 0);
+                    spell_mod_add(effects.ability.crit, spids.arcane_explosion, pts * 0.02, 0);
                 end
             },
             [112] = {
@@ -1006,19 +1005,19 @@ local function create_talents()
             },
             [201] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Fireball"], pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.fireball, pts * 0.1, 0.0);
                 end
             },
             [206] = {
                 apply = function(loadout, effects, pts)
-                    for k, v in pairs(spell_names_to_id({ "Fire Blast", "Scorch" })) do
+                    for k, v in pairs({ spids.fire_blast, spids.scorch }) do
                         spell_mod_add(effects.ability.crit, v, pts * 0.02, 0.0);
                     end
                 end
             },
             [207] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.crit, spell_name_to_id["Flamestrike"], pts * 0.05, 0.0);
+                    spell_mod_add(effects.ability.crit, spids.flamestrike, pts * 0.05, 0.0);
                 end
             },
             [213] = {
@@ -1035,7 +1034,7 @@ local function create_talents()
             },
             [302] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Frostbolt"], pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.frostbolt, pts * 0.1, 0.0);
                 end
             },
             [303] = {
@@ -1071,7 +1070,7 @@ local function create_talents()
             },
             [315] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Cone of Cold"], pts * 0.15,
+                    spell_mod_add(effects.ability.effect_mod_base, spids.cone_of_cold, pts * 0.15,
                         0.0);
                 end
             },
@@ -1081,23 +1080,23 @@ local function create_talents()
             [102] = {
                 apply = function(loadout, effects, pts)
                     -- TODO VANILLA: is this capped at 1.0 or 1.5 effectively?
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Corruption"], pts * 0.4, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.corruption, pts * 0.4, 0.0);
                 end
             },
             [105] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Life Tap"], pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.life_tap, pts * 0.1, 0.0);
                 end
             },
             [106] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Drain Life"], pts * 0.02,
+                    spell_mod_add(effects.ability.effect_mod_base, spids.drain_life, pts * 0.02,
                         0.0);
                 end
             },
             [107] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Curse of Agony"], pts * 0.02,
+                    spell_mod_add(effects.ability.effect_mod_base, spids.curse_of_agony, pts * 0.02,
                         0.0);
                 end
             },
@@ -1116,28 +1115,28 @@ local function create_talents()
             },
             [204] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod_base, spell_name_to_id["Health Funnel"], pts * 0.1,
+                    spell_mod_add(effects.ability.effect_mod_base, spids.health_funnel, pts * 0.1,
                         0.0);
                 end
             },
             [303] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Shadow Bolt"], pts * 0.1, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Immolate"], pts * 0.1, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spell_name_to_id["Soul Fire"], pts * 0.4, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.shadow_bolt, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.immolate, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod, spids.soul_fire, pts * 0.4, 0.0);
                 end
             },
             [311] = {
                 apply = function(loadout, effects, pts)
                     if pts ~= 0 then
-                        spell_mod_add(effects.ability.crit, spell_name_to_id["Searing Pain"], pts * 0.02, 0.0);
+                        spell_mod_add(effects.ability.crit, spids.searing_pain, pts * 0.02, 0.0);
                     end
                 end
             },
             [313] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.effect_mod, spell_name_to_id["Immolate"], pts * 0.05, 0.0);
-                    spell_mod_add(effects.ability.effect_ot_mod, spell_name_to_id["Immolate"], -pts * 0.05, 0.0);
+                    spell_mod_add(effects.ability.effect_mod, spids.immolate, pts * 0.05, 0.0);
+                    spell_mod_add(effects.ability.effect_ot_mod, spids.immolate, -pts * 0.05, 0.0);
                 end
             },
             [315] = {

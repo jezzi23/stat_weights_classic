@@ -24,6 +24,7 @@ locale/esES.lua
 locale/zhTW.lua
 locale/enTW.lua
 
+vanilla/data.lua
 shared/utils.lua
 shared/config.lua
 vanilla/abilities.lua

@@ -103,15 +103,16 @@ core.action_id_of_wand = 0;
 
 
 local function class_supported()
-    return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
-        utils.class == "SHAMAN" or utils.class == "DRUID" or utils.class == "PALADIN";
+    --return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
+    --    utils.class == "SHAMAN" or utils.class == "DRUID" or utils.class == "PALADIN";
+    return true;
 end
 local class_is_supported = class_supported();
 
 local addon_msg_swc_id = "__SWC";
 
 local function set_current_casting_spell(spell_id)
-    if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.mana_regen) == 0 then
+    if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.eval) ~= 0 then
         core.cast_expire_timer = math.max(2.5, 2 * spells[spell_id].cast_time);
         core.currently_casting_spell_id = spell_id;
     else
@@ -447,17 +448,17 @@ local function command(msg, editbox)
         if msg == "print" then
             --print_loadout(active_loadout_and_effects());
         elseif msg == "loadout" or msg == "loadouts" then
-            sw_activate_tab(2);
+            sw_activate_tab(sw_frame.tabs[4]);
         elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
-            sw_activate_tab(1);
+            sw_activate_tab(sw_frame.tabs[2]);
         elseif msg == "compare" or msg == "sc" or msg == "stat compare" or msg == "stat" or msg == "calc" or msg == "calculator" then
-            sw_activate_tab(3);
+            sw_activate_tab(sw_frame.tabs[6]);
         elseif msg == "reset" then
             core.use_char_defaults = 1;
             core.use_acc_defaults = 1;
             ReloadUI();
         else
-            sw_activate_tab(2);
+            sw_activate_tab(sw_frame.tabs[2]);
         end
     end
 end

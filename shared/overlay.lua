@@ -66,7 +66,7 @@ local externally_registered_spells = {};
 local mana_cost_overlay, cast_speed_overlay;
 
 swc.ext.register_spell = function(spell_id)
-    if spells[spell_id] then
+    if spells[spell_id] and bit.band(spell.flags, spell_flags.eval) ~= 0 then
         if not externally_registered_spells[spell_id] then
             externally_registered_spells[spell_id] = 0;
         end
@@ -437,13 +437,26 @@ end
 
 local overlay_label_handler = {
     overlay_display_normal = function(frame_overlay, spell, spell_effect, stats)
-        local val = 0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) + 0.5*(spell_effect.total_ot_if_hit + spell_effect.total_ot_if_hit_max) + spell_effect.absorb;
+        local val = 0.0;
+        if spell_effect.num_direct_effects > 0 then
+            val = val + 0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) +
+                spell_effect.absorb
+        end
+        if spell_effect.num_periodic_effects > 0 then
+            val = val + 0.5*(spell_effect.total_ot_min_noncrit_if_hit + spell_effect.total_ot_max_noncrit_if_hit);
+        end
         frame_overlay:SetText(format_overlay_number(val, 1));
     end,
     overlay_display_crit = function(frame_overlay, spell, spell_effect, stats)
+        local crit_sum = 0;
 
-        local crit_sum = 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit) +
-                               0.5*(spell_effect.total_ot_if_crit + spell_effect.total_ot_if_crit_max);
+        if spell_effect.num_direct_effects > 0 then
+            val = val + 0.5*(0.5*(spell_effect.total_ot_min_crit_if_hit + spell_effect.total_ot_max_crit_if_hit)) +
+                spell_effect.absorb
+        end
+        if spell_effect.num_periodic_effects > 0 then
+            val = val + 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit);
+        end
         if stats.crit > 0 and crit_sum > 0 then
             frame_overlay:SetText(format_overlay_number(crit_sum + spell_effect.absorb, 1));
         else
@@ -575,13 +588,12 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
             frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255);
             frame_info.overlay_frames[i]:Show();
         end
-        
         return;
     end
 
     local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, eval_flags);
 
-    if bit.band(spell.flags, spell_flags.mana_regen) ~= 0 then
+    if bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
 
 
         if config.settings.overlay_mana_abilities then
@@ -728,7 +740,7 @@ local function update_spell_icons(loadout, effects, eval_flags)
 
                             update_non_evaluated_spell(v, id, loadout, effects);
                         end
-                    else
+                    elseif bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
                         -- TODO: icon overlay not working for healing version checkbox
                         if spells[id].healing_version and config.settings.overlay_prioritize_heal then
                             update_spell_icon_frame(v, spells[id].healing_version, id, loadout, effects, eval_flags);
@@ -761,7 +773,7 @@ local function update_spell_icons(loadout, effects, eval_flags)
                     update_non_evaluated_spell(v, id, loadout, effects);
                 end
 
-            elseif id ~= 0 and v.frame:IsShown() then
+            elseif id ~= 0 and bit.band(spells[id].flags, spell_flags.eval) ~= 0 and v.frame:IsShown() then
 
 
                 if spells[id].healing_version and config.settings.overlay_prioritize_heal then
@@ -800,7 +812,7 @@ local function update_overlay()
 
     local k = swc.core.currently_casting_spell_id;
 
-    if spells[k] and bit.band(spells[k].flags, spell_flags.mana_regen) == 0 then
+    if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
         cache_spell(spells[k], k, loadout, effects, assume_single_target);
         if spells[k].healing_version then
             cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
