@@ -20,80 +20,34 @@
 --OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 --SOFTWARE.
 
-local _, swc                = ...;
+local _, swc                    = ...;
 
-local spells                = swc.abilities.spells;
-local spell_flags           = swc.abilities.spell_flags;
-local spids                 = swc.abilities.spids;
-local next_spell_rank       = swc.abilities.next_spell_rank;
-local best_rank_by_lvl      = swc.abilities.best_rank_by_lvl;
+local spells                    = swc.abilities.spells;
+local spell_flags               = swc.abilities.spell_flags;
+local spids                     = swc.abilities.spids;
 
-local spell_cost            = swc.utils.spell_cost;
-local spell_cast_time       = swc.utils.spell_cast_time;
-local effect_colors         = swc.utils.effect_colors;
+local spell_cost                = swc.utils.spell_cost;
+local spell_cast_time           = swc.utils.spell_cast_time;
+local effect_colors             = swc.utils.effect_colors;
 
-local set_tiers             = swc.equipment.set_tiers;
+local set_tiers                 = swc.equipment.set_tiers;
 
-local rune_ids              = swc.talents.rune_ids;
+local rune_ids                  = swc.talents.rune_ids;
 
-local stats_for_spell       = swc.calc.stats_for_spell;
-local evaluate_spell        = swc.calc.evaluate_spell;
+local stats_for_spell           = swc.calc.stats_for_spell;
+local evaluate_spell            = swc.calc.evaluate_spell;
 
-local sort_stat_weights     = swc.tooltip.sort_stat_weights;
-local begin_tooltip_section = swc.tooltip.begin_tooltip_section;
-local end_tooltip_section   = swc.tooltip.end_tooltip_section;
+local sort_stat_weights         = swc.tooltip.sort_stat_weights;
+local format_bounce_spell       = swc.tooltip.format_bounce_spell;
+local append_tooltip_spell_rank = swc.tooltip.append_tooltip_spell_rank;
 
-local config                = swc.config;
+local config                    = swc.config;
 
 -------------------------------------------------------------------------------
 
 local stats                 = {};
 
-local function format_bounce_spell(min_hit, max_hit, bounces, falloff)
-    local bounce_str = "     + ";
-    for _ = 1, bounces - 1 do
-        bounce_str = bounce_str .. string.format(" %d-%d  + ",
-            falloff * math.floor(min_hit),
-            falloff * math.ceil(max_hit));
-        falloff = falloff * falloff;
-    end
-    bounce_str = bounce_str .. string.format(" %d-%d",
-        falloff * math.floor(min_hit),
-        falloff * math.ceil(max_hit));
-    return bounce_str;
-end
-
-local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_tooltip_on, spell_id)
-    -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
-    if spell.rank ~= 0 then
-        local txt_right = getglobal("GameTooltipTextRight1");
-        if txt_right then
-            txt_right:SetTextColor(0.50196081399918, 0.50196081399918, 0.50196081399918, 1.0);
-            txt_right:SetText("Rank " .. spell.rank);
-            txt_right:Show();
-        end
-    end
-
-    if sw_frame.tooltip_frame.tooltip_num_checked == 0 or
-        (config.settings.tooltip_shift_to_show and not IsShiftKeyDown()) then
-        return;
-    end
-
-    local eval_flags = 0;
-    if IsAltKeyDown() then
-        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
-        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.offhand);
-    end
-
-    if IsControlKeyDown() then
-        local dir = GetPlayerFacing();
-        if dir and math.abs(dir - math.pi) > 0.5 * math.pi then
-            -- facing north
-            eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.isolate_periodic);
-        else
-            eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.isolate_direct);
-        end
-    end
+local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effects, eval_flags, repeated_tooltip_on)
 
     stats_for_spell(stats, spell, loadout, effects, eval_flags);
     local eval = evaluate_spell(spell, stats, loadout, effects, eval_flags);
@@ -131,9 +85,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         effect_per_sec_per_sp = "DPS per SP";
     end
 
-    begin_tooltip_section(tooltip, spell, spell_id);
-
-
     if config.settings.tooltip_display_loadout_info then
 
         local specified = "";
@@ -156,21 +107,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         end
     end
     if config.settings.tooltip_display_spell_rank and not repeated_tooltip_on then
-        local next_rank_str = "";
-        local next_rank = next_spell_rank(spell);
-        local lvl_req_str = "trained at level "..spell.lvl_req..")";
-        if next_rank and best_rank and spells[best_rank].rank + 1 == spells[next_rank].rank then
-            next_rank_str = next_rank_str .. "(highest yet; next rank at lvl " .. spells[next_rank].lvl_req .. ")";
-        elseif best_rank and spells[best_rank].rank == spell.rank then
-            next_rank_str = "(highest available "..lvl_req_str;
-        elseif best_rank and spells[best_rank].rank > spell.rank then
-            next_rank_str = "(downranked "..lvl_req_str;
-        else
-            next_rank_str = "(unavailable "..lvl_req_str;
-        end
-
-        tooltip:AddLine(string.format("Spell rank: %d %s", spell.rank, next_rank_str),
-            effect_colors.spell_rank[1], effect_colors.spell_rank[2], effect_colors.spell_rank[3]);
+        append_tooltip_spell_rank(tooltip, spell, loadout.lvl);
     end
     if config.settings.tooltip_display_spell_id and not repeated_tooltip_on then
         tooltip:AddLine(string.format("Spell ID: %d", spell_id),
@@ -336,18 +273,23 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
         crit_mod = stats.crit_mod * (1.0 + stats["extra_effect_val" .. stats.special_crit_mod_tracked]);
     end
 
-    local crit_chance_info_str = string.format(" (%.2f%%||%.2fx)", stats.crit*100, crit_mod);
+    local crit_info_displayed = false;
     if spell.direct and config.settings.tooltip_display_crit_chance and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 and stats.crit ~= 0 and eval.spell.min_crit_if_hit1 + eval.spell.absorb ~= 0 then
 
         tooltip:AddLine(string.format("Critical chance: %.2f%% | Modifier %.2fx", stats.crit*100, crit_mod),
             effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
-        crit_chance_info_str = "";
+        crit_info_displayed = true;
     end
     if config.settings.tooltip_display_crit and not config.settings.tooltip_display_crit_combined then
-        crit_chance_info_str = "";
+        crit_info_displayed = true;
     end
 
     if (config.settings.tooltip_display_crit or config.settings.tooltip_display_crit_combined) and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 and eval.spell.num_direct_effects > 0 then
+
+        local crit_chance_info_str = "";
+        if not crit_info_displayed then
+            crit_chance_info_str = string.format(" (%.2f%%||%.2fx)", stats.crit*100, crit_mod);
+        end
         if stats.crit ~= 0 and spell.direct then
             if eval.spell.min_crit_if_hit1 ~= eval.spell.max_crit_if_hit1 then
                 tooltip:AddLine(string.format("Critical%s: %d-%d%s",
@@ -577,7 +519,7 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             end
         end
 
-        local crit_mod_ot = stats.crit_mod_ot;
+        local crit_mod_ot = stats.crit_mod_ot or stats.crit_mod;
         if stats.special_crit_mod_tracked ~= 0 then
             crit_mod_ot = crit_mod_ot * (1.0 + stats["extra_effect_val" .. stats.special_crit_mod_tracked]);
         end
@@ -817,6 +759,54 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             ),
             effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
     end
+    if config.settings.tooltip_display_base_mod then
+        if spell.direct and (stats.spell_mod_base ~= 1 or stats.spell_mod_base_flat ~= 0)  then
+            if eval.spell.min_noncrit_if_hit_base1 ~= eval.spell.max_noncrit_if_hit_base1 then
+                tooltip:AddLine(string.format("Direct base = %.1f to %.1f (+%d) x %.3f mod = %.1f to %.1f",
+                        spell.direct.min,
+                        spell.direct.max,
+                        stats.spell_mod_base_flat,
+                        stats.spell_mod_base,
+                        eval.spell.min_noncrit_if_hit_base1,
+                        eval.spell.max_noncrit_if_hit_base1
+                    ),
+                    effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
+                    
+            else
+                tooltip:AddLine(string.format("Direct base = %.1f (+%d) x %.3f mod = %.1f",
+                        spell.direct.min,
+                        stats.spell_mod_base_flat,
+                        stats.spell_mod_base,
+                        eval.spell.min_noncrit_if_hit_base1
+                    ),
+                    effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
+
+            end
+        end
+        if spell.periodic and eval.spell.ot_min_noncrit_if_hit_base1 ~= spell.periodic.min then
+            if eval.spell.ot_min_noncrit_if_hit_base1 ~= eval.spell.ot_max_noncrit_if_hit_base1 then
+                tooltip:AddLine(string.format("Periodic base = %.1f to %.1f (+%d) x %.3f mod = %.1f to %.1f",
+                        spell.periodic.min,
+                        spell.periodic.max,
+                        stats.spell_mod_base_flat,
+                        stats.spell_mod_base,
+                        eval.spell.ot_min_noncrit_if_hit_base1,
+                        eval.spell.ot_max_noncrit_if_hit_base1
+                    ),
+                    effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
+                    
+            else
+                tooltip:AddLine(string.format("Periodic base = %.1f (+%d) x %.3f mod = %.1f",
+                        spell.periodic.min,
+                        stats.spell_mod_base,
+                        stats.spell_mod_base_flat,
+                        eval.spell.ot_min_noncrit_if_hit_base1
+                    ),
+                    effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
+
+            end
+        end
+    end
 
     if bit.band(spell.flags, spell_flags.resource_regen) == 0 then
         if config.settings.tooltip_display_stat_weights_dps and eval.infinite_cast.effect_per_sec_per_sp > 0 then
@@ -926,13 +916,6 @@ local function tooltip_spell_info(tooltip, spell, loadout, effects, repeated_too
             tooltip:AddLine("Hold ALT key to show for offhand", 1.0, 1.0, 1.0);
         end
     end
-
-    end_tooltip_section(tooltip);
-
-    if spell.healing_version then
-        -- used for holy nova
-        tooltip_spell_info(tooltip, spell.healing_version, loadout, effects, true, spell_id);
-    end
 end
 
-swc.tooltip.tooltip_spell_info = tooltip_spell_info;
+swc.tooltip.append_tooltip_spell_info = append_tooltip_spell_info;

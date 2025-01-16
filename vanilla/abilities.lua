@@ -9329,16 +9329,22 @@ spells[swc.auto_attack_spell_id] = {
 -- absorb 0.1
 -- holy light 0.1
 
-
 --TODO: iterate over rank list, apply coef and lvl scaling reduction at < 20
 if class == "MAGE" then
     for _, v in pairs(rank_seqs[spids.ice_lance]) do
         spells[v].direct.coef = spell_coef_lvl_adjusted(0.42899999022, spells[v].lvl_req);
     end
 elseif class == "DRUID" then
+    -- TEMPORARY:
     -- temporary, swiftmend is broken due to ordering of calc
-    spells[spids.swiftmend] = nil
-    spids.swiftmend = nil
+    spells[spids.swiftmend].flags = bit.band(spells[spids.swiftmend].flags, bit.bnot(spell_flags.eval));
+    -- issue with not taking periodic component of detected trigger of entangling roots
+    for _, v in pairs(rank_seqs[spids.natures_grasp]) do
+        spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
+    end
+    for _, v in pairs(rank_seqs[spids.pounce]) do
+        spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
+    end
 
     for _, v in pairs(rank_seqs[spids.lifebloom]) do
         spells[v].periodic.coef = spell_coef_lvl_adjusted(0.051, spells[v].lvl_req);
@@ -9359,30 +9365,21 @@ for k, v in pairs(spells) do
     end
 end
 
-local function next_spell_rank(spell_data)
-    if spells_by_rank[spell_data.base_id][spell_data.rank + 1] then
-        return spells_by_rank[spell_data.base_id][spell_data.rank + 1];
-    else
-        return nil;
+
+local function best_rank_by_lvl(spell, lvl)
+    local n = #swc.rank_seqs[spell.base_id];
+    local i = n;
+    while i ~= 0 do
+        if spells[swc.rank_seqs[spell.base_id][i]].lvl_req <= lvl then
+            return spells[swc.rank_seqs[spell.base_id][i]];
+        end
+        i = i - 1;
     end
+    return nil;
 end
 
-local function best_rank_by_lvl(spell_base_id, lvl)
-    local i = 1;
-
-    local best_by_lvl = 0;
-
-    while spells_by_rank[spell_base_id][i] do
-        if spells[spells_by_rank[spell_base_id][i]].lvl_req <= lvl then
-            best_by_lvl = i;
-        end
-        i = i + 1;
-    end
-
-    if best_by_lvl == 0 then
-        return nil, spells_by_rank[spell_base_id][i - 1];
-    end
-    return spells_by_rank[spell_base_id][best_by_lvl], spells_by_rank[spell_base_id][i - 1];
+local function next_rank(spell_data)
+    return spells[swc.rank_seqs[spell_data.base_id][spell_data.rank + 1]];
 end
 
 local spell_groups = {};
@@ -9427,7 +9424,7 @@ abilities.english_spell_name_to_base_id = english_spell_name_to_base_id;
 abilities.magic_school = magic_school;
 abilities.spell_flags = spell_flags;
 abilities.best_rank_by_lvl = best_rank_by_lvl;
-abilities.next_spell_rank = next_spell_rank;
+abilities.next_rank = next_rank;
 abilities.spell_groups = spell_groups;
 abilities.spids = spids;
 

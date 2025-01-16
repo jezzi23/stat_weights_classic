@@ -35,6 +35,7 @@ local create_sw_base_ui         = swc.ui.create_sw_base_ui;
 local sw_activate_tab           = swc.ui.sw_activate_tab;
 local update_buffs_frame        = swc.ui.update_buffs_frame;
 local update_profile_frame      = swc.ui.update_profile_frame;
+local update_loadout_frame      = swc.ui.update_loadout_frame;
 
 local config                    = swc.config;
 local load_config               = swc.config.load_config;
@@ -48,7 +49,7 @@ local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
 local update_overlay            = swc.overlay.update_overlay;
 
 local update_tooltip            = swc.tooltip.update_tooltip;
-local append_tooltip_spell_info = swc.tooltip.append_tooltip_spell_info;
+local tooltip_spell_info        = swc.tooltip.tooltip_spell_info;
 
 -------------------------------------------------------------------------
 local core                      = {};
@@ -91,6 +92,7 @@ core.special_action_bar_changed = true;
 core.setup_action_bar_needed = true;
 core.update_action_bar_needed = true;
 core.addon_message_on_update = false;
+core.old_ranks_checks_needed = true;
 
 core.sequence_counter = 0;
 core.addon_running_time = 0;
@@ -246,6 +248,9 @@ local event_dispatch = {
     ["PLAYER_EQUIPMENT_CHANGED"] = function(self, msg, msg2, msg3)
         core.equipment_update_needed = true;
     end,
+    ["PLAYER_LEVEL_UP"] = function(self, arg1)
+        core.old_ranks_checks_needed = true;
+    end,
     ["SOCKET_INFO_UPDATE"] = function(self, msg, msg2, msg3)
         core.equipment_update_needed = true;
     end,
@@ -341,7 +346,7 @@ if class_is_supported then
     C_Timer.After(1.0, refresh_tooltip);
 
     GameTooltip:HookScript("OnTooltipSetSpell", function(_, is_fake)
-        append_tooltip_spell_info(is_fake);
+        tooltip_spell_info(is_fake);
     end)
 else
     --print("Stat Weights Classic currently does not support your class :(");
@@ -458,7 +463,7 @@ local function command(msg, editbox)
             core.use_acc_defaults = 1;
             ReloadUI();
         else
-            sw_activate_tab(sw_frame.tabs[2]);
+            sw_activate_tab(sw_frame.tabs[1]);
         end
     end
 end
@@ -482,5 +487,5 @@ __SWC = swc.ext;
 
 --core.__sw__debug__ = 1;
 --core.swc.core.use_char_defaults = 1;
---core.__sw__test_all_codepaths = 1;
---core.__sw__test_all_spells = 1;
+core.__sw__test_all_codepaths = 1;
+core.__sw__test_all_spells = 1;

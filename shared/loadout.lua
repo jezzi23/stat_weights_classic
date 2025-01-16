@@ -62,6 +62,7 @@ local function empty_loadout()
         spell_dmg = 0,
         healing_power = 0,
         spell_power = 0,
+        attack_power = 0,
 
         num_set_pieces = {},
         dynamic_buffs = {},
@@ -74,16 +75,15 @@ local function empty_effects(effects)
 
     effects.by_school = {};
     effects.by_school.spell_dmg_hit = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.spell_dmg_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.dmg_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.crit_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.sp_dmg = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.spell_crit = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.spell_crit_mod = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.target_mod_res = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.cost_mod = {0, 0, 0, 0, 0, 0, 0};
     effects.mul.by_school = {};
     effects.mul.by_school.target_vuln_dmg = {1, 1, 1, 1, 1, 1, 1};
     effects.mul.by_school.target_vuln_dmg_ot = {1, 1, 1, 1, 1, 1, 1};
-    effects.mul.by_school.spell_dmg_mod = {1, 1, 1, 1, 1, 1, 1};
+    effects.mul.by_school.dmg_mod = {1, 1, 1, 1, 1, 1, 1};
 
     effects.by_attribute =  {};
     effects.by_attribute.stats = {0, 0, 0, 0, 0};
@@ -93,8 +93,7 @@ local function empty_effects(effects)
     effects.by_attribute.crit_from_stat_mod = {0, 0, 0, 0, 0};
 
     effects.raw = {};
-    effects.raw.spell_heal_mod = 0;
-    effects.raw.spell_heal_mod_base = 0;
+    effects.raw.heal_mod = 0;
     effects.raw.mana_mod = 0;
     effects.raw.mana_mod_active = 0;
     effects.raw.mana = 0;
@@ -106,17 +105,21 @@ local function empty_effects(effects)
     effects.raw.spell_dmg = 0;
     effects.raw.healing_power = 0;
 
+    effects.raw.cast_haste = 0;
+
     effects.mul.raw = {};
-    effects.mul.raw.spell_dmg_mod = 1.0;
-    effects.mul.raw.target_vuln_heal = 1.0;
-    effects.mul.raw.spell_heal_mod = 1.0;
+    effects.mul.raw.dmg_mod = 1.0;
+    effects.mul.raw.heal_mod = 1.0;
+    effects.mul.raw.vuln_heal = 1.0;
+
+    effects.mul.raw.ranged_haste = 0;
+    effects.mul.raw.melee_haste = 0;
+    effects.mul.raw.cast_haste = 0;
 
     effects.raw.ot_mod = 0;
 
     effects.raw.haste_mod = 0.0;
     effects.raw.cost_mod = 0;
-    effects.raw.cost_mod_base = 0;
-    effects.raw.cost_flat = 0;
     effects.raw.resource_refund = 0;
     effects.raw.added_physical_spell_crit = 0;
 
@@ -134,23 +137,22 @@ local function empty_effects(effects)
     -- indexable by ability base id
     effects.ability = {};
     effects.ability.crit = {};
-    effects.ability.crit_ot = {};
     effects.ability.ignore_cant_crit = {};
     effects.ability.effect_mod = {};
     effects.ability.effect_mod_base = {};
-    effects.ability.cast_mod = {}; -- flat before mul
-    effects.ability.cast_mod_mul = {}; -- after flat
-    effects.ability.cast_mod_reduce = {}; -- only for channels
-    effects.ability.extra_ticks = {};
+    effects.ability.effect_mod_base_flat = {};
+    effects.ability.cast_mod_flat = {}; -- flat before mul
+    effects.ability.cast_mod = {};
+    effects.ability.extra_dur = {};
+    effects.ability.extra_tick_time = {};
     effects.ability.cost_mod = {}; -- last, multiplied
-    effects.ability.cost_flat = {}; -- second, additive
-    effects.ability.cost_mod_base = {}; -- first, multiplied
+    effects.ability.cost_mod_flat = {}; -- second, additive
     effects.ability.crit_mod = {};
     effects.ability.hit = {};
     effects.ability.sp = {};
     effects.ability.sp_ot = {};
-    effects.ability.flat_add = {};
-    effects.ability.flat_add_ot = {};
+    effects.ability.flat_add = {}; -- custom
+    effects.ability.flat_add_ot = {}; -- custom
     effects.ability.refund = {};
     effects.ability.coef_mod = {};
     effects.ability.coef_ot_mod = {};
@@ -161,6 +163,18 @@ local function empty_effects(effects)
     effects.mul.ability = {};
     effects.mul.ability.vuln_mod = {};
     effects.mul.ability.vuln_mod_ot = {};
+
+    -- OBSOLETE
+    effects.raw.spell_heal_mod_base = 0;
+    effects.raw.spell_heal_mod = 0; -- RENAME TO heal_mod
+    effects.ability.extra_ticks = {};
+    effects.by_school.spell_crit_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.cost_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.by_school.spell_dmg_mod = {0, 0, 0, 0, 0, 0, 0};
+    effects.mul.by_school.spell_dmg_mod = {1, 1, 1, 1, 1, 1, 1};
+    effects.mul.raw.target_vuln_heal = 1.0; -- RENAME TO heal_vuln
+    effects.mul.raw.spell_dmg_mod = 1.0; -- RENAME TO dmg_mod
+    effects.mul.raw.spell_heal_mod = 1.0; -- rename to heal_mod
 end
 
 local function zero_effects(effects)
@@ -410,14 +424,9 @@ local function dynamic_loadout(loadout)
 
     if swc.core.expansion_loaded == swc.core.expansions.vanilla then
         loadout.healing_power = GetSpellBonusHealing();
-        loadout.spell_dmg = math.huge;
-        for i = 2, 7 do
-            loadout.spell_dmg = math.min(loadout.spell_dmg, GetSpellBonusDamage(i));
+        for i = 1, 7 do
+            loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
         end
-        for i = 2, 7 do
-            loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i) - loadout.spell_dmg;
-        end
-        loadout.spell_dmg_by_school[1] = loadout.spell_dmg;
         -- right after load GetSpellHitModifier seems to sometimes returns a nil.... so check first I guess
        local spell_hit = 0;
        -- Why is this returning 7 times the actual hit??
@@ -526,12 +535,65 @@ local function dynamic_loadout(loadout)
     swc.buffs.detect_buffs(loadout);
 end
 
-local function active_loadout()
-    return base_loadout;
-end
+local function apply_effect(loadout, effects, auras, forced, spids, debug_id)
+    if not auras then
+        print(debug_id);
+    end
+    if spids then
+        for _, aura in pairs(auras) do
+            if aura[5] and forced then
+                for _, i in pairs(spids) do
+                    if aura[4] then
+                        if not effects["mul"]["ability"][aura[1]] then
+                            print("Missing effects.mul.ability."..aura[1]);
+                        end
+                        effects["mul"]["ability"][aura[1]][i] = effects["mul"]["ability"][aura[1]][i] * aura[2];
+                    else
+                        if not effects["ability"][aura[1]] then
+                            print("Missing effects.ability."..aura[1]);
+                        end
+                        effects["ability"][aura[1]][i] = effects["ability"][aura[1]][i] + aura[2];
+                    end
+                end
+            end
+        end
+        return;
+    end
+    for _, aura in pairs(auras) do
+        if aura[6] and forced then
+            if aura[1] == "ability" then
+                if not aura[3] then
+                    print("nil to ability sub auras");
+                end
+                use_effect(loadout, effect, aura[3], forced, aura[2]);
+            end
+            if aura[5] then
+                if not effects["mul"][aura[1]][aura[2]] then
+                    print("Missing effects.mul."..aura[1].."."..aura[2]);
+                end
+                if aura[1] == "raw" then
+                    effects["mul"][aura[1]][aura[2]] = effects["mul"][aura[1]][aura[2]] * aura[3];
+                else
+                    for _, i in pairs(aura[4]) do
+                        effects["mul"][aura[1]][aura[2]][i] = effects["mul"][aura[1]][aura[2]][i] * aura[3];
+                    end
+                end
+            else
+                if not effects[aura[1]][aura[2]] then
+                    print("Missing effects."..aura[1].."."..aura[2]);
+                end
+                if aura[1] == "raw" then
+                    effects[aura[1]][aura[2]] = effects[aura[1]][aura[2]] + aura[3];
+                else
+                    for _, i in pairs(aura[4]) do
+                        effects[aura[1]][aura[2]][i] = effects[aura[1]][aura[2]][i] + aura[3];
+                    end
+                end
+            end
+        end
 
-function __sw_active_loadout()
-    return base_loadout;
+    end
+
 end
 
 local base_loadout = empty_loadout();
@@ -542,7 +604,11 @@ empty_effects(equipped);
 empty_effects(talented);
 empty_effects(final_effects);
 
-local function active_loadout_and_effects()
+local function active_loadout()
+    return base_loadout;
+end
+
+local function update_loadout_and_effects()
 
     dynamic_loadout(base_loadout);
 
@@ -577,9 +643,9 @@ local function active_loadout_and_effects()
 end
 
 
-local function active_loadout_and_effects_diffed_from_ui()
+local function update_loadout_and_effects_diffed_from_ui()
 
-    local loadout, effects = active_loadout_and_effects();
+    local loadout, effects = update_loadout_and_effects();
 
     local diff = effects_from_ui_diff(sw_frame.calculator_frame);
 
@@ -598,11 +664,10 @@ loadout_export.empty_effects                                = empty_effects;
 loadout_export.effects_add                                  = effects_add;
 loadout_export.effects_zero_diff                            = effects_zero_diff;
 loadout_export.active_loadout                               = active_loadout;
-loadout_export.active_loadout_entry                         = active_loadout_entry;
-loadout_export.active_loadout_and_effects                   = active_loadout_and_effects;
-loadout_export.active_loadout_and_effects_diffed_from_ui    = active_loadout_and_effects_diffed_from_ui;
-loadout_export.static_loadout_from_dynamic                  = static_loadout_from_dynamic;
+loadout_export.update_loadout_and_effects                   = update_loadout_and_effects;
+loadout_export.update_loadout_and_effects_diffed_from_ui    = update_loadout_and_effects_diffed_from_ui;
 loadout_export.loadout_flags                                = loadout_flags;
+loadout_export.apply_effect                                 = apply_effect;
 
 swc.loadout = loadout_export;
 

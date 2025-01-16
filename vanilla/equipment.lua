@@ -369,7 +369,7 @@ local function create_set_effects()
         set_effects = {
             [set_tiers.pve_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod, spids.flash_heal, 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.flash_heal, 0.1, 0.0);
                 end
                 if num_pieces >= 8 then
                     spell_mod_add(effects.ability.crit, spids.prayer_of_healing, 0.25, 0.0);
@@ -402,8 +402,8 @@ local function create_set_effects()
             end,
             [set_tiers.sod_final_pve_1_heal] = function(num_pieces, loadout, effects)
                 if num_pieces >= 2 then
-                    spell_mod_add(effects.ability.cast_mod, spids.flash_heal, 0.1, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spids.greater_heal, 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.flash_heal, 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.greater_heal, 0.1, 0.0);
                 end
                 if num_pieces >= 6 then
                     spell_mod_add(effects.ability.crit, spids.prayer_of_healing, 0.25, 0.0);
@@ -434,8 +434,8 @@ local function create_set_effects()
                     effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.15;
                 end
                 if num_pieces >= 5 then
-                    spell_mod_add(effects.ability.cast_mod, spids.regrowth, 0.2, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spids.nourish, 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.regrowth, 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.nourish, 0.2, 0.0);
                 end
                 if num_pieces >= 8 then
                     spell_mod_add(effects.ability.extra_ticks, spids.rejuvenation, 1, 0.0);
@@ -494,7 +494,7 @@ local function create_set_effects()
             end,
             [set_tiers.sod_final_pve_zg] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod, spids.starfire, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.starfire, 0.5, 0.0);
                 end
                 if num_pieces >= 5 then
                     spell_mod_add(effects.ability.crit, spids.wrath, 0.1, 0.0);
@@ -511,7 +511,7 @@ local function create_set_effects()
             end,
             [set_tiers.pve_2_5_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    spell_mod_add(effects.ability.cast_mod, spids.chain_heal, 0.4, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.chain_heal, 0.4, 0.0);
                 end
             end,
             [set_tiers.pve_3] = function(num_pieces, loadout, effects)
@@ -540,12 +540,12 @@ local function create_set_effects()
             end,
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod, spids.lightning_bolt, 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.lightning_bolt, 0.2, 0.0);
                 end
             end,
             [set_tiers.sod_p3_t1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod_mul, spids.healing_rain, 1.0, 0);
+                    spell_mod_add(effects.ability.cast_mod, spids.healing_rain, 1.0, 0);
                 end
             end,
             [set_tiers.sod_final_pve_2_heal] = function(num_pieces, loadout, effects)
@@ -589,12 +589,12 @@ local function create_set_effects()
             end,
             [set_tiers.pvp_1] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod, spids.immolate, 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.immolate, 0.2, 0.0);
                 end
             end,
             [set_tiers.pvp_2] = function(num_pieces, loadout, effects)
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod, spids.immolate, 0.2, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.immolate, 0.2, 0.0);
                 end
             end,
             [set_tiers.sod_final_pve_1] = function(num_pieces, loadout, effects)
@@ -630,7 +630,7 @@ local function create_set_effects()
             end,
             [set_tiers.pve_2_5_0] = function(num_pieces, loadout, effects)
                 if num_pieces >= 5 then
-                    spell_mod_add(effects.ability.cast_mod, spids.flamestrike, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.flamestrike, 0.5, 0.0);
                 end
             end,
             [set_tiers.pve_2_5_1] = function(num_pieces, loadout, effects)
@@ -654,7 +654,7 @@ local function create_set_effects()
                     effects.raw.mp5 = effects.raw.mp5 + 4;
                 end
                 if num_pieces >= 3 then
-                    spell_mod_add(effects.ability.cast_mod, spids.holy_light, 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.holy_light, 0.1, 0.0);
                 end
             end,
             [set_tiers.sod_p2_class] = function(num_pieces, loadout, effects)
@@ -728,10 +728,10 @@ local function create_relics()
                 spell_mod_add(effects.ability.cost_flat, spids.flame_shock, 10, 0.0);
             end,
             [228179] = function(effects)
-                spell_mod_add(effects.ability.cast_mod_mul, spids.healing_rain, 1.0, 0.0);
+                spell_mod_add(effects.ability.cast_mod, spids.healing_rain, 1.0, 0.0);
             end,
             [228176] = function(effects)
-                spell_mod_add(effects.ability.cast_mod, spids.lightning_bolt, 0.1, 0.0);
+                spell_mod_add(effects.ability.cast_mod_flat, spids.lightning_bolt, 0.1, 0.0);
             end,
         };
     elseif class == "DRUID" then
@@ -745,8 +745,8 @@ local function create_relics()
                 spell_mod_add(effects.ability.effect_mod, spids.starfall, 0.17, 0.0);
             end,
             [22399] = function(effects)
-                spell_mod_add(effects.ability.cast_mod, spids.healing_touch, 0.15, 0.0);
-                spell_mod_add(effects.ability.cast_mod, spids.nourish, 0.15, 0.0);
+                spell_mod_add(effects.ability.cast_mod_flat, spids.healing_touch, 0.15, 0.0);
+                spell_mod_add(effects.ability.cast_mod_flat, spids.nourish, 0.15, 0.0);
             end,
             [23004] = function(effects)
                 spell_mod_add(effects.ability.refund, spids.healing_touch, 25, 0.0);

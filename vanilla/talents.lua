@@ -317,8 +317,8 @@ local function create_runes()
             [rune_ids.wild_growth] = { wowhead_id = "a6pc" },
             [rune_ids.lifebloom] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cast_mod, spids.rejuvenation, 0.5, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spids.lifebloom, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.rejuvenation, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.lifebloom, 0.5, 0.0);
                 end,
                 wowhead_id = "76ph"
             },
@@ -396,7 +396,7 @@ local function create_runes()
             [rune_ids.hammer_of_the_righteous] = { wowhead_id = "96p1" },
             [rune_ids.lights_grace] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cast_mod, spids.holy_light, 0.5, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.holy_light, 0.5, 0.0);
                 end,
                 wowhead_id = "97ab"
             },
@@ -564,7 +564,7 @@ local function create_runes()
             [rune_ids.infernal_armor] = { wowhead_id = "f73b" },
             [rune_ids.soul_siphon] = {
                 apply = function(loadout, effects)
-                    spell_mod_add(effects.ability.cast_mod, spids.drain_soul, 10, 0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.drain_soul, 10, 0);
                 end,
                 wowhead_id = "f7d6"
             },
@@ -598,7 +598,7 @@ local function create_talents()
             },
             [111] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.mana_burn, pts * 0.25, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.mana_burn, pts * 0.25, 0.0);
                 end
             },
             [112] = {
@@ -630,7 +630,7 @@ local function create_talents()
                 apply = function(loadout, effects, pts)
                     local abilities = { spids.smite, spids.holy_fire, spids.heal, spids.greater_heal };
                     for k, v in pairs(abilities) do
-                        spell_mod_add(effects.ability.cast_mod, v, pts * 0.1, 0);
+                        spell_mod_add(effects.ability.cast_mod_flat, v, pts * 0.1, 0);
                     end
                 end
             },
@@ -695,7 +695,7 @@ local function create_talents()
         return {
             [101] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.wrath, pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.wrath, pts * 0.1, 0);
                 end
             },
             [105] = {
@@ -732,7 +732,7 @@ local function create_talents()
             },
             [112] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.starfire, pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.starfire, pts * 0.1, 0);
                 end
             },
             [114] = {
@@ -760,8 +760,8 @@ local function create_talents()
             },
             [303] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.healing_touch, pts * 0.1, 0);
-                    spell_mod_add(effects.ability.cast_mod, spids.nourish, pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.healing_touch, pts * 0.1, 0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.nourish, pts * 0.1, 0);
                 end
             },
             [306] = {
@@ -873,7 +873,7 @@ local function create_talents()
             [114] = {
                 apply = function(loadout, effects, pts)
                     for k, v in pairs({ spids.lightning_bolt, spids.chain_lightning }) do
-                        spell_mod_add(effects.ability.cast_mod, v, pts * 0.2, 0.0);
+                        spell_mod_add(effects.ability.cast_mod_flat, v, pts * 0.2, 0.0);
                     end
                 end
             },
@@ -898,7 +898,7 @@ local function create_talents()
             },
             [301] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.healing_wave, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.healing_wave, pts * 0.1, 0.0);
                 end
             },
             [302] = {
@@ -1005,7 +1005,7 @@ local function create_talents()
             },
             [201] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.fireball, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.fireball, pts * 0.1, 0.0);
                 end
             },
             [206] = {
@@ -1034,7 +1034,7 @@ local function create_talents()
             },
             [302] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.frostbolt, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.frostbolt, pts * 0.1, 0.0);
                 end
             },
             [303] = {
@@ -1080,7 +1080,7 @@ local function create_talents()
             [102] = {
                 apply = function(loadout, effects, pts)
                     -- TODO VANILLA: is this capped at 1.0 or 1.5 effectively?
-                    spell_mod_add(effects.ability.cast_mod, spids.corruption, pts * 0.4, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.corruption, pts * 0.4, 0.0);
                 end
             },
             [105] = {
@@ -1121,9 +1121,9 @@ local function create_talents()
             },
             [303] = {
                 apply = function(loadout, effects, pts)
-                    spell_mod_add(effects.ability.cast_mod, spids.shadow_bolt, pts * 0.1, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spids.immolate, pts * 0.1, 0.0);
-                    spell_mod_add(effects.ability.cast_mod, spids.soul_fire, pts * 0.4, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.shadow_bolt, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.immolate, pts * 0.1, 0.0);
+                    spell_mod_add(effects.ability.cast_mod_flat, spids.soul_fire, pts * 0.4, 0.0);
                 end
             },
             [311] = {
@@ -1350,6 +1350,14 @@ local function talent_table(wowhead_code)
 end
 
 local function apply_talents(loadout, effects)
+
+    -- TEST
+    for _, v in pairs(swc.talent_ranks) do
+        for _, i in pairs(v) do
+            swc.loadout.apply_effect(loadout, effects, swc.talent_effects[i], nil, nil, i);
+        end
+    end
+
     local dynamic_talents, dynamic_runes = talent_table(config.loadout.talents_code);
     local custom_talents, custom_runes = nil, nil;
 

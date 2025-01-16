@@ -48,6 +48,7 @@ local default_settings = {
     tooltip_display_cast_and_tap        = false,
     tooltip_display_sp_effect_calc      = false,
     tooltip_display_sp_effect_ratio     = false,
+    tooltip_display_base_mod            = false,
     tooltip_display_spell_id            = false,
     tooltip_display_dynamic_tip         = true,
 

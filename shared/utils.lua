@@ -27,10 +27,13 @@ local _, race = UnitRace("player");
 local faction, _ = UnitFactionGroup("player");
 
 local function spell_mod_add(table, key, add)
+    if not table then
+        print(table, key, add)
+    end
     if not table[key] then
         table[key] = 0.0;
     end
-     table[key] = table[key] + add;
+    table[key] = table[key] + add;
 end
 
 local function spell_mod_mul(table, key, mul)

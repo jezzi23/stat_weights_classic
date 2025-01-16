@@ -253,26 +253,37 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
     end
     stats.crit = math.min(math.max(stats.crit, 0.0), 1.0);
     -- CRIT MOD
-    stats.crit_mod = stats.crit_mod + 1.5;
-
-    local extra_crit_mod = effects.by_school.spell_crit_mod[direct.school1];
+    local base_crit_mod = 0.5;
+    if direct.school1 == schools.physical then
+        base_crit_mod = 1.0;
+    end
+    local best_crit_mod = effects.by_school.crit_mod[direct.school1];
     local i = 2;
     while (direct["school"..i]) do
-        local s = direct["school"..i];
-        extra_crit_mod = extra_crit_mod + effects.by_school.spell_crit_mod[s] -
-            effects.by_school.spell_crit_mod[magic_school.physical];
+        best_crit_mod = math.max(best_crit_mod, effects.by_school.crit_mod[direct["school"..i]]);
         i = i + 1;
     end
-    extra_crit_mod = extra_crit_mod + (effects.ability.crit_mod[benefit_id] or 0);
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-        stats.crit_mod = stats.crit_mod + 0.5 * effects.raw.special_crit_heal_mod;
-        if effects.ability.crit_mod[benefit_id] then
-            stats.crit_mod = stats.crit_mod + effects.ability.crit_mod[benefit_id];
-        end
-    else
-        stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
-        stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0) * 2 * extra_crit_mod;
-    end
+    base_crit_mod = (1.0 + base_crit_mod) * (1.0 + best_crit_mod) - 1.0;
+    stats.crit_mod = 1.0 + base_crit_mod * (1.0 + (effects.ability.crit_mod[benefit_id] or 0.0));
+
+    --local extra_crit_mod = effects.by_school.spell_crit_mod[direct.school1];
+    --local i = 2;
+    --while (direct["school"..i]) do
+    --    local s = direct["school"..i];
+    --    extra_crit_mod = extra_crit_mod + effects.by_school.spell_crit_mod[s] -
+    --        effects.by_school.spell_crit_mod[magic_school.physical];
+    --    i = i + 1;
+    --end
+    --extra_crit_mod = extra_crit_mod + (effects.ability.crit_mod[benefit_id] or 0);
+    --if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+    --    stats.crit_mod = stats.crit_mod + 0.5 * effects.raw.special_crit_heal_mod;
+    --    if effects.ability.crit_mod[benefit_id] then
+    --        stats.crit_mod = stats.crit_mod + effects.ability.crit_mod[benefit_id];
+    --    end
+    --else
+    --    stats.crit_mod = stats.crit_mod * (1.0 + effects.raw.special_crit_mod);
+    --    stats.crit_mod = stats.crit_mod + (stats.crit_mod - 1.0) * 2 * extra_crit_mod;
+    --end
 
     -- WANDS
     if spell.base_id == spids.shoot then
@@ -358,17 +369,15 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
 
     -- SP
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
-        stats.spell_heal = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
-        stats.spell_power = stats.spell_heal;
+       stats.spell_power = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
     else
-        local spell_dmg = loadout.spell_dmg + effects.raw.spell_dmg + effects.raw.spell_power + (effects.ability.sp[benefit_id] or 0) + loadout.spell_dmg_by_school[direct.school1];
+        local sp_school = loadout.spell_dmg_by_school[direct.school1];
         local i = 2;
         while (direct["school"..i]) do
-            
-            spell_dmg = spell_dmg + loadout.spell_dmg_by_school[direct["school"..i]];
+            sp_school = math.max(sp_school, loadout.spell_dmg_by_school[direct["school"..i]]);
             i = i + 1;
         end
-        stats.spell_power = spell_dmg;
+        stats.spell_power = sp_school + effects.raw.spell_dmg + effects.raw.spell_power + (effects.ability.sp[benefit_id] or 0);
     end
 
     -- COEF
@@ -458,32 +467,42 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
             - (loadout.spell_crit_by_school[schools.physical] + effects.by_school.spell_crit[schools.physical])
         i = i + 1;
     end
-    stats.crit_ot = stats.crit_ot + (effects.ability.crit_ot[benefit_id] or 0);
     -- TODO: cannot crit flag
     if bit.band(periodic.flags, comp_flags.cant_crit) ~= 0 and not effects.ability.ignore_cant_crit[benefit_id] then
         stats.crit_ot = 0;
     end
     stats.crit_ot = math.min(math.max(stats.crit_ot, 0.0), 1.0);
     -- CRIT MOD
-    stats.crit_mod_ot = stats.crit_mod_ot + 1.5;
-
-    local extra_crit_mod = effects.by_school.spell_crit_mod[periodic.school1];
+    local base_crit_mod = 0.5;
+    if periodic.school1 == schools.physical then
+        base_crit_mod = 1.0;
+    end
+    local best_crit_mod = effects.by_school.crit_mod[periodic.school1];
     local i = 2;
     while (periodic["school"..i]) do
-        extra_crit_mod = extra_crit_mod + effects.by_school.spell_crit_mod[periodic["school"..i]] -
-            effects.by_school.spell_crit_mod[magic_school.physical];
+        best_crit_mod = math.max(best_crit_mod, effects.by_school.crit_mod[periodic["school"..i]]);
         i = i + 1;
     end
-    extra_crit_mod = extra_crit_mod + (effects.ability.crit_mod[benefit_id] or 0);
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-        stats.crit_mod_ot = stats.crit_mod_ot + 0.5 * effects.raw.special_crit_heal_mod;
-        if effects.ability.crit_mod[benefit_id] then
-            stats.crit_mod_ot = stats.crit_mod_ot + effects.ability.crit_mod[benefit_id];
-        end
-    else
-        stats.crit_mod_ot = stats.crit_mod_ot * (1.0 + effects.raw.special_crit_mod);
-        stats.crit_mod_ot = stats.crit_mod_ot + (stats.crit_mod - 1.0) * 2 * extra_crit_mod;
-    end
+    base_crit_mod = (1.0 + base_crit_mod) * (1.0 + best_crit_mod) - 1.0;
+    stats.crit_mod_ot = 1.0 + base_crit_mod * (1.0 + (effects.ability.crit_mod[benefit_id] or 0.0));
+
+    --local extra_crit_mod = effects.by_school.spell_crit_mod[periodic.school1];
+    --local i = 2;
+    --while (periodic["school"..i]) do
+    --    extra_crit_mod = extra_crit_mod + effects.by_school.spell_crit_mod[periodic["school"..i]] -
+    --        effects.by_school.spell_crit_mod[magic_school.physical];
+    --    i = i + 1;
+    --end
+    --extra_crit_mod = extra_crit_mod + (effects.ability.crit_mod[benefit_id] or 0);
+    --if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+    --    stats.crit_mod_ot = stats.crit_mod_ot + 0.5 * effects.raw.special_crit_heal_mod;
+    --    if effects.ability.crit_mod[benefit_id] then
+    --        stats.crit_mod_ot = stats.crit_mod_ot + effects.ability.crit_mod[benefit_id];
+    --    end
+    --else
+    --    stats.crit_mod_ot = stats.crit_mod_ot * (1.0 + effects.raw.special_crit_mod);
+    --    stats.crit_mod_ot = stats.crit_mod_ot + (stats.crit_mod - 1.0) * 2 * extra_crit_mod;
+    --end
 
     stats.target_resi_dot = 0;
     stats.target_avg_resi_dot = 0;
@@ -549,31 +568,19 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
 
     -- SP
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
-        stats.spell_heal = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
-        stats.spell_power_ot = stats.spell_heal;
+        stats.spell_power_ot = loadout.healing_power + effects.raw.healing_power + effects.raw.spell_power;
     else
-
-        local spell_dmg_ot = loadout.spell_dmg + effects.raw.spell_dmg + effects.raw.spell_power + (effects.ability.sp[benefit_id] or 0) + loadout.spell_dmg_by_school[periodic.school1] + (effects.ability.sp_ot[benefit_id] or 0);
+        local sp_school = loadout.spell_dmg_by_school[periodic.school1];
         local i = 2;
         while (periodic["school"..i]) do
-            spell_dmg_ot = spell_dmg_ot + loadout.spell_dmg_by_school[periodic["school"..i]];
+            sp_school = math.max(sp_school, loadout.spell_dmg_by_school[periodic["school"..i]]);
             i = i + 1;
         end
-        stats.spell_power_ot = spell_dmg_ot;
+        stats.spell_power_ot = sp_school + effects.raw.spell_dmg + effects.raw.spell_power + (effects.ability.sp[benefit_id] or 0);
     end
 
     -- COEF
     stats.ot_coef = spell.periodic.coef * (1.0 + (effects.ability.coef_ot_mod[benefit_id] or 0.0));
-
-
-    -- TODO: channel flag
-    if spell.cast_time == spell.periodic.dur then
-        -- vanilla channels cannot be improved by % spell casting speed
-        stats.cast_time = spell.cast_time;
-        if effects.ability.cast_mod_reduce[benefit_id] then
-            stats.cast_time = stats.cast_time * (1.0 - effects.ability.cast_mod_reduce[benefit_id]);
-        end
-    end
 
     -- SPELL MODIFIERS
     stats.spell_dmg_mod_ot = stats.spell_dmg_mod_ot + effects.by_school.spell_dmg_mod[periodic.school1];
@@ -672,8 +679,6 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     stats.ignore_cant_crit = false;
     stats.crit = 0.0;
     stats.crit_ot = 0.0;
-    stats.crit_mod = 0.0;
-    stats.crit_mod_ot = 0.0;
 
     local resource_refund = effects.raw.resource_refund;
 
@@ -681,20 +686,16 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     stats.effect_ot_mod = effects.ability.effect_ot_mod[benefit_id] or 0.0;
     stats.flat_addition = effects.ability.flat_add[benefit_id] or 0.0;
     stats.flat_addition_ot = stats.flat_addition + (effects.ability.flat_add_ot[benefit_id] or 0.0);
-    stats.spell_mod_base = effects.ability.effect_mod_base[benefit_id] or 0.0;
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-        stats.spell_mod_base = stats.spell_mod_base + effects.raw.spell_heal_mod_base;
-    end
+    stats.spell_mod_base = 1.0 + (effects.ability.effect_mod_base[benefit_id] or 0.0);
+    stats.spell_mod_base_flat = effects.ability.effect_mod_base_flat[benefit_id] or 0.0;
+    --if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+    --    stats.spell_mod_base = stats.spell_mod_base + effects.raw.spell_heal_mod_base;
+    --end
     stats.regen_while_casting = effects.raw.regen_while_casting;
 
     stats.gcd = math.min(spell.gcd, 1.5);
 
-    local anycomp = spell.direct or spell.periodic;
-
-    local cost_mod_base = effects.raw.cost_mod_base;
-    if effects.ability.cost_mod_base[benefit_id] then
-        cost_mod_base = cost_mod_base + effects.ability.cost_mod_base[benefit_id];
-    end
+    local cost_mod = effects.ability.cost_mod[benefit_id] or 0.0;
     local base_mana = 0;
     if swc.base_mana_by_lvl then
         base_mana = swc.base_mana_by_lvl[loadout.lvl];
@@ -703,41 +704,26 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     if bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
         original_base_cost = original_base_cost * base_mana;
     end
-    local cost_flat = effects.raw.cost_flat;
-    if effects.ability.cost_flat[benefit_id] then
-        cost_flat = cost_flat + effects.ability.cost_flat[benefit_id];
-    end
-    stats.cost = math.floor((original_base_cost - cost_flat)) * (1.0 - cost_mod_base);
+    local cost_flat = effects.ability.cost_mod_flat[benefit_id] or 0.0;
+    stats.cost = math.floor((original_base_cost + cost_flat)) * (1.0 + cost_mod);
 
-    local cost_mod = 1 - effects.raw.cost_mod - (effects.ability.cost_mod[benefit_id] or 0.0);
-    if anycomp then
-        cost_mod = cost_mod - effects.by_school.cost_mod[anycomp.school1]
-        local i = 2;
-        while (anycomp["school"..i]) do
-            cost_mod = cost_mod - effects.by_school.cost_mod[i];
-            i = i + 1;
-        end
-    end
-
-
-    stats.cast_time = spell.cast_time;
     if bit.band(spell.flags, spell_flags.instant) ~= 0 then
         stats.cast_time = stats.gcd;
     end
 
     stats.cast_time = spell.cast_time;
-    if not effects.ability.cast_mod[benefit_id] then
-        effects.ability.cast_mod[benefit_id] = 0.0;
+    if not effects.ability.cast_mod_flat[benefit_id] then
+        effects.ability.cast_mod_flat[benefit_id] = 0.0;
     end
-    stats.cast_time = stats.cast_time - effects.ability.cast_mod[benefit_id];
+    stats.cast_time = stats.cast_time - effects.ability.cast_mod_flat[benefit_id];
 
     local haste_rating_per_perc = get_combat_rating_effect(CR_HASTE_SPELL, loadout.lvl);
     local haste_from_rating = 0.01 * max(0.0, loadout.haste_rating + effects.raw.haste_rating) / haste_rating_per_perc;
 
     local cast_reduction = effects.raw.haste_mod + haste_from_rating;
 
-    if effects.ability.cast_mod_mul[benefit_id] then
-        cast_reduction = cast_reduction + effects.ability.cast_mod_mul[benefit_id];
+    if effects.ability.cast_mod[benefit_id] then
+        cast_reduction = cast_reduction + effects.ability.cast_mod[benefit_id];
     end
 
     stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
@@ -813,10 +799,11 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                                         0.5, 1.0, "Living Seed");
             end
         end
-        if loadout.runes[rune_ids.lifebloom] and
-            (benefit_id == spids.rejuvenation or benefit_id == spids.lifebloom) then
-            stats.gcd = stats.gcd - 0.5;
-        end
+        --if loadout.runes[rune_ids.lifebloom] and
+        --    (benefit_id == spids.rejuvenation or benefit_id == spids.lifebloom) then
+        --    stats.gcd = stats.gcd - 0.5;
+        --    --print(G);
+        --end
         if loadout.num_set_pieces[set_tiers.sod_final_pve_zg] >= 3 and benefit_id == spids.starfire then
             stats.gcd = stats.gcd - 0.5;
         end
@@ -833,7 +820,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 crit_cast_reduction = math.min(0.5, crit_cast_reduction * 2);
             end
 
-            stats.cast_time = spell.cast_time - effects.ability.cast_mod[benefit_id] - crit_cast_reduction;
+            stats.cast_time = spell.cast_time - effects.ability.cast_mod_flat[benefit_id] - crit_cast_reduction;
             stats.cast_time = stats.cast_time * (1.0 - cast_reduction);
         end
 
@@ -936,7 +923,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             -- scaling should change with weapon base speed not current attack speed
             -- but there is no easy way to get it
             if benefit_id == spids.flametongue_weapon then
-                stats.spell_mod_base = (1.0 + stats.spell_mod_base) * 0.25 * (math.max(1.0, math.min(4.0, wep_speed))) - 1.0;
+                stats.spell_mod_base = stats.spell_mod_base * 0.25 * (math.max(1.0, math.min(4.0, wep_speed))) - 1.0;
             elseif benefit_id == spids.frostbrand_weapon then
                 local min_proc_chance = 0.15;
                 -- TODO: refactor
@@ -1101,6 +1088,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     end
 
     stats.ot_extra_ticks = effects.ability.extra_ticks[benefit_id] or 0.0;
+    stats.ot_extra_dur = effects.ability.extra_dur[benefit_id] or 0.0;
+    stats.ot_extra_tick_time = effects.ability.extra_tick_time[benefit_id] or 0.0;
 
     stats.ap = loadout.ap;
     stats.rap = loadout.rap;
@@ -1131,6 +1120,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     stats.cost = stats.cost * cost_mod;
     stats.cost = math.floor(stats.cost + 0.5);
 
+    if not stats.hit then
+        print(spell.base_id);
+    end
     resource_refund = resource_refund + resource_refund_mul_crit * (stats.crit or stats.crit_ot) * stats.hit;
     resource_refund = resource_refund + resource_refund_mul_hit * stats.hit;
 
@@ -1354,9 +1346,9 @@ local function direct_info(info, spell, loadout, stats)
     end
 
     info.min_noncrit_if_hit_base1 =
-        ((1.0 + stats.spell_mod_base) * base_min + stats.flat_addition) * stats.spell_mod;
+        (stats.spell_mod_base * (base_min + stats.spell_mod_base_flat) + stats.flat_addition) * stats.spell_mod;
     info.max_noncrit_if_hit_base1 =
-        ((1.0 + stats.spell_mod_base) * base_max + stats.flat_addition) * stats.spell_mod;
+        (stats.spell_mod_base * (base_max + stats.spell_mod_base_flat) + stats.flat_addition) * stats.spell_mod;
     info.min_noncrit_if_hit1 =
         info.min_noncrit_if_hit_base1 + stats.spell_power * stats.coef  * stats.spell_mod;
     info.max_noncrit_if_hit1 =
@@ -1390,7 +1382,6 @@ local function periodic_info(info, spell, loadout, stats)
         base_tick_max = spell.periodic.max * added_effect;
     end
 
-    local extra_ticks = stats.ot_extra_ticks;
     -- unclear if this ever needs to work in conjunction with any kind of level scaling
     if bit.band(spell.periodic.flags, comp_flags.applies_mh) ~= 0 then
         base_tick_min = (spell.periodic.base + loadout.m1_min) * base_tick_min;
@@ -1402,28 +1393,29 @@ local function periodic_info(info, spell, loadout, stats)
         -- seems like finishing moves are never weapon based
         base_tick_min = base_tick_min + spell.periodic.per_resource * loadout.combo_pts;
         base_tick_max = base_tick_max + spell.periodic.per_resource * loadout.combo_pts;
-        extra_ticks = extra_ticks + loadout.combo_pts;
+        -- TODO: combo pts scaling with dur sometimes
+        --extra_ticks = extra_ticks + loadout.combo_pts;
     end
 
-    info.ot_tick_time1 = spell.periodic.tick_time;
-    info.ot_ticks1 = (spell.periodic.dur / info.ot_tick_time1) + extra_ticks;
+    info.ot_dur1 = spell.periodic.dur + stats.ot_extra_dur;
+    info.ot_tick_time1 = spell.periodic.tick_time + stats.ot_extra_tick_time;
+    info.ot_ticks1 = (info.ot_dur1 / info.ot_tick_time1);
     info.ot_dur1 = info.ot_tick_time1 * info.ot_ticks1;
     info.longest_ot_duration = info.ot_dur1;
 
-    -- not needed with new change?
-    if spell.cast_time == spell.periodic.dur then
-        info.ot_tick_time1 = spell.periodic.tick_time * (stats.cast_time / spell.periodic.dur);
-        info.ot_dur1 = stats.cast_time;
+    if bit.band(spell.flags, spell_flags.channel) ~= 0 then
+        -- may need to apply haste here on some clients
+        stats.cast_time = info.ot_dur1;
     end
 
     info.ot_min_crit_if_hit1 = 0.0;
     info.ot_max_crit_if_hit1 = 0.0;
 
-    info.ot_min_noncrit_if_hit_base1 = ((1.0 + stats.spell_mod_base) * base_tick_min + stats.flat_addition_ot) * info.ot_ticks1 * stats.spell_ot_mod;
+    info.ot_min_noncrit_if_hit_base1 = (stats.spell_mod_base * (base_tick_min + stats.spell_mod_base_flat) + stats.flat_addition_ot) * info.ot_ticks1 * stats.spell_ot_mod;
 
     info.ot_min_noncrit_if_hit1 = info.ot_min_noncrit_if_hit_base1 + stats.ot_coef * stats.spell_power_ot * info.ot_ticks1 * stats.spell_ot_mod;
 
-    info.ot_max_noncrit_if_hit_base1 = ((1.0 + stats.spell_mod_base) * base_tick_max + stats.flat_addition_ot) * info.ot_ticks1 * stats.spell_ot_mod;
+    info.ot_max_noncrit_if_hit_base1 = (stats.spell_mod_base * (base_tick_max + stats.spell_mod_base_flat) + stats.flat_addition_ot) * info.ot_ticks1 * stats.spell_ot_mod;
 
     info.ot_max_noncrit_if_hit1 = info.ot_max_noncrit_if_hit_base1 + stats.ot_coef * stats.spell_power_ot * info.ot_ticks1 * stats.spell_ot_mod;
 
@@ -1772,43 +1764,43 @@ if class == "SHAMAN" then
             end
         end,
         [spids.earth_shock] = function(spell, info, loadout, stats, effects)
-            if loadout.runes[rune_ids.rolling_thunder] and spell.base_id == spids.earth_shock then
-                if not stats.secondary_ability_stats then
-                    stats.secondary_ability_stats = {};
-                    stats.secondary_ability_info = {};
-                end
+            --if loadout.runes[rune_ids.rolling_thunder] and spell.base_id == spids.earth_shock then
+            --    if not stats.secondary_ability_stats then
+            --        stats.secondary_ability_stats = {};
+            --        stats.secondary_ability_info = {};
+            --    end
 
-                local lightning_shield = spells[best_rank_by_lvl(spids.lightning_shield, loadout.lvl)];
+            --    local lightning_shield = spells[best_rank_by_lvl(spids.lightning_shield, loadout.lvl)];
 
-                spell_info_from_stats(stats.secondary_ability_info,
-                    stats.secondary_ability_stats,
-                    lightning_shield,
-                    loadout,
-                    effects);
+            --    spell_info_from_stats(stats.secondary_ability_info,
+            --        stats.secondary_ability_stats,
+            --        lightning_shield,
+            --        loadout,
+            --        effects);
 
-                local ls_stacks = 0;
-                if loadout.dynamic_buffs["player"][lookups.lightning_shield] then
-                    ls_stacks = loadout.dynamic_buffs["player"][lookups.lightning_shield].count;
-                    ls_stacks = ls_stacks - 3;
-                elseif config.loadout.force_apply_buffs and loadout.buffs[lookups.lightning_shield] then
-                    ls_stacks = 9 - 3;
-                end
-                if ls_stacks > 0 then
-                    info.num_direct_effects = info.num_direct_effects + 1;
-                    local i = info.num_direct_effects;
-                    info["direct_description" .. i] = string.format("Lightning Shield %dx", ls_stacks);
-                    info["direct_utilization" .. i] = 1.0;
+            --    local ls_stacks = 0;
+            --    if loadout.dynamic_buffs["player"][lookups.lightning_shield] then
+            --        ls_stacks = loadout.dynamic_buffs["player"][lookups.lightning_shield].count;
+            --        ls_stacks = ls_stacks - 3;
+            --    elseif config.loadout.force_apply_buffs and loadout.buffs[lookups.lightning_shield] then
+            --        ls_stacks = 9 - 3;
+            --    end
+            --    if ls_stacks > 0 then
+            --        info.num_direct_effects = info.num_direct_effects + 1;
+            --        local i = info.num_direct_effects;
+            --        info["direct_description" .. i] = string.format("Lightning Shield %dx", ls_stacks);
+            --        info["direct_utilization" .. i] = 1.0;
 
-                    local ls_dmg = stats.secondary_ability_info.min_noncrit_if_hit1 * ls_stacks;
+            --        local ls_dmg = stats.secondary_ability_info.min_noncrit_if_hit1 * ls_stacks;
 
-                    info["min_noncrit_if_hit" .. i] = ls_dmg;
-                    info["max_noncrit_if_hit" .. i] = ls_dmg;
-                    info["min_crit_if_hit" .. i] = ls_dmg * stats.crit_mod;
-                    info["max_crit_if_hit" .. i] = ls_dmg * stats.crit_mod;
-                    info["crit" .. i] = stats.secondary_ability_stats.crit;
-                end
-            end
-            calc_expectation(info, spell, stats, loadout);
+            --        info["min_noncrit_if_hit" .. i] = ls_dmg;
+            --        info["max_noncrit_if_hit" .. i] = ls_dmg;
+            --        info["min_crit_if_hit" .. i] = ls_dmg * stats.crit_mod;
+            --        info["max_crit_if_hit" .. i] = ls_dmg * stats.crit_mod;
+            --        info["crit" .. i] = stats.secondary_ability_stats.crit;
+            --    end
+            --end
+            --calc_expectation(info, spell, stats, loadout);
         end,
     };
 elseif class == "PRIEST" then
