@@ -291,9 +291,9 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
         local wand_perc_spec = 1.0;
 
         if class == "PRIEST" then
-            wand_perc_spec = wand_perc_spec + loadout.talents_table:pts(1, 2) * 0.05;
+            wand_perc_spec = wand_perc_spec + loadout.talents_table[102] * 0.05;
         elseif class == "MAGE" then
-            wand_perc_spec = wand_perc_spec + loadout.talents_table:pts(1, 4) * 0.125;
+            wand_perc_spec = wand_perc_spec + loadout.talents_table[104] * 0.125;
         end
 
         stats.gcd = 0.5;
@@ -356,16 +356,14 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
         i = i + 1;
     end
     local hit, avg_resi = hit_calc(stats.extra_hit, stats.target_avg_resi, loadout, spell);
-    stats.hit = hit;
-    stats.hit_ot = hit;
-    stats.target_avg_resi = avg_resi;
     stats.target_avg_resi_dot = avg_resi;
     -- TODO: cannot miss spells, partial immunity set hit 1 and res 0
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
-        stats.hit = math.min(math.max(stats.hit, 0.0), 1.0);
+        stats.hit = math.min(math.max(hit, 0.0), 1.0);
     else
-        stats.hit = math.min(math.max(stats.hit, 0.0), 0.99);
+        stats.hit = math.min(math.max(hit, 0.0), 0.99);
     end
+    stats.hit = hit;
 
     -- SP
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
@@ -561,10 +559,6 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
     else
         stats.hit_ot = math.min(math.max(stats.hit_ot, 0.0), 0.99);
     end
-    if not spell.direct then
-        stats.hit = stats.hit_ot;
-    end
-
 
     -- SP
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
@@ -764,13 +758,13 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             --stats.crit = math.min(1.0, stats.crit + loadout.talents_table:pts(1, 14) * 0.01);
         end
         if bit.band(spell.flags, spell_flags.instant) ~= 0 then
-            cost_mod = cost_mod - loadout.talents_table:pts(1, 10) * 0.02;
+            cost_mod = cost_mod - loadout.talents_table[110] * 0.02;
         end
 
 
     elseif class == "DRUID" then
         -- clearcast
-        local pts = loadout.talents_table:pts(1, 9);
+        local pts = loadout.talents_table[109];
         if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
             bit.band(spell_flags.instant, spell.flags) == 0 then
             cost_mod = cost_mod * (1.0 - 0.1 * pts);
@@ -809,7 +803,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
 
         -- nature's grace
-        local pts = loadout.talents_table:pts(1, 13);
+        local pts = loadout.talents_table[113];
         --if pts ~= 0 and spell.cast_time ~= spell.periodic.dur and bit.band(spell_flags.instant, spell.flags) == 0 and cast_reduction < 1.0 then
         -- channel check?
         if pts ~= 0 and not (spell.periodic and spell.cast_time == spell.periodic.dur) and bit.band(spell_flags.instant, spell.flags) == 0 and cast_reduction < 1.0 then
@@ -833,7 +827,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     elseif class == "PALADIN" then
         if bit.band(spell.flags, spell_flags.heal) ~= 0 then
             -- illumination
-            local pts = loadout.talents_table:pts(1, 9);
+            local pts = loadout.talents_table[109];
             if pts ~= 0 then
                 --resource_refund = resource_refund + stats.crit * pts * 0.2 * original_base_cost;
                 resource_refund_mul_crit = resource_refund_mul_crit + pts * 0.2 * original_base_cost;
@@ -882,7 +876,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             -- clearcast
-            local pts = loadout.talents_table:pts(1, 6);
+            local pts = loadout.talents_table[106];
             if pts ~= 0 then
                 cost_mod = cost_mod * (1.0 - 0.1 * pts);
             end
@@ -932,7 +926,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         end
         if benefit_id == spids.earth_shield and loadout.friendly_towards == "player" then
             -- strange behaviour hacked in
-            stats.effect_mod = stats.effect_mod + 0.02 * loadout.talents_table:pts(3, 14);
+            stats.effect_mod = stats.effect_mod + 0.02 * loadout.talents_table[314];
         end
         if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.direct and is_buff_up(loadout, "player", lookups.water_shield, true) then
 
@@ -942,12 +936,12 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     elseif class == "MAGE" then
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             -- clearcast
-            local pts = loadout.talents_table:pts(1, 6);
+            local pts = loadout.talents_table[106];
             if pts ~= 0 then
                 cost_mod = cost_mod * (1.0 - 0.02 * pts);
             end
 
-            local pts = loadout.talents_table:pts(2, 12);
+            local pts = loadout.talents_table[212];
             if pts ~= 0 and spell.direct and 
                 (spell.direct.school1 == magic_school.fire or spell.direct.school1 == magic_school.frost) then
                 -- master of elements
@@ -962,7 +956,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             end
 
             -- ignite
-            local pts = loadout.talents_table:pts(2, 3);
+            local pts = loadout.talents_table[203];
             if pts ~= 0 and spell.direct and spell.direct.school1 == magic_school.fire then
                 -- % ignite double dips in % multipliers
                 local double_dip = stats.spell_dmg_mod_mul *
@@ -987,7 +981,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             end
 
             if bit.band(loadout.flags, loadout_flags.target_frozen) ~= 0 then
-                local pts = loadout.talents_table:pts(3, 13);
+                local pts = loadout.talents_table[313];
 
                 stats.crit = math.max(0.0, math.min(1.0, stats.crit + pts * 0.1));
 
@@ -1031,7 +1025,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 benefit_id == spids.curse_of_doom or
                 benefit_id == spids.siphon_life) then
             stats.ignore_cant_crit = true;
-            stats.crit_mod_ot = stats.crit_mod_ot + 0.5;
+            --stats.crit_mod_ot = stats.crit_mod_ot + 0.5;
         end
         if loadout.runes[rune_ids.dance_of_the_wicked] and spell.direct then
             --resource_refund = resource_refund + stats.crit * 0.02 * loadout.max_mana;
@@ -1065,7 +1059,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
                 end
             end
             
-            local isb_pts = loadout.talents_table:pts(3, 1);
+            local isb_pts = loadout.talents_table[301];
             local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
 
             if isb_buff_val and isb_pts ~= 0 then
@@ -1097,14 +1091,13 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     if effects.ability.refund[benefit_id] and effects.ability.refund[benefit_id] ~= 0 then
         local refund = effects.ability.refund[benefit_id];
-        local max_rank = spell.rank;
-        if benefit_id == spids.lesser_healing_wave then
-            max_rank = 6;
-        elseif benefit_id == spids.healing_touch then
-            max_rank = 11;
+        local max_rank = spells[swc.rank_seqs[spell.base_id][#swc.rank_seqs[spell.base_id]]].rank;
+        -- TODO: find max rank
+        -- NOTE: unclear how this works, best guess it to interopolate between first and last rank
+        local coef_estimate = 1.0;
+        if spell.rank > 0 then
+            coef_estimate = spell.rank / max_rank;
         end
-
-        local coef_estimate = spell.rank / max_rank;
 
         resource_refund = resource_refund + refund * coef_estimate;
     end
@@ -1117,12 +1110,16 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         spell_stats_periodic(stats, spell, loadout, effects, eval_flags);
     end
 
+    stats.crit_mod = stats.crit_mod or stats.crit_mod_ot;
+    stats.crit_mod_ot = stats.crit_mod_ot or stats.crit_mod;
+    stats.crit = stats.crit or stats.crit_ot;
+    stats.hit = stats.hit or stats.hit_ot;
+    stats.hit_ot = stats.hit_ot or stats.hit;
+    stats.target_avg_resi = stats.target_avg_resi or stats.target_avg_resi_dot;
+
     stats.cost = stats.cost * cost_mod;
     stats.cost = math.floor(stats.cost + 0.5);
 
-    if not stats.hit then
-        print(spell.base_id);
-    end
     resource_refund = resource_refund + resource_refund_mul_crit * (stats.crit or stats.crit_ot) * stats.hit;
     resource_refund = resource_refund + resource_refund_mul_hit * stats.hit;
 
@@ -1591,7 +1588,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         if spell.base_id == spids.life_tap then
             info.mana_restored = spell.direct.min;
 
-            local pts = loadout.talents_table:pts(1, 5);
+            local pts = loadout.talents_table[105];
             info.mana_restored = info.mana_restored * (1.0 + pts * 0.1);
             if stats.crit == 1.0 then
                 info.mana_restored = 2 * info.mana_restored;
@@ -1980,7 +1977,7 @@ elseif class == "MAGE" then
         --    add_expectation_ot_st(info, 4);
         --end,
         [spids.mana_shield] = function(spell, info, loadout, stats)
-            local pts = loadout.talents_table:pts(1, 10);
+            local pts = loadout.talents_table[110];
             local drain_mod = 0.1 * pts;
             if loadout.runes[rune_ids.advanced_warding] then
                 drain_mod = drain_mod + 0.5;

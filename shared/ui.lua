@@ -86,140 +86,96 @@ local function editbox_config(frame, update_func, close_func)
 
 end
 
-local function display_spell_diff(spell_id, spell, spell_diff_line, spell_info_normal, spell_info_diff, frame, is_duality_spell, sim_type, lvl)
+local function display_spell_diff(i, spell_id, spell, calc_list, spell_info_normal, spell_info_diff, frame, is_duality_spell, sim_type, lvl)
+    if not calc_list[i] then
+        calc_list[i] = {};
+
+        frame.line_y_offset = frame.line_y_offset - 15;
+        calc_list[i].name_str = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].name_str:SetFontObject(font);
+        calc_list[i].name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
+        calc_list[i].change = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].change:SetFontObject(font);
+        calc_list[i].change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
+        calc_list[i].first = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].first:SetFontObject(font);
+        calc_list[i].first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
+        calc_list[i].second = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].second:SetFontObject(font);
+        calc_list[i].second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
+
+
+        calc_list[i].cancel_button = CreateFrame("Button", "nil", frame, "UIPanelButtonTemplate");
+        calc_list[i].cancel_button:SetScript("OnClick", function(self)
+            config.settings.spell_calc_list[calc_list[i].__spid] = nil;
+            for k, v in pairs(calc_list[frame.num_spells]) do
+                if type(v) == "table" then
+                    v:Hide();
+                end
+            end
+            update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+        end);
+
+        calc_list[i].cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 4);
+        calc_list[i].cancel_button:SetSize(17, 17);
+        calc_list[i].cancel_button:SetText("x");
+        local fontstr = calc_list[i].cancel_button:GetFontString();
+        if fontstr then
+            fontstr:ClearAllPoints();
+            fontstr:SetPoint("CENTER", calc_list[i].cancel_button, "CENTER");
+        end
+    end
+
+    local v = calc_list[i];
+
+    v.__spid = spell_id;
+
 
     local diff = spell_diff(spell_info_normal, spell_info_diff, sim_type);
-
-    local v = nil;
-    if is_duality_spell then
-        if not spell_diff_line.duality then
-            spell_diff_line.duality = {};
-        end
-        spell_diff_line.duality.name = spell_diff_line.name;
-        v = spell_diff_line.duality;
-    else
-        v = spell_diff_line;
+    local rank_str = "(Rank "..spell.rank..")";
+    if spell.rank == 0 then
+        rank_str = "";
     end
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-    if not v.name_str then
-        v.name_str = frame:CreateFontString(nil, "OVERLAY");
-        v.name_str:SetFontObject(font);
-        v.change = frame:CreateFontString(nil, "OVERLAY");
-        v.change:SetFontObject(font);
-        v.first = frame:CreateFontString(nil, "OVERLAY");
-        v.first:SetFontObject(font);
-        v.second = frame:CreateFontString(nil, "OVERLAY");
-        v.second:SetFontObject(font);
-
-        if not spell.healing_version then
-            v.cancel_button = CreateFrame("Button", "nil", frame, "UIPanelButtonTemplate"); 
-        end
-    end
-
-    v.name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-
-    local rank_str = "";
-    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
-        rank_str = "(OLD RANK!!!)";
-        if lvl <= spell.lvl_outdated then
-            rank_str = "(Rank "..spell.rank..")";
-        end
-    else
-        rank_str = "(Rank "..spell.rank..")";
-    end
-
-    if is_duality_spell and 
-        bit.band(spell.flags, spell_flags.heal) ~= 0 then
-
-        v.name_str:SetText(v.name.." H "..rank_str);
-    elseif v.name == spids.holy_nova or v.name == spids.holy_shock or v.name == spids.penance then
-
-        v.name_str:SetText(v.name.." D "..rank_str);
-    else
-        v.name_str:SetText(v.name.." "..rank_str);
-    end
+    local lname = GetSpellInfo(spell_id);
+    v.name_str:SetText(lname.." "..rank_str);
 
     v.name_str:SetTextColor(222/255, 192/255, 40/255);
 
-    if not frame.is_valid then
 
-        v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
-        v.change:SetText("NAN");
+    if diff.first < 0 then
+        v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
+        v.change:SetTextColor(195/255, 44/255, 11/255);
 
-        v.first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-        v.first:SetText("NAN");
+        v.first:SetText(string.format("%.2f", diff.first));
+        v.first:SetTextColor(195/255, 44/255, 11/255);
 
-        v.second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
-        v.second:SetText("NAN");
+    elseif diff.first > 0 then
+
+        v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
+        v.change:SetTextColor(33/255, 185/255, 21/255);
+
+        v.first:SetText(string.format("+%.2f", diff.first));
+        v.first:SetTextColor(33/255, 185/255, 21/255);
 
     else
+        v.change:SetText("0 %");
+        v.change:SetTextColor(1, 1, 1);
 
-        v.change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
-        v.first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-        v.second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
+        v.first:SetText("0");
+        v.first:SetTextColor(1, 1, 1);
+    end
 
-        if diff.first < 0 then
-            v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
-            v.change:SetTextColor(195/255, 44/255, 11/255);
+    if diff.second < 0 then
 
-            v.first:SetText(string.format("%.2f", diff.first));
-            v.first:SetTextColor(195/255, 44/255, 11/255);
+        v.second:SetText(string.format("%.2f", diff.second));
+        v.second:SetTextColor(195/255, 44/255, 11/255);
+    elseif diff.second > 0 then
 
-        elseif diff.first > 0 then
-
-            v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
-            v.change:SetTextColor(33/255, 185/255, 21/255);
-
-            v.first:SetText(string.format("+%.2f", diff.first));
-            v.first:SetTextColor(33/255, 185/255, 21/255);
-
-        else
-            v.change:SetText("0 %");
-            v.change:SetTextColor(1, 1, 1);
-
-            v.first:SetText("0");
-            v.first:SetTextColor(1, 1, 1);
-        end
-
-        if diff.second < 0 then
-
-            v.second:SetText(string.format("%.2f", diff.second));
-            v.second:SetTextColor(195/255, 44/255, 11/255);
-        elseif diff.second > 0 then
-
-            v.second:SetText(string.format("+%.2f", diff.second));
-            v.second:SetTextColor(33/255, 185/255, 21/255);
-        else
-
-            v.second:SetText("0");
-            v.second:SetTextColor(1, 1, 1);
-        end
-            
-        if not spell.healing_version then
-            v.cancel_button:SetScript("OnClick", function()
-
-                v.change:Hide();
-                v.name_str:Hide();
-                v.first:Hide();
-                v.second:Hide();
-                v.cancel_button:Hide();
-
-                -- in case this was the duality spell, i.e. healing counterpart 
-                frame.spells[spell_id].change:Hide();
-                frame.spells[spell_id].name_str:Hide();
-                frame.spells[spell_id].first:Hide();
-                frame.spells[spell_id].second:Hide();
-
-                frame.spells[spell_id] = nil;
-                update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
-
-            end);
-
-            v.cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 3);
-            v.cancel_button:SetHeight(20);
-            v.cancel_button:SetWidth(25);
-            v.cancel_button:SetText("X");
-        end
+        v.second:SetText(string.format("+%.2f", diff.second));
+        v.second:SetTextColor(33/255, 185/255, 21/255);
+    else
+        v.second:SetText("0");
+        v.second:SetTextColor(1, 1, 1);
     end
 end
 
@@ -227,81 +183,40 @@ update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
 
     local frame = sw_frame.calculator_frame;
 
-    frame.line_y_offset = frame.line_y_offset_before_dynamic_spells;
-
     local spell_stats_normal = {};
     local spell_stats_diffed = {};
     local spell_info_normal = {};
     local spell_info_diffed = {};
 
-    --local num_spells = 0;
-    --for k, v in pairs(frame.spells) do
-    --    num_spells = num_spells + 1;
-    --end
-    --if num_spells == 0 then
-    --    -- try to find something relevant to display
-    --    for i = 1, 120 do
-    --        local action_type, id, _ = GetActionInfo(i);
-    --        if action_type == "spell" and spells[id] and bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
-
-    --            num_spells = num_spells + 1;
-
-    --            local lname = GetSpellInfo(id);
-
-    --            frame.spells[id] = {
-    --                name = lname
-    --            };
-
-    --        end
-    --        if num_spells == 3 then
-    --            break;
-    --        end
-    --    end
-    --end
-
-
-    for random_rank, v in pairs(frame.spells) do
-
-        -- best rank
-        --local k = best_rank_by_lvl(spells[random_rank].base_id, loadout.lvl);
-        --if not k then
-        --    k = random_rank;
-        --end
-        local k = random_rank;
-
-        stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
-        stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
-        spell_info(spell_info_normal, spells[k], spell_stats_normal, loadout, effects);
-        cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
-        spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
-        cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
-
-        display_spell_diff(random_rank, spells[k], v, spell_info_normal, spell_info_diffed, frame, false, sw_frame.calculator_frame.sim_type, loadout.lvl);
-
-        -- for spells with both heal and dmg
-        if spells[k].healing_version then
-
-            stats_for_spell(spell_stats_normal, spells[k].healing_version, loadout, effects);
-            stats_for_spell(spell_stats_diffed, spells[k].healing_version, loadout, effects_diffed);
-            spell_info(spell_info_normal, spells[k].healing_version, spell_stats_normal, loadout, effects);
+    local i = 0;
+    for k, _ in pairs(config.settings.spell_calc_list) do
+        if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
+            i = i + 1;
+            stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
+            stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
+            spell_info(spell_info_normal, spells[k], spell_stats_normal, loadout, effects);
             cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
-            spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
+            spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
             cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
 
-            display_spell_diff(random_rank, spells[k].healing_version, v, spell_info_normal, spell_info_diffed, frame, true, sw_frame.calculator_frame.sim_type, loadout.lvl);
+            display_spell_diff(i, k, spells[k], frame.calc_list, spell_info_normal, spell_info_diffed, frame, false, sw_frame.calculator_frame.sim_type, loadout.lvl);
+
+            -- for spells with both heal and dmg
+            if spells[k].healing_version then
+
+                i = i + 1;
+                stats_for_spell(spell_stats_normal, spells[k].healing_version, loadout, effects);
+                stats_for_spell(spell_stats_diffed, spells[k].healing_version, loadout, effects_diffed);
+                spell_info(spell_info_normal, spells[k].healing_version, spell_stats_normal, loadout, effects);
+                cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
+                spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
+                cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
+
+                display_spell_diff(i, k, spells[k].healing_version, frame.calc_list, spell_info_normal, spell_info_diffed, frame, true, sw_frame.calculator_frame.sim_type, loadout.lvl);
+            end
         end
     end
-
-    -- footer
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-    frame.line_y_offset = ui_y_offset_incr(frame.line_y_offset);
-
-    if not frame.footer then
-        frame.footer = frame:CreateFontString(nil, "OVERLAY");
-    end
-    frame.footer:SetFontObject(font);
-    frame.footer:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-    frame.footer:SetText("Add abilities by holding CONTROL while hovering their tooltips");
+    sw_frame.calculator_frame.num_spells = i;
 end
 
 local function update_buffs_frame()
@@ -444,23 +359,41 @@ local function update_loadout_frame()
     update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
 end
 
-local spell_browser_filter = {
-    already_known       = { flag = bit.lshift(1, 0), disp = "Already known"},
-    available           = { flag = bit.lshift(1, 1), disp = "Available"},
-    unavailable         = { flag = bit.lshift(1, 2), disp = "Unavailable"},
-    learned_from_item   = { flag = bit.lshift(1, 3), disp = "Learned from item"},
-    pet                 = { flag = bit.lshift(1, 4), disp = "Pet spells"},
-    other_spells        = { flag = bit.lshift(1, 5), disp = "Other spells"},
+local spell_filter_listing = {
+    {
+        id = "spells_filter_already_known",
+        disp = "Already known",
+    },
+    {
+        id = "spells_filter_available",
+        disp = "Available",
+    },
+    {
+        id = "spells_filter_unavailable",
+        disp = "Unavailable",
+    },
+    {
+        id = "spells_filter_learned_from_item",
+        disp = "Learned from item",
+    },
+    {
+        id = "spells_filter_pet",
+        disp = "Pet spells",
+    },
+    {
+        id = "spells_filter_ignored_spells",
+        disp = "Ignored spells",
+    },
+    {
+        id = "spells_filter_other_spells",
+        disp = "Other spells",
+    },
 };
--- pet spells
-local spell_browser_active_filters = bit.bor(
-    spell_browser_filter.already_known.flag,
-    spell_browser_filter.available.flag,
-    spell_browser_filter.unavailable.flag,
-    spell_browser_filter.learned_from_item.flag,
-    spell_browser_filter.pet.flag
-    --spell_browser_filter.other_spells.flag
-);
+local spell_filters = {};
+for k, v in pairs(spell_filter_listing) do
+    spell_filters[v.id] = k;
+end
+
 local spell_browser_sort_options = {
     "Level",
     "|cFFFF8000".."Damage per second",
@@ -483,8 +416,7 @@ local spell_browser_scroll_to_lvl = true;
 local stats = {};
 local info = {};
 
-local function filtered_spell_view(spell_ids, filters, name_filter)
-
+local function filtered_spell_view(spell_ids, name_filter)
 
     local eval_flags = swc.overlay.overlay_eval_flags();
     local loadout, effects = update_loadout_and_effects();
@@ -493,7 +425,6 @@ local function filtered_spell_view(spell_ids, filters, name_filter)
     local next_lvl = lvl + 1;
     if lvl % 2 == 0 then
         next_lvl = lvl + 2;
-
     end
     local avail_cost = 0;
     local next_cost = 0;
@@ -507,26 +438,29 @@ local function filtered_spell_view(spell_ids, filters, name_filter)
             known = IsSpellKnown(id, true);
         end
         if name_filter ~= "" and not string.find(string.lower(GetSpellInfo(id)), string.lower(name_filter)) then
-            
-        elseif bit.band(filters, spell_browser_filter.already_known.flag) ~= 0 and known then
-            filtered[i] = {spell_id = id, trigger_flag = spell_browser_filter.already_known.flag};
-        elseif bit.band(filters, spell_browser_filter.available.flag) ~= 0 and
+        elseif config.settings.spells_filter_already_known and known then
+            filtered[i] = {spell_id = id, trigger = spell_filters.spells_filter_already_known};
+        elseif config.settings.spells_filter_available and
             lvl >= spells[id].lvl_req and not known then
-            filtered[i] = {spell_id = id, trigger_flag = spell_browser_filter.available.flag};
-        elseif bit.band(filters, spell_browser_filter.unavailable.flag) ~= 0 and
+            filtered[i] = {spell_id = id, trigger = spell_filters.spells_filter_available};
+        elseif config.settings.spells_filter_unavailable and
             lvl < spells[id].lvl_req then
-            filtered[i] = {spell_id = id, trigger_flag = spell_browser_filter.unavailable.flag};
+            filtered[i] = {spell_id = id, trigger = spell_filters.spells_filter_unavailable};
         end
 
-        if bit.band(filters, spell_browser_filter.learned_from_item.flag) == 0 and
+        if not config.settings.spells_filter_learned_from_item and
             spells[id].train < 0 then
             filtered[i] = nil;
         end
-        if bit.band(filters, spell_browser_filter.pet.flag) == 0 and
+        if not config.settings.spells_filter_pet and
             bit.band(spells[id].flags, spell_flags.pet) ~= 0 then
             filtered[i] = nil;
         end
-        if bit.band(filters, spell_browser_filter.other_spells.flag) == 0 and
+        if not config.settings.spells_filter_ignored_spells and
+            config.settings.spells_ignore_list[id] then
+            filtered[i] = nil;
+        end
+        if not config.settings.spells_filter_other_spells and
             spells[id].train == 0 then
             filtered[i] = nil;
         end
@@ -539,10 +473,10 @@ local function filtered_spell_view(spell_ids, filters, name_filter)
                 if spells[id].lvl_req == next_lvl then
                     next_cost = next_cost + spells[id].train;
                 end
-                if filtered[i].trigger_flag == spell_browser_filter.available.flag then
+                if filtered[i].trigger == spell_filters.spells_filter_available then
                     avail_cost = avail_cost + spells[id].train;
                 end
-                if filtered[i].trigger_flag ~= spell_browser_filter.already_known.flag then
+                if filtered[i].trigger ~= spell_filters.spells_filter_already_known then
                     total_cost = total_cost + spells[id].train;
                 end
             end
@@ -648,6 +582,8 @@ local function populate_scrollable_spell_view(view, starting_idx)
             line.spell_tex:SetTexture(GetSpellTexture(v.spell_id));
             line.spell_icon:Show();
             line.spell_tex:Show();
+            line.dropdown_menu.__spid = v.spell_id;
+            line.dropdown_button:Show();
 
             if spells[v.spell_id].rank ~= 0 then
                 line.spell_name:SetText(string.format("%s (Rank %d)",
@@ -657,11 +593,11 @@ local function populate_scrollable_spell_view(view, starting_idx)
             else
                 line.spell_name:SetText(GetSpellInfo(v.spell_id));
             end
-            if bit.band(v.trigger_flag, spell_browser_filter.already_known.flag) ~= 0 then
+            if v.trigger == spell_filters.spells_filter_already_known then
                 line.spell_name:SetTextColor(138 / 255, 134 / 255, 125 / 255);
-            elseif bit.band(v.trigger_flag, spell_browser_filter.available.flag) ~= 0 then
+            elseif v.trigger == spell_filters.spells_filter_available then
                 line.spell_name:SetTextColor(0 / 255, 255 / 255,   0 / 255);
-            elseif bit.band(v.trigger_flag, spell_browser_filter.unavailable.flag) ~= 0 then
+            elseif v.trigger == spell_filters.spells_filter_unavailable then
                 line.spell_name:SetTextColor(252 / 255,  69 / 255,   3 / 255);
             end
             line.spell_name:Show();
@@ -672,8 +608,8 @@ local function populate_scrollable_spell_view(view, starting_idx)
             end
             -- write in currency/book cost column
             if spells[v.spell_id].train > 0 then
-                if bit.band(v.trigger_flag, spell_browser_filter.already_known.flag) ~= 0 then
-                    line.cost_str:SetText("Learned");
+                if v.trigger ==  spell_filters.spells_filter_already_known then
+                    line.cost_str:SetText("Known");
                 else
                     line.cost_str:SetText(GetCoinTextureString(spells[v.spell_id].train));
                 end
@@ -704,6 +640,10 @@ local function populate_scrollable_spell_view(view, starting_idx)
                 line.per_sec_str:Show();
                 line.per_cost_str:Show();
             end
+            if config.settings.spells_ignore_list[v.spell_id] then
+                line.ignore_line:Show();
+            end
+
         elseif v.lvl_barrier then
             line.spell_name:SetText("<<< ".."Level".." "..color_by_lvl_diff(lvl, v.lvl_barrier)..v.lvl_barrier.."|cFFFFFFFF >>>");
             line.spell_name:SetTextColor(1.0, 1.0, 1.0);
@@ -722,7 +662,6 @@ local function update_spells_frame()
 
     local view = filtered_spell_view(
         swc.spells_lvl_ordered,
-        spell_browser_active_filters,
         sw_frame.spells_frame.search:GetText()
     );
     sw_frame.spells_frame.filtered_list = view;
@@ -971,36 +910,30 @@ local function create_sw_ui_spells_frame()
     sw_frame.spells_frame.filter:SetPoint("TOPLEFT", 320, sw_frame.spells_frame.y_offset+6);
     sw_frame.spells_frame.filter.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.spells_frame.filter, "Filters");
+        UIDropDownMenu_SetText(sw_frame.spells_frame.filter, "Includes");
         UIDropDownMenu_Initialize(sw_frame.spells_frame.filter, function()
 
             UIDropDownMenu_SetWidth(sw_frame.spells_frame.filter, 80);
 
-            for _, k in pairs({"already_known", "available", "unavailable", "learned_from_item", "pet", "other_spells"}) do
-                local v = spell_browser_filter[k];
+            for _, v in pairs(spell_filter_listing) do
                 local txt = v.disp;
-                if v.flag == spell_browser_filter.already_known.flag then
+                if v.id == "spells_filter_already_known" then
                     txt = "|cFF8a867d"..txt;
-                elseif v.flag == spell_browser_filter.available.flag then
+                elseif v.id == "spells_filter_available" then
                     txt = "|cFF00FF00"..txt;
-                elseif v.flag == spell_browser_filter.unavailable.flag then
+                elseif v.id == "spells_filter_unavailable" then
                     txt = "|cFFFF0000"..txt;
                 end
-                local is_checked = bit.band(spell_browser_active_filters, v.flag) ~= 0;
+                local is_checked = config.settings[v.id];
 
                 UIDropDownMenu_AddButton({
                         text = txt,
                         checked = is_checked,
                         func = function(self)
-                            
-                            if (bit.band(spell_browser_active_filters, v.flag) ~= 0)  then
-
-                                --self.checked = true;
-                                spell_browser_active_filters = bit.band(spell_browser_active_filters, bit.bnot(v.flag));
+                            if config.settings[v.id] then
+                                config.settings[v.id] = false;
                             else
-                                --self.checked = false;
-                                spell_browser_active_filters = bit.bor(spell_browser_active_filters, v.flag);
-
+                                config.settings[v.id] = true;
                             end
                             update_spells_frame();
                         end,
@@ -1015,11 +948,11 @@ local function create_sw_ui_spells_frame()
     sw_frame.spells_frame.filter.init_func();
 
     local f = CreateFrame("Button", nil, sw_frame.spells_frame, "UIPanelButtonTemplate");
-    f:SetSize(28, 28);
-    f:SetPoint("TOPRIGHT", sw_frame.spells_frame, 0, sw_frame.spells_frame.y_offset+7);
+    f:SetSize(25, 25);
+    f:SetPoint("TOPRIGHT", sw_frame.spells_frame, 0, sw_frame.spells_frame.y_offset+6);
     local tex = f:CreateTexture(nil, "ARTWORK");
     tex:SetTexture("Interface\\Buttons\\UI-RefreshButton");
-    tex:SetSize(15, 15);
+    tex:SetSize(12, 12);
     tex:SetPoint("CENTER", f, "CENTER", 0, 0);
     f:SetScript("OnClick", function()
         update_spells_frame();
@@ -1038,10 +971,11 @@ local function create_sw_ui_spells_frame()
     local icon_x_offset = 0;
     local name_x_offset = 20;
     local lvl_x_offset = 200;
-    local effect_x_offset = 240;
-    local per_sec_x_offset = 270;
-    local per_cost_x_offset = 335;
-    local acquisition_x_offset = 390;
+    local effect_x_offset = 230;
+    local per_sec_x_offset = 260;
+    local per_cost_x_offset = 325;
+    local acquisition_x_offset = 380;
+    local dropdown_x_offset = 440;
 
     local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
@@ -1080,10 +1014,10 @@ local function create_sw_ui_spells_frame()
     local entry_y_offset = 18;
 
     -- sliders
-    f = CreateFrame("Slider", nil, sw_frame.spells_frame, "UISliderTemplate");
+    f = CreateFrame("Slider", nil, sw_frame.spells_frame, "UIPanelScrollBarTrimTemplate");
     f:SetOrientation('VERTICAL');
-    f:SetPoint("RIGHT", sw_frame.spells_frame, "RIGHT", 0, 0);
-    f:SetSize(15, sw_frame.spells_frame:GetHeight()-60);
+    f:SetPoint("RIGHT", sw_frame.spells_frame, "RIGHT", 10, -15);
+    f:SetHeight(sw_frame.spells_frame:GetHeight()-63);
     f:SetScript("OnValueChanged", function(self, val)
         sw_frame.spells_frame.slider_val = val;
         populate_scrollable_spell_view(sw_frame.spells_frame.filtered_list, math.floor(val));
@@ -1091,6 +1025,17 @@ local function create_sw_ui_spells_frame()
     sw_frame.spells_frame.slider = f;
     sw_frame.spells_frame.slider_val = 1;
     f:SetValue(sw_frame.spells_frame.slider_val);
+    f:SetValueStep(1);
+
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(f);
+    bg:SetColorTexture(0, 0, 0, 0.5);
+
+    sw_frame.spells_frame:EnableMouseWheel(true)
+    sw_frame.spells_frame:SetScript("OnMouseWheel", function(_, delta)
+        local scrollbar = sw_frame.spells_frame.slider;
+        scrollbar:SetValue(scrollbar:GetValue() - delta);
+    end);
 
     -- Spell list
     sw_frame.spells_frame.filtered_list = {};
@@ -1167,6 +1112,67 @@ local function create_sw_ui_spells_frame()
         cost:SetText("");
         cost:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset);
 
+        -- spell option dropdown
+        local spell_options = CreateFrame("Button", "sw_frame_spells_frame_dropdown"..i, sw_frame.spells_frame, "UIDropDownMenuTemplate");
+        spell_options:SetPoint("TOPLEFT", dropdown_x_offset, sw_frame.spells_frame.y_offset+15);
+        spell_options.init_func = function()
+
+            UIDropDownMenu_Initialize(spell_options, function()
+
+                UIDropDownMenu_SetWidth(spell_options, 15);
+
+                UIDropDownMenu_AddButton({
+                        text = "Add/remove to spell ignore list",
+                        func = function(self)
+                            if config.settings.spells_ignore_list[spell_options.__spid] then
+                                config.settings.spells_ignore_list[spell_options.__spid] = nil;
+                            else
+                                config.settings.spells_ignore_list[spell_options.__spid] = 1;
+                            end
+                            update_spells_frame();
+                        end,
+                    }
+                );
+                UIDropDownMenu_AddButton({
+                        text = "Add to calculator list",
+                        func = function()
+
+                            local id = spell_options.__spid;
+                            if spells[id] and bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
+
+                                config.settings.spell_calc_list[spell_options.__spid] = 1;
+
+                                local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui();
+                                swc.ui.update_and_display_spell_diffs(loadout, effects, effects_diffed);
+                            end
+
+                        end,
+                    }
+                );
+            end);
+        end;
+        spell_options.init_func();
+        local dropdown_button = _G[spell_options:GetName().."Button"];
+        dropdown_button:SetSize(20, 20);
+        spell_options:Hide();
+
+
+        local f = CreateFrame("Button", nil, sw_frame.spells_frame, "UIPanelButtonTemplate");
+        f:SetText(":");
+        f:SetSize(15, 15);
+        f:SetPoint("TOPLEFT", dropdown_x_offset, sw_frame.spells_frame.y_offset+2);
+        f:SetScript("OnClick", function()
+            _G["sw_frame_spells_frame_dropdown"..i.."Button"]:Click();
+        end);
+
+        local ignore_line_f = sw_frame.spells_frame:CreateTexture(nil, "OVERLAY")
+        ignore_line_f:SetColorTexture(1.0, 0.0, 0.0, 1.0);
+        ignore_line_f:SetDrawLayer("OVERLAY");
+        ignore_line_f:SetHeight(0.5);
+        ignore_line_f:SetPoint("TOPLEFT", -10, sw_frame.spells_frame.y_offset-5);
+        ignore_line_f:SetPoint("TOPRIGHT", -30, sw_frame.spells_frame.y_offset-5);
+
+
         sw_frame.spells_frame.scroll_view[i] = {
             spell_icon = icon,
             spell_tex = icon_texture,
@@ -1180,24 +1186,29 @@ local function create_sw_ui_spells_frame()
             book_icon = book,
             book_tex = book_texture,
             cost_str = cost,
+            dropdown_menu = spell_options,
+            dropdown_button = f,
+            ignore_line = ignore_line_f,
         };
         sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - entry_y_offset;
     end
     local footer_cost = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     footer_cost:SetFontObject(font);
-    footer_cost:SetPoint("BOTTOMRIGHT", sw_frame.spells_frame, "BOTTOMRIGHT", -5, 10);
+    footer_cost:SetPoint("BOTTOMRIGHT", sw_frame.spells_frame, "BOTTOMRIGHT", -15, 5);
 
     sw_frame.spells_frame.footer_cost = footer_cost;
 
+    local header_divider = sw_frame.spells_frame:CreateTexture(nil, "ARTWORK")
+    header_divider:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    header_divider:SetHeight(1);
+    header_divider:SetPoint("TOPLEFT", sw_frame.spells_frame, "TOPLEFT", 0, -48);
+    header_divider:SetPoint("TOPRIGHT", sw_frame.spells_frame, "TOPRIGHT", 0, -48);
 
-    --sw_frame.buffs_frame.lhs.buffs_list_frame:SetScript("OnMouseWheel", function(self, dir)
-    --    local min_val, max_val = sw_frame.buffs_frame.lhs.slider:GetMinMaxValues();
-    --    local val = sw_frame.buffs_frame.lhs.slider:GetValue();
-    --    if val - dir >= min_val and val - dir <= max_val then
-    --        sw_frame.buffs_frame.lhs.slider:SetValue(val - dir);
-    --        update_buffs_frame();
-    --    end
-    --end);
+    local footer_divider = sw_frame.spells_frame:CreateTexture(nil, "ARTWORK")
+    footer_divider:SetColorTexture(0.5, 0.5, 0.5, 0.6)
+    footer_divider:SetHeight(1)
+    footer_divider:SetPoint("BOTTOMLEFT", sw_frame.spells_frame, "BOTTOMLEFT", 0, 20)
+    footer_divider:SetPoint("BOTTOMRIGHT", sw_frame.spells_frame, "BOTTOMRIGHT", 0, 20)
 end
 
 local function create_sw_ui_tooltip_frame()
@@ -2026,8 +2037,6 @@ local function create_sw_ui_calculator_frame()
     sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
     sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
 
-    sw_frame.calculator_frame.line_y_offset_before_dynamic_spells = sw_frame.calculator_frame.line_y_offset;
-
     sw_frame.calculator_frame.spell_diff_header_spell = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.calculator_frame.spell_diff_header_spell:SetFontObject(font);
     sw_frame.calculator_frame.spell_diff_header_spell:SetPoint("TOPLEFT", 15, sw_frame.calculator_frame.line_y_offset);
@@ -2053,29 +2062,8 @@ local function create_sw_ui_calculator_frame()
     sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:SetPoint("TOPRIGHT", -20, sw_frame.calculator_frame.line_y_offset);
     sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:SetText("DURATION (s)");
 
-    -- always have at least one
-    sw_frame.calculator_frame.spells = {};
+    sw_frame.calculator_frame.calc_list = {};
     sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-
-    --if class == "DRUID" then
-    --    local lname = GetSpellInfo(5185);
-    --    sw_frame.calculator_frame.spells[5185] = {name = lname};
-    --elseif class == "MAGE" then
-    --    local lname = GetSpellInfo(133);
-    --    sw_frame.calculator_frame.spells[133] = {name = lname};
-    --elseif class == "WARLOCK" then
-    --    local lname = GetSpellInfo(686);
-    --    sw_frame.calculator_frame.spells[686] = {name = lname};
-    --elseif class == "PALADIN" then
-    --    local lname = GetSpellInfo(635);
-    --    sw_frame.calculator_frame.spells[635] = {name = lname};
-    --elseif class == "PRIEST" then
-    --    local lname = GetSpellInfo(585);
-    --    sw_frame.calculator_frame.spells[585] = {name = lname};
-    --elseif class == "SHAMAN" then
-    --    local lname = GetSpellInfo(403);
-    --    sw_frame.calculator_frame.spells[403] = {name = lname};
-    --end
 end
 
 local function create_loadout_buff_checkbutton(buffs_table, buff_id, buff_info, buff_type, parent_frame, func)
@@ -3076,7 +3064,7 @@ local function create_sw_ui_profile_frame()
     f_txt:SetText("New profile name: ");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    local f = CreateFrame("EditBox", nil, sw_frame.profile_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", nil, sw_frame.profile_frame, "InputBoxTemplate");
     f:SetPoint("TOPLEFT", sw_frame.profile_frame, 195, sw_frame.profile_frame.y_offset+3);
     f:SetSize(140, 15);
     f:SetAutoFocus(false);

@@ -28,7 +28,7 @@ local faction, _ = UnitFactionGroup("player");
 
 local function spell_mod_add(table, key, add)
     if not table then
-        print(table, key, add)
+        print(table, key, add, debugstack())
     end
     if not table[key] then
         table[key] = 0.0;

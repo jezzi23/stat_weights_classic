@@ -535,38 +535,12 @@ local function dynamic_loadout(loadout)
     swc.buffs.detect_buffs(loadout);
 end
 
-local function apply_effect(loadout, effects, auras, forced, spids, debug_id)
+local function apply_effect(loadout, effects, auras, forced, debug_id)
     if not auras then
         print(debug_id);
     end
-    if spids then
-        for _, aura in pairs(auras) do
-            if aura[5] and forced then
-                for _, i in pairs(spids) do
-                    if aura[4] then
-                        if not effects["mul"]["ability"][aura[1]] then
-                            print("Missing effects.mul.ability."..aura[1]);
-                        end
-                        effects["mul"]["ability"][aura[1]][i] = effects["mul"]["ability"][aura[1]][i] * aura[2];
-                    else
-                        if not effects["ability"][aura[1]] then
-                            print("Missing effects.ability."..aura[1]);
-                        end
-                        effects["ability"][aura[1]][i] = effects["ability"][aura[1]][i] + aura[2];
-                    end
-                end
-            end
-        end
-        return;
-    end
     for _, aura in pairs(auras) do
         if aura[6] and forced then
-            if aura[1] == "ability" then
-                if not aura[3] then
-                    print("nil to ability sub auras");
-                end
-                use_effect(loadout, effect, aura[3], forced, aura[2]);
-            end
             if aura[5] then
                 if not effects["mul"][aura[1]][aura[2]] then
                     print("Missing effects.mul."..aura[1].."."..aura[2]);

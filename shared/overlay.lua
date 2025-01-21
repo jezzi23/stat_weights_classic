@@ -617,7 +617,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
     elseif sw_frame.overlay_frame.num_overlay_components_toggled > 0 then
         for i = 1, 3 do
-            
+
             if sw_frame.overlay_frame.icon_overlay[i] then
 
                 overlay_label_handler[sw_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);

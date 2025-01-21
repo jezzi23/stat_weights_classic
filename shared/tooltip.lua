@@ -146,18 +146,6 @@ local function update_tooltip(tooltip)
             end
         end
 
-        if spells[id] and bit.band(spells[id].flags, spell_flags.eval) ~= 0 and IsControlKeyDown() and sw_frame.calculator_frame:IsShown() and 
-                not sw_frame.calculator_frame.spells[id] and
-                bit.band(spells[id].flags, spell_flags.mana_regen) == 0 then
-
-            sw_frame.calculator_frame.spells[id] = {
-                name = spell_name
-            };
-
-            local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui();
-            swc.ui.update_and_display_spell_diffs(loadout, effects, effects_diffed);
-        end
-
         -- Workaround: need to set some spell id that exists to get tooltip refreshed when
         --            looking at custom spell id tooltip
         if spells[id] or id == clear_tooltip_refresh_id or id == sw_frame.spell_viewer_invalid_spell_id then

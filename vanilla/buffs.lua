@@ -2022,9 +2022,20 @@ end
 local function apply_buffs(loadout, effects)
 
     --TEST
-    for k, v in pairs(swc.player_buffs) do
-        apply_effect(loadout, effects, v, false, nil, k);
-    end
+    --local buffs_applied = 0;
+    --for k, v in pairs(swc.player_buffs) do
+    --    apply_effect(loadout, effects, v, false, k);
+    --    buffs_applied = buffs_applied + 1;
+    --end
+    --for k, v in pairs(swc.friendly_buffs) do
+    --    apply_effect(loadout, effects, v, false, k);
+    --    buffs_applied = buffs_applied + 1;
+    --end
+    --for k, v in pairs(swc.hostile_buffs) do
+    --    apply_effect(loadout, effects, v, false, k);
+    --    buffs_applied = buffs_applied + 1;
+    --end
+    --print(buffs_applied, "gen buffs applied");
     --
 
     for k, v in pairs(loadout.dynamic_buffs["player"]) do

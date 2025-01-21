@@ -725,7 +725,7 @@ local function create_relics()
                 spell_mod_add(effects.ability.refund, spids.lesser_healing_wave, 10, 0.0);
             end,
             [215436] = function(effects)
-                spell_mod_add(effects.ability.cost_flat, spids.flame_shock, 10, 0.0);
+                spell_mod_add(effects.ability.cost_mod_flat, spids.flame_shock, 10, 0.0);
             end,
             [228179] = function(effects)
                 spell_mod_add(effects.ability.cast_mod, spids.healing_rain, 1.0, 0.0);

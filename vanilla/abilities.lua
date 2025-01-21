@@ -9297,30 +9297,30 @@ rank_seqs = swc.rank_seqs;
 
 
 -- MANUAL OVERWRITES OR ADDITIONS TO THE GENERATED DATA THAT NEEDS SPECIAL CARE
-swc.auto_attack_spell_id = 6603;
-spells[swc.auto_attack_spell_id] = {
-    direct = {
-        base = 0,
-        min = 1,
-        max = 1,
-        school1 = swc.schools.physical,
-        coef = 0,
-        coef_ap = 0,
-        per_lvl = 0,
-        per_lvl_sq = 0,
-        flags = bit.bor(0, swc.comp_flags.applies_mh),
-    },
-    cast_time = 0,
-    cost = 0,
-    rank = 0,
-    lvl_req = 0,
-    lvl_max = 100,
-    lvl_outdated = 100,
-    base_id = 6603,
-    gcd = 0,
-    train = 0,
-    flags = bit.bor(0, swc.spell_flags.eval, swc.spell_flags.uses_attack_speed),
-};
+--swc.auto_attack_spell_id = 6603;
+--spells[swc.auto_attack_spell_id] = {
+--    direct = {
+--        base = 0,
+--        min = 1,
+--        max = 1,
+--        school1 = swc.schools.physical,
+--        coef = 0,
+--        coef_ap = 0,
+--        per_lvl = 0,
+--        per_lvl_sq = 0,
+--        flags = bit.bor(0, swc.comp_flags.applies_mh),
+--    },
+--    cast_time = 0,
+--    cost = 0,
+--    rank = 0,
+--    lvl_req = 0,
+--    lvl_max = 100,
+--    lvl_outdated = 100,
+--    base_id = 6603,
+--    gcd = 0,
+--    train = 0,
+--    flags = bit.bor(0, swc.spell_flags.eval, swc.spell_flags.uses_attack_speed),
+--};
 -- TODO: issue spells
 -- swiftmend, effloresence
 
@@ -9339,12 +9339,12 @@ elseif class == "DRUID" then
     -- temporary, swiftmend is broken due to ordering of calc
     spells[spids.swiftmend].flags = bit.band(spells[spids.swiftmend].flags, bit.bnot(spell_flags.eval));
     -- issue with not taking periodic component of detected trigger of entangling roots
-    for _, v in pairs(rank_seqs[spids.natures_grasp]) do
-        spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
-    end
-    for _, v in pairs(rank_seqs[spids.pounce]) do
-        spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
-    end
+    --for _, v in pairs(rank_seqs[spids.natures_grasp]) do
+    --    spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
+    --end
+    --for _, v in pairs(rank_seqs[spids.pounce]) do
+    --    spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
+    --end
 
     for _, v in pairs(rank_seqs[spids.lifebloom]) do
         spells[v].periodic.coef = spell_coef_lvl_adjusted(0.051, spells[v].lvl_req);

@@ -25,6 +25,17 @@ local _, swc           = ...;
 -------------------------------------------------------------------------------
 local config           = {};
 
+local spell_filter_options = {
+    spells_filter_already_known         = true,
+    spells_filter_available             = true,
+    spells_filter_unavailable           = true,
+    spells_filter_learned_from_item     = true,
+    spells_filter_pet                   = true,
+    spells_filter_ignored_spells        = false,
+    spells_filter_other_spells          = false,
+};
+
+-- Avoiding all bit flags here simply any changes between versions
 local default_settings = {
     -- tooltip
     tooltip_display_addon_name          = true,
@@ -84,11 +95,23 @@ local default_settings = {
     overlay_font_size                   = 8,
     overlay_offset                      = 0.0,
 
+    -- profiles
     profiles_dual_spec                  = false,
+
+    -- spell catalogue
+    spells_list                         = {},
+    spells_ignore_list                  = {},
+
+    -- calculator
+    spell_calc_list                     = {},
 
     -- general
     libstub_minimap_icon                = { hide = false },
 };
+
+for k, v in pairs(spell_filter_options) do
+    default_settings[k] = v;
+end
 
 local function load_persistent_data(persistent_data, template_data)
     if not persistent_data then
@@ -166,7 +189,6 @@ local function default_p_char()
     data.loadouts[2].default_target_lvl_diff = 0;
     return data;
 end
-
 
 local function load_config()
     if not p_acc then
@@ -348,5 +370,6 @@ config.new_loadout_from_active_copy = new_loadout_from_active_copy;
 config.new_loadout_from_default = new_loadout_from_default;
 config.active_profile_name = active_profile_name;
 config.spec_keys = spec_keys;
+config.spell_filter_options = spell_filter_options;
 
 swc.config = config;

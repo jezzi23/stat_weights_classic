@@ -1245,7 +1245,7 @@ local function wowhead_talent_code_from_url(link)
 end
 
 local function wowhead_talent_code()
-    local talent_code = {};
+    local talent_code = "";
 
 
     local sub_codes = { "", "", "" };
@@ -1256,28 +1256,20 @@ local function wowhead_talent_code()
         end
         -- NOTE: GetNumTalents(i) will return 0 on early calls after logging in,
         --       but works fine after reload
-        for j = 1, GetNumTalents(i) do
-            local _, _, row, column, pts, _, _, _ = GetTalentInfo(i, j);
-            talent_table[row][column] = pts;
+        for _, v in pairs(swc.talent_order[i]) do
+            local _, _, _, _, pts, _, _, _ = GetTalentInfo(i, v);
+            sub_codes[i] = sub_codes[i]..tostring(pts);
         end
-
-        local found_max = false;
-        for r = 1, 11 do
-            row = 11 - r + 1
-            for c = 1, 4 do
-                column = 4 - c + 1;
-
-                local pts = talent_table[row][column];
-                if pts then
-                    if pts ~= 0 then
-                        found_max = true;
-                    end
-                    if found_max then
-                        sub_codes[i] = tostring(pts) .. sub_codes[i];
-                    end
-                end
+        local num_redundant = 0;
+        local n = #sub_codes[i];
+        for k = 1, n do
+            if string.sub(sub_codes[i], n-k+1, n-k+1) == "0" then
+                num_redundant = num_redundant + 1;
+            else
+                break;
             end
         end
+        sub_codes[i] = string.sub(sub_codes[i], 1, n-num_redundant);
     end
     if sub_codes[2] == "" and sub_codes[3] == "" then
         talent_code = sub_codes[1];
@@ -1304,7 +1296,13 @@ local function wowhead_talent_code()
 end
 
 local function talent_table(wowhead_code)
-    local talents = { {}, {}, {} };
+    local talents_t = {};
+
+    for k, v in pairs(swc.talent_order) do
+        for i, _ in pairs(v) do
+            talents_t[k*100+i] = 0;
+        end
+    end
 
     local i = 1;
     local tree_index = 1;
@@ -1315,19 +1313,11 @@ local function talent_table(wowhead_code)
             tree_index = tree_index + 1;
             talent_index = 1;
         elseif tonumber(wowhead_code:sub(i, i)) then
-            talents[tree_index][talent_index] = tonumber(wowhead_code:sub(i, i));
+            talents_t[tree_index*100 + talent_index] = tonumber(wowhead_code:sub(i, i));
             talent_index = talent_index + 1;
         end
         i = i + 1;
     end
-
-    talents.pts = function(this, tree_index, talent_index)
-        if this[tree_index][talent_index] then
-            return this[tree_index][talent_index];
-        else
-            return 0;
-        end
-    end;
 
     local runes_table = {};
     if wowhead_code:sub(i, i) == "_" then
@@ -1346,17 +1336,20 @@ local function talent_table(wowhead_code)
         end
     end
 
-    return talents, runes_table;
+    return talents_t, runes_table;
 end
 
 local function apply_talents(loadout, effects)
 
     -- TEST
-    for _, v in pairs(swc.talent_ranks) do
-        for _, i in pairs(v) do
-            swc.loadout.apply_effect(loadout, effects, swc.talent_effects[i], nil, nil, i);
-        end
-    end
+    --local applied = 0;
+    --for _, v in pairs(swc.talent_ranks) do
+    --    for _, i in pairs(v) do
+    --        swc.loadout.apply_effect(loadout, effects, swc.talent_effects[i], nil, i);
+    --        applied = applied + 1;
+    --    end
+    --end
+    --print(applied, "gen talents applied");
 
     local dynamic_talents, dynamic_runes = talent_table(config.loadout.talents_code);
     local custom_talents, custom_runes = nil, nil;
@@ -1385,7 +1378,7 @@ local function apply_talents(loadout, effects)
             for j = 1, 29 do
                 local id = i * 100 + j;
                 if talents[id] then
-                    talents[id].apply(loadout, effects, loadout.talents_table:pts(i, j), 0);
+                    talents[id].apply(loadout, effects, loadout.talents_table[id], 0);
                 end
             end
         end
@@ -1394,8 +1387,8 @@ local function apply_talents(loadout, effects)
             for j = 1, 29 do
                 local id = i * 100 + j;
                 if talents[id] then
-                    local custom_pts = custom_talents:pts(i, j);
-                    local active_pts = dynamic_talents:pts(i, j);
+                    local custom_pts = custom_talents[id];
+                    local active_pts = dynamic_talents[id];
                     talents[id].apply(loadout, effects, custom_pts, custom_pts - active_pts);
                 end
             end
@@ -1412,11 +1405,12 @@ local function apply_talents(loadout, effects)
         for k, v in pairs(talents) do
             for i = 1, 3 do
                 for j = 1, 29 do
+                    local id = i*100 + j;
                     if custom_talents then
-                        custom_talents[i][j] = 5;
+                        custom_talents[id] = 5;
                     end
                     if dynamic_talents then
-                        dynamic_talents[i][j] = 5;
+                        dynamic_talents[id] = 5;
                     end
                 end
             end
