@@ -414,56 +414,6 @@ local function effects_from_ui_diff(frame)
     return diff;
 end
 
-local function print_loadout(loadout, effects)
-
-    print("Stat Weights Classic - Version: "..sc.core.version);
-    for k, v in pairs(loadout) do
-        print(k, v);
-    end
-    for k, v in pairs(effects.raw) do
-        print(k, v);
-    end
-    local str = "spell_dmg_school : {";
-    for i = 2,7 do
-        str = str .. loadout.spell_dmg_by_school[i] .. ", "
-    end
-    str = str.."}";
-    print(str);
-    str = "spell_crit_school : {";
-    for i = 2,7 do
-        str = str .. loadout.spell_crit_by_school[i] .. ", "
-    end
-    str = str.."}";
-    str = "spell_hit_school : {";
-    for i = 2,7 do
-        str = str .. loadout.spell_crit_by_school[i] .. ", "
-    end
-    str = str.."}";
-    print(str);
-    for w, e in pairs(effects.ability) do
-        local str = w.. ": {";
-        for k, v in pairs(e) do
-            str = str..k..": "..v.." ";
-        end
-        str = str .."}";
-        print(str);
-    end
-    for k, e in pairs(effects.by_school) do
-        local str = k..": {";
-        for i = 1,7 do
-            str = str .. e[i].. ", ";
-        end
-        str = str .."}";
-        print(str);
-    end
-    local str = "";
-    for i = 1,5 do
-        str = str .. effects.by_attr.stat_mod[i] .. ", "
-    end
-    print(str);
-end
-
-
 local function dynamic_loadout(loadout)
 
     if not config.loadout.use_custom_lvl then
@@ -737,7 +687,6 @@ local function update_loadout_and_effects()
         for k, v in pairs(sc.special_passives) do
             if IsPlayerSpell(k) then
                 local lname = GetSpellInfo(k);
-                print("Applying special passive", k, v, lname);
                 apply_effect(base_loadout, talented, k, v, false, 1);
             end
         end
@@ -755,10 +704,6 @@ local function update_loadout_and_effects()
     effects_add(final_effects, talented);
     sc.buffs.apply_buffs(base_loadout, final_effects);
 
-    -- DELETE THIS
-    __swc_loadout = base_loadout;
-    __swc_effects = final_effects;
-
     return base_loadout, final_effects;
 end
 
@@ -767,7 +712,7 @@ local function update_loadout_and_effects_diffed_from_ui()
 
     local loadout, effects = update_loadout_and_effects();
 
-    local diff = effects_from_ui_diff(sw_frame.calculator_frame);
+    local diff = effects_from_ui_diff(__sc_frame.calculator_frame);
 
     local effects_diffed = deep_table_copy(effects);
     sc.loadout.effects_diff(loadout, effects_diffed, diff);
@@ -778,7 +723,6 @@ end
 loadout_export.equipped                                     = equipped;
 loadout_export.talented                                     = talented;
 loadout_export.final_effects                                = final_effects;
-loadout_export.print_loadout                                = print_loadout;
 loadout_export.empty_loadout                                = empty_loadout;
 loadout_export.empty_effects                                = empty_effects;
 loadout_export.effects_add                                  = effects_add;

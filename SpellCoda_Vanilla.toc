@@ -1,5 +1,5 @@
 ## Interface: 11505
-## Title: Stat Weights Classic Vanilla
+## Title: SpellCoda
 ## Notes: All things spells!
 ## SavedVariablesPerCharacter: __sc_p_char
 ## SavedVariables: __sc_p_acc
@@ -54,3 +54,4 @@ vanilla/tooltip.lua
 overlay.lua
 ui.lua
 core.lua
+

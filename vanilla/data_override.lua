@@ -1,4 +1,5 @@
--- All manual overrides and additions or removal to generated data that
+-- All manual overrides, additions or removals to generated data goes in here
+-- Things that:
 -- 1) is not available in parsed client data
 -- 2) fixes problematic generated data
 -- 3) removes unwanted behaviour 
@@ -17,7 +18,7 @@ local function spell_coef_lvl_adjusted(coef, lvl_req)
     end
     return coef * coef_mod;
 end
-
+---------------------------------------------------------------------------------------------------
 -- Class data modification
 if sc.class == sc.classes.mage then
     for _, v in pairs(rank_seqs[spids.ice_lance]) do
@@ -33,7 +34,7 @@ elseif sc.class == sc.classes.druid then
     for _, v in pairs(rank_seqs[spids.lifebloom]) do
         spells[v].periodic.coef = spell_coef_lvl_adjusted(0.051, spells[v].lvl_req);
     end
-    -- cat has a few spells wth AP coef not found in game client
+    -- cat has a few spells with AP coef not found in game client
     for _, v in pairs(rank_seqs[spids.ferocious_bite]) do
         spells[v].direct.per_cp_coef_ap = 0.03;
     end
@@ -55,7 +56,7 @@ elseif sc.class == sc.classes.shaman then
     end
 
 elseif sc.class == sc.classes.rogue then
-    -- rogue has a few spells wth AP coef not found in game client
+    -- rogue has a few spells with AP coef not found in game client
     for _, v in pairs(rank_seqs[spids.rupture]) do
         spells[v].periodic.per_cp_dur = 2;
         spells[v].periodic.coef_ap_by_cp = {0.01, 0.02, 0.03, 0.03, 0.03}; -- scuffed scaling

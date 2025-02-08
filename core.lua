@@ -32,7 +32,7 @@ local tooltip_spell_info        = sc.tooltip.tooltip_spell_info;
 local core                      = {};
 sc.core                        = core;
 
-core.sw_addon_name              = "Stat Weights Classic";
+core.sw_addon_name              = "SpellCoda";
 
 --local version_id              = 10000;
 --local version_id                = 00101;
@@ -88,7 +88,7 @@ local function class_supported()
 end
 local class_is_supported = class_supported();
 
-local addon_msg_swc_id = "__SWC";
+local addon_msg_sc_id = "__SC";
 
 local function set_current_casting_spell(spell_id)
     if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.eval) ~= 0 then
@@ -108,12 +108,12 @@ local event_dispatch = {
             set_current_casting_spell(spell_id);
         end
     end,
-    ["UNIT_SPELLCAST_CHANNEL_START"] = function(self, caster, _, spell_id)
+    ["UNIT_SPELLCAST_CHANNEL_START"] = function(_, caster, _, spell_id)
         if caster == "player" then
             set_current_casting_spell(spell_id);
         end
     end,
-    ["UNIT_SPELLCAST_CHANNEL_STOP"] = function(self, caster, _, spell_id)
+    ["UNIT_SPELLCAST_CHANNEL_STOP"] = function(_, caster, _, spell_id)
         if caster == "player" then
             core.currently_casting_spell_id = 0;
         end
@@ -128,8 +128,8 @@ local event_dispatch = {
             core.currently_casting_spell_id = 0;
         end
     end,
-    ["ADDON_LOADED"] = function(self, msg, msg2, msg3)
-        if msg == "StatWeightsClassic" then
+    ["ADDON_LOADED"] = function(_, arg)
+        if arg == "SpellCoda" then
             load_config();
             core.active_spec = GetActiveTalentGroup();
             set_active_settings();
@@ -142,14 +142,14 @@ local event_dispatch = {
         end
 
     end,
-    ["PLAYER_LOGOUT"] = function(self, msg, msg2, msg3)
+    ["PLAYER_LOGOUT"] = function()
         save_config();
     end,
-    ["PLAYER_LOGIN"] = function(self, msg, msg2, msg3)
+    ["PLAYER_LOGIN"] = function()
         core.setup_action_bar_needed = true;
         core.sw_addon_loaded = true;
         -- Don't do this in case this was causing "prevented from a forbidden action" type of bug
-        --table.insert(UISpecialFrames, sw_frame:GetName()) -- Allows ESC to close frame
+        --table.insert(UISpecialFrames, __sc_frame:GetName()) -- Allows ESC to close frame
         if core.expansion_loaded == core.expansions.vanilla and C_Engraving.IsEngravingEnabled then
             --after fresh login the runes cannot be queried until
             --character frame has been opened!!!
@@ -163,51 +163,51 @@ local event_dispatch = {
             end
         end
         sc.ui.add_spell_book_button();
-        C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_swc_id)
+        C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_sc_id)
         if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             for i = 1, 10 do
-                print("WARNING: SWC DEBUG TOOLS ARE ON!!!");
+                print("WARNING: SC DEBUG TOOLS ARE ON!!!");
             end
         end
 
     end,
-    ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
+    ["ACTIONBAR_SLOT_CHANGED"] = function(_, arg)
         if not core.sw_addon_loaded or config.settings.overlay_disable then
             return;
         end
 
-        reassign_overlay_icon(msg)
+        reassign_overlay_icon(arg)
     end,
-    ["UPDATE_STEALTH"] = function(self, msg, msg2, msg3)
+    ["UPDATE_STEALTH"] = function()
         if not core.sw_addon_loaded then
             return;
         end
         core.special_action_bar_changed = true;
     end,
-    ["UPDATE_BONUS_ACTIONBAR"] = function(self, msg, msg2, msg3)
-        if not core.sw_addon_loaded then
-            return;
-        end
-
-        core.special_action_bar_changed = true;
-    end,
-    ["ACTIONBAR_PAGE_CHANGED"] = function(self, msg, msg2, msg3)
+    ["UPDATE_BONUS_ACTIONBAR"] = function()
         if not core.sw_addon_loaded then
             return;
         end
 
         core.special_action_bar_changed = true;
     end,
-    ["UNIT_EXITED_VEHICLE"] = function(self, msg, msg2, msg3)
+    ["ACTIONBAR_PAGE_CHANGED"] = function()
+        if not core.sw_addon_loaded then
+            return;
+        end
+
+        core.special_action_bar_changed = true;
+    end,
+    ["UNIT_EXITED_VEHICLE"] = function(_, arg)
         if not core.sw_addon_loaded or config.settings.overlay_disable then
             return;
         end
 
-        if msg == "player" then
+        if arg == "player" then
             core.special_action_bar_changed = true;
         end
     end,
-    ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
+    ["ACTIVE_TALENT_GROUP_CHANGED"] = function()
 
         core.active_spec = GetActiveTalentGroup();
         set_active_settings()
@@ -216,7 +216,7 @@ local event_dispatch = {
         core.talents_update_needed = true;
         update_profile_frame();
     end,
-    ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
+    ["CHARACTER_POINTS_CHANGED"] = function()
 
         set_active_settings();
         activate_settings();
@@ -226,41 +226,46 @@ local event_dispatch = {
             update_buffs_frame();
         end
     end,
-    ["PLAYER_EQUIPMENT_CHANGED"] = function(self, msg, msg2, msg3)
+    ["PLAYER_EQUIPMENT_CHANGED"] = function()
         core.equipment_update_needed = true;
     end,
-    ["PLAYER_LEVEL_UP"] = function(self, arg1)
+    ["PLAYER_LEVEL_UP"] = function()
         core.old_ranks_checks_needed = true;
     end,
     ["LEARNED_SPELL_IN_TAB"] = function()
         core.old_ranks_checks_needed = true;
     end,
-    ["SOCKET_INFO_UPDATE"] = function(self, msg, msg2, msg3)
+    ["SOCKET_INFO_UPDATE"] = function()
         core.equipment_update_needed = true;
     end,
-    ["GLYPH_ADDED"] = function(self, msg, msg2, msg3)
+    ["GLYPH_ADDED"] = function()
         if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
     end,
-    ["GLYPH_REMOVED"] = function(self, msg, msg2, msg3)
+    ["GLYPH_REMOVED"] = function()
         if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
     end,
-    ["GLYPH_UPDATED"] = function(self, msg, msg2, msg3)
+    ["GLYPH_UPDATED"] = function()
         if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
     end,
-    ["CHAT_MSG_SKILL"] = function(self, msg, msg2, msg3)
+    ["CHAT_MSG_SKILL"] = function()
         core.talents_update_needed = true;
     end,
-    ["ENGRAVING_MODE_CHANGED"] = function(self)
+    ["ENGRAVING_MODE_CHANGED"] = function()
         core.equipment_update_needed = true;
     end,
-    ["RUNE_UPDATED"] = function(self)
+    ["RUNE_UPDATED"] = function()
         core.equipment_update_needed = true;
+    end,
+    ["PLAYER_REGEN_DISABLED"] = function()
+        -- Currently only registered when in Hardcore mode
+        -- Hide addon UI when in combat
+        __sc_frame:Hide();
     end,
 };
 
@@ -306,7 +311,7 @@ local function main_update()
 
     update_overlay();
     if core.addon_message_on_update then
-        C_ChatInfo.SendAddonMessage(addon_msg_swc_id, "UPDATE_TRIGGER", "WHISPER", pname);
+        C_ChatInfo.SendAddonMessage(addon_msg_sc_id, "UPDATE_TRIGGER", "WHISPER", pname);
     end
 
     core.sequence_counter = core.sequence_counter + 1;
@@ -336,13 +341,13 @@ if class_is_supported then
         tooltip_spell_info(is_fake);
     end)
 else
-    --print("Stat Weights Classic currently does not support your class :(");
+    --print("SpellCoda currently does not support your class :(");
 end
 
 -- add addon to Addons list under Interface
 if InterfaceOptions_AddCategory then
     local addon_interface_panel = CreateFrame("FRAME");
-    addon_interface_panel.name = "Stat Weights Classic";
+    addon_interface_panel.name = "SpellCoda";
     InterfaceOptions_AddCategory(addon_interface_panel);
 
 
@@ -353,14 +358,14 @@ if InterfaceOptions_AddCategory then
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("Stats Weights Classic - Version " .. core.version);
+    str:SetText("SpellCoda - Version " .. core.version);
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("Project Page: https://www.curseforge.com/wow/addons/stat-weights-classic");
+    str:SetText("Project Page: https://www.curseforge.com/wow/addons/spellcoda");
 
     y_offset = y_offset - 15;
 
@@ -379,14 +384,14 @@ if InterfaceOptions_AddCategory then
         return;
     end
 
-    addon_interface_panel.open_sw_frame_button =
+    addon_interface_panel.open___sc_frame_button =
         CreateFrame("Button", "sw_addon_interface_open_frame_button", addon_interface_panel, "UIPanelButtonTemplate");
 
-    addon_interface_panel.open_sw_frame_button:SetPoint("TOPLEFT", x_offset, y_offset);
-    addon_interface_panel.open_sw_frame_button:SetWidth(150);
-    addon_interface_panel.open_sw_frame_button:SetHeight(25);
-    addon_interface_panel.open_sw_frame_button:SetText("Open Addon Frame");
-    addon_interface_panel.open_sw_frame_button:SetScript("OnClick", function()
+    addon_interface_panel.open___sc_frame_button:SetPoint("TOPLEFT", x_offset, y_offset);
+    addon_interface_panel.open___sc_frame_button:SetWidth(150);
+    addon_interface_panel.open___sc_frame_button:SetHeight(25);
+    addon_interface_panel.open___sc_frame_button:SetText("Open Addon Frame");
+    addon_interface_panel.open___sc_frame_button:SetScript("OnClick", function()
         sw_activate_tab(1);
     end);
 
@@ -403,28 +408,28 @@ if InterfaceOptions_AddCategory then
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/swc");
+    str:SetText("/sc");
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/swc conf");
+    str:SetText("/sc conf");
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/swc loadouts");
+    str:SetText("/sc loadouts");
 
     y_offset = y_offset - 15;
 
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("/swc calc");
+    str:SetText("/sc calc");
 
     y_offset = y_offset - 15;
     x_offset = x_offset - 15;
@@ -432,35 +437,40 @@ if InterfaceOptions_AddCategory then
     str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
     str:SetFontObject(font);
     str:SetPoint("TOPLEFT", x_offset, y_offset);
-    str:SetText("Hard reset: /swc reset");
+    str:SetText("Hard reset: /sc reset");
 end
 
-local function command(msg, editbox)
-    if class_is_supported then
-        if msg == "print" then
-            --print_loadout(active_loadout_and_effects());
-        elseif msg == "loadout" or msg == "loadouts" then
-            sw_activate_tab(sw_frame.tabs[4]);
-        elseif msg == "settings" or msg == "opt" or msg == "options" or msg == "conf" or msg == "configure" then
-            sw_activate_tab(sw_frame.tabs[2]);
-        elseif msg == "compare" or msg == "sc" or msg == "stat compare" or msg == "stat" or msg == "calc" or msg == "calculator" then
-            sw_activate_tab(sw_frame.tabs[6]);
-        elseif msg == "reset" then
-            core.use_char_defaults = 1;
-            core.use_acc_defaults = 1;
-            ReloadUI();
-        else
-            sw_activate_tab(sw_frame.tabs[1]);
-        end
+local function command(arg)
+    arg = string.lower(arg);
+
+    if arg == "spell" or arg == "spells" then
+        sw_activate_tab(__sc_frame.tabs[1]);
+    elseif arg == "settings" or arg == "opt" or arg == "options" or arg == "conf" or arg == "configure"  or "tooltip" then
+        sw_activate_tab(__sc_frame.tabs[2]);
+    elseif arg == "overlay" then
+        sw_activate_tab(__sc_frame.tabs[3]);
+    elseif arg == "compare" or arg == "stat" or arg == "calc" or arg == "calculator" then
+        sw_activate_tab(__sc_frame.tabs[4]);
+    elseif arg == "profile" or arg == "profiles" then
+        sw_activate_tab(__sc_frame.tabs[5]);
+    elseif arg == "loadout" or arg == "loadouts" then
+        sw_activate_tab(__sc_frame.tabs[6]);
+    elseif arg == "buffs" or arg == "auras" then
+        sw_activate_tab(__sc_frame.tabs[7]);
+    elseif arg == "reset" then
+        core.use_char_defaults = 1;
+        core.use_acc_defaults = 1;
+        ReloadUI();
+    else
+        sw_activate_tab(__sc_frame.tabs[1]);
     end
 end
 
-SLASH_STAT_WEIGHTS1 = "/sw"
-SLASH_STAT_WEIGHTS2 = "/stat-weights"
-SLASH_STAT_WEIGHTS3 = "/stat-weights-classic"
-SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
-SLASH_STAT_WEIGHTS4 = "/swc"
-SlashCmdList["STAT_WEIGHTS"] = command
+SLASH_SPELL_CODA1 = "/sc"
+SLASH_SPELL_CODA3 = "/SC"
+SLASH_SPELL_CODA2 = "/spellcoda"
+SLASH_SPELL_CODA3 = "/SpellCoda"
+SlashCmdList["SPELL_CODA"] = command
 
 sc.ext.enable_addon_message_on_update = function()
     core.addon_message_on_update = true;
@@ -470,7 +480,7 @@ sc.ext.disable_addon_message_on_update = function()
 end
 sc.ext.version_id = core.version_id;
 
-__SWC = sc.ext;
+__SC = sc.ext;
 
 --core.__sw__debug__ = 1;
 --core.sc.core.use_char_defaults = 1;

@@ -32,9 +32,9 @@ local config                                    = sc.config;
 -------------------------------------------------------------------------
 local ui = {};
 
-local sw_frame = {};
+local __sc_frame = {};
 
-local icon_overlay_font = "Interface\\AddOns\\StatWeightsClassic\\font\\Oswald-Bold.ttf";
+local icon_overlay_font = "Interface\\AddOns\\SpellCoda\\font\\Oswald-Bold.ttf";
 local font = "GameFontHighlightSmall";
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
@@ -143,7 +143,7 @@ end
 
 local function update_calc_list()
 
-    local frame = sw_frame.calculator_frame;
+    local frame = __sc_frame.calculator_frame;
     for _, v in pairs(frame.calc_list) do
         for _, f in pairs(v) do
             f:Hide();
@@ -174,7 +174,7 @@ local function update_calc_list()
             spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
             cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
 
-            display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, false, sw_frame.calculator_frame.sim_type);
+            display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, false, __sc_frame.calculator_frame.sim_type);
 
             -- for spells with both heal and dmg
             if spells[k].healing_version then
@@ -187,11 +187,11 @@ local function update_calc_list()
                 spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
                 cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
 
-                ui.display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, true, sw_frame.calculator_frame.sim_type);
+                ui.display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, true, __sc_frame.calculator_frame.sim_type);
             end
         end
     end
-    sw_frame.calculator_frame.num_spells = i;
+    __sc_frame.calculator_frame.num_spells = i;
 end
 
 -- generalize some reasonable editbox config that need to update on change
@@ -221,9 +221,9 @@ local buffs_views = {
 local function update_buffs_frame()
 
     if config.loadout.force_apply_buffs then
-        sw_frame.buffs_frame.always_apply_buffs_button:SetChecked(true);
+        __sc_frame.buffs_frame.always_apply_buffs_button:SetChecked(true);
     else
-        sw_frame.buffs_frame.always_apply_buffs_button:SetChecked(false);
+        __sc_frame.buffs_frame.always_apply_buffs_button:SetChecked(false);
     end
 
     local buffs_list_alpha = 1.0;
@@ -236,15 +236,15 @@ local function update_buffs_frame()
 
         local n = #view.filtered;
 
-        for _, v in ipairs(sw_frame.buffs_frame[view.side].buffs) do
+        for _, v in ipairs(__sc_frame.buffs_frame[view.side].buffs) do
             v.checkbutton:Hide();
             v.checkbutton.__stacks_str:Hide();
             v.icon:Hide();
         end
 
-        local buff_frame_idx = math.floor(sw_frame.buffs_frame[view.side].slider:GetValue());
+        local buff_frame_idx = math.floor(__sc_frame.buffs_frame[view.side].slider:GetValue());
 
-        for _, v in ipairs(sw_frame.buffs_frame[view.side].buffs) do
+        for _, v in ipairs(__sc_frame.buffs_frame[view.side].buffs) do
 
             if buff_frame_idx > n then
                 break;
@@ -292,7 +292,7 @@ local function update_buffs_frame()
             v.checkbutton.__stacks_str:Show();
             v.icon:Show();
 
-            sw_frame.buffs_frame[view.side].frame:SetAlpha(buffs_list_alpha);
+            __sc_frame.buffs_frame[view.side].frame:SetAlpha(buffs_list_alpha);
             buff_frame_idx = buff_frame_idx + 1;
         end
     end
@@ -303,28 +303,28 @@ local function update_loadout_frame()
 
     sc.config.activate_loadout_config();
 
-    sw_frame.loadout_frame.loadout_dropdown.init_func();
+    __sc_frame.loadout_frame.loadout_dropdown.init_func();
 
     if #__sc_p_char.loadouts == 1 then
-        sw_frame.loadout_frame.delete_button:Hide();
+        __sc_frame.loadout_frame.delete_button:Hide();
     else
-        sw_frame.loadout_frame.delete_button:Show();
+        __sc_frame.loadout_frame.delete_button:Show();
     end
 
-    if sw_frame.loadout_frame.new_loadout_name_editbox:GetText() == "" then
-        for _, v in pairs(sw_frame.loadout_frame.new_loadout_section) do
+    if __sc_frame.loadout_frame.new_loadout_name_editbox:GetText() == "" then
+        for _, v in pairs(__sc_frame.loadout_frame.new_loadout_section) do
             v:Hide();
         end
     else
-        for _, v in pairs(sw_frame.loadout_frame.new_loadout_section) do
+        for _, v in pairs(__sc_frame.loadout_frame.new_loadout_section) do
             v:Show();
         end
     end
 
-    sw_frame.calculator_frame.loadout_name_label:SetText(
+    __sc_frame.calculator_frame.loadout_name_label:SetText(
         "Active loadout: "..config.loadout.name
     );
-    for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+    for _, v in pairs(__sc_frame.loadout_frame.auto_armor_frames) do
         if config.loadout.target_automatic_armor_pct == v._value then
             v:Click();
         end
@@ -510,10 +510,10 @@ local function filtered_spell_view(spell_ids, name_filter)
     if total_cost ~= 0 then
         cost_str = cost_str.."   |cFFFF0000Total cost:|r "..GetCoinTextureString(total_cost);
     end
-    sw_frame.spells_frame.footer_cost:SetText(cost_str);
+    __sc_frame.spells_frame.footer_cost:SetText(cost_str);
 
     if spell_browser_active_sort_key == spell_browser_sort_keys.lvl then
-        sw_frame.spells_frame.header_level:Hide();
+        __sc_frame.spells_frame.header_level:Hide();
         local filtered_with_level_barriers = {};
         -- injects level brackets into the filtered list
         local prev_lvl = -1;
@@ -530,7 +530,7 @@ local function filtered_spell_view(spell_ids, name_filter)
         filtered = filtered_with_level_barriers;
     else
         -- filtered only contains spell ids from here
-        sw_frame.spells_frame.header_level:Show();
+        __sc_frame.spells_frame.header_level:Show();
 
         if spell_browser_active_sort_key == spell_browser_sort_keys.dps then
             table.sort(filtered, function(lhs, rhs) return lhs.dps > rhs.dps end);
@@ -563,20 +563,20 @@ end
 
 local function populate_scrollable_spell_view(view, starting_idx)
     local cnt = 1;
-    local n = #sw_frame.spells_frame.scroll_view;
+    local n = #__sc_frame.spells_frame.scroll_view;
     local list_len = #view;
     local i = starting_idx;
     local lvl = active_loadout().lvl;
 
     -- clear previous
-    for _, v in pairs(sw_frame.spells_frame.scroll_view) do
+    for _, v in pairs(__sc_frame.spells_frame.scroll_view) do
         for _, e in pairs(v) do
             e:Hide();
         end
     end
     while cnt <= n and i <= list_len do
         local v = view[i];
-        local line = sw_frame.spells_frame.scroll_view[cnt];
+        local line = __sc_frame.spells_frame.scroll_view[cnt];
         if v.spell_id then
             --line.spell_icon.__id = v.spell_id;
             line.tooltip_area.__id = v.spell_id;
@@ -663,15 +663,15 @@ end
 
 local function update_spells_frame()
 
-    --sw_frame.spells_frame.filter.init_func();
-    sw_frame.spells_frame.sort_by.init_func();
+    --__sc_frame.spells_frame.filter.init_func();
+    __sc_frame.spells_frame.sort_by.init_func();
 
     local view = filtered_spell_view(
         sc.spells_lvl_ordered,
-        sw_frame.spells_frame.search:GetText()
+        __sc_frame.spells_frame.search:GetText()
     );
-    sw_frame.spells_frame.filtered_list = view;
-    sw_frame.spells_frame.slider:SetMinMaxValues(1, math.max(1, #view - math.floor(#sw_frame.spells_frame.scroll_view/2)));
+    __sc_frame.spells_frame.filtered_list = view;
+    __sc_frame.spells_frame.slider:SetMinMaxValues(1, math.max(1, #view - math.floor(#__sc_frame.spells_frame.scroll_view/2)));
     if spell_browser_scroll_to_lvl then
         local suitable_idx = 1;
         local lvl = active_loadout().lvl;
@@ -682,27 +682,27 @@ local function update_spells_frame()
             end
         end
         suitable_idx = math.max(1, suitable_idx-10);
-        sw_frame.spells_frame.slider_val = suitable_idx;
+        __sc_frame.spells_frame.slider_val = suitable_idx;
         spell_browser_scroll_to_lvl = false;
     end
-    sw_frame.spells_frame.slider:SetValue(sw_frame.spells_frame.slider_val);
-    populate_scrollable_spell_view(view, math.floor(sw_frame.spells_frame.slider_val));
+    __sc_frame.spells_frame.slider:SetValue(__sc_frame.spells_frame.slider_val);
+    populate_scrollable_spell_view(view, math.floor(__sc_frame.spells_frame.slider_val));
 end
 
 
 local function sw_activate_tab(tab_window)
 
-    sw_frame:Show();
+    __sc_frame:Show();
 
-    for _, v in pairs(sw_frame.tabs) do
+    for _, v in pairs(__sc_frame.tabs) do
         v.frame_to_open:Hide();
         v:UnlockHighlight();
         v:SetButtonState("NORMAL");
     end
 
-    if tab_window.frame_to_open == sw_frame.spells_frame then
+    if tab_window.frame_to_open == __sc_frame.spells_frame then
         update_spells_frame();
-    elseif tab_window.frame_to_open == sw_frame.calculator_frame then
+    elseif tab_window.frame_to_open == __sc_frame.calculator_frame then
         update_calc_list();
     end
 
@@ -713,19 +713,19 @@ end
 
 local function create_sw_spell_id_viewer()
 
-    sw_frame.spell_id_viewer_editbox = CreateFrame("EditBox", "sw_spell_id_viewer_editbox", sw_frame, "InputBoxTemplate");
-    sw_frame.spell_id_viewer_editbox:SetPoint("TOPLEFT", sw_frame, 10, -6);
-    sw_frame.spell_id_viewer_editbox:SetText("");
-    sw_frame.spell_id_viewer_editbox:SetSize(90, 10);
-    sw_frame.spell_id_viewer_editbox:SetAutoFocus(false);
+    __sc_frame.spell_id_viewer_editbox = CreateFrame("EditBox", "sw_spell_id_viewer_editbox", __sc_frame, "InputBoxTemplate");
+    __sc_frame.spell_id_viewer_editbox:SetPoint("TOPLEFT", __sc_frame, 10, -6);
+    __sc_frame.spell_id_viewer_editbox:SetText("");
+    __sc_frame.spell_id_viewer_editbox:SetSize(90, 10);
+    __sc_frame.spell_id_viewer_editbox:SetAutoFocus(false);
 
 
     local tooltip_overwrite_editbox = function(self)
         local txt = self:GetText();
         if txt == "" then
-            sw_frame.spell_id_viewer_editbox_label:Show();
+            __sc_frame.spell_id_viewer_editbox_label:Show();
         else
-            sw_frame.spell_id_viewer_editbox_label:Hide();
+            __sc_frame.spell_id_viewer_editbox_label:Hide();
         end
         local id = tonumber(txt);
         if GetSpellInfo(id) or spells[id] then
@@ -736,17 +736,17 @@ local function create_sw_spell_id_viewer()
         self:ClearFocus();
     end
 
-    sw_frame.spell_viewer_invalid_spell_id = 204;
+    __sc_frame.spell_viewer_invalid_spell_id = 204;
 
-    sw_frame.spell_id_viewer_editbox:SetScript("OnEnterPressed", tooltip_overwrite_editbox);
-    sw_frame.spell_id_viewer_editbox:SetScript("OnEscapePressed", tooltip_overwrite_editbox);
-    sw_frame.spell_id_viewer_editbox:SetScript("OnEditFocusLost", tooltip_overwrite_editbox);
-    sw_frame.spell_id_viewer_editbox:SetScript("OnTextChanged", function(self)
+    __sc_frame.spell_id_viewer_editbox:SetScript("OnEnterPressed", tooltip_overwrite_editbox);
+    __sc_frame.spell_id_viewer_editbox:SetScript("OnEscapePressed", tooltip_overwrite_editbox);
+    __sc_frame.spell_id_viewer_editbox:SetScript("OnEditFocusLost", tooltip_overwrite_editbox);
+    __sc_frame.spell_id_viewer_editbox:SetScript("OnTextChanged", function(self)
         local txt = self:GetText();
         if txt == "" then
-            sw_frame.spell_id_viewer_editbox_label:Show();
+            __sc_frame.spell_id_viewer_editbox_label:Show();
         else
-            sw_frame.spell_id_viewer_editbox_label:Hide();
+            __sc_frame.spell_id_viewer_editbox_label:Hide();
         end
         if spids[txt] then
             self:SetText(tostring(spids[txt]));
@@ -760,41 +760,41 @@ local function create_sw_spell_id_viewer()
         end
 
         if id == 0 then
-            sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(265));
+            __sc_frame.spell_icon_tex:SetTexture(GetSpellTexture(265));
         elseif not GetSpellInfo(id) then
-            sw_frame.spell_icon_tex:SetTexture(135791);
+            __sc_frame.spell_icon_tex:SetTexture(135791);
         else
-            sw_frame.spell_icon_tex:SetTexture(GetSpellTexture(id));
+            __sc_frame.spell_icon_tex:SetTexture(GetSpellTexture(id));
         end
-        GameTooltip:SetOwner(sw_frame.spell_icon, "ANCHOR_BOTTOMRIGHT");
+        GameTooltip:SetOwner(__sc_frame.spell_icon, "ANCHOR_BOTTOMRIGHT");
         if not GetSpellInfo(id) and spells[id] then
 
-            GameTooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
+            GameTooltip:SetSpellByID(__sc_frame.spell_viewer_invalid_spell_id);
         else
             GameTooltip:SetSpellByID(id);
         end
     end);
 
     if sc.core.__sw__test_all_spells then
-        sw_frame.spell_id_viewer_editbox:SetText(pairs(spells)(spells));
+        __sc_frame.spell_id_viewer_editbox:SetText(pairs(spells)(spells));
     end
 
-    sw_frame.spell_id_viewer_editbox_label = sw_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.spell_id_viewer_editbox_label:SetFontObject(font);
-    sw_frame.spell_id_viewer_editbox_label:SetText("SPELL ID VIEWER");
-    sw_frame.spell_id_viewer_editbox_label:SetPoint("TOPLEFT", sw_frame, 9, -6);
+    __sc_frame.spell_id_viewer_editbox_label = __sc_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.spell_id_viewer_editbox_label:SetFontObject(font);
+    __sc_frame.spell_id_viewer_editbox_label:SetText("SPELL ID VIEWER");
+    __sc_frame.spell_id_viewer_editbox_label:SetPoint("TOPLEFT", __sc_frame, 9, -6);
 
-    sw_frame.spell_icon = CreateFrame("Frame", "__swc_custom_spell_id", sw_frame);
-    sw_frame.spell_icon:SetSize(15, 15);
-    sw_frame.spell_icon:SetPoint("TOPLEFT", sw_frame, 101, -4);
-    local tex = sw_frame.spell_icon:CreateTexture(nil);
-    tex:SetAllPoints(sw_frame.spell_icon);
+    __sc_frame.spell_icon = CreateFrame("Frame", "__sc_custom_spell_id", __sc_frame);
+    __sc_frame.spell_icon:SetSize(15, 15);
+    __sc_frame.spell_icon:SetPoint("TOPLEFT", __sc_frame, 101, -4);
+    local tex = __sc_frame.spell_icon:CreateTexture(nil);
+    tex:SetAllPoints(__sc_frame.spell_icon);
     tex:SetTexture(GetSpellTexture(265));
-    sw_frame.spell_icon_tex = tex;
+    __sc_frame.spell_icon_tex = tex;
 
 
     local tooltip_viewer_on = function(self)
-        local txt = sw_frame.spell_id_viewer_editbox:GetText();
+        local txt = __sc_frame.spell_id_viewer_editbox:GetText();
         local id = tonumber(txt);
         if txt == "" then
             id = 265;
@@ -804,7 +804,7 @@ local function create_sw_spell_id_viewer()
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
         if not GetSpellInfo(id) and spells[id] then
 
-            GameTooltip:SetSpellByID(sw_frame.spell_viewer_invalid_spell_id);
+            GameTooltip:SetSpellByID(__sc_frame.spell_viewer_invalid_spell_id);
         else
             GameTooltip:SetSpellByID(id);
         end
@@ -814,8 +814,8 @@ local function create_sw_spell_id_viewer()
         GameTooltip:Hide();
     end
 
-    sw_frame.spell_icon:SetScript("OnEnter", tooltip_viewer_on);
-    sw_frame.spell_icon:SetScript("OnLeave", tooltip_viewer_off);
+    __sc_frame.spell_icon:SetScript("OnEnter", tooltip_viewer_on);
+    __sc_frame.spell_icon:SetScript("OnLeave", tooltip_viewer_off);
 end
 
 local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, func, x_pad)
@@ -823,7 +823,7 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
     --  assume max 2 columns
     local check_button_type = "CheckButton";
     for i, v in pairs(buttons_info) do
-        local f = CreateFrame(check_button_type, "sw_frame_setting_"..v.id, parent_frame, "ChatConfigCheckButtonTemplate");
+        local f = CreateFrame(check_button_type, "__sc_frame_setting_"..v.id, parent_frame, "ChatConfigCheckButtonTemplate");
         f._settings_id = v.id;
         f._type = check_button_type;
 
@@ -861,39 +861,39 @@ end
 
 local function create_sw_ui_spells_frame()
 
-    sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - 8;
+    __sc_frame.spells_frame.y_offset = __sc_frame.spells_frame.y_offset - 8;
 
-    local f = CreateFrame("EditBox", "sw_frame_spells_search", sw_frame.spells_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", 5, sw_frame.spells_frame.y_offset);
+    local f = CreateFrame("EditBox", "__sc_frame_spells_search", __sc_frame.spells_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", 5, __sc_frame.spells_frame.y_offset);
     f:SetSize(100, 15);
     f:SetAutoFocus(false);
     f:SetScript("OnTextChanged", function(self)
         update_spells_frame();
         local txt =self:GetText();
         if txt == "" then
-            sw_frame.spells_frame.search_empty_label:Show();
+            __sc_frame.spells_frame.search_empty_label:Show();
         else
-            sw_frame.spells_frame.search_empty_label:Hide();
+            __sc_frame.spells_frame.search_empty_label:Hide();
         end
     end);
-    sw_frame.spells_frame.search = f;
+    __sc_frame.spells_frame.search = f;
 
-    local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Search");
-    f:SetPoint("LEFT", sw_frame.spells_frame.search, 5, 0);
-    sw_frame.spells_frame.search_empty_label = f;
+    f:SetPoint("LEFT", __sc_frame.spells_frame.search, 5, 0);
+    __sc_frame.spells_frame.search_empty_label = f;
 
     -- Sorted by dropdown
-    sw_frame.spells_frame.sort_by =
-        CreateFrame("Button", "sw_frame_spells_frame_sort_by", sw_frame.spells_frame, "UIDropDownMenuTemplate");
-    sw_frame.spells_frame.sort_by:SetPoint("TOPLEFT", 130, sw_frame.spells_frame.y_offset+6);
-    sw_frame.spells_frame.sort_by.init_func = function()
+    __sc_frame.spells_frame.sort_by =
+        CreateFrame("Button", "__sc_frame_spells_frame_sort_by", __sc_frame.spells_frame, "UIDropDownMenuTemplate");
+    __sc_frame.spells_frame.sort_by:SetPoint("TOPLEFT", 130, __sc_frame.spells_frame.y_offset+6);
+    __sc_frame.spells_frame.sort_by.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.spells_frame.sort_by, "Order by "..spell_browser_sort_options[spell_browser_active_sort_key]);
-        UIDropDownMenu_Initialize(sw_frame.spells_frame.sort_by, function()
+        UIDropDownMenu_SetText(__sc_frame.spells_frame.sort_by, "Order by "..spell_browser_sort_options[spell_browser_active_sort_key]);
+        UIDropDownMenu_Initialize(__sc_frame.spells_frame.sort_by, function()
 
-            UIDropDownMenu_SetWidth(sw_frame.spells_frame.sort_by, 160);
+            UIDropDownMenu_SetWidth(__sc_frame.spells_frame.sort_by, 160);
 
             for k, v in pairs(spell_browser_sort_options) do
                 UIDropDownMenu_AddButton({
@@ -902,25 +902,25 @@ local function create_sw_ui_spells_frame()
                         func = function()
                             spell_browser_active_sort_key = k;
                             update_spells_frame();
-                            sw_frame.spells_frame.slider:SetValue(1);
+                            __sc_frame.spells_frame.slider:SetValue(1);
                         end
                     }
                 );
             end
         end);
     end;
-    sw_frame.spells_frame.sort_by.init_func();
+    __sc_frame.spells_frame.sort_by.init_func();
 
     -- Filter dropdown
-    sw_frame.spells_frame.filter =
-        CreateFrame("Button", "sw_frame_spells_frame_filter", sw_frame.spells_frame, "UIDropDownMenuTemplate");
-    sw_frame.spells_frame.filter:SetPoint("TOPLEFT", 320, sw_frame.spells_frame.y_offset+6);
-    sw_frame.spells_frame.filter.init_func = function()
+    __sc_frame.spells_frame.filter =
+        CreateFrame("Button", "__sc_frame_spells_frame_filter", __sc_frame.spells_frame, "UIDropDownMenuTemplate");
+    __sc_frame.spells_frame.filter:SetPoint("TOPLEFT", 320, __sc_frame.spells_frame.y_offset+6);
+    __sc_frame.spells_frame.filter.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.spells_frame.filter, "Includes");
-        UIDropDownMenu_Initialize(sw_frame.spells_frame.filter, function()
+        UIDropDownMenu_SetText(__sc_frame.spells_frame.filter, "Includes");
+        UIDropDownMenu_Initialize(__sc_frame.spells_frame.filter, function()
 
-            UIDropDownMenu_SetWidth(sw_frame.spells_frame.filter, 80);
+            UIDropDownMenu_SetWidth(__sc_frame.spells_frame.filter, 80);
 
             for _, v in pairs(spell_filter_listing) do
                 local txt = v.disp;
@@ -952,11 +952,11 @@ local function create_sw_ui_spells_frame()
         end);
     end;
 
-    sw_frame.spells_frame.filter.init_func();
+    __sc_frame.spells_frame.filter.init_func();
 
-    local f = CreateFrame("Button", nil, sw_frame.spells_frame, "UIPanelButtonTemplate");
+    local f = CreateFrame("Button", nil, __sc_frame.spells_frame, "UIPanelButtonTemplate");
     f:SetSize(25, 25);
-    f:SetPoint("TOPRIGHT", sw_frame.spells_frame, 0, sw_frame.spells_frame.y_offset+6);
+    f:SetPoint("TOPRIGHT", __sc_frame.spells_frame, 0, __sc_frame.spells_frame.y_offset+6);
     local tex = f:CreateTexture(nil, "ARTWORK");
     tex:SetTexture("Interface\\Buttons\\UI-RefreshButton");
     tex:SetSize(12, 12);
@@ -973,7 +973,7 @@ local function create_sw_ui_spells_frame()
         GameTooltip:Hide()
     end);
 
-    sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - 25;
+    __sc_frame.spells_frame.y_offset = __sc_frame.spells_frame.y_offset - 25;
     -- Headers
     local icon_x_offset = 0;
     local name_x_offset = 20;
@@ -984,74 +984,74 @@ local function create_sw_ui_spells_frame()
     local acquisition_x_offset = 380;
     local dropdown_x_offset = 440;
 
-    local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Spell name");
-    f:SetPoint("TOPLEFT", name_x_offset, sw_frame.spells_frame.y_offset);
+    f:SetPoint("TOPLEFT", name_x_offset, __sc_frame.spells_frame.y_offset);
 
-    local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Level");
-    f:SetPoint("TOPLEFT", lvl_x_offset, sw_frame.spells_frame.y_offset);
-    sw_frame.spells_frame.header_level = f;
+    f:SetPoint("TOPLEFT", lvl_x_offset, __sc_frame.spells_frame.y_offset);
+    __sc_frame.spells_frame.header_level = f;
 
-    local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Per second");
-    f:SetPoint("TOPLEFT", per_sec_x_offset, sw_frame.spells_frame.y_offset);
+    f:SetPoint("TOPLEFT", per_sec_x_offset, __sc_frame.spells_frame.y_offset);
     f:SetTextColor(effect_colors.effect_per_sec[1],
                    effect_colors.effect_per_sec[2],
                    effect_colors.effect_per_sec[3]);
 
-    local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Per cost");
-    f:SetPoint("TOPLEFT", per_cost_x_offset, sw_frame.spells_frame.y_offset);
+    f:SetPoint("TOPLEFT", per_cost_x_offset, __sc_frame.spells_frame.y_offset);
     f:SetTextColor(effect_colors.effect_per_cost[1],
                    effect_colors.effect_per_cost[2],
                    effect_colors.effect_per_cost[3]);
 
-    local f = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Acquisition");
-    f:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset);
+    f:SetPoint("TOPLEFT", acquisition_x_offset, __sc_frame.spells_frame.y_offset);
 
-    sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - 23;
+    __sc_frame.spells_frame.y_offset = __sc_frame.spells_frame.y_offset - 23;
     local num_view_list_entries = 29;
     local entry_y_offset = 16;
 
     -- sliders
-    f = CreateFrame("Slider", nil, sw_frame.spells_frame, "UIPanelScrollBarTrimTemplate");
+    f = CreateFrame("Slider", nil, __sc_frame.spells_frame, "UIPanelScrollBarTrimTemplate");
     f:SetOrientation('VERTICAL');
-    f:SetPoint("RIGHT", sw_frame.spells_frame, "RIGHT", 10, -15);
-    f:SetHeight(sw_frame.spells_frame:GetHeight()-63);
+    f:SetPoint("RIGHT", __sc_frame.spells_frame, "RIGHT", 10, -15);
+    f:SetHeight(__sc_frame.spells_frame:GetHeight()-63);
     f:SetScript("OnValueChanged", function(self, val)
-        sw_frame.spells_frame.slider_val = val;
-        populate_scrollable_spell_view(sw_frame.spells_frame.filtered_list, math.floor(val));
+        __sc_frame.spells_frame.slider_val = val;
+        populate_scrollable_spell_view(__sc_frame.spells_frame.filtered_list, math.floor(val));
     end);
-    sw_frame.spells_frame.slider = f;
-    sw_frame.spells_frame.slider_val = 1;
-    f:SetValue(sw_frame.spells_frame.slider_val);
+    __sc_frame.spells_frame.slider = f;
+    __sc_frame.spells_frame.slider_val = 1;
+    f:SetValue(__sc_frame.spells_frame.slider_val);
     f:SetValueStep(1);
 
     local bg = f:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints(f);
     bg:SetColorTexture(0, 0, 0, 0.5);
 
-    sw_frame.spells_frame:EnableMouseWheel(true)
-    sw_frame.spells_frame:SetScript("OnMouseWheel", function(_, delta)
-        local scrollbar = sw_frame.spells_frame.slider;
+    __sc_frame.spells_frame:EnableMouseWheel(true)
+    __sc_frame.spells_frame:SetScript("OnMouseWheel", function(_, delta)
+        local scrollbar = __sc_frame.spells_frame.slider;
         scrollbar:SetValue(scrollbar:GetValue() - delta);
     end);
 
     -- Spell list
-    sw_frame.spells_frame.filtered_list = {};
-    sw_frame.spells_frame.scroll_view = {};
+    __sc_frame.spells_frame.filtered_list = {};
+    __sc_frame.spells_frame.scroll_view = {};
     for i = 1, num_view_list_entries do
 
-        local tooltip_area_f = CreateFrame("Frame", nil, sw_frame.spells_frame);
+        local tooltip_area_f = CreateFrame("Frame", nil, __sc_frame.spells_frame);
         tooltip_area_f:SetSize(220, 16);
-        tooltip_area_f:SetPoint("TOPLEFT", 0, sw_frame.spells_frame.y_offset+4);
+        tooltip_area_f:SetPoint("TOPLEFT", 0, __sc_frame.spells_frame.y_offset+4);
         tooltip_area_f:EnableMouse(true);
         tooltip_area_f:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
@@ -1063,15 +1063,15 @@ local function create_sw_ui_spells_frame()
         end);
 
 
-        local icon = CreateFrame("Frame", nil, sw_frame.spells_frame);
+        local icon = CreateFrame("Frame", nil, __sc_frame.spells_frame);
         icon:SetSize(15, 15);
-        icon:SetPoint("TOPLEFT", icon_x_offset, sw_frame.spells_frame.y_offset+2);
+        icon:SetPoint("TOPLEFT", icon_x_offset, __sc_frame.spells_frame.y_offset+2);
         local icon_texture = icon:CreateTexture(nil);
         icon_texture:SetAllPoints(icon);
 
-        local book = CreateFrame("Frame", nil, sw_frame.spells_frame);
+        local book = CreateFrame("Frame", nil, __sc_frame.spells_frame);
         book:SetSize(15, 15);
-        book:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset+2);
+        book:SetPoint("TOPLEFT", acquisition_x_offset, __sc_frame.spells_frame.y_offset+2);
         local book_texture = book:CreateTexture(nil);
         book_texture:SetAllPoints(book);
         book:SetScript("OnEnter", function(self)
@@ -1083,52 +1083,52 @@ local function create_sw_ui_spells_frame()
             GameTooltip:Hide();
         end);
 
-        local spell_str = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+        local spell_str = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         spell_str:SetFontObject(font);
         spell_str:SetText("");
-        spell_str:SetPoint("TOPLEFT", name_x_offset, sw_frame.spells_frame.y_offset);
+        spell_str:SetPoint("TOPLEFT", name_x_offset, __sc_frame.spells_frame.y_offset);
 
-        local level_str = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+        local level_str = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         level_str:SetFontObject(font);
         level_str:SetText("");
-        level_str:SetPoint("TOPLEFT", lvl_x_offset, sw_frame.spells_frame.y_offset);
+        level_str:SetPoint("TOPLEFT", lvl_x_offset, __sc_frame.spells_frame.y_offset);
 
-        local effect_type_str = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+        local effect_type_str = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         effect_type_str:SetFontObject(font);
         effect_type_str:SetText("");
-        effect_type_str:SetPoint("TOPLEFT", effect_x_offset, sw_frame.spells_frame.y_offset);
+        effect_type_str:SetPoint("TOPLEFT", effect_x_offset, __sc_frame.spells_frame.y_offset);
 
-        local role_icon = CreateFrame("Frame", nil, sw_frame.spells_frame);
+        local role_icon = CreateFrame("Frame", nil, __sc_frame.spells_frame);
         role_icon:SetSize(15, 15);
-        role_icon:SetPoint("TOPLEFT", effect_x_offset, sw_frame.spells_frame.y_offset+2);
+        role_icon:SetPoint("TOPLEFT", effect_x_offset, __sc_frame.spells_frame.y_offset+2);
         local role_icon_texture = role_icon:CreateTexture(nil, "ARTWORK");
         role_icon_texture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
 
 
-        local effect_per_sec_str = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+        local effect_per_sec_str = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         effect_per_sec_str:SetFontObject(font);
         effect_per_sec_str:SetText("");
-        effect_per_sec_str:SetPoint("TOPLEFT", per_sec_x_offset, sw_frame.spells_frame.y_offset);
+        effect_per_sec_str:SetPoint("TOPLEFT", per_sec_x_offset, __sc_frame.spells_frame.y_offset);
         effect_per_sec_str:SetTextColor(effect_colors.effect_per_sec[1],
                                         effect_colors.effect_per_sec[2],
                                         effect_colors.effect_per_sec[3]);
 
-        local effect_per_cost_str = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+        local effect_per_cost_str = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         effect_per_cost_str:SetFontObject(font);
         effect_per_cost_str:SetText("");
-        effect_per_cost_str:SetPoint("TOPLEFT", per_cost_x_offset, sw_frame.spells_frame.y_offset);
+        effect_per_cost_str:SetPoint("TOPLEFT", per_cost_x_offset, __sc_frame.spells_frame.y_offset);
         effect_per_cost_str:SetTextColor(effect_colors.effect_per_cost[1],
                                          effect_colors.effect_per_cost[2],
                                          effect_colors.effect_per_cost[3]);
 
-        local cost = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+        local cost = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         cost:SetFontObject(font);
         cost:SetText("");
-        cost:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset+1);
+        cost:SetPoint("TOPLEFT", acquisition_x_offset, __sc_frame.spells_frame.y_offset+1);
 
         -- spell option dropdown
-        local spell_options = CreateFrame("Button", "sw_frame_spells_frame_dropdown"..i, sw_frame.spells_frame, "UIDropDownMenuTemplate");
-        spell_options:SetPoint("TOPLEFT", dropdown_x_offset, sw_frame.spells_frame.y_offset+15);
+        local spell_options = CreateFrame("Button", "__sc_frame_spells_frame_dropdown"..i, __sc_frame.spells_frame, "UIDropDownMenuTemplate");
+        spell_options:SetPoint("TOPLEFT", dropdown_x_offset, __sc_frame.spells_frame.y_offset+15);
         spell_options.init_func = function()
 
             UIDropDownMenu_Initialize(spell_options, function()
@@ -1169,23 +1169,23 @@ local function create_sw_ui_spells_frame()
         spell_options:Hide();
 
 
-        local f = CreateFrame("Button", nil, sw_frame.spells_frame, "UIPanelButtonTemplate");
+        local f = CreateFrame("Button", nil, __sc_frame.spells_frame, "UIPanelButtonTemplate");
         f:SetText(":");
         f:SetSize(15, 15);
-        f:SetPoint("TOPLEFT", dropdown_x_offset, sw_frame.spells_frame.y_offset+3);
+        f:SetPoint("TOPLEFT", dropdown_x_offset, __sc_frame.spells_frame.y_offset+3);
         f:SetScript("OnClick", function()
-            _G["sw_frame_spells_frame_dropdown"..i.."Button"]:Click();
+            _G["__sc_frame_spells_frame_dropdown"..i.."Button"]:Click();
         end);
 
-        local ignore_line_f = sw_frame.spells_frame:CreateTexture(nil, "OVERLAY")
+        local ignore_line_f = __sc_frame.spells_frame:CreateTexture(nil, "OVERLAY")
         ignore_line_f:SetColorTexture(1.0, 0.0, 0.0, 1.0);
         ignore_line_f:SetDrawLayer("OVERLAY");
         ignore_line_f:SetHeight(0.5);
-        ignore_line_f:SetPoint("TOPLEFT", -10, sw_frame.spells_frame.y_offset-5);
-        ignore_line_f:SetPoint("TOPRIGHT", -30, sw_frame.spells_frame.y_offset-5);
+        ignore_line_f:SetPoint("TOPLEFT", -10, __sc_frame.spells_frame.y_offset-5);
+        ignore_line_f:SetPoint("TOPRIGHT", -30, __sc_frame.spells_frame.y_offset-5);
 
 
-        sw_frame.spells_frame.scroll_view[i] = {
+        __sc_frame.spells_frame.scroll_view[i] = {
             tooltip_area = tooltip_area_f,
             spell_icon = icon,
             spell_tex = icon_texture,
@@ -1203,34 +1203,34 @@ local function create_sw_ui_spells_frame()
             dropdown_button = f,
             ignore_line = ignore_line_f,
         };
-        sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - entry_y_offset;
+        __sc_frame.spells_frame.y_offset = __sc_frame.spells_frame.y_offset - entry_y_offset;
     end
-    local footer_cost = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
+    local footer_cost = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
     footer_cost:SetFontObject(font);
-    footer_cost:SetPoint("BOTTOMRIGHT", sw_frame.spells_frame, "BOTTOMRIGHT", -15, 5);
+    footer_cost:SetPoint("BOTTOMRIGHT", __sc_frame.spells_frame, "BOTTOMRIGHT", -15, 5);
 
-    sw_frame.spells_frame.footer_cost = footer_cost;
+    __sc_frame.spells_frame.footer_cost = footer_cost;
 
-    local header_divider = sw_frame.spells_frame:CreateTexture(nil, "ARTWORK")
+    local header_divider = __sc_frame.spells_frame:CreateTexture(nil, "ARTWORK")
     header_divider:SetColorTexture(0.5, 0.5, 0.5, 0.6);
     header_divider:SetHeight(1);
-    header_divider:SetPoint("TOPLEFT", sw_frame.spells_frame, "TOPLEFT", 0, -48);
-    header_divider:SetPoint("TOPRIGHT", sw_frame.spells_frame, "TOPRIGHT", 0, -48);
+    header_divider:SetPoint("TOPLEFT", __sc_frame.spells_frame, "TOPLEFT", 0, -48);
+    header_divider:SetPoint("TOPRIGHT", __sc_frame.spells_frame, "TOPRIGHT", 0, -48);
 
-    local footer_divider = sw_frame.spells_frame:CreateTexture(nil, "ARTWORK")
+    local footer_divider = __sc_frame.spells_frame:CreateTexture(nil, "ARTWORK")
     footer_divider:SetColorTexture(0.5, 0.5, 0.5, 0.6)
     footer_divider:SetHeight(1)
-    footer_divider:SetPoint("BOTTOMLEFT", sw_frame.spells_frame, "BOTTOMLEFT", 0, 20)
-    footer_divider:SetPoint("BOTTOMRIGHT", sw_frame.spells_frame, "BOTTOMRIGHT", 0, 20)
+    footer_divider:SetPoint("BOTTOMLEFT", __sc_frame.spells_frame, "BOTTOMLEFT", 0, 20)
+    footer_divider:SetPoint("BOTTOMRIGHT", __sc_frame.spells_frame, "BOTTOMRIGHT", 0, 20)
 end
 
 local function create_sw_ui_tooltip_frame()
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 5;
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
 
-    sw_frame.tooltip_frame.num_tooltip_toggled = 0;
+    __sc_frame.tooltip_frame.num_tooltip_toggled = 0;
 
-    sw_frame.tooltip_frame.checkboxes = {};
+    __sc_frame.tooltip_frame.checkboxes = {};
 
     local tooltip_setting_checks = {
         {
@@ -1247,26 +1247,26 @@ local function create_sw_ui_tooltip_frame()
         }
     };
 
-    local f_txt = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    local f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
     f_txt:SetText("Tooltip settings");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 15;
-    multi_row_checkbutton(tooltip_setting_checks, sw_frame.tooltip_frame, 2);
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 30;
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
+    multi_row_checkbutton(tooltip_setting_checks, __sc_frame.tooltip_frame, 2);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 30;
 
-    f_txt = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
     f_txt:SetText("Tooltip display options:");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 20;
-    f_txt = sw_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 20;
+    f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 0, sw_frame.tooltip_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
     f_txt:SetText("Presets:");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
@@ -1378,129 +1378,129 @@ local function create_sw_ui_tooltip_frame()
         --tooltip_display_cast_and_tap       
     };
 
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 10;
-    sw_frame.tooltip_frame.preset_minimalistic_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 10;
+    __sc_frame.tooltip_frame.preset_minimalistic_button =
+        CreateFrame("Button", nil, __sc_frame.tooltip_frame, "UIPanelButtonTemplate");
+    __sc_frame.tooltip_frame.preset_minimalistic_button:SetScript("OnClick", function(self)
 
         for _, v in pairs(tooltip_components) do
-            local f = getglobal("sw_frame_setting_"..v.id);
+            local f = getglobal("__sc_frame_setting_"..v.id);
             if f:GetChecked() then
                 f:Click();
             end
         end
-        getglobal("sw_frame_setting_tooltip_display_expected"):Click();
-        getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
-        getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_effect_per_sec"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_effect_per_cost"):Click();
 
     end);
 
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 80, sw_frame.tooltip_frame.y_offset+16);
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetText("Minimalistic");
-    sw_frame.tooltip_frame.preset_minimalistic_button:SetWidth(120);
+    __sc_frame.tooltip_frame.preset_minimalistic_button:SetPoint("TOPLEFT", 80, __sc_frame.tooltip_frame.y_offset+16);
+    __sc_frame.tooltip_frame.preset_minimalistic_button:SetText("Minimalistic");
+    __sc_frame.tooltip_frame.preset_minimalistic_button:SetWidth(120);
 
-    sw_frame.tooltip_frame.preset_default_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_default_button:SetScript("OnClick", function(self)
-
-        for _, v in pairs(tooltip_components) do
-            local f = getglobal("sw_frame_setting_"..v.id);
-            if f:GetChecked() then
-                f:Click();
-            end
-        end
-
-        getglobal("sw_frame_setting_tooltip_display_addon_name"):Click();
-        getglobal("sw_frame_setting_tooltip_display_loadout_info"):Click();
-        getglobal("sw_frame_setting_tooltip_display_normal"):Click();
-        getglobal("sw_frame_setting_tooltip_display_crit"):Click();
-        getglobal("sw_frame_setting_tooltip_display_expected"):Click();
-        getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
-        getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
-        getglobal("sw_frame_setting_tooltip_display_dynamic_tip"):Click();
-    end);
-    sw_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 200, sw_frame.tooltip_frame.y_offset+16);
-    sw_frame.tooltip_frame.preset_default_button:SetText("Default");
-    sw_frame.tooltip_frame.preset_default_button:SetWidth(120);
-
-    sw_frame.tooltip_frame.preset_detailed_button =
-        CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    sw_frame.tooltip_frame.preset_detailed_button:SetScript("OnClick", function(self)
+    __sc_frame.tooltip_frame.preset_default_button =
+        CreateFrame("Button", nil, __sc_frame.tooltip_frame, "UIPanelButtonTemplate");
+    __sc_frame.tooltip_frame.preset_default_button:SetScript("OnClick", function(self)
 
         for _, v in pairs(tooltip_components) do
-            local f = getglobal("sw_frame_setting_"..v.id);
+            local f = getglobal("__sc_frame_setting_"..v.id);
             if f:GetChecked() then
                 f:Click();
             end
         end
 
-        getglobal("sw_frame_setting_tooltip_display_addon_name"):Click();
-        getglobal("sw_frame_setting_tooltip_display_loadout_info"):Click();
-        getglobal("sw_frame_setting_tooltip_display_spell_rank"):Click();
-        getglobal("sw_frame_setting_tooltip_display_normal"):Click();
-        getglobal("sw_frame_setting_tooltip_display_crit"):Click();
-        getglobal("sw_frame_setting_tooltip_display_expected"):Click();
-        getglobal("sw_frame_setting_tooltip_display_avg_cost"):Click();
-        getglobal("sw_frame_setting_tooltip_display_avg_cast"):Click();
-        getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
-        getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
-        getglobal("sw_frame_setting_tooltip_display_cost_per_sec"):Click();
-        getglobal("sw_frame_setting_tooltip_display_cast_until_oom"):Click();
-        getglobal("sw_frame_setting_tooltip_display_sp_effect_calc"):Click();
-        getglobal("sw_frame_setting_tooltip_display_sp_effect_ratio"):Click();
-        getglobal("sw_frame_setting_tooltip_display_stat_weights_dps"):Click();
-        getglobal("sw_frame_setting_tooltip_display_stat_weights_doom"):Click();
-        getglobal("sw_frame_setting_tooltip_display_dynamic_tip"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_addon_name"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_loadout_info"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_normal"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_crit"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_effect_per_sec"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_dynamic_tip"):Click();
     end);
-    sw_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 320, sw_frame.tooltip_frame.y_offset+16);
-    sw_frame.tooltip_frame.preset_detailed_button:SetText("Detailed");
-    sw_frame.tooltip_frame.preset_detailed_button:SetWidth(120);
+    __sc_frame.tooltip_frame.preset_default_button:SetPoint("TOPLEFT", 200, __sc_frame.tooltip_frame.y_offset+16);
+    __sc_frame.tooltip_frame.preset_default_button:SetText("Default");
+    __sc_frame.tooltip_frame.preset_default_button:SetWidth(120);
+
+    __sc_frame.tooltip_frame.preset_detailed_button =
+        CreateFrame("Button", nil, __sc_frame.tooltip_frame, "UIPanelButtonTemplate");
+    __sc_frame.tooltip_frame.preset_detailed_button:SetScript("OnClick", function(self)
+
+        for _, v in pairs(tooltip_components) do
+            local f = getglobal("__sc_frame_setting_"..v.id);
+            if f:GetChecked() then
+                f:Click();
+            end
+        end
+
+        getglobal("__sc_frame_setting_tooltip_display_addon_name"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_loadout_info"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_spell_rank"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_normal"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_crit"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_avg_cost"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_avg_cast"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_effect_per_sec"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_cost_per_sec"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_cast_until_oom"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_sp_effect_calc"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_sp_effect_ratio"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_stat_weights_dps"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_stat_weights_doom"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_dynamic_tip"):Click();
+    end);
+    __sc_frame.tooltip_frame.preset_detailed_button:SetPoint("TOPLEFT", 320, __sc_frame.tooltip_frame.y_offset+16);
+    __sc_frame.tooltip_frame.preset_detailed_button:SetText("Detailed");
+    __sc_frame.tooltip_frame.preset_detailed_button:SetWidth(120);
     local tooltip_toggle = function(self)
 
         local checked = self:GetChecked();
         if checked then
 
-            if sw_frame.tooltip_frame.num_tooltip_toggled == 0 then
-                if sw_frame_setting_tooltip_disable:GetChecked() then
-                    sw_frame_setting_tooltip_disable:Click();
+            if __sc_frame.tooltip_frame.num_tooltip_toggled == 0 then
+                if __sc_frame_setting_tooltip_disable:GetChecked() then
+                    __sc_frame_setting_tooltip_disable:Click();
                 end
             end
-            sw_frame.tooltip_frame.num_tooltip_toggled = sw_frame.tooltip_frame.num_tooltip_toggled + 1;
+            __sc_frame.tooltip_frame.num_tooltip_toggled = __sc_frame.tooltip_frame.num_tooltip_toggled + 1;
         else
-            sw_frame.tooltip_frame.num_tooltip_toggled = sw_frame.tooltip_frame.num_tooltip_toggled - 1;
-            if sw_frame.tooltip_frame.num_tooltip_toggled == 0 then
-                if not sw_frame_setting_tooltip_disable:GetChecked() then
-                    sw_frame_setting_tooltip_disable:Click();
+            __sc_frame.tooltip_frame.num_tooltip_toggled = __sc_frame.tooltip_frame.num_tooltip_toggled - 1;
+            if __sc_frame.tooltip_frame.num_tooltip_toggled == 0 then
+                if not __sc_frame_setting_tooltip_disable:GetChecked() then
+                    __sc_frame_setting_tooltip_disable:Click();
                 end
             end
         end
         config.settings[self._settings_id] = self:GetChecked();
     end;
-    sw_frame.tooltip_frame.y_offset = sw_frame.tooltip_frame.y_offset - 15;
-    multi_row_checkbutton(tooltip_components, sw_frame.tooltip_frame, 2, tooltip_toggle);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
+    multi_row_checkbutton(tooltip_components, __sc_frame.tooltip_frame, 2, tooltip_toggle);
 
 
-    --sw_frame.tooltip_frame.reset_addon_button =
-    --    CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
-    --sw_frame.tooltip_frame.reset_addon_button:SetScript("OnClick", function(self)
+    --__sc_frame.tooltip_frame.reset_addon_button =
+    --    CreateFrame("Button", nil, __sc_frame.tooltip_frame, "UIPanelButtonTemplate");
+    --__sc_frame.tooltip_frame.reset_addon_button:SetScript("OnClick", function(self)
     --    sc.core.use_char_defaults = 1;
     --    ReloadUI();
     --end);
-    --sw_frame.tooltip_frame.reset_addon_button:SetPoint("TOPLEFT", 10, sw_frame.tooltip_frame.y_offset);
-    --sw_frame.tooltip_frame.reset_addon_button:SetText("Reset all to default (UI Reload)");
-    --sw_frame.tooltip_frame.reset_addon_button:SetWidth(190);
+    --__sc_frame.tooltip_frame.reset_addon_button:SetPoint("TOPLEFT", 10, __sc_frame.tooltip_frame.y_offset);
+    --__sc_frame.tooltip_frame.reset_addon_button:SetText("Reset all to default (UI Reload)");
+    --__sc_frame.tooltip_frame.reset_addon_button:SetWidth(190);
 end
 
 local function create_sw_ui_overlay_frame()
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 5;
-    sw_frame.overlay_frame.icon_settings_label = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.overlay_frame.icon_settings_label:SetFont("Fonts\\FRIZQT__.TTF", 12)
-    sw_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 0, sw_frame.overlay_frame.y_offset);
-    sw_frame.overlay_frame.icon_settings_label:SetText("Spell overlay settings");
-    sw_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 5;
+    __sc_frame.overlay_frame.icon_settings_label = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.overlay_frame.icon_settings_label:SetFont("Fonts\\FRIZQT__.TTF", 12)
+    __sc_frame.overlay_frame.icon_settings_label:SetPoint("TOPLEFT", 0, __sc_frame.overlay_frame.y_offset);
+    __sc_frame.overlay_frame.icon_settings_label:SetText("Spell overlay settings");
+    __sc_frame.overlay_frame.icon_settings_label:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 15;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 15;
 
     local overlay_settings_checks = {
         {
@@ -1556,15 +1556,15 @@ local function create_sw_ui_overlay_frame()
         },
     };
 
-    multi_row_checkbutton(overlay_settings_checks, sw_frame.overlay_frame, 2);
+    multi_row_checkbutton(overlay_settings_checks, __sc_frame.overlay_frame, 2);
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 30;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 30;
 
     local slider_frame_type = "Slider";
-    local f = CreateFrame(slider_frame_type, "sw_frame_setting_overlay_update_freq", sw_frame.overlay_frame, "UISliderTemplate");
+    local f = CreateFrame(slider_frame_type, "__sc_frame_setting_overlay_update_freq", __sc_frame.overlay_frame, "UISliderTemplate");
     f._type = slider_frame_type;
     f:SetOrientation('HORIZONTAL');
-    f:SetPoint("TOPLEFT", 250, sw_frame.overlay_frame.y_offset+4);
+    f:SetPoint("TOPLEFT", 250, __sc_frame.overlay_frame.y_offset+4);
     f:SetMinMaxValues(1, 30)
     f:SetValueStep(1)
     f:SetWidth(175)
@@ -1574,37 +1574,37 @@ local function create_sw_ui_overlay_frame()
         self.val_txt:SetText(string.format("%.1f Hz", val));
     end);
 
-    local f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    local f_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
     f_txt:SetFontObject(GameFontNormal)
     f_txt:SetTextColor(1.0, 1.0, 1.0);
-    f_txt:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset)
+    f_txt:SetPoint("TOPLEFT", 15, __sc_frame.overlay_frame.y_offset)
     f_txt:SetText("Update frequency (responsiveness)");
 
-    f.val_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f.val_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
     f.val_txt:SetFontObject(font)
-    f.val_txt:SetPoint("TOPLEFT", 430, sw_frame.overlay_frame.y_offset)
+    f.val_txt:SetPoint("TOPLEFT", 430, __sc_frame.overlay_frame.y_offset)
     f.val_txt:SetText(string.format("%.1f Hz", 3));
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 25;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 25;
 
-    f = CreateFrame(slider_frame_type, "sw_frame_setting_overlay_font_size", sw_frame.overlay_frame, "UISliderTemplate");
+    f = CreateFrame(slider_frame_type, "__sc_frame_setting_overlay_font_size", __sc_frame.overlay_frame, "UISliderTemplate");
     f._type = slider_frame_type;
     f:SetOrientation('HORIZONTAL');
-    f:SetPoint("TOPLEFT", 250, sw_frame.overlay_frame.y_offset+4);
+    f:SetPoint("TOPLEFT", 250, __sc_frame.overlay_frame.y_offset+4);
     f:SetMinMaxValues(2, 24)
     f:SetValueStep(1)
     f:SetWidth(175)
     f:SetHeight(20)
 
-    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
     f_txt:SetFontObject(GameFontNormal)
     f_txt:SetTextColor(1.0, 1.0, 1.0);
-    f_txt:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset)
+    f_txt:SetPoint("TOPLEFT", 15, __sc_frame.overlay_frame.y_offset)
     f_txt:SetText("Font size")
 
-    f.val_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f.val_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
     f.val_txt:SetFontObject(font)
-    f.val_txt:SetPoint("TOPLEFT", 430, sw_frame.overlay_frame.y_offset)
+    f.val_txt:SetPoint("TOPLEFT", 430, __sc_frame.overlay_frame.y_offset)
     f.val_txt:SetText(string.format("%.2fx", 0.0));
     f:SetScript("OnValueChanged", function(self, val)
         config.settings.overlay_font_size = val;
@@ -1633,26 +1633,26 @@ local function create_sw_ui_overlay_frame()
 
     end);
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 25;
-    f = CreateFrame(slider_frame_type, "sw_frame_setting_overlay_offset", sw_frame.overlay_frame, "UISliderTemplate");
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 25;
+    f = CreateFrame(slider_frame_type, "__sc_frame_setting_overlay_offset", __sc_frame.overlay_frame, "UISliderTemplate");
     f._type = slider_frame_type;
     f:SetOrientation('HORIZONTAL');
-    f:SetPoint("TOPLEFT", 250, sw_frame.overlay_frame.y_offset+4);
+    f:SetPoint("TOPLEFT", 250, __sc_frame.overlay_frame.y_offset+4);
     f:SetMinMaxValues(-15, 15);
     f:SetWidth(175)
     f:SetHeight(20)
     f:SetValueStep(0.1);
 
-    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
     f_txt:SetFontObject(GameFontNormal)
     f_txt:SetTextColor(1.0, 1.0, 1.0);
-    f_txt:SetPoint("TOPLEFT", 15, sw_frame.overlay_frame.y_offset)
+    f_txt:SetPoint("TOPLEFT", 15, __sc_frame.overlay_frame.y_offset)
     f_txt:SetText("Horizontal offset")
 
 
-    f.val_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
+    f.val_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY")
     f.val_txt:SetFontObject(font)
-    f.val_txt:SetPoint("TOPLEFT", 430, sw_frame.overlay_frame.y_offset)
+    f.val_txt:SetPoint("TOPLEFT", 430, __sc_frame.overlay_frame.y_offset)
     f.val_txt:SetText(string.format("%.1f", 0));
 
     f:SetValue(config.settings.overlay_offset);
@@ -1663,34 +1663,34 @@ local function create_sw_ui_overlay_frame()
         sc.overlay.update_overlay();
     end);
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 20;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 20;
 
-    f_txt = sw_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 0, sw_frame.overlay_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.overlay_frame.y_offset);
     f_txt:SetText("Spell overlay components (max 3)");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 15;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 15;
 
-    sw_frame.overlay_frame.num_overlay_components_toggled = 0;
-    sw_frame.overlay_frame.num_overlay_special_toggled = 0;
+    __sc_frame.overlay_frame.num_overlay_components_toggled = 0;
+    __sc_frame.overlay_frame.num_overlay_special_toggled = 0;
 
     local icon_checkbox_func = function(self)
 
         local checked = self:GetChecked();
         if checked then
 
-            sw_frame.overlay_frame.num_overlay_components_toggled = sw_frame.overlay_frame.num_overlay_components_toggled + 1;
+            __sc_frame.overlay_frame.num_overlay_components_toggled = __sc_frame.overlay_frame.num_overlay_components_toggled + 1;
         else
-            sw_frame.overlay_frame.num_overlay_components_toggled = sw_frame.overlay_frame.num_overlay_components_toggled - 1;
+            __sc_frame.overlay_frame.num_overlay_components_toggled = __sc_frame.overlay_frame.num_overlay_components_toggled - 1;
         end
 
-        if sw_frame.overlay_frame.num_overlay_components_toggled > 3 then
+        if __sc_frame.overlay_frame.num_overlay_components_toggled > 3 then
             -- toggled fourth
             self:SetChecked(false);
-            sw_frame.overlay_frame.num_overlay_components_toggled = 3;
-        --elseif sw_frame.overlay_frame.num_overlay_components_toggled == 0 then
+            __sc_frame.overlay_frame.num_overlay_components_toggled = 3;
+        --elseif __sc_frame.overlay_frame.num_overlay_components_toggled == 0 then
         --    config.settings.overlay_disable = true;
         else
             config.settings[self._settings_id] = checked;
@@ -1705,9 +1705,9 @@ local function create_sw_ui_overlay_frame()
     --    local checked = self:GetChecked();
 
     --    if checked then
-    --        sw_frame.overlay_frame.num_overlay_special_toggled = sw_frame.overlay_frame.num_overlay_special_toggled + 1;
+    --        __sc_frame.overlay_frame.num_overlay_special_toggled = __sc_frame.overlay_frame.num_overlay_special_toggled + 1;
     --    else
-    --        sw_frame.overlay_frame.num_overlay_special_toggled = sw_frame.overlay_frame.num_overlay_special_toggled - 1;
+    --        __sc_frame.overlay_frame.num_overlay_special_toggled = __sc_frame.overlay_frame.num_overlay_special_toggled - 1;
     --    end
     --end
 
@@ -1792,13 +1792,13 @@ local function create_sw_ui_overlay_frame()
         },
     };
 
-    multi_row_checkbutton(overlay_components, sw_frame.overlay_frame, 2, icon_checkbox_func);
+    multi_row_checkbutton(overlay_components, __sc_frame.overlay_frame, 2, icon_checkbox_func);
 
-    sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 15;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 15;
 
-    sw_frame.overlay_frame.overlay_components = {};
+    __sc_frame.overlay_frame.overlay_components = {};
     for k, v in pairs(overlay_components) do
-        sw_frame.overlay_frame.overlay_components[v.id] = {
+        __sc_frame.overlay_frame.overlay_components[v.id] = {
             color = v.color,
             optional_evaluation = v.optional_evaluation,
         }
@@ -1808,34 +1808,34 @@ end
 
 local function create_sw_ui_calculator_frame()
 
-    sw_frame.loadout_frame.y_offset = sw_frame.calculator_frame.y_offset - 5;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.calculator_frame.y_offset - 5;
     local x_pad = 5;
 
-    local f = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("TOPLEFT", 0, sw_frame.calculator_frame.y_offset);
+    f:SetPoint("TOPLEFT", 0, __sc_frame.calculator_frame.y_offset);
     f:SetText("While this tab is open, ability overlay & tooltips reflect the change below");
     f:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.calculator_frame.y_offset = -20;
+    __sc_frame.calculator_frame.y_offset = -20;
 
-    f = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    f = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
-    f:SetPoint("TOPLEFT", x_pad, sw_frame.calculator_frame.y_offset);
+    f:SetPoint("TOPLEFT", x_pad, __sc_frame.calculator_frame.y_offset);
     f:SetText("Active Loadout: ");
-    sw_frame.calculator_frame.loadout_name_label = f;
+    __sc_frame.calculator_frame.loadout_name_label = f;
 
-    sw_frame.calculator_frame.stat_diff_header_center = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.stat_diff_header_center:SetFontObject(font);
-    sw_frame.calculator_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.calculator_frame.y_offset);
-    sw_frame.calculator_frame.stat_diff_header_center:SetText("Delta");
+    __sc_frame.calculator_frame.stat_diff_header_center = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.calculator_frame.stat_diff_header_center:SetFontObject(font);
+    __sc_frame.calculator_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.stat_diff_header_center:SetText("Delta");
 
 
     local comparison_stats_listing_order = {};
 
     if sc.core.expansion_loaded == sc.core.expansions.wotlk then
 
-        sw_frame.calculator_frame.stats = {
+        __sc_frame.calculator_frame.stats = {
             int = {
                 label_str = "Intellect"
             },
@@ -1860,7 +1860,7 @@ local function create_sw_ui_calculator_frame()
         };
         comparison_stats_listing_order = {"int", "spirit", "mp5", "sp", "spell_crit", "spell_hit", "spell_haste"};
     else
-        sw_frame.calculator_frame.stats = {
+        __sc_frame.calculator_frame.stats = {
             int = {
                 label_str = "Intellect"
             },
@@ -1897,39 +1897,39 @@ local function create_sw_ui_calculator_frame()
 
 
     local num_stats = 0;
-    for _ in pairs(sw_frame.calculator_frame.stats) do
+    for _ in pairs(__sc_frame.calculator_frame.stats) do
         num_stats = num_stats + 1;
     end
 
-    sw_frame.calculator_frame.clear_button = CreateFrame("Button", "nil", sw_frame.calculator_frame, "UIPanelButtonTemplate"); 
-    sw_frame.calculator_frame.clear_button:SetScript("OnClick", function()
+    __sc_frame.calculator_frame.clear_button = CreateFrame("Button", "nil", __sc_frame.calculator_frame, "UIPanelButtonTemplate"); 
+    __sc_frame.calculator_frame.clear_button:SetScript("OnClick", function()
 
-        for k, v in pairs(sw_frame.calculator_frame.stats) do
+        for k, v in pairs(__sc_frame.calculator_frame.stats) do
             v.editbox:SetText("");
         end
         update_calc_list();
     end);
 
-    sw_frame.calculator_frame.clear_button:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.y_offset + 3);
-    sw_frame.calculator_frame.clear_button:SetHeight(15);
-    sw_frame.calculator_frame.clear_button:SetWidth(50);
-    sw_frame.calculator_frame.clear_button:SetText("Clear");
+    __sc_frame.calculator_frame.clear_button:SetPoint("TOPRIGHT", -30, __sc_frame.calculator_frame.y_offset + 3);
+    __sc_frame.calculator_frame.clear_button:SetHeight(15);
+    __sc_frame.calculator_frame.clear_button:SetWidth(50);
+    __sc_frame.calculator_frame.clear_button:SetText("Clear");
 
     for i, k in pairs(comparison_stats_listing_order) do
 
-        v = sw_frame.calculator_frame.stats[k];
+        v = __sc_frame.calculator_frame.stats[k];
 
-        sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 17;
+        __sc_frame.calculator_frame.y_offset = __sc_frame.calculator_frame.y_offset - 17;
 
-        v.label = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+        v.label = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
 
         v.label:SetFontObject(font);
-        v.label:SetPoint("TOPLEFT", x_pad, sw_frame.calculator_frame.y_offset);
+        v.label:SetPoint("TOPLEFT", x_pad, __sc_frame.calculator_frame.y_offset);
         v.label:SetText(v.label_str);
         v.label:SetTextColor(222/255, 192/255, 40/255);
 
-        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..k, sw_frame.calculator_frame, "InputBoxTemplate");
-        v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.y_offset);
+        v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..k, __sc_frame.calculator_frame, "InputBoxTemplate");
+        v.editbox:SetPoint("TOPRIGHT", -30, __sc_frame.calculator_frame.y_offset);
         v.editbox:SetText("");
         v.editbox:SetAutoFocus(false);
         v.editbox:SetSize(100, 10);
@@ -1963,22 +1963,22 @@ local function create_sw_ui_calculator_frame()
 
             end
         	self:ClearFocus()
-            sw_frame.calculator_frame.stats[comparison_stats_listing_order[next_index]].editbox:SetFocus();
+            __sc_frame.calculator_frame.stats[comparison_stats_listing_order[next_index]].editbox:SetFocus();
         end);
     end
 
-    sw_frame.calculator_frame.stats.sp.editbox:SetText("1");
+    __sc_frame.calculator_frame.stats.sp.editbox:SetText("1");
     if sc.core.__sw__test_all_codepaths then
-        for k, v in pairs(sw_frame.calculator_frame.stats) do
+        for k, v in pairs(__sc_frame.calculator_frame.stats) do
             v.editbox:SetText("1");
         end
     end
 
-    sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 20;
+    __sc_frame.calculator_frame.y_offset = __sc_frame.calculator_frame.y_offset - 20;
 
     multi_row_checkbutton(
         {{id = "calc_list_use_highest_rank", txt = "Use highest learned rank of spell"}},
-        sw_frame.calculator_frame,
+        __sc_frame.calculator_frame,
         2,
         function()
             update_calc_list();
@@ -1986,28 +1986,28 @@ local function create_sw_ui_calculator_frame()
         5);
 
     -- sim type button
-    sw_frame.calculator_frame.sim_type_button = 
-        CreateFrame("Button", "sw_sim_type_button", sw_frame.calculator_frame, "UIDropDownMenuTemplate"); 
-    sw_frame.calculator_frame.sim_type_button:SetPoint("TOPRIGHT", 10, sw_frame.calculator_frame.y_offset);
-    sw_frame.calculator_frame.sim_type_button.init_func = function()
-        UIDropDownMenu_Initialize(sw_frame.calculator_frame.sim_type_button, function()
+    __sc_frame.calculator_frame.sim_type_button = 
+        CreateFrame("Button", "sw_sim_type_button", __sc_frame.calculator_frame, "UIDropDownMenuTemplate"); 
+    __sc_frame.calculator_frame.sim_type_button:SetPoint("TOPRIGHT", 10, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.sim_type_button.init_func = function()
+        UIDropDownMenu_Initialize(__sc_frame.calculator_frame.sim_type_button, function()
             
-            if sw_frame.calculator_frame.sim_type == simulation_type.spam_cast then 
-                UIDropDownMenu_SetText(sw_frame.calculator_frame.sim_type_button, "Repeated casts");
-            elseif sw_frame.calculator_frame.sim_type == simulation_type.cast_until_oom then 
-                UIDropDownMenu_SetText(sw_frame.calculator_frame.sim_type_button, "Cast until OOM");
+            if __sc_frame.calculator_frame.sim_type == simulation_type.spam_cast then 
+                UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Repeated casts");
+            elseif __sc_frame.calculator_frame.sim_type == simulation_type.cast_until_oom then 
+                UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Cast until OOM");
             end
-            UIDropDownMenu_SetWidth(sw_frame.calculator_frame.sim_type_button, 130);
+            UIDropDownMenu_SetWidth(__sc_frame.calculator_frame.sim_type_button, 130);
 
             UIDropDownMenu_AddButton(
                 {
                     text = "Repeated cast",
-                    checked = sw_frame.calculator_frame.sim_type == simulation_type.spam_cast;
+                    checked = __sc_frame.calculator_frame.sim_type == simulation_type.spam_cast;
                     func = function()
 
-                        sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-                        UIDropDownMenu_SetText(sw_frame.calculator_frame.sim_type_button, "Repeated casts");
-                        sw_frame.calculator_frame.spell_diff_header_center:SetText("Effet per sec");
+                        __sc_frame.calculator_frame.sim_type = simulation_type.spam_cast;
+                        UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Repeated casts");
+                        __sc_frame.calculator_frame.spell_diff_header_center:SetText("Effet per sec");
                         update_calc_list();
                     end
                 }
@@ -2015,12 +2015,12 @@ local function create_sw_ui_calculator_frame()
             UIDropDownMenu_AddButton(
                 {
                     text = "Cast until OOM",
-                    checked = sw_frame.calculator_frame.sim_type == simulation_type.cast_until_oom;
+                    checked = __sc_frame.calculator_frame.sim_type == simulation_type.cast_until_oom;
                     func = function()
 
-                        sw_frame.calculator_frame.sim_type = simulation_type.cast_until_oom;
-                        UIDropDownMenu_SetText(sw_frame.calculator_frame.sim_type_button, "Cast until OOM");
-                        sw_frame.calculator_frame.spell_diff_header_center:SetText("Duration (s)");
+                        __sc_frame.calculator_frame.sim_type = simulation_type.cast_until_oom;
+                        UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Cast until OOM");
+                        __sc_frame.calculator_frame.spell_diff_header_center:SetText("Duration (s)");
                         update_calc_list();
                     end
                 }
@@ -2028,68 +2028,68 @@ local function create_sw_ui_calculator_frame()
         end);
     end;
 
-    f = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    f = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetPoint("BOTTOMLEFT", x_pad, 5);
     f:SetText("Abilities can be added from Spells tab");
     f:SetTextColor(1.0,  1.0,  1.0);
 
-    sw_frame.calculator_frame.sim_type_button:SetText("Simulation type");
+    __sc_frame.calculator_frame.sim_type_button:SetText("Simulation type");
 
-    sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 17;
-    sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 17;
+    __sc_frame.calculator_frame.y_offset = __sc_frame.calculator_frame.y_offset - 17;
+    __sc_frame.calculator_frame.y_offset = __sc_frame.calculator_frame.y_offset - 17;
 
-    sw_frame.calculator_frame.spell_diff_header_spell = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.spell_diff_header_spell:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_spell:SetPoint("TOPLEFT", x_pad, sw_frame.calculator_frame.y_offset);
-    sw_frame.calculator_frame.spell_diff_header_spell:SetText("Spell");
+    __sc_frame.calculator_frame.spell_diff_header_spell = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.calculator_frame.spell_diff_header_spell:SetFontObject(font);
+    __sc_frame.calculator_frame.spell_diff_header_spell:SetPoint("TOPLEFT", x_pad, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_spell:SetText("Spell");
 
-    sw_frame.calculator_frame.spell_diff_header_left = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, sw_frame.calculator_frame.y_offset);
-    sw_frame.calculator_frame.spell_diff_header_left:SetText("Change");
+    __sc_frame.calculator_frame.spell_diff_header_left = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.calculator_frame.spell_diff_header_left:SetFontObject(font);
+    __sc_frame.calculator_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_left:SetText("Change");
 
-    sw_frame.calculator_frame.spell_diff_header_center = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -110, sw_frame.calculator_frame.y_offset);
-    sw_frame.calculator_frame.spell_diff_header_center:SetText("Per sec");
+    __sc_frame.calculator_frame.spell_diff_header_center = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.calculator_frame.spell_diff_header_center:SetFontObject(font);
+    __sc_frame.calculator_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -110, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_center:SetText("Per sec");
 
-    sw_frame.calculator_frame.spell_diff_header_right = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.spell_diff_header_right:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_right:SetPoint("TOPRIGHT", -45, sw_frame.calculator_frame.y_offset);
-    sw_frame.calculator_frame.spell_diff_header_right:SetText("Effect");
+    __sc_frame.calculator_frame.spell_diff_header_right = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.calculator_frame.spell_diff_header_right:SetFontObject(font);
+    __sc_frame.calculator_frame.spell_diff_header_right:SetPoint("TOPRIGHT", -45, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_right:SetText("Effect");
 
 
-    sw_frame.calculator_frame.calc_list = {};
-    sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
+    __sc_frame.calculator_frame.calc_list = {};
+    __sc_frame.calculator_frame.sim_type = simulation_type.spam_cast;
 end
 
 local function create_sw_ui_loadout_frame()
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 5;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 5;
     local x_pad = 5;
 
-    local f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    local f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 0, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Loadouts consist of all the parameters going into spell calculations");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", x_pad, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", x_pad, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Active loadout:");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    local f = CreateFrame("Button", nil, sw_frame.loadout_frame, "UIDropDownMenuTemplate");
-    f:SetPoint("TOPLEFT", x_pad + 80, sw_frame.loadout_frame.y_offset+6);
+    local f = CreateFrame("Button", nil, __sc_frame.loadout_frame, "UIDropDownMenuTemplate");
+    f:SetPoint("TOPLEFT", x_pad + 80, __sc_frame.loadout_frame.y_offset+6);
     f.init_func = function()
-        UIDropDownMenu_SetText(sw_frame.loadout_frame.loadout_dropdown, config.loadout.name);
-        UIDropDownMenu_Initialize(sw_frame.loadout_frame.loadout_dropdown, function()
+        UIDropDownMenu_SetText(__sc_frame.loadout_frame.loadout_dropdown, config.loadout.name);
+        UIDropDownMenu_Initialize(__sc_frame.loadout_frame.loadout_dropdown, function()
 
-            UIDropDownMenu_SetWidth(sw_frame.loadout_frame.loadout_dropdown, 100);
+            UIDropDownMenu_SetWidth(__sc_frame.loadout_frame.loadout_dropdown, 100);
 
             for k, v in pairs(__sc_p_char.loadouts) do
                 UIDropDownMenu_AddButton({
@@ -2107,17 +2107,17 @@ local function create_sw_ui_loadout_frame()
             end
         end);
     end;
-    sw_frame.loadout_frame.loadout_dropdown = f;
+    __sc_frame.loadout_frame.loadout_dropdown = f;
 
-    f = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 240, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 240, __sc_frame.loadout_frame.y_offset);
     f:SetText("Rename");
     f:SetTextColor(1.0, 1.0, 1.0);
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_name", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_name", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 315, sw_frame.loadout_frame.y_offset+2);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 315, __sc_frame.loadout_frame.y_offset+2);
     f:SetSize(70, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
@@ -2135,10 +2135,10 @@ local function create_sw_ui_loadout_frame()
         self:ClearFocus();
     end);
     f:SetScript("OnTextChanged", editbox_save);
-    sw_frame.loadout_frame.name_editbox = f;
+    __sc_frame.loadout_frame.name_editbox = f;
 
-    f = CreateFrame("Button", "sw_frame_loadouts_delete_button", sw_frame.loadout_frame, "UIPanelButtonTemplate");
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 390, sw_frame.loadout_frame.y_offset+6);
+    f = CreateFrame("Button", "__sc_frame_loadouts_delete_button", __sc_frame.loadout_frame, "UIPanelButtonTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 390, __sc_frame.loadout_frame.y_offset+6);
     f:SetText("Delete");
     f:SetSize(80, 25);
     f:SetScript("OnClick", function(self)
@@ -2162,18 +2162,18 @@ local function create_sw_ui_loadout_frame()
 
         update_loadout_frame();
     end);
-    sw_frame.loadout_frame.delete_button = f;
+    __sc_frame.loadout_frame.delete_button = f;
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 30;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 30;
 
-    f = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     f:SetText("New loadout:");
     f:SetTextColor(1.0, 1.0, 1.0);
 
-    f = CreateFrame("EditBox", nil, sw_frame.loadout_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 90, sw_frame.loadout_frame.y_offset+3);
+    f = CreateFrame("EditBox", nil, __sc_frame.loadout_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 90, __sc_frame.loadout_frame.y_offset+3);
     f:SetSize(80, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
@@ -2181,71 +2181,71 @@ local function create_sw_ui_loadout_frame()
         local txt = self:GetText();
         if txt ~= "" then
 
-            for _, v in pairs(sw_frame.loadout_frame.new_loadout_section) do
+            for _, v in pairs(__sc_frame.loadout_frame.new_loadout_section) do
                 v:Show();
             end
         else
-            for _, v in pairs(sw_frame.loadout_frame.new_loadout_section) do
+            for _, v in pairs(__sc_frame.loadout_frame.new_loadout_section) do
                 v:Hide();
             end
         end
     end
     editbox_config(f, editbox_save);
-    sw_frame.loadout_frame.new_loadout_name_editbox = f;
+    __sc_frame.loadout_frame.new_loadout_name_editbox = f;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", x_pad + 175, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", x_pad + 175, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("from");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
-    sw_frame.loadout_frame.new_loadout_txt1 = f_txt;
+    __sc_frame.loadout_frame.new_loadout_txt1 = f_txt;
 
-    f = CreateFrame("Button", nil, sw_frame.loadout_frame, "UIPanelButtonTemplate");
+    f = CreateFrame("Button", nil, __sc_frame.loadout_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
 
-        if config.new_loadout_from_default(sw_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
-            sw_frame.loadout_frame.new_loadout_name_editbox:SetText("");
+        if config.new_loadout_from_default(__sc_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
+            __sc_frame.loadout_frame.new_loadout_name_editbox:SetText("");
             sc.core.talents_update_needed = true;
             update_loadout_frame();
         end
     end);
-    f:SetPoint("TOPLEFT", x_pad + 220, sw_frame.loadout_frame.y_offset+6);
+    f:SetPoint("TOPLEFT", x_pad + 220, __sc_frame.loadout_frame.y_offset+6);
     f:SetText("Default preset");
     f:SetWidth(130);
-    sw_frame.loadout_frame.new_loadout_button1 = f;
+    __sc_frame.loadout_frame.new_loadout_button1 = f;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", x_pad + 360, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", x_pad + 360, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("or");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
-    sw_frame.loadout_frame.new_loadout_txt2 = f_txt;
+    __sc_frame.loadout_frame.new_loadout_txt2 = f_txt;
 
-    f = CreateFrame("Button", nil, sw_frame.loadout_frame, "UIPanelButtonTemplate");
+    f = CreateFrame("Button", nil, __sc_frame.loadout_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
-        if config.new_loadout_from_active_copy(sw_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
-            sw_frame.loadout_frame.new_loadout_name_editbox:SetText("");
+        if config.new_loadout_from_active_copy(__sc_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
+            __sc_frame.loadout_frame.new_loadout_name_editbox:SetText("");
             sc.core.talents_update_needed = true;
             update_loadout_frame();
         end
     end);
-    f:SetPoint("TOPLEFT", x_pad + 390, sw_frame.loadout_frame.y_offset+6);
+    f:SetPoint("TOPLEFT", x_pad + 390, __sc_frame.loadout_frame.y_offset+6);
     f:SetText("Copy");
     f:SetWidth(80);
-    sw_frame.loadout_frame.new_loadout_button2 = f;
+    __sc_frame.loadout_frame.new_loadout_button2 = f;
 
-    sw_frame.loadout_frame.new_loadout_section = {
-        sw_frame.loadout_frame.new_loadout_txt1,
-        sw_frame.loadout_frame.new_loadout_txt2,
-        sw_frame.loadout_frame.new_loadout_button1,
-        sw_frame.loadout_frame.new_loadout_button2
+    __sc_frame.loadout_frame.new_loadout_section = {
+        __sc_frame.loadout_frame.new_loadout_txt1,
+        __sc_frame.loadout_frame.new_loadout_txt2,
+        __sc_frame.loadout_frame.new_loadout_button1,
+        __sc_frame.loadout_frame.new_loadout_button2
     };
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 20;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_dynamic_check", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_dynamic_check", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
 
     getglobal(f:GetName()..'Text'):SetText("Custom talents");
     getglobal(f:GetName()).tooltip =
@@ -2257,18 +2257,18 @@ local function create_sw_ui_loadout_frame()
 
         config.loadout.use_custom_talents = self:GetChecked();
         if config.loadout.use_custom_talents then
-            sw_frame.loadout_frame.talent_editbox:SetText(
+            __sc_frame.loadout_frame.talent_editbox:SetText(
                 wowhead_talent_link(config.loadout.custom_talents_code)
             );
         else
-            sw_frame.loadout_frame.talent_editbox:SetText("");
+            __sc_frame.loadout_frame.talent_editbox:SetText("");
         end
         update_buffs_frame();
     end);
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_talent_editbox", sw_frame.loadout_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f = CreateFrame("EditBox", "__sc_frame_loadout_talent_editbox", __sc_frame.loadout_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     f:SetSize(460, 15);
     f:SetAutoFocus(false);
     editbox_config(f, function(self)
@@ -2279,30 +2279,30 @@ local function create_sw_ui_loadout_frame()
         if config.loadout.use_custom_talents then
             config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
 
-            sw_frame.loadout_frame.talent_editbox:SetText(
+            __sc_frame.loadout_frame.talent_editbox:SetText(
                 wowhead_talent_link(config.loadout.custom_talents_code)
             );
-            sw_frame.loadout_frame.talent_editbox:SetAlpha(1.0);
+            __sc_frame.loadout_frame.talent_editbox:SetAlpha(1.0);
         else
 
-            sw_frame.loadout_frame.talent_editbox:SetText(
+            __sc_frame.loadout_frame.talent_editbox:SetText(
                 wowhead_talent_link(config.loadout.talents_code)
             );
-            sw_frame.loadout_frame.talent_editbox:SetAlpha(0.2);
-            sw_frame.loadout_frame.talent_editbox:SetCursorPosition(0);
+            __sc_frame.loadout_frame.talent_editbox:SetAlpha(0.2);
+            __sc_frame.loadout_frame.talent_editbox:SetCursorPosition(0);
         end
 
         update_loadout_frame();
         self:ClearFocus();
     end);
 
-    sw_frame.loadout_frame.talent_editbox = f;
+    __sc_frame.loadout_frame.talent_editbox = f;
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_use_custom_lvl", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_use_custom_lvl", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     f:SetHitRectInsets(0, 0, 0, 0);
     getglobal(f:GetName()..'Text'):SetText("Custom player level");
     getglobal(f:GetName()).tooltip =
@@ -2313,16 +2313,16 @@ local function create_sw_ui_loadout_frame()
         config.loadout.use_custom_lvl = self:GetChecked();
         sc.core.old_ranks_checks_needed = true;
         if config.loadout.use_custom_lvl then
-            sw_frame.loadout_frame.loadout_clvl_editbox:Show();
+            __sc_frame.loadout_frame.loadout_clvl_editbox:Show();
         else
-            sw_frame.loadout_frame.loadout_clvl_editbox:Hide();
+            __sc_frame.loadout_frame.loadout_clvl_editbox:Hide();
         end
     end);
-    sw_frame.loadout_frame.custom_lvl_checkbutton = f;
+    __sc_frame.loadout_frame.custom_lvl_checkbutton = f;
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_lvl", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_lvl", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
-    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.custom_lvl_checkbutton:GetName()..'Text'), "RIGHT", 10, 0);
+    f:SetPoint("LEFT", getglobal(__sc_frame.loadout_frame.custom_lvl_checkbutton:GetName()..'Text'), "RIGHT", 10, 0);
     f:SetSize(50, 15);
     f:SetAutoFocus(false);
     f:Hide();
@@ -2346,17 +2346,17 @@ local function create_sw_ui_loadout_frame()
         self:HighlightText(0,0);
     end
     editbox_config(f, clvl_editbox_update, clvl_editbox_close);
-    sw_frame.loadout_frame.loadout_clvl_editbox = f;
+    __sc_frame.loadout_frame.loadout_clvl_editbox = f;
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Target level difference");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_default_target_lvl_diff", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_lvl_diff", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetText("");
@@ -2382,23 +2382,23 @@ local function create_sw_ui_loadout_frame()
         self:HighlightText(0,0);
     end
     editbox_config(f, editbox_update, editbox_close);
-    sw_frame.loadout_frame.level_editbox = f;
+    __sc_frame.loadout_frame.level_editbox = f;
 
-    f = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("LEFT", sw_frame.loadout_frame.level_editbox, "RIGHT", 10, 0);
+    f:SetPoint("LEFT", __sc_frame.loadout_frame.level_editbox, "RIGHT", 10, 0);
     f:SetText("(when no hostile target available)");
     f:SetTextColor(1.0,  1.0,  1.0);
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Default target HP");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_default_target_hp_perc", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_hp_perc", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetText("");
@@ -2422,22 +2422,22 @@ local function create_sw_ui_loadout_frame()
         self:HighlightText(0,0);
     end
     editbox_config(f, editbox_hp_perc_update, editbox_hp_perc_close);
-    sw_frame.loadout_frame.hp_perc_label_editbox = f;
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.loadout_frame.hp_perc_label_editbox = f;
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("LEFT", f, "RIGHT", 5, 0);
     f_txt:SetText("%");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 30;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 30;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Target resistance");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_target_res", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_target_res", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetText("");
@@ -2464,14 +2464,14 @@ local function create_sw_ui_loadout_frame()
 
     editbox_config(f, editbox_target_res_update, editbox_target_res_close);
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    sw_frame.loadout_frame.auto_armor_frames = {};
-    sw_frame.loadout_frame.custom_armor_frames = {};
+    __sc_frame.loadout_frame.auto_armor_frames = {};
+    __sc_frame.loadout_frame.custom_armor_frames = {};
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_target_automatic_armor", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     getglobal(f:GetName()..'Text'):SetText("Estimate armor");
     getglobal(f:GetName()).tooltip = 
         "Estimates armor from target level";
@@ -2479,33 +2479,33 @@ local function create_sw_ui_loadout_frame()
         local checked = self:GetChecked();
         config.loadout.target_automatic_armor = checked;
         if checked then
-            for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+            for _, v in pairs(__sc_frame.loadout_frame.auto_armor_frames) do
                 v:Show();
             end
-            for _, v in pairs(sw_frame.loadout_frame.custom_armor_frames) do
+            for _, v in pairs(__sc_frame.loadout_frame.custom_armor_frames) do
                 v:Hide();
             end
         else
-            for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+            for _, v in pairs(__sc_frame.loadout_frame.auto_armor_frames) do
                 v:Hide();
             end
-            for _, v in pairs(sw_frame.loadout_frame.custom_armor_frames) do
+            for _, v in pairs(__sc_frame.loadout_frame.custom_armor_frames) do
                 v:Show();
             end
         end
     end);
     f:SetHitRectInsets(0, 0, 0, 0);
-    sw_frame.loadout_frame.automatic_armor = f;
+    __sc_frame.loadout_frame.automatic_armor = f;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("LEFT", getglobal(f:GetName()..'Text'), "RIGHT", 50, 0);
     f_txt:SetText("Custom armor value");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
-    sw_frame.loadout_frame.custom_armor_frames[1] = f_txt;
+    __sc_frame.loadout_frame.custom_armor_frames[1] = f_txt;
 
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_target_armor", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_target_armor", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetText("");
@@ -2530,60 +2530,60 @@ local function create_sw_ui_loadout_frame()
         self:HighlightText(0,0);
     end
     editbox_config(f, editbox_target_armor_update, editbox_target_armor_close);
-    sw_frame.loadout_frame.custom_armor_frames[2] = f;
+    __sc_frame.loadout_frame.custom_armor_frames[2] = f;
 
     local armor_pct_fn = function(self)
         if self:GetChecked() then
             config.loadout.target_automatic_armor_pct = self._value;
         end
-        for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+        for _, v in pairs(__sc_frame.loadout_frame.auto_armor_frames) do
             v:SetChecked(config.loadout.target_automatic_armor_pct == v._value);
         end
     end;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor_100", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_target_automatic_armor_100", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f._value = 100;
-    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.automatic_armor:GetName()..'Text'), "RIGHT", 40, 0);
+    f:SetPoint("LEFT", getglobal(__sc_frame.loadout_frame.automatic_armor:GetName()..'Text'), "RIGHT", 40, 0);
     getglobal(f:GetName()..'Text'):SetText("Heavy 100%");
     f:SetHitRectInsets(0, 0, 0, 0);
     f:SetScript("OnClick", armor_pct_fn);
-    sw_frame.loadout_frame.auto_armor_frames[1] = f;
+    __sc_frame.loadout_frame.auto_armor_frames[1] = f;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor_80", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_target_automatic_armor_80", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f._value = 80;
-    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.auto_armor_frames[1]:GetName()..'Text'), "RIGHT", 10, 0);
+    f:SetPoint("LEFT", getglobal(__sc_frame.loadout_frame.auto_armor_frames[1]:GetName()..'Text'), "RIGHT", 10, 0);
     getglobal(f:GetName()..'Text'):SetText("Medium 80%");
     f:SetHitRectInsets(0, 0, 0, 0);
     f:SetScript("OnClick", armor_pct_fn);
-    sw_frame.loadout_frame.auto_armor_frames[2] = f;
+    __sc_frame.loadout_frame.auto_armor_frames[2] = f;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor_50", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_target_automatic_armor_50", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f._value = 50;
-    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.auto_armor_frames[2]:GetName()..'Text'), "RIGHT", 10, 0);
+    f:SetPoint("LEFT", getglobal(__sc_frame.loadout_frame.auto_armor_frames[2]:GetName()..'Text'), "RIGHT", 10, 0);
     getglobal(f:GetName()..'Text'):SetText("Light 50%");
     f:SetHitRectInsets(0, 0, 0, 0);
     f:SetScript("OnClick", armor_pct_fn);
-    sw_frame.loadout_frame.auto_armor_frames[3] = f;
+    __sc_frame.loadout_frame.auto_armor_frames[3] = f;
 
-    for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+    for _, v in pairs(__sc_frame.loadout_frame.auto_armor_frames) do
         v:Hide();
     end
-    for _, v in pairs(sw_frame.loadout_frame.custom_armor_frames) do
+    for _, v in pairs(__sc_frame.loadout_frame.custom_armor_frames) do
         v:Show();
     end
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Number of targets for unbounded AOE spells");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_unbounded_aoe_targets", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_unbounded_aoe_targets", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetSize(40, 15);
@@ -2607,18 +2607,18 @@ local function create_sw_ui_loadout_frame()
     end
 
     editbox_config(f, aoe_targets_editbox_update, aoe_targets_editbox_close);
-    sw_frame.loadout_frame.loadout_unbounded_aoe_targets_editbox = f;
+    __sc_frame.loadout_frame.loadout_unbounded_aoe_targets_editbox = f;
 
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Extra mana for casts until OOM");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "sw_frame_loadout_extra_mana", sw_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_extra_mana", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
     f:SetSize(40, 15);
@@ -2643,26 +2643,26 @@ local function create_sw_ui_loadout_frame()
     end
 
     editbox_config(f, mana_editbox_update, mana_editbox_close);
-    sw_frame.loadout_frame.loadout_extra_mana_editbox = f;
+    __sc_frame.loadout_frame.loadout_extra_mana_editbox = f;
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_always_max_resource", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_always_max_resource", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     getglobal(f:GetName()..'Text'):SetText("Always at maximum resource");
     getglobal(f:GetName()).tooltip = 
         "Assumes you are casting from maximum mana, energy, rage or combo points";
     f:SetScript("OnClick", function(self)
         config.loadout.always_max_resource = self:GetChecked();
     end)
-    sw_frame.loadout_frame.max_mana_checkbutton = f;
+    __sc_frame.loadout_frame.max_mana_checkbutton = f;
 
-    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_behind_target", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_behind_target", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     getglobal(f:GetName()..'Text'):SetText("Always behind target, eliminating parried attacks");
     f:SetScript("OnClick", function(self)
         config.loadout.behind_target = self:GetChecked();
@@ -2671,8 +2671,8 @@ end
 
 local function create_sw_ui_buffs_frame()
 
-    local f = CreateFrame("CheckButton", "sw_frame_buffs_frame_toggle", sw_frame.buffs_frame, "ChatConfigCheckButtonTemplate");
-    f:SetPoint("TOPLEFT", sw_frame.buffs_frame, 0, sw_frame.buffs_frame.y_offset);
+    local f = CreateFrame("CheckButton", "__sc_frame_buffs_frame_toggle", __sc_frame.buffs_frame, "ChatConfigCheckButtonTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.buffs_frame, 0, __sc_frame.buffs_frame.y_offset);
     getglobal(f:GetName() .. 'Text'):SetText("Enable selected auras even when inactive");
     getglobal(f:GetName()).tooltip = 
         "The selected buffs will be applied behind the scenes to the spell calculations";
@@ -2684,25 +2684,25 @@ local function create_sw_ui_buffs_frame()
         end
         update_buffs_frame();
     end);
-    sw_frame.buffs_frame.always_apply_buffs_button = f;
+    __sc_frame.buffs_frame.always_apply_buffs_button = f;
 
-    sw_frame.buffs_frame.y_offset = sw_frame.buffs_frame.y_offset - 25;
+    __sc_frame.buffs_frame.y_offset = __sc_frame.buffs_frame.y_offset - 25;
 
-    local f = CreateFrame("EditBox", "sw_frame_buffs_search", sw_frame.buffs_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", 8, sw_frame.buffs_frame.y_offset);
+    local f = CreateFrame("EditBox", "__sc_frame_buffs_search", __sc_frame.buffs_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", 8, __sc_frame.buffs_frame.y_offset);
     f:SetSize(160, 15);
     f:SetAutoFocus(false);
     f:SetScript("OnTextChanged", function(self)
         local txt = self:GetText();
         if txt == "" then
-            sw_frame.buffs_frame.search_empty_label:Show();
+            __sc_frame.buffs_frame.search_empty_label:Show();
             for _, view in ipairs(buffs_views) do
                 for k, _ in ipairs(view.buffs) do
                     view.filtered[k] = k;
                 end
             end
         else
-            sw_frame.buffs_frame.search_empty_label:Hide();
+            __sc_frame.buffs_frame.search_empty_label:Hide();
             local num = tonumber(txt);
             for _, view in ipairs(buffs_views) do
                 view.filtered = {};
@@ -2715,17 +2715,17 @@ local function create_sw_ui_buffs_frame()
             end
         end
         for _, view in ipairs(buffs_views) do
-            sw_frame.buffs_frame[view.side].slider:SetMinMaxValues(1, max(1, #view.filtered - math.floor(sw_frame.buffs_frame[view.side].num_buffs_can_fit/2)));
+            __sc_frame.buffs_frame[view.side].slider:SetMinMaxValues(1, max(1, #view.filtered - math.floor(__sc_frame.buffs_frame[view.side].num_buffs_can_fit/2)));
         end
         update_buffs_frame();
     end);
-    sw_frame.buffs_frame.search = f;
+    __sc_frame.buffs_frame.search = f;
 
-    local f = sw_frame.buffs_frame:CreateFontString(nil, "OVERLAY");
+    local f = __sc_frame.buffs_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
     f:SetText("Search");
-    f:SetPoint("LEFT", sw_frame.buffs_frame.search, 5, 0);
-    sw_frame.buffs_frame.search_empty_label = f;
+    f:SetPoint("LEFT", __sc_frame.buffs_frame.search, 5, 0);
+    __sc_frame.buffs_frame.search_empty_label = f;
 
     for view_idx, view in ipairs(buffs_views) do
 
@@ -2734,30 +2734,30 @@ local function create_sw_ui_buffs_frame()
             view.filtered[k] = k;
         end
 
-        local y_offset = sw_frame.buffs_frame.y_offset;
+        local y_offset = __sc_frame.buffs_frame.y_offset;
 
         y_offset = y_offset - 20;
 
-        local f = CreateFrame("ScrollFrame", "sw_frame_buffs_frame_"..view.side, sw_frame.buffs_frame);
+        local f = CreateFrame("ScrollFrame", "__sc_frame_buffs_frame_"..view.side, __sc_frame.buffs_frame);
         f:SetWidth(235);
         f:SetHeight(490);
-        f:SetPoint("TOPLEFT", sw_frame.buffs_frame, 240*(view_idx-1), y_offset);
-        sw_frame.buffs_frame[view.side] = {}
-        sw_frame.buffs_frame[view.side].frame = f;
+        f:SetPoint("TOPLEFT", __sc_frame.buffs_frame, 240*(view_idx-1), y_offset);
+        __sc_frame.buffs_frame[view.side] = {}
+        __sc_frame.buffs_frame[view.side].frame = f;
 
-        f = CreateFrame("ScrollFrame", "sw_frame_buffs_list_"..view.side, sw_frame.buffs_frame[view.side].frame);
+        f = CreateFrame("ScrollFrame", "__sc_frame_buffs_list_"..view.side, __sc_frame.buffs_frame[view.side].frame);
         f:SetWidth(235);
         f:SetHeight(455);
-        f:SetPoint("TOPLEFT", sw_frame.buffs_frame[view.side].frame, 0, -35);
-        sw_frame.buffs_frame[view.side].buffs_list_frame = f;
+        f:SetPoint("TOPLEFT", __sc_frame.buffs_frame[view.side].frame, 0, -35);
+        __sc_frame.buffs_frame[view.side].buffs_list_frame = f;
 
-        sw_frame.buffs_frame[view.side].num_checked = 0;
-        sw_frame.buffs_frame[view.side].buffs = {};
-        sw_frame.buffs_frame[view.side].buffs_num = 0;
+        __sc_frame.buffs_frame[view.side].num_checked = 0;
+        __sc_frame.buffs_frame[view.side].buffs = {};
+        __sc_frame.buffs_frame[view.side].buffs_num = 0;
 
         y_offset = -5;
 
-        f = sw_frame.buffs_frame[view.side].frame:CreateFontString(nil, "OVERLAY");
+        f = __sc_frame.buffs_frame[view.side].frame:CreateFontString(nil, "OVERLAY");
         f:SetFontObject(GameFontNormal);
         local fp, _, flags = f:GetFont();
         f:SetFont(fp, 17, flags);
@@ -2769,7 +2769,7 @@ local function create_sw_ui_buffs_frame()
         f:SetPoint("TOPLEFT", 5, y_offset);
 
         y_offset = y_offset - 15;
-        local f = CreateFrame("CheckButton", "sw_frame_check_all_"..view.side, sw_frame.buffs_frame[view.side].frame, "ChatConfigCheckButtonTemplate");
+        local f = CreateFrame("CheckButton", "__sc_frame_check_all_"..view.side, __sc_frame.buffs_frame[view.side].frame, "ChatConfigCheckButtonTemplate");
         f:SetPoint("TOPLEFT", 20, y_offset);
         getglobal(f:GetName() .. 'Text'):SetText("Select all/none");
         getglobal(f:GetName() .. 'Text'):SetTextColor(1, 0, 0);
@@ -2796,15 +2796,15 @@ local function create_sw_ui_buffs_frame()
 
             update_buffs_frame();
         end);
-        sw_frame.buffs_frame[view.side].select_all_buffs_checkbutton = f;
+        __sc_frame.buffs_frame[view.side].select_all_buffs_checkbutton = f;
 
-        local f = CreateFrame("Slider", nil, sw_frame.buffs_frame[view.side].buffs_list_frame, "UIPanelScrollBarTrimTemplate");
+        local f = CreateFrame("Slider", nil, __sc_frame.buffs_frame[view.side].buffs_list_frame, "UIPanelScrollBarTrimTemplate");
         f:SetOrientation('VERTICAL');
-        f:SetPoint("RIGHT", sw_frame.buffs_frame[view.side].buffs_list_frame, "RIGHT", 0, 2);
-        f:SetHeight(sw_frame.buffs_frame[view.side].buffs_list_frame:GetHeight()-30);
-        sw_frame.buffs_frame[view.side].num_buffs_can_fit =
-            math.floor(sw_frame.buffs_frame[view.side].buffs_list_frame:GetHeight()/15);
-        f:SetMinMaxValues( 1, max(1, #view.filtered - math.floor(sw_frame.buffs_frame[view.side].num_buffs_can_fit/2)));
+        f:SetPoint("RIGHT", __sc_frame.buffs_frame[view.side].buffs_list_frame, "RIGHT", 0, 2);
+        f:SetHeight(__sc_frame.buffs_frame[view.side].buffs_list_frame:GetHeight()-30);
+        __sc_frame.buffs_frame[view.side].num_buffs_can_fit =
+            math.floor(__sc_frame.buffs_frame[view.side].buffs_list_frame:GetHeight()/15);
+        f:SetMinMaxValues( 1, max(1, #view.filtered - math.floor(__sc_frame.buffs_frame[view.side].num_buffs_can_fit/2)));
         f:SetValue(1);
         f:SetValueStep(1);
         f:SetScript("OnValueChanged", function(self, val)
@@ -2815,23 +2815,23 @@ local function create_sw_ui_buffs_frame()
         bg:SetAllPoints(f);
         bg:SetColorTexture(0, 0, 0, 0.5);
 
-        sw_frame.buffs_frame[view.side].slider = f;
+        __sc_frame.buffs_frame[view.side].slider = f;
 
-        sw_frame.buffs_frame[view.side].buffs_list_frame:SetScript("OnMouseWheel", function(self, dir)
-            local min_val, max_val = sw_frame.buffs_frame[view.side].slider:GetMinMaxValues();
-            local val = sw_frame.buffs_frame[view.side].slider:GetValue();
+        __sc_frame.buffs_frame[view.side].buffs_list_frame:SetScript("OnMouseWheel", function(self, dir)
+            local min_val, max_val = __sc_frame.buffs_frame[view.side].slider:GetMinMaxValues();
+            local val = __sc_frame.buffs_frame[view.side].slider:GetValue();
             if val - dir >= min_val and val - dir <= max_val then
-                sw_frame.buffs_frame[view.side].slider:SetValue(val - dir);
+                __sc_frame.buffs_frame[view.side].slider:SetValue(val - dir);
                 update_buffs_frame();
             end
         end);
 
 
         y_offset = 0;
-        for i = 1, sw_frame.buffs_frame[view.side].num_buffs_can_fit do
-            sw_frame.buffs_frame[view.side].buffs[i] = {};
+        for i = 1, __sc_frame.buffs_frame[view.side].num_buffs_can_fit do
+            __sc_frame.buffs_frame[view.side].buffs[i] = {};
 
-            local checkbtn = CreateFrame("CheckButton", "loadout_buffs_checkbutton"..view.side..i, sw_frame.buffs_frame[view.side].buffs_list_frame, "ChatConfigCheckButtonTemplate");
+            local checkbtn = CreateFrame("CheckButton", "loadout_buffs_checkbutton"..view.side..i, __sc_frame.buffs_frame[view.side].buffs_list_frame, "ChatConfigCheckButtonTemplate");
             checkbtn.side = view.side;
             checkbtn:SetScript("OnMouseDown", function(self, btn)
 
@@ -2844,16 +2844,16 @@ local function create_sw_ui_buffs_frame()
                 if btn == "LeftButton" then
                     if not config_buffs[self.buff_id] then
                         config_buffs[self.buff_id] = 1;
-                        sw_frame.buffs_frame[view.side].num_checked = sw_frame.buffs_frame[view.side].num_checked + 1;
+                        __sc_frame.buffs_frame[view.side].num_checked = __sc_frame.buffs_frame[view.side].num_checked + 1;
                     else
                         config_buffs[self.buff_id] = nil;
-                        sw_frame.buffs_frame[view.side].num_checked = sw_frame.buffs_frame[view.side].num_checked - 1;
+                        __sc_frame.buffs_frame[view.side].num_checked = __sc_frame.buffs_frame[view.side].num_checked - 1;
                     end
 
-                    if sw_frame.buffs_frame[view.side].num_checked == 0 then
-                        sw_frame.buffs_frame[view.side].select_all_buffs_checkbutton:SetChecked(false);
+                    if __sc_frame.buffs_frame[view.side].num_checked == 0 then
+                        __sc_frame.buffs_frame[view.side].select_all_buffs_checkbutton:SetChecked(false);
                     else
-                        sw_frame.buffs_frame[view.side].select_all_buffs_checkbutton:SetChecked(true);
+                        __sc_frame.buffs_frame[view.side].select_all_buffs_checkbutton:SetChecked(true);
                     end
                 elseif btn == "Button4" then
                     if config_buffs[self.buff_id] then
@@ -2866,7 +2866,7 @@ local function create_sw_ui_buffs_frame()
                 end
                 self.__stacks_str:SetText(tostring(config_buffs[self.buff_id] or 0));
             end);
-            local icon = CreateFrame("Frame", "loadout_buffs_icon"..view.side..i, sw_frame.buffs_frame[view.side].buffs_list_frame);
+            local icon = CreateFrame("Frame", "loadout_buffs_icon"..view.side..i, __sc_frame.buffs_frame[view.side].buffs_list_frame);
             icon:SetSize(15, 15);
             local tex = icon:CreateTexture(nil);
             icon.tex = tex;
@@ -2890,8 +2890,8 @@ local function create_sw_ui_buffs_frame()
             icon:SetPoint("TOPLEFT", 5, y_offset -4);
             y_offset = y_offset - 15;
 
-            sw_frame.buffs_frame[view.side].buffs[i].checkbutton = checkbtn;
-            sw_frame.buffs_frame[view.side].buffs[i].icon = icon;
+            __sc_frame.buffs_frame[view.side].buffs[i].checkbutton = checkbtn;
+            __sc_frame.buffs_frame[view.side].buffs[i].icon = icon;
         end
     end
 end
@@ -2901,19 +2901,19 @@ local function update_profile_frame()
     sc.config.set_active_settings();
     sc.config.activate_settings();
 
-    sw_frame.profile_frame.primary_spec.init_func();
-    sw_frame.profile_frame.second_spec.init_func();
+    __sc_frame.profile_frame.primary_spec.init_func();
+    __sc_frame.profile_frame.second_spec.init_func();
 
-    sw_frame.profile_frame.active_main_spec:Hide();
-    sw_frame.profile_frame.active_second_spec:Hide();
+    __sc_frame.profile_frame.active_main_spec:Hide();
+    __sc_frame.profile_frame.active_second_spec:Hide();
     if sc.core.active_spec == 1 then
-        sw_frame.profile_frame.active_main_spec:Show();
+        __sc_frame.profile_frame.active_main_spec:Show();
     else
-        sw_frame.profile_frame.active_second_spec:Show();
+        __sc_frame.profile_frame.active_second_spec:Show();
     end
 
-    sw_frame.profile_frame.delete_profile_button:Hide();
-    sw_frame.profile_frame.delete_profile_label:Hide();
+    __sc_frame.profile_frame.delete_profile_button:Hide();
+    __sc_frame.profile_frame.delete_profile_label:Hide();
 
     local cnt = 0;
     for _, _ in pairs(__sc_p_acc.profiles) do
@@ -2924,42 +2924,42 @@ local function update_profile_frame()
     end
     if cnt > 1 then
 
-        sw_frame.profile_frame.delete_profile_button:Show();
-        sw_frame.profile_frame.delete_profile_label:Show();
+        __sc_frame.profile_frame.delete_profile_button:Show();
+        __sc_frame.profile_frame.delete_profile_label:Show();
     end
 
-    sw_frame.profile_frame.rename_editbox:SetText(config.active_profile_name);
+    __sc_frame.profile_frame.rename_editbox:SetText(config.active_profile_name);
 end
 
 local function create_sw_ui_profile_frame()
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 5;
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 5;
 
 
-    local f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    local f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 0, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Profiles retain settings except for loadout/buffs configuration");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 35;
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
 
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 30, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Main spec profile: ");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    sw_frame.profile_frame.primary_spec = 
-        CreateFrame("Button", "sw_frame_profile_main_spec", sw_frame.profile_frame, "UIDropDownMenuTemplate");
-    sw_frame.profile_frame.primary_spec:SetPoint("TOPLEFT", 170, sw_frame.profile_frame.y_offset+6);
-    sw_frame.profile_frame.primary_spec.init_func = function()
+    __sc_frame.profile_frame.primary_spec = 
+        CreateFrame("Button", "__sc_frame_profile_main_spec", __sc_frame.profile_frame, "UIDropDownMenuTemplate");
+    __sc_frame.profile_frame.primary_spec:SetPoint("TOPLEFT", 170, __sc_frame.profile_frame.y_offset+6);
+    __sc_frame.profile_frame.primary_spec.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.profile_frame.primary_spec, __sc_p_char.main_spec_profile);
-        UIDropDownMenu_Initialize(sw_frame.profile_frame.primary_spec, function()
+        UIDropDownMenu_SetText(__sc_frame.profile_frame.primary_spec, __sc_p_char.main_spec_profile);
+        UIDropDownMenu_Initialize(__sc_frame.profile_frame.primary_spec, function()
 
-            UIDropDownMenu_SetWidth(sw_frame.profile_frame.primary_spec, 130);
+            UIDropDownMenu_SetWidth(__sc_frame.profile_frame.primary_spec, 130);
 
             for k, _ in pairs(__sc_p_acc.profiles) do
                 UIDropDownMenu_AddButton({
@@ -2967,7 +2967,7 @@ local function create_sw_ui_profile_frame()
                         checked = __sc_p_char.main_spec_profile == k,
                         func = function()
                             __sc_p_char.main_spec_profile = k;
-                            UIDropDownMenu_SetText(sw_frame.profile_frame.primary_spec, k);
+                            UIDropDownMenu_SetText(__sc_frame.profile_frame.primary_spec, k);
                             update_profile_frame();
                         end
                     }
@@ -2976,29 +2976,29 @@ local function create_sw_ui_profile_frame()
         end);
     end;
 
-    sw_frame.profile_frame.active_main_spec = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.profile_frame.active_main_spec:SetFontObject(GameFontNormal);
-    sw_frame.profile_frame.active_main_spec:SetPoint("TOPLEFT", 350, sw_frame.profile_frame.y_offset);
-    sw_frame.profile_frame.active_main_spec:SetText("<--- Active");
-    sw_frame.profile_frame.active_main_spec:SetTextColor(1.0,  0.0,  0.0);
+    __sc_frame.profile_frame.active_main_spec = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.profile_frame.active_main_spec:SetFontObject(GameFontNormal);
+    __sc_frame.profile_frame.active_main_spec:SetPoint("TOPLEFT", 350, __sc_frame.profile_frame.y_offset);
+    __sc_frame.profile_frame.active_main_spec:SetText("<--- Active");
+    __sc_frame.profile_frame.active_main_spec:SetTextColor(1.0,  0.0,  0.0);
 
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 25;
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 25;
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 30, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Secondary spec profile: ");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    sw_frame.profile_frame.second_spec = 
-        CreateFrame("Button", "sw_frame_profile_second_spec", sw_frame.profile_frame, "UIDropDownMenuTemplate");
-    sw_frame.profile_frame.second_spec:SetPoint("TOPLEFT", 170, sw_frame.profile_frame.y_offset+6);
-    sw_frame.profile_frame.second_spec.init_func = function()
+    __sc_frame.profile_frame.second_spec = 
+        CreateFrame("Button", "__sc_frame_profile_second_spec", __sc_frame.profile_frame, "UIDropDownMenuTemplate");
+    __sc_frame.profile_frame.second_spec:SetPoint("TOPLEFT", 170, __sc_frame.profile_frame.y_offset+6);
+    __sc_frame.profile_frame.second_spec.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.profile_frame.second_spec, __sc_p_char.second_spec_profile);
-        UIDropDownMenu_Initialize(sw_frame.profile_frame.second_spec, function()
+        UIDropDownMenu_SetText(__sc_frame.profile_frame.second_spec, __sc_p_char.second_spec_profile);
+        UIDropDownMenu_Initialize(__sc_frame.profile_frame.second_spec, function()
 
-            UIDropDownMenu_SetWidth(sw_frame.profile_frame.second_spec, 130);
+            UIDropDownMenu_SetWidth(__sc_frame.profile_frame.second_spec, 130);
 
             for k, _ in pairs(__sc_p_acc.profiles) do
 
@@ -3007,7 +3007,7 @@ local function create_sw_ui_profile_frame()
                         checked = __sc_p_char.second_spec_profile == k,
                         func = function()
                             __sc_p_char.second_spec_profile = k;
-                            UIDropDownMenu_SetText(sw_frame.profile_frame.second_spec, k);
+                            UIDropDownMenu_SetText(__sc_frame.profile_frame.second_spec, k);
                             update_profile_frame();
                         end
                     }
@@ -3016,22 +3016,22 @@ local function create_sw_ui_profile_frame()
         end);
     end;
 
-    sw_frame.profile_frame.active_second_spec = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.profile_frame.active_second_spec:SetFontObject(GameFontNormal);
-    sw_frame.profile_frame.active_second_spec:SetPoint("TOPLEFT", 350, sw_frame.profile_frame.y_offset);
-    sw_frame.profile_frame.active_second_spec:SetText("<--- Active");
-    sw_frame.profile_frame.active_second_spec:SetTextColor(1.0,  0.0,  0.0);
+    __sc_frame.profile_frame.active_second_spec = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.profile_frame.active_second_spec:SetFontObject(GameFontNormal);
+    __sc_frame.profile_frame.active_second_spec:SetPoint("TOPLEFT", 350, __sc_frame.profile_frame.y_offset);
+    __sc_frame.profile_frame.active_second_spec:SetText("<--- Active");
+    __sc_frame.profile_frame.active_second_spec:SetTextColor(1.0,  0.0,  0.0);
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 35;
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
 
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 30, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Rename active profile: ");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    local f = CreateFrame("EditBox", "sw_frame_profile_name_editbox", sw_frame.profile_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", sw_frame.profile_frame, 195, sw_frame.profile_frame.y_offset+3);
+    local f = CreateFrame("EditBox", "__sc_frame_profile_name_editbox", __sc_frame.profile_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.profile_frame, 195, __sc_frame.profile_frame.y_offset+3);
     f:SetSize(140, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
@@ -3057,18 +3057,18 @@ local function create_sw_ui_profile_frame()
         self:ClearFocus();
     end);
     f:SetScript("OnTextChanged", editbox_save);
-    sw_frame.profile_frame.rename_editbox = f;
+    __sc_frame.profile_frame.rename_editbox = f;
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 35;
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
 
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 30, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Delete active profile");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
-    sw_frame.profile_frame.delete_profile_label = f_txt;
+    __sc_frame.profile_frame.delete_profile_label = f_txt;
 
-    f = CreateFrame("Button", nil, sw_frame.profile_frame, "UIPanelButtonTemplate");
+    f = CreateFrame("Button", nil, __sc_frame.profile_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
 
 
@@ -3084,31 +3084,31 @@ local function create_sw_ui_profile_frame()
             update_profile_frame();
         end
     end);
-    f:SetPoint("TOPLEFT", 190, sw_frame.profile_frame.y_offset+4);
+    f:SetPoint("TOPLEFT", 190, __sc_frame.profile_frame.y_offset+4);
     f:SetText("Delete");
     f:SetWidth(200);
-    sw_frame.profile_frame.delete_profile_button = f;
+    __sc_frame.profile_frame.delete_profile_button = f;
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 35;
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 30, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("New profile name: ");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
-    f = CreateFrame("EditBox", nil, sw_frame.profile_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", sw_frame.profile_frame, 195, sw_frame.profile_frame.y_offset+3);
+    f = CreateFrame("EditBox", nil, __sc_frame.profile_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.profile_frame, 195, __sc_frame.profile_frame.y_offset+3);
     f:SetSize(140, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
         local txt = self:GetText();
         if txt ~= "" then
 
-            for _, v in pairs(sw_frame.profile_frame.new_profile_section) do
+            for _, v in pairs(__sc_frame.profile_frame.new_profile_section) do
                 v:Show();
             end
         else
-            for _, v in pairs(sw_frame.profile_frame.new_profile_section) do
+            for _, v in pairs(__sc_frame.profile_frame.new_profile_section) do
                 v:Hide();
             end
         end
@@ -3122,108 +3122,113 @@ local function create_sw_ui_profile_frame()
         self:ClearFocus();
     end);
     f:SetScript("OnTextChanged", editbox_save);
-    sw_frame.profile_frame.new_profile_name_editbox = f;
+    __sc_frame.profile_frame.new_profile_name_editbox = f;
 
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 35;
-    sw_frame.profile_frame.new_profile_section = {};
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
+    __sc_frame.profile_frame.new_profile_section = {};
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 30, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Create new profile as:");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
-    sw_frame.profile_frame.new_profile_section.txt1 = f_txt;
+    __sc_frame.profile_frame.new_profile_section.txt1 = f_txt;
 
 
-    f = CreateFrame("Button", nil, sw_frame.profile_frame, "UIPanelButtonTemplate");
+    f = CreateFrame("Button", nil, __sc_frame.profile_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
 
-        if config.new_profile_from_default(sw_frame.profile_frame.new_profile_name_editbox:GetText()) then
-            sw_frame.profile_frame.new_profile_name_editbox:SetText("");
+        if config.new_profile_from_default(__sc_frame.profile_frame.new_profile_name_editbox:GetText()) then
+            __sc_frame.profile_frame.new_profile_name_editbox:SetText("");
         end
         update_profile_frame();
     end);
-    f:SetPoint("TOPLEFT", 190, sw_frame.profile_frame.y_offset+4);
+    f:SetPoint("TOPLEFT", 190, __sc_frame.profile_frame.y_offset+4);
     f:SetText("Default preset");
     f:SetWidth(200);
-    sw_frame.profile_frame.new_profile_section.button1 = f;
+    __sc_frame.profile_frame.new_profile_section.button1 = f;
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 25;
-    f_txt = sw_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 25;
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", 190, sw_frame.profile_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", 190, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("or");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
-    sw_frame.profile_frame.new_profile_section.txt2 = f_txt;
+    __sc_frame.profile_frame.new_profile_section.txt2 = f_txt;
 
-    sw_frame.profile_frame.y_offset = sw_frame.profile_frame.y_offset - 25;
-    f = CreateFrame("Button", nil, sw_frame.profile_frame, "UIPanelButtonTemplate");
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 25;
+    f = CreateFrame("Button", nil, __sc_frame.profile_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
-        if config.new_profile_from_active_copy(sw_frame.profile_frame.new_profile_name_editbox:GetText()) then
-            sw_frame.profile_frame.new_profile_name_editbox:SetText("");
+        if config.new_profile_from_active_copy(__sc_frame.profile_frame.new_profile_name_editbox:GetText()) then
+            __sc_frame.profile_frame.new_profile_name_editbox:SetText("");
         end
         update_profile_frame();
     end);
-    f:SetPoint("TOPLEFT", 190, sw_frame.profile_frame.y_offset+4);
+    f:SetPoint("TOPLEFT", 190, __sc_frame.profile_frame.y_offset+4);
     f:SetText("Copy of active profile");
     f:SetWidth(200);
-    sw_frame.profile_frame.new_profile_section.button2 = f;
+    __sc_frame.profile_frame.new_profile_section.button2 = f;
 end
 
 local function create_sw_base_ui()
 
-    sw_frame = CreateFrame("Frame", "sw_frame", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
+    __sc_frame = CreateFrame("Frame", "__sc_frame", UIParent, "BasicFrameTemplate, BasicFrameTemplateWithInset");
 
-    sw_frame:SetFrameStrata("HIGH")
-    sw_frame:SetMovable(true)
-    sw_frame:EnableMouse(true)
-    sw_frame:RegisterForDrag("LeftButton")
-    sw_frame:SetScript("OnDragStart", sw_frame.StartMoving)
-    sw_frame:SetScript("OnDragStop", sw_frame.StopMovingOrSizing)
+    __sc_frame:SetFrameStrata("HIGH")
+    __sc_frame:SetMovable(true)
+    __sc_frame:EnableMouse(true)
+    __sc_frame:RegisterForDrag("LeftButton")
+    __sc_frame:SetScript("OnDragStart", __sc_frame.StartMoving)
+    __sc_frame:SetScript("OnDragStop", __sc_frame.StopMovingOrSizing)
 
     local width = 500;
     local height = 600;
 
-    sw_frame:SetWidth(width);
-    sw_frame:SetHeight(height);
-    sw_frame:SetPoint("TOPLEFT", 400, -30);
+    __sc_frame:SetWidth(width);
+    __sc_frame:SetHeight(height);
+    __sc_frame:SetPoint("TOPLEFT", 400, -30);
 
-    sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.title:SetFontObject(font)
-    sw_frame.title:SetText("Stat Weights Classic v"..sc.core.version);
-    sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 0, 0);
+    __sc_frame.title = __sc_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.title:SetFontObject(font)
+    __sc_frame.title:SetText("SpellCoda v"..sc.core.version);
+    __sc_frame.title:SetPoint("CENTER", __sc_frame.TitleBg, "CENTER", 0, 0);
 
-    sw_frame:Hide();
+    __sc_frame:Hide();
 
     local tabbed_child_frames_y_offset = 20;
     local x_margin = 15;
 
     for _, v in pairs({"spells_frame", "tooltip_frame", "overlay_frame", "loadout_frame", "buffs_frame", "calculator_frame", "profile_frame"}) do
-        sw_frame[v] = CreateFrame("ScrollFrame", "sw_"..v, sw_frame);
-        sw_frame[v]:SetPoint("TOP", sw_frame, 0, -tabbed_child_frames_y_offset-35);
-        sw_frame[v]:SetWidth(width-x_margin*2);
-        sw_frame[v]:SetHeight(height-tabbed_child_frames_y_offset-35-5);
-        sw_frame[v].y_offset = 0;
+        __sc_frame[v] = CreateFrame("ScrollFrame", "sw_"..v, __sc_frame);
+        __sc_frame[v]:SetPoint("TOP", __sc_frame, 0, -tabbed_child_frames_y_offset-35);
+        __sc_frame[v]:SetWidth(width-x_margin*2);
+        __sc_frame[v]:SetHeight(height-tabbed_child_frames_y_offset-35-5);
+        __sc_frame[v].y_offset = 0;
     end
 
     for k, _ in pairs(sc.core.event_dispatch) do
         if not sc.core.event_dispatch_client_exceptions[k] or
                 sc.core.event_dispatch_client_exceptions[k] == sc.core.expansion_loaded then
-            sw_frame:RegisterEvent(k);
+            __sc_frame:RegisterEvent(k);
+        end
+    end
+    if C_GameRules and C_GameRules.IsHardcoreActive then
+        if C_GameRules.IsHardcoreActive() then
+            __sc_frame:RegisterEvent("PLAYER_REGEN_DISABLED");
         end
     end
 
-    sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
-        sc.core.event_dispatch[event](self, msg, msg2, msg3);
+    __sc_frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
+        sc.core.event_dispatch[event](self, arg1, arg2, arg3);
         end
     );
 
     create_sw_spell_id_viewer();
 
-    sw_frame.libstub_icon_checkbox = CreateFrame("CheckButton", "sw_libstub_minimap_button", sw_frame, "ChatConfigCheckButtonTemplate");
-    sw_frame.libstub_icon_checkbox._libstub_icon = libstub_icon;
-    sw_frame.libstub_icon_checkbox:SetPoint("TOPRIGHT", sw_frame, -115, 0);
-    sw_frame.libstub_icon_checkbox:SetScript("OnClick", function(self)
+    __sc_frame.libstub_icon_checkbox = CreateFrame("CheckButton", "sw_libstub_minimap_button", __sc_frame, "ChatConfigCheckButtonTemplate");
+    __sc_frame.libstub_icon_checkbox._libstub_icon = libstub_icon;
+    __sc_frame.libstub_icon_checkbox:SetPoint("TOPRIGHT", __sc_frame, -115, 0);
+    __sc_frame.libstub_icon_checkbox:SetScript("OnClick", function(self)
         local checked = self:GetChecked();
         if checked then
             libstub_icon:Show(sc.core.sw_addon_name);
@@ -3232,60 +3237,60 @@ local function create_sw_base_ui()
         end
         config.settings.libstub_minimap_icon.hide = not checked;
     end);
-    sw_frame.libstub_icon_checkbox:SetHitRectInsets(0, 0, 0, 0);
-    sw_frame.libstub_icon_checkbox_txt = sw_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.libstub_icon_checkbox_txt:SetFontObject(font);
-    sw_frame.libstub_icon_checkbox_txt:SetText("Minimap button");
-    sw_frame.libstub_icon_checkbox_txt:SetPoint("TOPRIGHT", sw_frame, -35, -6);
+    __sc_frame.libstub_icon_checkbox:SetHitRectInsets(0, 0, 0, 0);
+    __sc_frame.libstub_icon_checkbox_txt = __sc_frame:CreateFontString(nil, "OVERLAY");
+    __sc_frame.libstub_icon_checkbox_txt:SetFontObject(font);
+    __sc_frame.libstub_icon_checkbox_txt:SetText("Minimap button");
+    __sc_frame.libstub_icon_checkbox_txt:SetPoint("TOPRIGHT", __sc_frame, -35, -6);
 
-    sw_frame.tabs = {};
+    __sc_frame.tabs = {};
 
     local i = 1;
 
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    --sw_frame.tabs[i]:SetPoint("TOPLEFT", 5, -25);
-    --sw_frame.tabs[i]:SetWidth(116);
-    sw_frame.tabs[i]:SetHeight(25);
-    sw_frame.tabs[i]:SetText("Spells");
-    sw_frame.tabs[i]:SetID(1);
-    sw_frame.tabs[i]:SetScript("OnClick", function(self)
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    --__sc_frame.tabs[i]:SetPoint("TOPLEFT", 5, -25);
+    --__sc_frame.tabs[i]:SetWidth(116);
+    __sc_frame.tabs[i]:SetHeight(25);
+    __sc_frame.tabs[i]:SetText("Spells");
+    __sc_frame.tabs[i]:SetID(1);
+    __sc_frame.tabs[i]:SetScript("OnClick", function(self)
         sw_activate_tab(self);
     end);
-    sw_frame.tabs[i].frame_to_open = sw_frame.spells_frame;
-    PanelTemplates_TabResize(sw_frame.tabs[i], 0)
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.spells_frame;
+    PanelTemplates_TabResize(__sc_frame.tabs[i], 0)
 
     i = i + 1;
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetText("Tooltip");
-    sw_frame.tabs[i].frame_to_open = sw_frame.tooltip_frame;
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    __sc_frame.tabs[i]:SetText("Tooltip");
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.tooltip_frame;
 
     i = i + 1;
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetText("Overlay");
-    sw_frame.tabs[i].frame_to_open = sw_frame.overlay_frame;
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    __sc_frame.tabs[i]:SetText("Overlay");
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.overlay_frame;
 
     i = i + 1;
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetText("Loadout");
-    sw_frame.tabs[i].frame_to_open = sw_frame.loadout_frame;
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    __sc_frame.tabs[i]:SetText("Calculator");
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.calculator_frame;
 
     i = i + 1;
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetText("Buffs");
-    sw_frame.tabs[i].frame_to_open = sw_frame.buffs_frame;
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    __sc_frame.tabs[i]:SetText("Profile");
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.profile_frame;
 
     i = i + 1;
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetText("Calculator");
-    sw_frame.tabs[i].frame_to_open = sw_frame.calculator_frame;
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    __sc_frame.tabs[i]:SetText("Loadout");
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.loadout_frame;
 
     i = i + 1;
-    sw_frame.tabs[i] = CreateFrame("Button", "sw_frame_tab_button"..i, sw_frame, "PanelTopTabButtonTemplate");
-    sw_frame.tabs[i]:SetText("Profile");
-    sw_frame.tabs[i].frame_to_open = sw_frame.profile_frame;
+    __sc_frame.tabs[i] = CreateFrame("Button", "__sc_frame_tab_button"..i, __sc_frame, "PanelTopTabButtonTemplate");
+    __sc_frame.tabs[i]:SetText("Buffs");
+    __sc_frame.tabs[i].frame_to_open = __sc_frame.buffs_frame;
 
     local x = 5;
-    for k, v in pairs(sw_frame.tabs) do
+    for k, v in pairs(__sc_frame.tabs) do
 
         local w = v:GetFontString():GetStringWidth() + 33;
         v:SetPoint("TOPLEFT", x, -25);
@@ -3300,7 +3305,7 @@ local function create_sw_base_ui()
         PanelTemplates_TabResize(v, 0);
     end
 
-    PanelTemplates_SetNumTabs(sw_frame, i);
+    PanelTemplates_SetNumTabs(__sc_frame, i);
 end
 
 local function load_sw_ui()
@@ -3312,18 +3317,18 @@ local function load_sw_ui()
             OnClick = function(self, button)
                 if button == "MiddleButton" then
 
-                    sw_frame.libstub_icon_checkbox:Click();
+                    __sc_frame.libstub_icon_checkbox:Click();
                 elseif button == "RightButton" then
 
-                    sw_frame_setting_overlay_old_rank:Click();
-                    if sw_frame_setting_overlay_disable:GetChecked() then
-                        sw_frame_setting_overlay_disable:Click();
+                    __sc_frame_setting_overlay_old_rank:Click();
+                    if __sc_frame_setting_overlay_disable:GetChecked() then
+                        __sc_frame_setting_overlay_disable:Click();
                     end
                 else
-                    if sw_frame:IsShown() then
-                        sw_frame:Hide();
+                    if __sc_frame:IsShown() then
+                        __sc_frame:Hide();
                     else
-                        sw_activate_tab(sw_frame.tabs[1]);
+                        sw_activate_tab(__sc_frame.tabs[1]);
                     end
                 end
             end,
@@ -3337,8 +3342,8 @@ local function load_sw_ui()
                     tooltip:AddLine("|cFF9CD6DERight click:|r |cFFFF0000(IS OFF)|r Toggle old rank warning overlay");
                 end
                 tooltip:AddLine("More info about this addon at:");
-                tooltip:AddLine("https://www.curseforge.com/wow/addons/stat-weights-classic");
-                tooltip:AddLine("|cFF9CD6DEFactory reset:|r /swc reset");
+                tooltip:AddLine("https://www.curseforge.com/wow/addons/spellcoda");
+                tooltip:AddLine("|cFF9CD6DEFactory reset:|r /sc reset");
             end
 
         });
@@ -3355,17 +3360,17 @@ local function load_sw_ui()
     create_sw_ui_calculator_frame();
     create_sw_ui_profile_frame();
 
-    sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-    sw_frame.calculator_frame.sim_type_button.init_func();
+    __sc_frame.calculator_frame.sim_type = simulation_type.spam_cast;
+    __sc_frame.calculator_frame.sim_type_button.init_func();
 
-    sw_activate_tab(sw_frame.tabs[1]);
-    sw_frame:Hide();
+    sw_activate_tab(__sc_frame.tabs[1]);
+    __sc_frame:Hide();
 end
 
 local function add_spell_book_button()
     -- add button to SpellBookFrame
     if SpellBookFrame and SpellBookSkillLineTab1 then
-        local button = CreateFrame("Button", "__swc_frame_spellbook_tab", SpellBookFrame);
+        local button = CreateFrame("Button", "__sc_frame_spellbook_tab", SpellBookFrame);
         button.background = button:CreateTexture(nil, "BACKGROUND");
         button:ClearAllPoints();
         button:SetSize(32, 32);
@@ -3376,10 +3381,10 @@ local function add_spell_book_button()
         button.background:SetPoint("TOPLEFT", -3, 11)
         button.background:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
         button:SetScript("OnClick", function() 
-            if sw_frame:IsShown() then
-                sw_frame:Hide();
+            if __sc_frame:IsShown() then
+                __sc_frame:Hide();
             else
-                sw_activate_tab(sw_frame.tabs[1]);
+                sw_activate_tab(__sc_frame.tabs[1]);
             end
         end);
 

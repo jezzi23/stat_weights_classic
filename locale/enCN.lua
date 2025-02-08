@@ -1,1 +1,1 @@
-local _, swc                    = ...;
+local _, sc                    = ...;

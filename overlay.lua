@@ -367,13 +367,13 @@ local function update_icon_overlay_settings()
     mana_cost_overlay = config.settings.overlay_display_avg_cost or config.settings.overlay_display_casts_until_oom or config.settings.overlay_display_time_until_oom;
     cast_speed_overlay = config.settings.overlay_display_avg_cast;
 
-    sw_frame.overlay_frame.icon_overlay = {};
+    __sc_frame.overlay_frame.icon_overlay = {};
 
     local index = 1;
 
-    for k, v in pairs(sw_frame.overlay_frame.overlay_components) do
+    for k, v in pairs(__sc_frame.overlay_frame.overlay_components) do
         if config.settings[k] then
-            sw_frame.overlay_frame.icon_overlay[index] = {
+            __sc_frame.overlay_frame.icon_overlay[index] = {
                 label_type = k,
                 color = v.color,
                 optional_evaluation = v.optional_evaluation,
@@ -383,28 +383,28 @@ local function update_icon_overlay_settings()
     end
 
     -- if 1, do bottom
-    if not sw_frame.overlay_frame.icon_overlay[2] then
-        sw_frame.overlay_frame.icon_overlay[3] = sw_frame.overlay_frame.icon_overlay[1];
-        sw_frame.overlay_frame.icon_overlay[1] = nil;
+    if not __sc_frame.overlay_frame.icon_overlay[2] then
+        __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[1];
+        __sc_frame.overlay_frame.icon_overlay[1] = nil;
     -- if 2, do top and bottom
-    elseif not sw_frame.overlay_frame.icon_overlay[3] then
-        sw_frame.overlay_frame.icon_overlay[3] = sw_frame.overlay_frame.icon_overlay[2];
-        sw_frame.overlay_frame.icon_overlay[2] = nil;
+    elseif not __sc_frame.overlay_frame.icon_overlay[3] then
+        __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[2];
+        __sc_frame.overlay_frame.icon_overlay[2] = nil;
     end
 
     if config.settings.overlay_bottom_clearance then
-        sw_frame.overlay_frame.icon_overlay[2] = sw_frame.overlay_frame.icon_overlay[1];
-        sw_frame.overlay_frame.icon_overlay[1] = sw_frame.overlay_frame.icon_overlay[3];
-        sw_frame.overlay_frame.icon_overlay[3] = nil;
+        __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[1];
+        __sc_frame.overlay_frame.icon_overlay[1] = __sc_frame.overlay_frame.icon_overlay[3];
+        __sc_frame.overlay_frame.icon_overlay[3] = nil;
     end
 
     if config.settings.overlay_top_clearance then
         if config.settings.overlay_bottom_clearance then
-            sw_frame.overlay_frame.icon_overlay[2] = sw_frame.overlay_frame.icon_overlay[1];
+            __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[1];
         else
-            sw_frame.overlay_frame.icon_overlay[3] = sw_frame.overlay_frame.icon_overlay[1] or sw_frame.overlay_frame.icon_overlay[3];
+            __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[1] or __sc_frame.overlay_frame.icon_overlay[3];
         end
-        sw_frame.overlay_frame.icon_overlay[1] = nil;
+        __sc_frame.overlay_frame.icon_overlay[1] = nil;
     end
 
     --sw_num_icon_overlay_fields_active = index - 1;
@@ -412,7 +412,7 @@ local function update_icon_overlay_settings()
     -- hide existing overlay frames that should no longer exist
     for i = 1, 3 do
 
-        if not sw_frame.overlay_frame.icon_overlay[i] then
+        if not __sc_frame.overlay_frame.icon_overlay[i] then
             for k, v in pairs(spell_book_frames) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
@@ -596,16 +596,16 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
             frame_info.overlay_frames[idx]:Show();
         end
 
-    elseif sw_frame.overlay_frame.num_overlay_components_toggled > 0 then
+    elseif __sc_frame.overlay_frame.num_overlay_components_toggled > 0 then
         for i = 1, 3 do
 
-            if sw_frame.overlay_frame.icon_overlay[i] then
+            if __sc_frame.overlay_frame.icon_overlay[i] then
 
-                overlay_label_handler[sw_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.overlay_frame.icon_overlay[i].color[1],
-                                                          sw_frame.overlay_frame.icon_overlay[i].color[2],
-                                                          sw_frame.overlay_frame.icon_overlay[i].color[3]);
+                frame_info.overlay_frames[i]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[i].color[1],
+                                                          __sc_frame.overlay_frame.icon_overlay[i].color[2],
+                                                          __sc_frame.overlay_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
             end
@@ -655,15 +655,15 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
         end
     end
 
-    if sw_frame.overlay_frame.num_overlay_components_toggled > 0 then
+    if __sc_frame.overlay_frame.num_overlay_components_toggled > 0 then
         for i = 1, 3 do
-            if sw_frame.overlay_frame.icon_overlay[i] and sw_frame.overlay_frame.icon_overlay[i].optional_evaluation then
+            if __sc_frame.overlay_frame.icon_overlay[i] and __sc_frame.overlay_frame.icon_overlay[i].optional_evaluation then
 
-                overlay_label_handler[sw_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
 
-                frame_info.overlay_frames[i]:SetTextColor(sw_frame.overlay_frame.icon_overlay[i].color[1],
-                                                          sw_frame.overlay_frame.icon_overlay[i].color[2],
-                                                          sw_frame.overlay_frame.icon_overlay[i].color[3]);
+                frame_info.overlay_frames[i]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[i].color[1],
+                                                          __sc_frame.overlay_frame.icon_overlay[i].color[2],
+                                                          __sc_frame.overlay_frame.icon_overlay[i].color[3]);
 
                 frame_info.overlay_frames[i]:Show();
             end
@@ -781,7 +781,7 @@ end
 local function update_overlay()
 
     local loadout, effects = nil;
-    if not sw_frame.calculator_frame:IsShown() or not sw_frame:IsShown() then
+    if not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown() then
         loadout, effects = update_loadout_and_effects();
     else
         loadout, _, effects = update_loadout_and_effects_diffed_from_ui();

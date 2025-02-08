@@ -1,3 +1,0 @@
-## Interface: 00000
-## Title: Stat Weights Classic is not supported for this client!
-## Notes: Stat Weights Classic is not supported for this client!

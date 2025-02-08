@@ -1,4 +1,4 @@
-local _, swc               = ...;
+local _, sc               = ...;
 
 local config               = {};
 
@@ -126,7 +126,7 @@ end
 
 local function default_profile()
     return {
-        settings = swc.utils.deep_table_copy(default_settings)
+        settings = sc.utils.deep_table_copy(default_settings)
     };
 end
 
@@ -178,7 +178,7 @@ local function default_p_char()
         second_spec_profile = "Default",
         active_loadout = 1,
         loadouts = {
-            swc.utils.deep_table_copy(default_loadout_config),
+            sc.utils.deep_table_copy(default_loadout_config),
         },
     };
     return data;
@@ -186,7 +186,7 @@ end
 
 local function load_config()
     if not __sc_p_acc then
-        --swc.core.use_acc_defaults = true;
+        --sc.core.use_acc_defaults = true;
         __sc_p_acc = {};
     end
     load_persistent_data(__sc_p_acc, default_p_acc());
@@ -199,7 +199,7 @@ local function load_config()
 
     -- load settings
     if not __sc_p_char then
-        --swc.core.use_char_defaults = true;
+        --sc.core.use_char_defaults = true;
         __sc_p_char = {};
     end
     load_persistent_data(__sc_p_char, default_p_char());
@@ -219,16 +219,16 @@ local function set_active_settings()
             __sc_p_char[v] = next(__sc_p_acc.profiles);
         end
 
-        if swc.core.active_spec == k then
+        if sc.core.active_spec == k then
             config.settings = __sc_p_acc.profiles[__sc_p_char[v]].settings;
         end
     end
-    config.active_profile_name = __sc_p_char[spec_keys[swc.core.active_spec]];
+    config.active_profile_name = __sc_p_char[spec_keys[sc.core.active_spec]];
 end
 
 local function activate_settings()
     for k, v in pairs(config.settings) do
-        local f = getglobal("sw_frame_setting_" .. k);
+        local f = getglobal("__sc_frame_setting_" .. k);
         if f then
             local ft = f._type;
             if ft == "CheckButton" then
@@ -253,8 +253,8 @@ local function activate_settings()
         end
     end
 
-    if sw_frame.libstub_icon_checkbox:GetChecked() == config.settings.libstub_minimap_icon.hide then
-        sw_frame.libstub_icon_checkbox:Click();
+    if __sc_frame.libstub_icon_checkbox:GetChecked() == config.settings.libstub_minimap_icon.hide then
+        __sc_frame.libstub_icon_checkbox:Click();
     end
 end
 
@@ -265,7 +265,7 @@ end
 
 local function activate_loadout_config()
     for k, v in pairs(config.loadout) do
-        local f = getglobal("sw_frame_loadout_" .. k);
+        local f = getglobal("__sc_frame_loadout_" .. k);
         if f and f._type then
             local ft = f._type;
             if ft == "CheckButton" then
@@ -293,12 +293,12 @@ end
 
 local function save_config()
     --
-    __sc_p_acc.version_saved = swc.core.version_id;
-    __sc_p_char.version_saved = swc.core.version_id;
-    if swc.core.use_acc_defaults then
+    __sc_p_acc.version_saved = sc.core.version_id;
+    __sc_p_char.version_saved = sc.core.version_id;
+    if sc.core.use_acc_defaults then
         __sc_p_acc = nil;
     end
-    if swc.core.use_char_defaults then
+    if sc.core.use_char_defaults then
         __sc_p_char = nil;
     end
 end
@@ -309,10 +309,10 @@ local function new_profile(profile_name, profile_to_copy)
     end
     __sc_p_acc.profiles[profile_name] = {};
     load_persistent_data(__sc_p_acc.profiles[profile_name], profile_to_copy);
-    __sc_p_acc.profiles[profile_name].settings = swc.utils.deep_table_copy(profile_to_copy.settings);
+    __sc_p_acc.profiles[profile_name].settings = sc.utils.deep_table_copy(profile_to_copy.settings);
     print(__sc_p_acc.profiles[profile_name].settings);
     -- switch to new profile
-    __sc_p_char[spec_keys[swc.core.active_spec]] = profile_name;
+    __sc_p_char[spec_keys[sc.core.active_spec]] = profile_name;
     print(config.settings);
     set_active_settings()
     print(config.settings);
@@ -322,7 +322,7 @@ local function new_profile(profile_name, profile_to_copy)
 end
 
 local function new_profile_from_default(profile_name)
-    return new_profile(profile_name, swc.utils.deep_table_copy(default_profile()));
+    return new_profile(profile_name, sc.utils.deep_table_copy(default_profile()));
 end
 
 local function new_profile_from_active_copy(profile_name)
@@ -351,11 +351,11 @@ local function new_loadout(name, loadout_to_copy)
 end
 
 local function new_loadout_from_active_copy(name)
-    return new_loadout(name, swc.utils.deep_table_copy(__sc_p_char.loadouts[__sc_p_char.active_loadout]));
+    return new_loadout(name, sc.utils.deep_table_copy(__sc_p_char.loadouts[__sc_p_char.active_loadout]));
 end
 
 local function new_loadout_from_default(name)
-    return new_loadout(name, swc.utils.deep_table_copy(default_loadout_config));
+    return new_loadout(name, sc.utils.deep_table_copy(default_loadout_config));
 end
 
 
@@ -374,4 +374,4 @@ config.active_profile_name = active_profile_name;
 config.spec_keys = spec_keys;
 config.spell_filter_options = spell_filter_options;
 
-swc.config = config;
+sc.config = config;
