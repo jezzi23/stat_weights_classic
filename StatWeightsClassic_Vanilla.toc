@@ -10,6 +10,7 @@ lib/LibDataBroker-1.1/LibDataBroker-1.1.lua
 lib/LibDBIcon-1.0/LibDBIcon-1.0.lua
 
 vanilla/generated/defs.lua
+vanilla/generated/localized_defs.lua
 vanilla/generated/all.lua
 
 vanilla/generated/druid.lua
@@ -36,6 +37,8 @@ locale/ruRU.lua
 locale/esES.lua
 locale/zhTW.lua
 locale/enTW.lua
+
+vanilla/data_override.lua
 
 shared/utils.lua
 shared/config.lua

@@ -26,12 +26,16 @@ local _, swc = ...;
 local spell_cost                                    = swc.utils.spell_cost;
 local spell_cast_time                               = swc.utils.spell_cast_time;
 local effect_colors                                 = swc.utils.effect_colors;
+local format_number                                 = swc.utils.format_number;
 
 local spells                                        = swc.abilities.spells;
 local spell_flags                                   = swc.abilities.spell_flags;
+local highest_learned_rank                          = swc.abilities.highest_learned_rank;
 
 local update_loadout_and_effects                    = swc.loadout.update_loadout_and_effects;
 local update_loadout_and_effects_diffed_from_ui     = swc.loadout.update_loadout_and_effects_diffed_from_ui;
+local active_loadout                                = swc.loadout.active_loadout;
+
 
 local stats_for_spell                               = swc.calc.stats_for_spell;
 local spell_info                                    = swc.calc.spell_info;
@@ -84,9 +88,21 @@ swc.ext.currently_casting_spell_id = function()
     return swc.core.currently_casting_spell_id;
 end
 
-local function write_old_rank(frame_info, lvl_outdated, clvl)
+local function check_old_rank(frame_info, spell_id, clvl)
 
-    if config.settings.overlay_old_rank and clvl > lvl_outdated then
+    local spell = spells[spell_id]
+    if not spell then
+        return;
+    end
+    -- spell_id must be valid here
+    for i = 1, 3 do
+        frame_info.overlay_frames[i]:Hide();
+    end
+    if config.settings.overlay_old_rank and
+        ((config.settings.overlay_old_rank_limit_to_known and spell_id ~= highest_learned_rank(spell.base_id))
+         or
+         (not config.settings.overlay_old_rank_limit_to_known and clvl > spell.lvl_outdated)) then
+
         frame_info.overlay_frames[1]:SetText("OLD");
         frame_info.overlay_frames[2]:SetText("RANK");
         frame_info.overlay_frames[3]:SetText("!!!");
@@ -94,18 +110,21 @@ local function write_old_rank(frame_info, lvl_outdated, clvl)
             frame_info.overlay_frames[i]:SetTextColor(252.0/255, 69.0/255, 3.0/255);
             frame_info.overlay_frames[i]:Show();
         end
+        frame_info.old_rank_marked = true;
     else
-        for i = 1, 3 do
-            frame_info.overlay_frames[i]:Hide();
-        end
+        frame_info.old_rank_marked = false;
     end
 end
 
 local function old_rank_warning_traversal(clvl)
-    for _, v in pairs(action_id_frames) do
+
+    if config.settings.overlay_disable then
+        return;
+    end
+    for k, v in pairs(action_id_frames) do
         if v.frame then
             if spells[v.spell_id] then
-                write_old_rank(v, spells[v.spell_id].lvl_outdated, clvl);
+                check_old_rank(v, v.spell_id, clvl);
             end
         end
     end
@@ -132,6 +151,7 @@ end
 local function clear_overlays()
 
     for k, v in pairs(action_id_frames) do
+        v.old_rank_marked = false;
         if v.frame then
             for i = 1, 3 do
                 v.overlay_frames[i]:SetText("");
@@ -140,6 +160,7 @@ local function clear_overlays()
         end
     end
     for k, v in pairs(spell_book_frames) do
+        v.old_rank_marked = false;
         if v.frame then
             for i = 1, 3 do
                 v.overlay_frames[i]:SetText("");
@@ -182,7 +203,7 @@ end
 
 local function try_register_frame(action_id, frame_name)
     -- creates it if it suddenly exists but not registered
-    local frame = getfenv()[frame_name];
+    local frame = _G[frame_name];
     if frame then
         action_id_frames[action_id].frame = frame;
         local spell_id = spell_id_of_action(action_id);
@@ -290,8 +311,6 @@ local function gather_spell_icons()
         end
         action_bar_addon_name = "Default";
     end
-
-    scan_action_frames();
 end
 
 local function reassign_overlay_icon_spell(action_id, spell_id)
@@ -304,6 +323,7 @@ local function reassign_overlay_icon_spell(action_id, spell_id)
             end
             active_overlays[action_id] = nil;
         else
+            check_old_rank(action_id_frames[action_id], spell_id, active_loadout().lvl);
             active_overlays[action_id] = spell_id;
         end
         action_id_frames[action_id].spell_id = spell_id;
@@ -358,6 +378,7 @@ local function on_special_action_bar_changed()
             end
             if spell_id ~= 0 then
                 active_overlays[i] = spell_id;
+                check_old_rank(action_id_frames[action_id], spell_id, active_loadout().lvl);
             end
             reassign_overlay_icon_spell(i, spell_id);
         end
@@ -443,23 +464,6 @@ end
 
 local spell_cache = {};
 
-local function format_overlay_number(val, max_accuracy_digits)
-
-    if (val < 100.0 and max_accuracy_digits >= 2) then
-        return string.format("%.2f", val);
-    elseif (val < 1000.0 and max_accuracy_digits >= 1) then
-        return string.format("%.1f", val);
-    elseif (val < 10000.0) then
-        return string.format("%d", 0.5+math.floor(val));
-    elseif (val < 1000000.0) then
-        return string.format("%.1fk", val/1000);
-    elseif (val < 1000000000.0) then
-        return string.format("%.1fm", val/1000000);
-    else
-        return "∞";
-    end
-end
-
 local overlay_label_handler = {
     overlay_display_normal = function(frame_overlay, spell, spell_effect, stats)
         local val = 0.0;
@@ -470,7 +474,7 @@ local overlay_label_handler = {
         if spell_effect.num_periodic_effects > 0 then
             val = val + 0.5*(spell_effect.total_ot_min_noncrit_if_hit + spell_effect.total_ot_max_noncrit_if_hit);
         end
-        frame_overlay:SetText(format_overlay_number(val, 1));
+        frame_overlay:SetText(format_number(val, 1));
     end,
     overlay_display_crit = function(frame_overlay, spell, spell_effect, stats)
         local crit_sum = 0;
@@ -483,23 +487,23 @@ local overlay_label_handler = {
             val = val + 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit);
         end
         if stats.crit > 0 and crit_sum > 0 then
-            frame_overlay:SetText(format_overlay_number(crit_sum + spell_effect.absorb, 1));
+            frame_overlay:SetText(format_number(crit_sum + spell_effect.absorb, 1));
         else
             frame_overlay:SetText("");
         end
     end,
     overlay_display_expected = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(spell_effect.expectation, 1));
+        frame_overlay:SetText(format_number(spell_effect.expectation, 1));
     end,
     overlay_display_effect_per_sec = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.effect_per_sec == math.huge then
             frame_overlay:SetText("inf");
         else
-            frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_sec, 1));
+            frame_overlay:SetText(format_number(spell_effect.effect_per_sec, 1));
         end
     end,
     overlay_display_effect_per_cost = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(spell_effect.effect_per_cost, 2));
+        frame_overlay:SetText(format_number(spell_effect.effect_per_cost, 2));
     end,
     overlay_display_avg_cost = function(frame_overlay, spell, spell_effect, stats)
         if stats.cost >= 0 then
@@ -517,14 +521,14 @@ local overlay_label_handler = {
     end,
     overlay_display_avg_cast = function(frame_overlay, spell, spell_effect, stats)
         if stats.cast_time > 0 then
-            frame_overlay:SetText(format_overlay_number(stats.cast_time, 2));
+            frame_overlay:SetText(format_number(stats.cast_time, 2));
         else
             frame_overlay:SetText("");
         end
     end,
     overlay_display_actual_cast = function(frame_overlay, spell, spell_effect, stats)
         if stats.cast_time > 0 then
-            frame_overlay:SetText(format_overlay_number(stats.cast_time, 2));
+            frame_overlay:SetText(format_number(stats.cast_time, 2));
         else
             frame_overlay:SetText("");
         end
@@ -547,18 +551,18 @@ local overlay_label_handler = {
     overlay_display_casts_until_oom = function(frame_overlay, spell, spell_effect, stats)
 
         if spell_effect.num_casts_until_oom >= 0 then
-            frame_overlay:SetText(format_overlay_number(spell_effect.num_casts_until_oom, 1));
+            frame_overlay:SetText(format_number(spell_effect.num_casts_until_oom, 1));
         else
             frame_overlay:SetText("");
         end
 
     end,
     overlay_display_effect_until_oom = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_overlay_number(spell_effect.effect_until_oom, 0));
+        frame_overlay:SetText(format_number(spell_effect.effect_until_oom, 0));
     end,
     overlay_display_time_until_oom = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.time_until_oom >= 0 then
-            frame_overlay:SetText(format_overlay_number(spell_effect.time_until_oom, 2));
+            frame_overlay:SetText(format_number(spell_effect.time_until_oom, 2));
         else
             frame_overlay:SetText("");
         end
@@ -692,14 +696,13 @@ end
 
 local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
 
-    for i = 1, 3 do
-        frame.overlay_frames[i]:Hide();
+    if frame.old_rank_marked then
+        return;
     end
-
-    if config.settings.overlay_old_rank and loadout.lvl > spells[id].lvl_outdated then
-        write_old_rank(frame, spells[id].lvl_outdated, loadout.lvl);
-        -- don't touch this, already written
-    elseif bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
+        --config.settings.overlay_old_rank and loadout.lvl > spells[id].lvl_outdated then
+        --check_old_rank(frame, spells[id], loadout.lvl);
+        ---- don't touch this, already written
+    if bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
         -- TODO: icon overlay not working for healing version checkbox
         if spells[id].healing_version and config.settings.overlay_prioritize_heal then
             update_spell_icon_frame(frame, spells[id].healing_version, id, loadout, effects, eval_flags);
@@ -707,6 +710,10 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
             update_spell_icon_frame(frame, spells[id], id, loadout, effects, eval_flags);
         end
     end
+    -- else?
+    --for i = 1, 3 do
+    --    frame.overlay_frames[i]:Hide();
+    --end
 end
 
 local special_action_bar_changed_id = 0;
@@ -734,6 +741,7 @@ local function update_spell_icons(loadout, effects, eval_flags)
     end
 
     if swc.core.old_ranks_checks_needed then
+
         old_rank_warning_traversal(loadout.lvl);
         swc.core.old_ranks_checks_needed = false;
     end
@@ -747,6 +755,9 @@ local function update_spell_icons(loadout, effects, eval_flags)
         for k, v in pairs(spell_book_frames) do
 
             if v.frame then
+                for _, ov in pairs(v.overlay_frames) do
+                    ov:Hide();
+                end
                 local spell_name = v.frame.SpellName:GetText();
                 local spell_rank_name = v.frame.SpellSubName:GetText();
                 
@@ -835,7 +846,6 @@ overlay.reassign_overlay_icon        = reassign_overlay_icon;
 overlay.clear_overlays               = clear_overlays;
 overlay.old_rank_warning_traversal   = old_rank_warning_traversal;
 overlay.overlay_eval_flags           = overlay_eval_flags;
-overlay.format_overlay_number        = format_overlay_number;
 
 swc.overlay = overlay;
 

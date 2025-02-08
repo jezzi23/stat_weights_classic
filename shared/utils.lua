@@ -117,7 +117,27 @@ local effect_colors = {
     stat_weights            = {   0 / 255, 255 / 255,   0 / 255 },
     spell_rank              = { 138 / 255, 134 / 255, 125 / 255 },
     loadout_info            = { 138 / 255, 134 / 255, 125 / 255 },
+    miss_info               = { 138 / 255, 134 / 255, 125 / 255 },
 };
+
+local function format_number(val, max_accuracy_digits)
+
+    local abs_val = math.abs(val);
+    if (abs_val < 100.0 and max_accuracy_digits >= 2) then
+        return string.format("%.2f", val);
+    elseif (abs_val < 1000.0 and max_accuracy_digits >= 1) then
+        return string.format("%.1f", val);
+    elseif (abs_val < 10000.0) then
+        return string.format("%d", 0.5+math.floor(val));
+    elseif (abs_val < 1000000.0) then
+        return string.format("%.1fk", val/1000);
+    elseif (abs_val < 1000000000.0) then
+        return string.format("%.1fm", val/1000000);
+    else
+        return "∞";
+    end
+end
+
 
 utils.spell_mod_mul = spell_mod_mul;
 utils.spell_mod_add = spell_mod_add;
@@ -133,6 +153,7 @@ utils.spell_cost = spell_cost;
 utils.spell_cast_time = spell_cast_time;
 utils.add_all_spell_crit = add_all_spell_crit;
 utils.effect_colors = effect_colors;
+utils.format_number = format_number;
 
 local _, swc = ...;
 swc.utils = utils;

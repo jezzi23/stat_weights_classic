@@ -22,8 +22,6 @@
 
 local _, swc                    = ...;
 
-local utils                     = swc.utils;
-
 local wowhead_talent_code       = swc.talents.wowhead_talent_code;
 
 local spells                    = swc.abilities.spells;
@@ -44,6 +42,7 @@ local set_active_settings       = swc.config.set_active_settings;
 local set_active_loadout        = swc.config.set_active_loadout;
 local activate_settings         = swc.config.activate_settings;
 local activate_loadout_config   = swc.config.activate_loadout_config;
+
 
 local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
 local update_overlay            = swc.overlay.update_overlay;
@@ -90,7 +89,7 @@ core.talents_update_needed = true;
 core.equipment_update_needed = true;
 core.special_action_bar_changed = true;
 core.setup_action_bar_needed = true;
-core.update_action_bar_needed = true;
+core.update_action_bar_needed = false;
 core.addon_message_on_update = false;
 core.old_ranks_checks_needed = true;
 
@@ -155,7 +154,7 @@ local event_dispatch = {
         if msg == "StatWeightsClassic" then
             load_config();
             core.active_spec = GetActiveTalentGroup();
-            set_active_settings(core.active_spec);
+            set_active_settings();
             set_active_loadout(p_char.active_loadout);
             load_sw_ui();
             activate_settings();
@@ -171,7 +170,8 @@ local event_dispatch = {
     ["PLAYER_LOGIN"] = function(self, msg, msg2, msg3)
         core.setup_action_bar_needed = true;
         core.sw_addon_loaded = true;
-
+        -- Don't do this in case this was causing "prevented from a forbidden action" type of bug
+        --table.insert(UISpecialFrames, sw_frame:GetName()) -- Allows ESC to close frame
         if core.expansion_loaded == core.expansions.vanilla and C_Engraving.IsEngravingEnabled then
             --after fresh login the runes cannot be queried until
             --character frame has been opened!!!
@@ -184,6 +184,7 @@ local event_dispatch = {
                 HideUIPanel(CharacterFrame);
             end
         end
+        swc.ui.add_spell_book_button();
         C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_swc_id)
         if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             for i = 1, 10 do
@@ -193,7 +194,7 @@ local event_dispatch = {
 
     end,
     ["ACTIONBAR_SLOT_CHANGED"] = function(self, msg, msg2, msg3)
-        if not core.sw_addon_loaded then
+        if not core.sw_addon_loaded or config.settings.overlay_disable then
             return;
         end
 
@@ -220,7 +221,7 @@ local event_dispatch = {
         core.special_action_bar_changed = true;
     end,
     ["UNIT_EXITED_VEHICLE"] = function(self, msg, msg2, msg3)
-        if not core.sw_addon_loaded then
+        if not core.sw_addon_loaded or config.settings.overlay_disable then
             return;
         end
 
@@ -231,7 +232,8 @@ local event_dispatch = {
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function(self, msg, msg2, msg3)
 
         core.active_spec = GetActiveTalentGroup();
-        set_active_settings(core.active_spec)
+        set_active_settings()
+        activate_settings();
         core.update_action_bar_needed = true;
         core.talents_update_needed = true;
         update_profile_frame();
@@ -239,6 +241,7 @@ local event_dispatch = {
     ["CHARACTER_POINTS_CHANGED"] = function(self, msg)
 
         set_active_settings();
+        activate_settings();
         if not config.loadout.use_custom_talents then
             config.loadout.talents_code = wowhead_talent_code();
             core.talents_update_needed = true;
@@ -249,6 +252,9 @@ local event_dispatch = {
         core.equipment_update_needed = true;
     end,
     ["PLAYER_LEVEL_UP"] = function(self, arg1)
+        core.old_ranks_checks_needed = true;
+    end,
+    ["LEARNED_SPELL_IN_TAB"] = function()
         core.old_ranks_checks_needed = true;
     end,
     ["SOCKET_INFO_UPDATE"] = function(self, msg, msg2, msg3)
@@ -268,6 +274,9 @@ local event_dispatch = {
         if not config.loadout.use_custom_talents then
             core.talents_update_needed = true;
         end
+    end,
+    ["CHAT_MSG_SKILL"] = function(self, msg, msg2, msg3)
+        core.talents_update_needed = true;
     end,
     ["ENGRAVING_MODE_CHANGED"] = function(self)
         core.equipment_update_needed = true;

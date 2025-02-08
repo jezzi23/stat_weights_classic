@@ -190,7 +190,9 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
     local eval_flags = 0;
     if IsAltKeyDown() then
         eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
-        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.offhand);
+        if loadout.m2_speed then
+            eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.isolate_offhand);
+        end
     end
 
     if IsControlKeyDown() then
@@ -238,20 +240,30 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
             -- used for holy nova
             swc.tooltip.append_tooltip_spell_info(tooltip, spell.healing_version, spell_id, loadout, effects, eval_flags, true);
         end
+    else
+
+        if config.settings.tooltip_display_spell_rank and not repeated_tooltip_on then
+            append_tooltip_spell_rank(tooltip, spell, loadout.lvl);
+        end
+        if config.settings.tooltip_display_spell_id and not repeated_tooltip_on then
+            tooltip:AddLine(string.format("Spell ID: %d", spell_id),
+                effect_colors.spell_rank[1], effect_colors.spell_rank[2], effect_colors.spell_rank[3]);
+        end
     end
     tooltip:Show();
 end
 
 local function tooltip_spell_info(is_fake)
 
-    local spell_name, spell_id = GameTooltip:GetSpell();
+    local _, spell_id = GameTooltip:GetSpell();
 
     if spell_id == clear_tooltip_refresh_id then
         spell_id = spell_id_of_cleared_tooltip;
     elseif spell_id == sw_frame.spell_viewer_invalid_spell_id then
         spell_id = tonumber(sw_frame.spell_id_viewer_editbox:GetText());
     elseif config.settings.tooltip_clear_original and (not config.settings.tooltip_shift_to_show or IsShiftKeyDown()) then
-        if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.eval) ~= 0 then
+        --if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.eval) ~= 0 then
+        if spells[spell_id] then
             spell_id_of_cleared_tooltip = spell_id;
             --GameTooltip:ClearLines();
             --GameTooltip:SetSpellByID(clear_tooltip_refresh_id);

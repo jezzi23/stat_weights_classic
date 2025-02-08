@@ -25,6 +25,7 @@ local _, swc = ...;
 local spells                                    = swc.abilities.spells;
 local spids                                     = swc.abilities.spids;
 local spell_flags                               = swc.abilities.spell_flags;
+local highest_learned_rank                      = swc.abilities.highest_learned_rank;
 
 local wowhead_talent_link                       = swc.talents.wowhead_talent_link;
 local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_code_from_url;
@@ -32,20 +33,18 @@ local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_cod
 local simulation_type                           = swc.calc.simulation_type;
 
 local effect_colors                             = swc.utils.effect_colors;
+local format_number                             = swc.utils.format_number
 
 local update_loadout_and_effects_diffed_from_ui = swc.loadout.update_loadout_and_effects_diffed_from_ui;
 local update_loadout_and_effects                = swc.loadout.update_loadout_and_effects;
 local active_loadout                            = swc.loadout.active_loadout
 
-local format_overlay_number                     = swc.overlay.format_overlay_number
 
 local stats_for_spell                           = swc.calc.stats_for_spell;
 local spell_info                                = swc.calc.spell_info;
 local cast_until_oom                            = swc.calc.cast_until_oom;
 local spell_diff                                = swc.calc.spell_diff;
 
-local buff_filters                              = swc.buffs.buff_filters;
-local filter_flags_active                       = swc.buffs.filter_flags_active;
 local buff_category                             = swc.buffs.buff_category;
 local buffs                                     = swc.buffs.buffs;
 local target_buffs                              = swc.buffs.target_buffs;
@@ -62,16 +61,164 @@ local font = "GameFontHighlightSmall";
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
 
-local update_and_display_spell_diffs = nil;
+local function display_spell_diff(i, spell_id_eval, spell_id_src, calc_list, spell_info_normal, spell_info_diff, frame, dual_spell, sim_type)
+    if not calc_list[i] then
+        calc_list[i] = {};
 
-local function ui_y_offset_incr(y)
-    return y - 17;
+        frame.y_offset = frame.y_offset - 15;
+        calc_list[i].name_str = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].name_str:SetFontObject(font);
+        calc_list[i].name_str:SetPoint("TOPLEFT", 5, frame.y_offset);
+
+        calc_list[i].role_icon = CreateFrame("Frame", nil, frame);
+        calc_list[i].role_icon:SetSize(15, 15);
+        calc_list[i].role_icon:SetPoint("TOPRIGHT", -230, frame.y_offset+2);
+        calc_list[i].role_icon.tex = calc_list[i].role_icon:CreateTexture(nil, "ARTWORK");
+        calc_list[i].role_icon.tex:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
+
+        calc_list[i].change = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].change:SetFontObject(font);
+        calc_list[i].change:SetPoint("TOPRIGHT", -180, frame.y_offset);
+        calc_list[i].first = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].first:SetFontObject(font);
+        calc_list[i].first:SetPoint("TOPRIGHT", -115, frame.y_offset);
+        calc_list[i].second = frame:CreateFontString(nil, "OVERLAY");
+        calc_list[i].second:SetFontObject(font);
+        calc_list[i].second:SetPoint("TOPRIGHT", -45, frame.y_offset);
+
+
+        calc_list[i].cancel_button = CreateFrame("Button", "nil", frame, "UIPanelButtonTemplate");
+        calc_list[i].cancel_button:SetScript("OnClick", function(self)
+            config.settings.spell_calc_list[self.__id_src] = nil;
+            for k, v in pairs(calc_list[frame.num_spells]) do
+                v:Hide();
+            end
+            ui.update_calc_list();
+        end);
+
+        calc_list[i].cancel_button:SetPoint("TOPRIGHT", -10, frame.y_offset + 4);
+        calc_list[i].cancel_button:SetSize(17, 17);
+        calc_list[i].cancel_button:SetText("x");
+        local fontstr = calc_list[i].cancel_button:GetFontString();
+        if fontstr then
+            fontstr:ClearAllPoints();
+            fontstr:SetPoint("CENTER", calc_list[i].cancel_button, "CENTER");
+        end
+    end
+    local spell = spells[spell_id_eval];
+
+    local v = calc_list[i];
+
+    v.cancel_button.__id_src = spell_id_src;
+
+    local diff = spell_diff(spell_info_normal, spell_info_diff, sim_type);
+    local rank_str = "(Rank "..spell.rank..")";
+    if spell.rank == 0 then
+        rank_str = "";
+    end
+    local lname = GetSpellInfo(spell_id_eval);
+    v.name_str:SetText(lname.." "..rank_str);
+
+    v.name_str:SetTextColor(222/255, 192/255, 40/255);
+
+    if dual_spell or bit.band(spells[spell_id_eval].flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
+        v.role_icon.tex:SetTexCoord(0.25, 0.5, 0.0, 0.25);
+    else
+        v.role_icon.tex:SetTexCoord(0.25, 0.5, 0.25, 0.5);
+    end
+    v.role_icon.tex:SetAllPoints(v.role_icon);
+
+    v.change:SetText(format_number(diff.diff_ratio, 2).."%");
+    if diff.diff_ratio < 0 then
+        v.change:SetTextColor(195/255, 44/255, 11/255);
+    elseif diff.diff_ratio > 0 then
+        v.change:SetTextColor(33/255, 185/255, 21/255);
+    else
+        v.change:SetTextColor(1, 1, 1);
+    end
+
+    v.first:SetText(format_number(diff.first, 2));
+    if diff.first < 0 then
+        v.first:SetTextColor(195/255, 44/255, 11/255);
+    elseif diff.first > 0 then
+        v.first:SetTextColor(33/255, 185/255, 21/255);
+    else
+        v.first:SetTextColor(1, 1, 1);
+    end
+
+    v.second:SetText(format_number(diff.second, 2));
+    if diff.second < 0 then
+        v.second:SetTextColor(195/255, 44/255, 11/255);
+    elseif diff.second > 0 then
+        v.second:SetTextColor(33/255, 185/255, 21/255);
+    else
+        v.second:SetTextColor(1, 1, 1);
+    end
+
+    for _, f in pairs(v) do
+        f:Show();
+    end
+    if dual_spell then
+        calc_list[i].cancel_button:Hide();
+    end
+end
+
+local function update_calc_list()
+
+    local frame = sw_frame.calculator_frame;
+    for _, v in pairs(frame.calc_list) do
+        for _, f in pairs(v) do
+            f:Hide();
+        end
+    end
+    local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui()
+
+    local spell_stats_normal = {};
+    local spell_stats_diffed = {};
+    local spell_info_normal = {};
+    local spell_info_diffed = {};
+
+    local i = 0;
+    for k, _ in pairs(config.settings.spell_calc_list) do
+
+        local spell_id_src = k;
+        if config.settings.calc_list_use_highest_rank and spells[k] then
+            k = highest_learned_rank(spells[k].base_id);
+        end
+        if k and spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
+
+            i = i + 1;
+
+            stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
+            stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
+            spell_info(spell_info_normal, spells[k], spell_stats_normal, loadout, effects);
+            cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
+            spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
+            cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
+
+            display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, false, sw_frame.calculator_frame.sim_type);
+
+            -- for spells with both heal and dmg
+            if spells[k].healing_version then
+
+                i = i + 1;
+                stats_for_spell(spell_stats_normal, spells[k].healing_version, loadout, effects);
+                stats_for_spell(spell_stats_diffed, spells[k].healing_version, loadout, effects_diffed);
+                spell_info(spell_info_normal, spells[k].healing_version, spell_stats_normal, loadout, effects);
+                cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
+                spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
+                cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
+
+                ui.display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, true, sw_frame.calculator_frame.sim_type);
+            end
+        end
+    end
+    sw_frame.calculator_frame.num_spells = i;
 end
 
 -- generalize some reasonable editbox config that need to update on change
 -- that is easy to exit / lose focus
 local function editbox_config(frame, update_func, close_func)
-    -- TODO: 
     close_func = close_func or update_func;
     frame:SetScript("OnEnterPressed", function(self)
         close_func(self);
@@ -86,246 +233,92 @@ local function editbox_config(frame, update_func, close_func)
 
 end
 
-local function display_spell_diff(i, spell_id, spell, calc_list, spell_info_normal, spell_info_diff, frame, is_duality_spell, sim_type, lvl)
-    if not calc_list[i] then
-        calc_list[i] = {};
-
-        frame.line_y_offset = frame.line_y_offset - 15;
-        calc_list[i].name_str = frame:CreateFontString(nil, "OVERLAY");
-        calc_list[i].name_str:SetFontObject(font);
-        calc_list[i].name_str:SetPoint("TOPLEFT", 15, frame.line_y_offset);
-        calc_list[i].change = frame:CreateFontString(nil, "OVERLAY");
-        calc_list[i].change:SetFontObject(font);
-        calc_list[i].change:SetPoint("TOPRIGHT", -180, frame.line_y_offset);
-        calc_list[i].first = frame:CreateFontString(nil, "OVERLAY");
-        calc_list[i].first:SetFontObject(font);
-        calc_list[i].first:SetPoint("TOPRIGHT", -115, frame.line_y_offset);
-        calc_list[i].second = frame:CreateFontString(nil, "OVERLAY");
-        calc_list[i].second:SetFontObject(font);
-        calc_list[i].second:SetPoint("TOPRIGHT", -45, frame.line_y_offset);
-
-
-        calc_list[i].cancel_button = CreateFrame("Button", "nil", frame, "UIPanelButtonTemplate");
-        calc_list[i].cancel_button:SetScript("OnClick", function(self)
-            config.settings.spell_calc_list[calc_list[i].__spid] = nil;
-            for k, v in pairs(calc_list[frame.num_spells]) do
-                if type(v) == "table" then
-                    v:Hide();
-                end
-            end
-            update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
-        end);
-
-        calc_list[i].cancel_button:SetPoint("TOPRIGHT", -10, frame.line_y_offset + 4);
-        calc_list[i].cancel_button:SetSize(17, 17);
-        calc_list[i].cancel_button:SetText("x");
-        local fontstr = calc_list[i].cancel_button:GetFontString();
-        if fontstr then
-            fontstr:ClearAllPoints();
-            fontstr:SetPoint("CENTER", calc_list[i].cancel_button, "CENTER");
-        end
-    end
-
-    local v = calc_list[i];
-
-    v.__spid = spell_id;
-
-
-    local diff = spell_diff(spell_info_normal, spell_info_diff, sim_type);
-    local rank_str = "(Rank "..spell.rank..")";
-    if spell.rank == 0 then
-        rank_str = "";
-    end
-    local lname = GetSpellInfo(spell_id);
-    v.name_str:SetText(lname.." "..rank_str);
-
-    v.name_str:SetTextColor(222/255, 192/255, 40/255);
-
-
-    if diff.first < 0 then
-        v.change:SetText(string.format("%.2f", diff.diff_ratio).."%");
-        v.change:SetTextColor(195/255, 44/255, 11/255);
-
-        v.first:SetText(string.format("%.2f", diff.first));
-        v.first:SetTextColor(195/255, 44/255, 11/255);
-
-    elseif diff.first > 0 then
-
-        v.change:SetText(string.format("+%.2f", diff.diff_ratio).."%");
-        v.change:SetTextColor(33/255, 185/255, 21/255);
-
-        v.first:SetText(string.format("+%.2f", diff.first));
-        v.first:SetTextColor(33/255, 185/255, 21/255);
-
-    else
-        v.change:SetText("0 %");
-        v.change:SetTextColor(1, 1, 1);
-
-        v.first:SetText("0");
-        v.first:SetTextColor(1, 1, 1);
-    end
-
-    if diff.second < 0 then
-
-        v.second:SetText(string.format("%.2f", diff.second));
-        v.second:SetTextColor(195/255, 44/255, 11/255);
-    elseif diff.second > 0 then
-
-        v.second:SetText(string.format("+%.2f", diff.second));
-        v.second:SetTextColor(33/255, 185/255, 21/255);
-    else
-        v.second:SetText("0");
-        v.second:SetTextColor(1, 1, 1);
-    end
-end
-
-update_and_display_spell_diffs = function(loadout, effects, effects_diffed)
-
-    local frame = sw_frame.calculator_frame;
-
-    local spell_stats_normal = {};
-    local spell_stats_diffed = {};
-    local spell_info_normal = {};
-    local spell_info_diffed = {};
-
-    local i = 0;
-    for k, _ in pairs(config.settings.spell_calc_list) do
-        if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
-            i = i + 1;
-            stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
-            stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
-            spell_info(spell_info_normal, spells[k], spell_stats_normal, loadout, effects);
-            cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
-            spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
-            cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
-
-            display_spell_diff(i, k, spells[k], frame.calc_list, spell_info_normal, spell_info_diffed, frame, false, sw_frame.calculator_frame.sim_type, loadout.lvl);
-
-            -- for spells with both heal and dmg
-            if spells[k].healing_version then
-
-                i = i + 1;
-                stats_for_spell(spell_stats_normal, spells[k].healing_version, loadout, effects);
-                stats_for_spell(spell_stats_diffed, spells[k].healing_version, loadout, effects_diffed);
-                spell_info(spell_info_normal, spells[k].healing_version, spell_stats_normal, loadout, effects);
-                cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
-                spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
-                cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
-
-                display_spell_diff(i, k, spells[k].healing_version, frame.calc_list, spell_info_normal, spell_info_diffed, frame, true, sw_frame.calculator_frame.sim_type, loadout.lvl);
-            end
-        end
-    end
-    sw_frame.calculator_frame.num_spells = i;
-end
+local filtered_buffs = {};
+local filtered_target_buffs = {};
+local buffs_views = {
+    {side = "lhs", subject = "self", buffs = buffs, filtered = filtered_buffs},
+    {side = "rhs", subject = "target_buffs", buffs = target_buffs, filtered = filtered_target_buffs}
+};
 
 local function update_buffs_frame()
 
     if config.loadout.force_apply_buffs then
-        sw_frame.loadout_frame.always_apply_buffs_button:SetChecked(true);
+        sw_frame.buffs_frame.always_apply_buffs_button:SetChecked(true);
     else
-        sw_frame.loadout_frame.always_apply_buffs_button:SetChecked(false);
+        sw_frame.buffs_frame.always_apply_buffs_button:SetChecked(false);
     end
 
-    local num_checked_buffs = 0;
-    local num_checked_target_buffs = 0;
     local buffs_list_alpha = 1.0;
+
     if not config.loadout.force_apply_buffs then
         buffs_list_alpha = 0.2;
-        for k = 1, sw_frame.buffs_frame.lhs.buffs.num do
-            local v = sw_frame.buffs_frame.lhs.buffs[k];
-            --v.checkbutton:SetChecked(true);
+    end
+
+    for _, view in ipairs(buffs_views) do
+
+        local n = #view.filtered;
+
+        for _, v in ipairs(sw_frame.buffs_frame[view.side].buffs) do
             v.checkbutton:Hide();
+            v.checkbutton.__stacks_str:Hide();
             v.icon:Hide();
         end
 
-        for k = 1, sw_frame.buffs_frame.rhs.buffs.num do
-            local v = sw_frame.buffs_frame.rhs.buffs[k];
-            --v.checkbutton:SetChecked(true);
-            v.checkbutton:Hide();
-            v.icon:Hide();
-        end
-    else
-        for k = 1, sw_frame.buffs_frame.lhs.buffs.num do
+        local buff_frame_idx = math.floor(sw_frame.buffs_frame[view.side].slider:GetValue());
 
-            local v = sw_frame.buffs_frame.lhs.buffs[k];
-            if v.checkbutton.buff_type == "self" then
-                if config.loadout.buffs[v.checkbutton.buff_id] then
+        for _, v in ipairs(sw_frame.buffs_frame[view.side].buffs) do
+
+            if buff_frame_idx > n then
+                break;
+            end
+            local buff_info = view.buffs[view.filtered[buff_frame_idx]];
+            v.checkbutton.buff_id = buff_info.id;
+
+            if v.checkbutton.side == "lhs" then
+                if config.loadout.buffs[buff_info.id] then
                     v.checkbutton:SetChecked(true);
-                    num_checked_buffs = num_checked_buffs + 1;
+                    v.checkbutton.__stacks_str:SetText(tostring(config.loadout.buffs[buff_info.id]));
                 else
                     v.checkbutton:SetChecked(false);
+                    v.checkbutton.__stacks_str:SetText("0");
+                end
+            else
+                if config.loadout.target_buffs[buff_info.id] then
+                    v.checkbutton:SetChecked(true);
+                    v.checkbutton.__stacks_str:SetText(tostring(config.loadout.target_buffs[buff_info.id]));
+                else
+                    v.checkbutton:SetChecked(false);
+                    v.checkbutton.__stacks_str:SetText("0");
                 end
             end
-            v.checkbutton:Hide();
-            v.icon:Hide();
-        end
-        for k = 1, sw_frame.buffs_frame.rhs.buffs.num do
 
-            local v = sw_frame.buffs_frame.rhs.buffs[k];
+            v.icon.tex:SetTexture(GetSpellTexture(buff_info.id));
 
-            if config.loadout.target_buffs[v.checkbutton.buff_id] then
-                v.checkbutton:SetChecked(true);
-                num_checked_target_buffs = num_checked_target_buffs + 1;
-            else
-                v.checkbutton:SetChecked(false);
+            local buff_name_max_len = 28;
+            local name_appear =  buff_info.lname;
+            getglobal(v.checkbutton:GetName() .. 'Text'):SetText(name_appear:sub(1, buff_name_max_len));
+            local checkbutton_txt = getglobal(v.checkbutton:GetName() .. 'Text');
+            if buff_info.cat == buff_category.class  then
+                checkbutton_txt:SetTextColor(0/255, 204/255, 255/255);
+            elseif buff_info.cat == buff_category.player  then
+                checkbutton_txt:SetTextColor(225/255, 235/255, 52/255);
+            elseif buff_info.cat == buff_category.friendly  then
+                checkbutton_txt:SetTextColor(0/255, 153/255, 51/255);
+            elseif buff_info.cat == buff_category.hostile  then
+                checkbutton_txt:SetTextColor(235/255, 52/255, 88/255);
+            elseif buff_info.cat == buff_category.enchant  then
+                checkbutton_txt:SetTextColor(103/255, 52/255, 235/255);
             end
-            v.checkbutton:Hide();
-            v.icon:Hide();
-        end
-    end
-    -- all checkbuttons have been hidden, now unhide and set positions depending on slider
 
-    local icon_offset = -4;
-    for _, v in pairs({sw_frame.buffs_frame.lhs, sw_frame.buffs_frame.rhs}) do
-        local y_offset = 0;
-        local buffs_show_max = v.num_buffs_can_fit;
-        local num_skips = math.floor(v.slider:GetValue()) + 1;
+            v.checkbutton:Show();
+            v.checkbutton.__stacks_str:Show();
+            v.icon:Show();
 
-        for i = num_skips, math.min(num_skips + buffs_show_max - 1, v.buffs.num) do
-            v.buffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
-            v.buffs[i].checkbutton:SetAlpha(buffs_list_alpha);
-            v.buffs[i].checkbutton:Show();
-            v.buffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
-            v.buffs[i].icon:SetAlpha(buffs_list_alpha);
-            v.buffs[i].icon:Show();
-            y_offset = y_offset - 20;
+            sw_frame.buffs_frame[view.side].frame:SetAlpha(buffs_list_alpha);
+            buff_frame_idx = buff_frame_idx + 1;
         end
     end
 
-    --local target_buffs_iters = 
-    --    math.max(0, math.min(buffs_show_max - num_skips, sw_frame.buffs_frame.rhs.buffs.num - num_skips) + 1);
-    --if buffs_show_max < num_skips and num_skips <= sw_frame.buffs_frame.rhs.buffs.num then
-    --    target_buffs_iters = buffs_show_max;
-    --end
-    --if target_buffs_iters > 0 then
-    --    for i = num_skips, num_skips + target_buffs_iters - 1 do
-    --        sw_frame.buffs_frame.rhs.buffs[i].checkbutton:SetPoint("TOPLEFT", 20, y_offset);
-    --        sw_frame.buffs_frame.rhs.buffs[i].checkbutton:SetAlpha(buffs_list_alpha);
-    --        sw_frame.buffs_frame.rhs.buffs[i].checkbutton:Show();
-    --        sw_frame.buffs_frame.rhs.buffs[i].icon:SetPoint("TOPLEFT", 5, y_offset + icon_offset);
-    --        sw_frame.buffs_frame.rhs.buffs[i].icon:SetAlpha(buffs_list_alpha);
-    --        sw_frame.buffs_frame.rhs.buffs[i].icon:Show();
-    --        y_offset = y_offset - 20;
-    --    end
-    --end
-
-    --    num_skips = num_skips + target_buffs_iters - sw_frame.buffs_frame.rhs.buffs.num;
-    --end
-
-    sw_frame.buffs_frame.lhs.buffs.num_checked = num_checked_buffs;
-    sw_frame.buffs_frame.rhs.buffs.num_checked = num_checked_target_buffs;
-
-    if not config.loadout.force_apply_buffs then
-        --sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton:SetChecked(true);
-        --sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton:SetChecked(true);
-    else
-        sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton:SetChecked(sw_frame.buffs_frame.lhs.buffs.num_checked ~= 0);
-
-        sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton:SetChecked(sw_frame.buffs_frame.rhs.buffs.num_checked ~= 0);
-    end
-    sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton:SetAlpha(buffs_list_alpha);
-    sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton:SetAlpha(buffs_list_alpha);
 end
 
 local function update_loadout_frame()
@@ -351,12 +344,17 @@ local function update_loadout_frame()
     end
 
     sw_frame.calculator_frame.loadout_name_label:SetText(
-        config.loadout.name
+        "Active loadout: "..config.loadout.name
     );
+    for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+        if config.loadout.target_automatic_armor_pct == v._value then
+            v:Click();
+        end
+    end
 
     update_buffs_frame();
 
-    update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+    update_calc_list();
 end
 
 local spell_filter_listing = {
@@ -432,10 +430,17 @@ local function filtered_spell_view(spell_ids, name_filter)
     local filtered = {};
     local i = 1
     for _, id in pairs(spell_ids) do
-        local known = IsSpellKnown(id);
-        --local known = IsSpellKnownOrOverridesKnown(id) ??
+        --local known = IsSpellKnown(id);
+        local known = IsSpellKnownOrOverridesKnown(id);
         if not known then
-            known = IsSpellKnown(id, true);
+            known = IsSpellKnownOrOverridesKnown(id, true);
+        end
+        if not known then
+            -- deal with spells that you unlearn when you have a higher rank
+            local highest = highest_learned_rank(spells[id].base_id);
+            if spells[highest] then
+                known = spells[highest].rank > spells[id].rank;
+            end
         end
         if name_filter ~= "" and not string.find(string.lower(GetSpellInfo(id)), string.lower(name_filter)) then
         elseif config.settings.spells_filter_already_known and known then
@@ -499,17 +504,33 @@ local function filtered_spell_view(spell_ids, name_filter)
                 end
             end
             i = i + 1;
+            if spells[id].healing_version then
+                filtered[i] = {};
+                for k, v in pairs(filtered[i-1]) do
+                    filtered[i][k] = v;
+                end
+                filtered[i].is_dual = true;
+
+                stats_for_spell(stats, spells[id].healing_version, loadout, effects, eval_flags);
+                spell_info(info, spells[id].healing_version, stats, loadout, effects, eval_flags);
+                filtered[i].effect_per_sec = info.effect_per_sec;
+                filtered[i].effect_per_cost = info.effect_per_cost;
+                filtered[i].hps = info.effect_per_sec;
+                filtered[i].hpc = info.effect_per_cost;
+
+                i = i + 1;
+            end
         end
     end
     local cost_str = "";
     if avail_cost ~= 0 then
-        cost_str = cost_str.."    |cFF00FF00Available cost: "..GetCoinTextureString(avail_cost);
+        cost_str = cost_str.."   |cFF00FF00Available cost:|r "..GetCoinTextureString(avail_cost);
     end
     if next_cost ~= 0 then
-        cost_str = cost_str.."    |cFFFF0000Next level "..next_lvl.." cost: "..GetCoinTextureString(next_cost);
+        cost_str = cost_str.."   |cFFFF8C00Next level "..next_lvl.." cost:|r "..GetCoinTextureString(next_cost);
     end
     if total_cost ~= 0 then
-        cost_str = cost_str.."    |cFFFFFFFFTotal cost: "..GetCoinTextureString(total_cost);
+        cost_str = cost_str.."   |cFFFF0000Total cost:|r "..GetCoinTextureString(total_cost);
     end
     sw_frame.spells_frame.footer_cost:SetText(cost_str);
 
@@ -556,6 +577,7 @@ local function color_by_lvl_diff(clvl, other_lvl)
         return "|cFFFFFF00";
     elseif other_lvl - 3 <= clvl then
         return "|cFFFF8C00";
+
     else
         return "|cFFFF0000";
     end
@@ -578,10 +600,12 @@ local function populate_scrollable_spell_view(view, starting_idx)
         local v = view[i];
         local line = sw_frame.spells_frame.scroll_view[cnt];
         if v.spell_id then
-            line.spell_icon.__id = v.spell_id;
+            --line.spell_icon.__id = v.spell_id;
+            line.tooltip_area.__id = v.spell_id;
             line.spell_tex:SetTexture(GetSpellTexture(v.spell_id));
             line.spell_icon:Show();
             line.spell_tex:Show();
+            line.tooltip_area:Show();
             line.dropdown_menu.__spid = v.spell_id;
             line.dropdown_button:Show();
 
@@ -608,25 +632,29 @@ local function populate_scrollable_spell_view(view, starting_idx)
             end
             -- write in currency/book cost column
             if spells[v.spell_id].train > 0 then
-                if v.trigger ==  spell_filters.spells_filter_already_known then
-                    line.cost_str:SetText("Known");
+                if v.trigger == spell_filters.spells_filter_already_known or v.is_dual then
+                    line.cost_str:SetText("");
                 else
                     line.cost_str:SetText(GetCoinTextureString(spells[v.spell_id].train));
                 end
                 line.cost_str:Show();
             elseif spells[v.spell_id].train < 0 then
-                line.book_icon.__id = -spells[v.spell_id].train;
-                line.book_tex:SetTexture(GetItemIcon(-spells[v.spell_id].train));
-                line.book_tex:Show();
-                line.book_icon:Show();
+                if v.trigger == spell_filters.spells_filter_already_known or v.is_dual then
+                else
+                    line.book_icon.__id = -spells[v.spell_id].train;
+                    line.book_tex:SetTexture(GetItemIcon(-spells[v.spell_id].train));
+                    line.book_tex:Show();
+                    line.book_icon:Show();
+                end
             else
-                line.cost_str:SetText("Unknown");
-                line.cost_str:Show();
+                if v.trigger == spell_filters.spells_filter_already_known or v.is_dual then
+                else
+                    line.cost_str:SetText("Unknown");
+                    line.cost_str:Show();
+                end
             end
-            -- TODO: write in level column when not sorting by level
-            -- write in effect per sec column
             if bit.band(spells[v.spell_id].flags, spell_flags.eval) ~= 0 then
-                if bit.band(spells[v.spell_id].flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
+                if v.is_dual or bit.band(spells[v.spell_id].flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
                     line.effect_type_tex:SetTexCoord(0.25, 0.5, 0.0, 0.25);
                 else
                     line.effect_type_tex:SetTexCoord(0.25, 0.5, 0.25, 0.5);
@@ -634,8 +662,8 @@ local function populate_scrollable_spell_view(view, starting_idx)
                 line.effect_type_tex:SetAllPoints(line.effect_type_icon);
                 line.effect_type_tex:Show();
                 line.effect_type_icon:Show();
-                line.per_sec_str:SetText(format_overlay_number(v.effect_per_sec, 1));
-                line.per_cost_str:SetText(format_overlay_number(v.effect_per_cost, 2));
+                line.per_sec_str:SetText(format_number(v.effect_per_sec, 1));
+                line.per_cost_str:SetText(format_number(v.effect_per_cost, 2));
                 line.type_str:Show();
                 line.per_sec_str:Show();
                 line.per_cost_str:Show();
@@ -697,7 +725,7 @@ local function sw_activate_tab(tab_window)
     if tab_window.frame_to_open == sw_frame.spells_frame then
         update_spells_frame();
     elseif tab_window.frame_to_open == sw_frame.calculator_frame then
-        update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+        update_calc_list();
     end
 
     tab_window.frame_to_open:Show();
@@ -812,7 +840,8 @@ local function create_sw_spell_id_viewer()
     sw_frame.spell_icon:SetScript("OnLeave", tooltip_viewer_off);
 end
 
-local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, func)
+local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, func, x_pad)
+    x_pad = x_pad or 10;
     --  assume max 2 columns
     local check_button_type = "CheckButton";
     for i, v in pairs(buttons_info) do
@@ -824,7 +853,6 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
         if i%num_columns == 0 then
             x_spacing = 230;
         end
-        local x_pad = 10;
         local x = x_pad + x_spacing;
         f:SetPoint("TOPLEFT", x, parent_frame.y_offset);
         local txt = getglobal(f:GetName() .. 'Text');
@@ -837,8 +865,8 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
         end
         if v.func then
             f:SetScript("OnClick", v.func);
-        elseif func then
-            f:SetScript("OnClick", func);
+        --elseif func then
+        --    f:SetScript("OnClick", func);
         else
             f:SetScript("OnClick", function(self)
                 config.settings[self._settings_id] = self:GetChecked();
@@ -896,6 +924,7 @@ local function create_sw_ui_spells_frame()
                         func = function()
                             spell_browser_active_sort_key = k;
                             update_spells_frame();
+                            sw_frame.spells_frame.slider:SetValue(1);
                         end
                     }
                 );
@@ -1009,9 +1038,9 @@ local function create_sw_ui_spells_frame()
     f:SetText("Acquisition");
     f:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset);
 
-    sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - 25;
-    local num_view_list_entries = 25;
-    local entry_y_offset = 18;
+    sw_frame.spells_frame.y_offset = sw_frame.spells_frame.y_offset - 23;
+    local num_view_list_entries = 29;
+    local entry_y_offset = 16;
 
     -- sliders
     f = CreateFrame("Slider", nil, sw_frame.spells_frame, "UIPanelScrollBarTrimTemplate");
@@ -1042,19 +1071,25 @@ local function create_sw_ui_spells_frame()
     sw_frame.spells_frame.scroll_view = {};
     for i = 1, num_view_list_entries do
 
+        local tooltip_area_f = CreateFrame("Frame", nil, sw_frame.spells_frame);
+        tooltip_area_f:SetSize(220, 16);
+        tooltip_area_f:SetPoint("TOPLEFT", 0, sw_frame.spells_frame.y_offset+4);
+        tooltip_area_f:EnableMouse(true);
+        tooltip_area_f:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
+            GameTooltip:SetSpellByID(self.__id);
+            GameTooltip:Show();
+        end);
+        tooltip_area_f:SetScript("OnLeave", function(self)
+            GameTooltip:Hide();
+        end);
+
+
         local icon = CreateFrame("Frame", nil, sw_frame.spells_frame);
         icon:SetSize(15, 15);
         icon:SetPoint("TOPLEFT", icon_x_offset, sw_frame.spells_frame.y_offset+2);
         local icon_texture = icon:CreateTexture(nil);
         icon_texture:SetAllPoints(icon);
-        icon:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
-            GameTooltip:SetSpellByID(self.__id);
-            GameTooltip:Show();
-        end);
-        icon:SetScript("OnLeave", function(self)
-            GameTooltip:Hide();
-        end);
 
         local book = CreateFrame("Frame", nil, sw_frame.spells_frame);
         book:SetSize(15, 15);
@@ -1091,6 +1126,7 @@ local function create_sw_ui_spells_frame()
         local role_icon_texture = role_icon:CreateTexture(nil, "ARTWORK");
         role_icon_texture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
 
+
         local effect_per_sec_str = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         effect_per_sec_str:SetFontObject(font);
         effect_per_sec_str:SetText("");
@@ -1110,7 +1146,7 @@ local function create_sw_ui_spells_frame()
         local cost = sw_frame.spells_frame:CreateFontString(nil, "OVERLAY");
         cost:SetFontObject(font);
         cost:SetText("");
-        cost:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset);
+        cost:SetPoint("TOPLEFT", acquisition_x_offset, sw_frame.spells_frame.y_offset+1);
 
         -- spell option dropdown
         local spell_options = CreateFrame("Button", "sw_frame_spells_frame_dropdown"..i, sw_frame.spells_frame, "UIDropDownMenuTemplate");
@@ -1141,9 +1177,7 @@ local function create_sw_ui_spells_frame()
                             if spells[id] and bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
 
                                 config.settings.spell_calc_list[spell_options.__spid] = 1;
-
-                                local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui();
-                                swc.ui.update_and_display_spell_diffs(loadout, effects, effects_diffed);
+                                update_calc_list();
                             end
 
                         end,
@@ -1160,7 +1194,7 @@ local function create_sw_ui_spells_frame()
         local f = CreateFrame("Button", nil, sw_frame.spells_frame, "UIPanelButtonTemplate");
         f:SetText(":");
         f:SetSize(15, 15);
-        f:SetPoint("TOPLEFT", dropdown_x_offset, sw_frame.spells_frame.y_offset+2);
+        f:SetPoint("TOPLEFT", dropdown_x_offset, sw_frame.spells_frame.y_offset+3);
         f:SetScript("OnClick", function()
             _G["sw_frame_spells_frame_dropdown"..i.."Button"]:Click();
         end);
@@ -1174,6 +1208,7 @@ local function create_sw_ui_spells_frame()
 
 
         sw_frame.spells_frame.scroll_view[i] = {
+            tooltip_area = tooltip_area_f,
             spell_icon = icon,
             spell_tex = icon_texture,
             spell_name = spell_str,
@@ -1272,21 +1307,13 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_display_loadout_info",
             txt = "Target info",
             color = effect_colors.loadout_info,
-        },
-        {
-            id = "tooltip_display_spell_rank",
-            txt = "Spell rank info",
-            color = effect_colors.spell_rank,
-        },
-        {
-            id = "tooltip_display_spell_id",
-            txt = "Spell id",
-            color = effect_colors.spell_rank,
+            tooltip = "Target level, armor and resistance assumed in calculation."
         },
         {
             id = "tooltip_display_hit",
-            txt = "Hit & resist chance",
-            color = effect_colors.normal
+            txt = "Miss, avoidance & mitigation",
+            color = effect_colors.miss_info,
+            tooltip = "Avoidance based on weapon skill & target level. Mitigation based on target armor or resistance."
         },
         {
             id = "tooltip_display_normal",
@@ -1294,29 +1321,15 @@ local function create_sw_ui_tooltip_frame()
             color = effect_colors.normal
         },
         {
-            id = "tooltip_display_normal_hit_combined",
-            txt = "Normal effect & hit info combined",
-            color = effect_colors.normal
-        },
-        {
-            id = "tooltip_display_crit_chance",
-            txt = "Critical chance & modifier",
-            color = effect_colors.crit
-        },
-        {
             id = "tooltip_display_crit",
             txt = "Critical effect",
             color = effect_colors.crit
         },
         {
-            id = "tooltip_display_crit_combined",
-            txt = "Critical effect & chance combined",
-            color = effect_colors.crit
-        },
-        {
             id = "tooltip_display_expected",
             txt = "Expected effect",
-            color = effect_colors.expectation
+            color = effect_colors.expectation,
+            tooltip = "This average considers all kinds of outcomes like critical, miss, resist, dodge, parry, glance etc.",
         },
         {
             id = "tooltip_display_effect_per_sec",
@@ -1365,6 +1378,16 @@ local function create_sw_ui_tooltip_frame()
             color = effect_colors.sp_effect,
         },
         {
+            id = "tooltip_display_spell_rank",
+            txt = "Spell rank info",
+            color = effect_colors.spell_rank,
+        },
+        {
+            id = "tooltip_display_spell_id",
+            txt = "Spell id",
+            color = effect_colors.spell_rank,
+        },
+        {
             id = "tooltip_display_stat_weights_dps",
             txt = "Stat weights: Effect per sec",
             color = effect_colors.stat_weights
@@ -1411,8 +1434,8 @@ local function create_sw_ui_tooltip_frame()
 
         getglobal("sw_frame_setting_tooltip_display_addon_name"):Click();
         getglobal("sw_frame_setting_tooltip_display_loadout_info"):Click();
-        getglobal("sw_frame_setting_tooltip_display_normal_hit_combined"):Click();
-        getglobal("sw_frame_setting_tooltip_display_crit_combined"):Click();
+        getglobal("sw_frame_setting_tooltip_display_normal"):Click();
+        getglobal("sw_frame_setting_tooltip_display_crit"):Click();
         getglobal("sw_frame_setting_tooltip_display_expected"):Click();
         getglobal("sw_frame_setting_tooltip_display_effect_per_sec"):Click();
         getglobal("sw_frame_setting_tooltip_display_effect_per_cost"):Click();
@@ -1436,8 +1459,8 @@ local function create_sw_ui_tooltip_frame()
         getglobal("sw_frame_setting_tooltip_display_addon_name"):Click();
         getglobal("sw_frame_setting_tooltip_display_loadout_info"):Click();
         getglobal("sw_frame_setting_tooltip_display_spell_rank"):Click();
-        getglobal("sw_frame_setting_tooltip_display_normal_hit_combined"):Click();
-        getglobal("sw_frame_setting_tooltip_display_crit_combined"):Click();
+        getglobal("sw_frame_setting_tooltip_display_normal"):Click();
+        getglobal("sw_frame_setting_tooltip_display_crit"):Click();
         getglobal("sw_frame_setting_tooltip_display_expected"):Click();
         getglobal("sw_frame_setting_tooltip_display_avg_cost"):Click();
         getglobal("sw_frame_setting_tooltip_display_avg_cast"):Click();
@@ -1508,7 +1531,14 @@ local function create_sw_ui_overlay_frame()
             func = function(self)
                 config.settings[self._settings_id] = self:GetChecked();
                 swc.overlay.clear_overlays();
+                swc.core.old_ranks_checks_needed = true;
             end
+        },
+        {
+            id = "overlay_mana_abilities",
+            txt = "Show mana restorative spells ",
+            color = effect_colors.avg_cost,
+            tooltip = "Puts mana restoration amount on overlay for spells like Evocation."
         },
         {
             id = "overlay_old_rank",
@@ -1520,10 +1550,14 @@ local function create_sw_ui_overlay_frame()
             end
         },
         {
-            id = "overlay_mana_abilities",
-            txt = "Show mana restorative spells ",
-            color = effect_colors.avg_cost,
-            tooltip = "Puts mana restoration amount on overlay for spells like Evocation."
+            id = "overlay_old_rank_limit_to_known",
+            txt = "Restrict old rank warning",
+            color = effect_colors.crit,
+            func = function(self)
+                config.settings[self._settings_id] = self:GetChecked();
+                swc.core.old_ranks_checks_needed = true;
+            end,
+            tooltip = "Does not warn about old rank when the higher rank is not learned/known by player. Requires old rank warning option to be toggled.",
         },
         {
             id = "overlay_single_effect_only",
@@ -1643,6 +1677,7 @@ local function create_sw_ui_overlay_frame()
     f.val_txt:SetPoint("TOPLEFT", 430, sw_frame.overlay_frame.y_offset)
     f.val_txt:SetText(string.format("%.1f", 0));
 
+    f:SetValue(config.settings.overlay_offset);
     f:SetScript("OnValueChanged", function(self, val)
         config.settings.overlay_offset = val;
         self.val_txt:SetText(string.format("%.1f", val))
@@ -1664,8 +1699,6 @@ local function create_sw_ui_overlay_frame()
     sw_frame.overlay_frame.num_overlay_special_toggled = 0;
 
     local icon_checkbox_func = function(self)
-        config.settings.overlay_disable = false;
-        sw_frame_setting_overlay_disable:SetChecked(false);
 
         local checked = self:GetChecked();
         if checked then
@@ -1679,8 +1712,8 @@ local function create_sw_ui_overlay_frame()
             -- toggled fourth
             self:SetChecked(false);
             sw_frame.overlay_frame.num_overlay_components_toggled = 3;
-        elseif sw_frame.overlay_frame.num_overlay_components_toggled == 0 then
-            config.settings.overlay_disable = true;
+        --elseif sw_frame.overlay_frame.num_overlay_components_toggled == 0 then
+        --    config.settings.overlay_disable = true;
         else
             config.settings[self._settings_id] = checked;
         end
@@ -1754,7 +1787,7 @@ local function create_sw_ui_overlay_frame()
         {
             id = "overlay_display_hit",
             txt = "Hit chance",
-            color = effect_colors.expectation
+            color = effect_colors.hit
         },
         {
             id = "overlay_display_crit_chance",
@@ -1797,41 +1830,27 @@ end
 
 local function create_sw_ui_calculator_frame()
 
-    sw_frame.calculator_frame.line_y_offset = -20;
+    sw_frame.loadout_frame.y_offset = sw_frame.calculator_frame.y_offset - 5;
+    local x_pad = 5;
 
-    sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.instructions_label = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.instructions_label:SetFontObject(font);
-    sw_frame.calculator_frame.instructions_label:SetPoint("TOPLEFT", 15, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.instructions_label:SetText("While this tab is open, ability overlay & tooltips reflect the change below");
+    local f = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    f:SetFontObject(GameFontNormal);
+    f:SetPoint("TOPLEFT", 0, sw_frame.calculator_frame.y_offset);
+    f:SetText("While this tab is open, ability overlay & tooltips reflect the change below");
+    f:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
+    sw_frame.calculator_frame.y_offset = -20;
 
-    sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
-
-    sw_frame.calculator_frame.loadout_label = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.loadout_label:SetFontObject(font);
-    sw_frame.calculator_frame.loadout_label:SetPoint("TOPLEFT", 15, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.loadout_label:SetText("Active Loadout: ");
-    sw_frame.calculator_frame.loadout_label:SetTextColor(222/255, 192/255, 40/255);
-
-    sw_frame.calculator_frame.loadout_name_label = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.loadout_name_label:SetFontObject(font);
-    sw_frame.calculator_frame.loadout_name_label:SetPoint("TOPLEFT", 110, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.loadout_name_label:SetText("Missing loadout!");
-    sw_frame.calculator_frame.loadout_name_label:SetTextColor(222/255, 192/255, 40/255);
-
-
-    sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
-
-    sw_frame.calculator_frame.stat_diff_header_left = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.stat_diff_header_left:SetFontObject(font);
-    sw_frame.calculator_frame.stat_diff_header_left:SetPoint("TOPLEFT", 15, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.stat_diff_header_left:SetText("Stat");
+    f = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    f:SetFontObject(font);
+    f:SetPoint("TOPLEFT", x_pad, sw_frame.calculator_frame.y_offset);
+    f:SetText("Active Loadout: ");
+    sw_frame.calculator_frame.loadout_name_label = f;
 
     sw_frame.calculator_frame.stat_diff_header_center = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.calculator_frame.stat_diff_header_center:SetFontObject(font);
-    sw_frame.calculator_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.stat_diff_header_center:SetText("Difference");
+    sw_frame.calculator_frame.stat_diff_header_center:SetPoint("TOPRIGHT", -80, sw_frame.calculator_frame.y_offset);
+    sw_frame.calculator_frame.stat_diff_header_center:SetText("Delta");
 
 
     local comparison_stats_listing_order = {};
@@ -1910,37 +1929,29 @@ local function create_sw_ui_calculator_frame()
         for k, v in pairs(sw_frame.calculator_frame.stats) do
             v.editbox:SetText("");
         end
-        --for i = 1, num_stats do
-
-        --    sw_frame.calculator_frame.stats[i].editbox:SetText("");
-        --end
-
-        update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+        update_calc_list();
     end);
 
-    sw_frame.calculator_frame.clear_button:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.line_y_offset + 3);
+    sw_frame.calculator_frame.clear_button:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.y_offset + 3);
     sw_frame.calculator_frame.clear_button:SetHeight(15);
     sw_frame.calculator_frame.clear_button:SetWidth(50);
     sw_frame.calculator_frame.clear_button:SetText("Clear");
-
-    --sw_frame.calculator_frame.line_y_offset = sw_frame.calculator_frame.line_y_offset - 10;
-
 
     for i, k in pairs(comparison_stats_listing_order) do
 
         v = sw_frame.calculator_frame.stats[k];
 
-        sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
+        sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 17;
 
         v.label = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
 
         v.label:SetFontObject(font);
-        v.label:SetPoint("TOPLEFT", 15, sw_frame.calculator_frame.line_y_offset);
+        v.label:SetPoint("TOPLEFT", x_pad, sw_frame.calculator_frame.y_offset);
         v.label:SetText(v.label_str);
         v.label:SetTextColor(222/255, 192/255, 40/255);
 
         v.editbox = CreateFrame("EditBox", v.label_str.."editbox"..k, sw_frame.calculator_frame, "InputBoxTemplate");
-        v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.line_y_offset);
+        v.editbox:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.y_offset);
         v.editbox:SetText("");
         v.editbox:SetAutoFocus(false);
         v.editbox:SetSize(100, 10);
@@ -1951,7 +1962,7 @@ local function create_sw_ui_calculator_frame()
                 self:SetText("");
                 self:SetFocus();
             else 
-                update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+                update_calc_list();
             end
         end);
 
@@ -1985,12 +1996,21 @@ local function create_sw_ui_calculator_frame()
         end
     end
 
-    sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
+    sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 20;
+
+    multi_row_checkbutton(
+        {{id = "calc_list_use_highest_rank", txt = "Use highest learned rank of spell"}},
+        sw_frame.calculator_frame,
+        2,
+        function()
+            update_calc_list();
+        end,
+        5);
 
     -- sim type button
     sw_frame.calculator_frame.sim_type_button = 
         CreateFrame("Button", "sw_sim_type_button", sw_frame.calculator_frame, "UIDropDownMenuTemplate"); 
-    sw_frame.calculator_frame.sim_type_button:SetPoint("TOPLEFT", -5, sw_frame.calculator_frame.line_y_offset);
+    sw_frame.calculator_frame.sim_type_button:SetPoint("TOPRIGHT", 10, sw_frame.calculator_frame.y_offset);
     sw_frame.calculator_frame.sim_type_button.init_func = function()
         UIDropDownMenu_Initialize(sw_frame.calculator_frame.sim_type_button, function()
             
@@ -2009,9 +2029,8 @@ local function create_sw_ui_calculator_frame()
 
                         sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
                         UIDropDownMenu_SetText(sw_frame.calculator_frame.sim_type_button, "Repeated casts");
-                        sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Show();
-                        sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:Hide();
-                        update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+                        sw_frame.calculator_frame.spell_diff_header_center:SetText("Effet per sec");
+                        update_calc_list();
                     end
                 }
             );
@@ -2023,104 +2042,48 @@ local function create_sw_ui_calculator_frame()
 
                         sw_frame.calculator_frame.sim_type = simulation_type.cast_until_oom;
                         UIDropDownMenu_SetText(sw_frame.calculator_frame.sim_type_button, "Cast until OOM");
-                        sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Hide();
-                        sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:Show();
-                        update_and_display_spell_diffs(update_loadout_and_effects_diffed_from_ui());
+                        sw_frame.calculator_frame.spell_diff_header_center:SetText("Duration (s)");
+                        update_calc_list();
                     end
                 }
             );
         end);
     end;
 
+    f = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    f:SetFontObject(font);
+    f:SetPoint("BOTTOMLEFT", x_pad, 5);
+    f:SetText("Abilities can be added from Spells tab");
+    f:SetTextColor(1.0,  1.0,  1.0);
+
     sw_frame.calculator_frame.sim_type_button:SetText("Simulation type");
 
-    sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.line_y_offset = ui_y_offset_incr(sw_frame.calculator_frame.line_y_offset);
+    sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 17;
+    sw_frame.calculator_frame.y_offset = sw_frame.calculator_frame.y_offset - 17;
 
     sw_frame.calculator_frame.spell_diff_header_spell = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.calculator_frame.spell_diff_header_spell:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_spell:SetPoint("TOPLEFT", 15, sw_frame.calculator_frame.line_y_offset);
+    sw_frame.calculator_frame.spell_diff_header_spell:SetPoint("TOPLEFT", x_pad, sw_frame.calculator_frame.y_offset);
     sw_frame.calculator_frame.spell_diff_header_spell:SetText("Spell");
 
     sw_frame.calculator_frame.spell_diff_header_left = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.calculator_frame.spell_diff_header_left:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, sw_frame.calculator_frame.line_y_offset);
+    sw_frame.calculator_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, sw_frame.calculator_frame.y_offset);
     sw_frame.calculator_frame.spell_diff_header_left:SetText("Change");
 
     sw_frame.calculator_frame.spell_diff_header_center = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.calculator_frame.spell_diff_header_center:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -110, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.spell_diff_header_center:SetText("DPS/HPS");
+    sw_frame.calculator_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -110, sw_frame.calculator_frame.y_offset);
+    sw_frame.calculator_frame.spell_diff_header_center:SetText("Per sec");
 
-    sw_frame.calculator_frame.spell_diff_header_right_spam_cast = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.spell_diff_header_right_spam_cast:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_right_spam_cast:SetPoint("TOPRIGHT", -30, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.spell_diff_header_right_spam_cast:SetText("DMG/HEAL");
+    sw_frame.calculator_frame.spell_diff_header_right = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
+    sw_frame.calculator_frame.spell_diff_header_right:SetFontObject(font);
+    sw_frame.calculator_frame.spell_diff_header_right:SetPoint("TOPRIGHT", -45, sw_frame.calculator_frame.y_offset);
+    sw_frame.calculator_frame.spell_diff_header_right:SetText("Effect");
 
-    sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom = sw_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
-    sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:SetFontObject(font);
-    sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:SetPoint("TOPRIGHT", -20, sw_frame.calculator_frame.line_y_offset);
-    sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:SetText("DURATION (s)");
 
     sw_frame.calculator_frame.calc_list = {};
     sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-end
-
-local function create_loadout_buff_checkbutton(buffs_table, buff_id, buff_info, buff_type, parent_frame, func)
-
-    local index = buffs_table.num + 1;
-
-    buffs_table[index] = {};
-    buffs_table[index].checkbutton = CreateFrame("CheckButton", "loadout_apply_buffs_"..buff_info.lname..index, parent_frame, "ChatConfigCheckButtonTemplate");
-    buffs_table[index].checkbutton.buff_info = buff_info.filter;
-    buffs_table[index].checkbutton.buff_category = buff_info.category;
-    buffs_table[index].checkbutton.buff_lname = buff_info.lname;
-    buffs_table[index].checkbutton.buff_type = buff_type;
-    buffs_table[index].checkbutton.buff_id = buff_id;
-    local rgb = {};
-    if buff_info.category == buff_category.class  then
-        rgb = {235/255, 52/255, 88/255};
-    elseif buff_info.category == buff_category.raid  then
-        rgb = {103/255, 52/255, 235/255};
-    elseif buff_info.category == buff_category.consumes  then
-        rgb = {225/255, 235/255, 52/255};
-    elseif buff_info.category == buff_category.item  then
-        rgb = {0/255, 204/255, 255/255};
-    elseif buff_info.category == buff_category.world_buffs  then
-        rgb = {0/255, 153/255, 51/255};
-    end
-    local buff_name_max_len = 27;
-    local name_appear =  buff_info.lname;
-    if buff_info.name then
-        name_appear =  buff_info.name;
-    end
-    getglobal(buffs_table[index].checkbutton:GetName() .. 'Text'):SetText(name_appear:sub(1, buff_name_max_len));
-    local checkbutton_txt = getglobal(buffs_table[index].checkbutton:GetName() .. 'Text');
-    checkbutton_txt:SetTextColor(rgb[1], rgb[2], rgb[3]);
-    buffs_table[index].checkbutton:SetScript("OnClick", func);
-
-    buffs_table[index].icon = CreateFrame("Frame", "loadout_apply_buffs_icon_"..buff_info.lname, parent_frame);
-    buffs_table[index].icon:SetSize(15, 15);
-    local tex = buffs_table[index].icon:CreateTexture(nil);
-    tex:SetAllPoints(buffs_table[index].icon);
-    if buff_info.icon_id then
-        tex:SetTexture(buff_info.icon_id);
-    else
-        tex:SetTexture(GetSpellTexture(buff_id));
-    end
-
-    buffs_table[index].checkbutton:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
-        GameTooltip:SetSpellByID(buff_id);
-        GameTooltip:Show();
-    end);
-    buffs_table[index].checkbutton:SetScript("OnLeave", function(self)
-        GameTooltip:Hide();
-    end);
-
-    buffs_table.num = index;
-
-    return buffs_table[index].checkbutton;
 end
 
 local function create_sw_ui_loadout_frame()
@@ -2148,7 +2111,7 @@ local function create_sw_ui_loadout_frame()
         UIDropDownMenu_SetText(sw_frame.loadout_frame.loadout_dropdown, config.loadout.name);
         UIDropDownMenu_Initialize(sw_frame.loadout_frame.loadout_dropdown, function()
 
-            UIDropDownMenu_SetWidth(sw_frame.loadout_frame.loadout_dropdown, 130);
+            UIDropDownMenu_SetWidth(sw_frame.loadout_frame.loadout_dropdown, 100);
 
             for k, v in pairs(p_char.loadouts) do
                 UIDropDownMenu_AddButton({
@@ -2170,7 +2133,7 @@ local function create_sw_ui_loadout_frame()
 
     f = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 250, sw_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 240, sw_frame.loadout_frame.y_offset);
     f:SetText("Rename");
     f:SetTextColor(1.0, 1.0, 1.0);
 
@@ -2308,7 +2271,7 @@ local function create_sw_ui_loadout_frame()
 
     getglobal(f:GetName()..'Text'):SetText("Custom talents");
     getglobal(f:GetName()).tooltip =
-        "Accepts a valid wowhead talents link, your loadout will use its talents, glyphs and runes instead of your active ones.";
+        "Accepts a valid wowhead talents link, your loadout will use its talents & glyphs instead of your active ones.";
     f:SetScript("OnClick", function(self)
 
         swc.core.talents_update_needed = true;
@@ -2435,7 +2398,7 @@ local function create_sw_ui_loadout_frame()
     local editbox_close = function(self)
 
         if not editbox_update(self) then
-            self:SetText(""..config.loadout.default_target_lvl_diff); 
+            self:SetText(""..config.loadout.default_target_lvl_diff);
         end
         self:ClearFocus();
         self:HighlightText(0,0);
@@ -2488,42 +2451,150 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("%");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    if swc.core.expansion_loaded == swc.core.expansions.vanilla then
+    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 30;
 
-        sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 30;
+    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
+    f_txt:SetText("Target resistance");
+    f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-        f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-        f_txt:SetFontObject(GameFontNormal);
-        f_txt:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad + 23, sw_frame.loadout_frame.y_offset);
-        f_txt:SetText("Target resistance");
-        f_txt:SetTextColor(1.0,  1.0,  1.0);
-
-        f = CreateFrame("EditBox", "sw_frame_loadout_target_res", sw_frame.loadout_frame, "InputBoxTemplate");
-        f._type = "EditBox";
-        f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
-        f:SetText("");
-        f:SetSize(40, 15);
-        f:SetAutoFocus(false);
-        f.number_editbox = true;
-        local editbox_target_res_update = function(self)
-            local target_res = tonumber(self:GetText());
-            local valid = target_res and target_res >= 0;
-            if valid then
-                config.loadout.target_res = target_res;
-            end
-            return valid;
+    f = CreateFrame("EditBox", "sw_frame_loadout_target_res", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
+    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
+    f:SetText("");
+    f:SetSize(40, 15);
+    f:SetAutoFocus(false);
+    f.number_editbox = true;
+    local editbox_target_res_update = function(self)
+        local target_res = tonumber(self:GetText());
+        local valid = target_res and target_res >= 0;
+        if valid then
+            config.loadout.target_res = target_res;
         end
-        local editbox_target_res_close = function(self)
+        return valid;
+    end
+    local editbox_target_res_close = function(self)
 
-            if not editbox_target_res_update(self) then
-                self:SetText("0");
-                config.loadout.target_res = 0;
-            end
-            self:ClearFocus();
-            self:HighlightText(0,0);
+        if not editbox_target_res_update(self) then
+            self:SetText("0");
+            config.loadout.target_res = 0;
         end
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
 
-        editbox_config(f, editbox_target_res_update, editbox_target_res_close);
+    editbox_config(f, editbox_target_res_update, editbox_target_res_close);
+
+    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+
+    sw_frame.loadout_frame.auto_armor_frames = {};
+    sw_frame.loadout_frame.custom_armor_frames = {};
+
+    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    getglobal(f:GetName()..'Text'):SetText("Estimate armor");
+    getglobal(f:GetName()).tooltip = 
+        "Estimates armor from target level";
+    f:SetScript("OnClick", function(self)
+        local checked = self:GetChecked();
+        config.loadout.target_automatic_armor = checked;
+        if checked then
+            for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+                v:Show();
+            end
+            for _, v in pairs(sw_frame.loadout_frame.custom_armor_frames) do
+                v:Hide();
+            end
+        else
+            for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+                v:Hide();
+            end
+            for _, v in pairs(sw_frame.loadout_frame.custom_armor_frames) do
+                v:Show();
+            end
+        end
+    end);
+    f:SetHitRectInsets(0, 0, 0, 0);
+    sw_frame.loadout_frame.automatic_armor = f;
+
+    f_txt = sw_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("LEFT", getglobal(f:GetName()..'Text'), "RIGHT", 50, 0);
+    f_txt:SetText("Custom armor value");
+    f_txt:SetTextColor(1.0,  1.0,  1.0);
+    sw_frame.loadout_frame.custom_armor_frames[1] = f_txt;
+
+
+    f = CreateFrame("EditBox", "sw_frame_loadout_target_armor", sw_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
+    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
+    f:SetText("");
+    f:SetSize(40, 15);
+    f:SetAutoFocus(false);
+    f.number_editbox = true;
+    local editbox_target_armor_update = function(self)
+        local target_armor = tonumber(self:GetText());
+        local valid = target_armor and target_armor >= 0;
+        if valid then
+            config.loadout.target_armor = target_armor;
+        end
+        return valid;
+    end
+    local editbox_target_armor_close = function(self)
+
+        if not editbox_target_res_update(self) then
+            self:SetText("0");
+            config.loadout.target_armor = 0;
+        end
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+    editbox_config(f, editbox_target_armor_update, editbox_target_armor_close);
+    sw_frame.loadout_frame.custom_armor_frames[2] = f;
+
+    local armor_pct_fn = function(self)
+        if self:GetChecked() then
+            config.loadout.target_automatic_armor_pct = self._value;
+        end
+        for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+            v:SetChecked(config.loadout.target_automatic_armor_pct == v._value);
+        end
+    end;
+
+    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor_100", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f._value = 100;
+    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.automatic_armor:GetName()..'Text'), "RIGHT", 40, 0);
+    getglobal(f:GetName()..'Text'):SetText("Heavy 100%");
+    f:SetHitRectInsets(0, 0, 0, 0);
+    f:SetScript("OnClick", armor_pct_fn);
+    sw_frame.loadout_frame.auto_armor_frames[1] = f;
+
+    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor_80", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f._value = 80;
+    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.auto_armor_frames[1]:GetName()..'Text'), "RIGHT", 10, 0);
+    getglobal(f:GetName()..'Text'):SetText("Medium 80%");
+    f:SetHitRectInsets(0, 0, 0, 0);
+    f:SetScript("OnClick", armor_pct_fn);
+    sw_frame.loadout_frame.auto_armor_frames[2] = f;
+
+    f = CreateFrame("CheckButton", "sw_frame_loadout_target_automatic_armor_50", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f._value = 50;
+    f:SetPoint("LEFT", getglobal(sw_frame.loadout_frame.auto_armor_frames[2]:GetName()..'Text'), "RIGHT", 10, 0);
+    getglobal(f:GetName()..'Text'):SetText("Light 50%");
+    f:SetHitRectInsets(0, 0, 0, 0);
+    f:SetScript("OnClick", armor_pct_fn);
+    sw_frame.loadout_frame.auto_armor_frames[3] = f;
+
+    for _, v in pairs(sw_frame.loadout_frame.auto_armor_frames) do
+        v:Hide();
+    end
+    for _, v in pairs(sw_frame.loadout_frame.custom_armor_frames) do
+        v:Show();
     end
 
     sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
@@ -2598,31 +2669,36 @@ local function create_sw_ui_loadout_frame()
 
     sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
 
-    f = CreateFrame("CheckButton", "sw_frame_loadout_always_max_mana", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f = CreateFrame("CheckButton", "sw_frame_loadout_always_max_resource", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
-    getglobal(f:GetName()..'Text'):SetText("Always at maximum mana");
+    getglobal(f:GetName()..'Text'):SetText("Always at maximum resource");
     getglobal(f:GetName()).tooltip = 
-        "Casting until OOM uses maximum mana instead of current.";
+        "Assumes you are casting from maximum mana, energy, rage or combo points";
     f:SetScript("OnClick", function(self)
-        config.loadout.always_max_mana = self:GetChecked();
+        config.loadout.always_max_resource = self:GetChecked();
     end)
-
     sw_frame.loadout_frame.max_mana_checkbutton = f;
 
+    sw_frame.loadout_frame.y_offset = sw_frame.loadout_frame.y_offset - 25;
+
+    f = CreateFrame("CheckButton", "sw_frame_loadout_behind_target", sw_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f:SetPoint("TOPLEFT", sw_frame.loadout_frame, x_pad, sw_frame.loadout_frame.y_offset);
+    getglobal(f:GetName()..'Text'):SetText("Always behind target, eliminating parried attacks");
+    f:SetScript("OnClick", function(self)
+        config.loadout.behind_target = self:GetChecked();
+    end)
 end
 
 local function create_sw_ui_buffs_frame()
 
-
-
     local f = CreateFrame("CheckButton", "sw_frame_buffs_frame_toggle", sw_frame.buffs_frame, "ChatConfigCheckButtonTemplate");
     f:SetPoint("TOPLEFT", sw_frame.buffs_frame, 0, sw_frame.buffs_frame.y_offset);
-    getglobal(f:GetName() .. 'Text'):SetText("Apply buffs even when inactive");
+    getglobal(f:GetName() .. 'Text'):SetText("Enable selected auras even when inactive");
     getglobal(f:GetName()).tooltip = 
         "The selected buffs will be applied behind the scenes to the spell calculations";
     f:SetScript("OnClick", function(self)
-
         if self:GetChecked() then
             config.loadout.force_apply_buffs = true;
         else
@@ -2630,231 +2706,222 @@ local function create_sw_ui_buffs_frame()
         end
         update_buffs_frame();
     end);
-    sw_frame.loadout_frame.always_apply_buffs_button = f;
+    sw_frame.buffs_frame.always_apply_buffs_button = f;
 
-    local w = sw_buffs_frame;
-    f = CreateFrame("ScrollFrame", "sw_frame_lhs_frame", sw_frame.buffs_frame);
-    f:SetWidth(235);
-    f:SetHeight(500);
-    f:SetPoint("TOPLEFT", sw_frame.buffs_frame, 0, -50);
-    sw_frame.buffs_frame.lhs = {}
-    sw_frame.buffs_frame.lhs.frame = f;
+    sw_frame.buffs_frame.y_offset = sw_frame.buffs_frame.y_offset - 25;
 
-    f = CreateFrame("ScrollFrame", "sw_frame_rhs_frame", sw_frame.buffs_frame);
-    f:SetWidth(235);
-    f:SetHeight(500);
-    f:SetPoint("TOPLEFT", sw_frame.buffs_frame, 235, -50);
-    sw_frame.buffs_frame.rhs = {}
-    sw_frame.buffs_frame.rhs.frame = f;
-
-    f = CreateFrame("ScrollFrame", "sw_frame_lhs_buffs_list_frame", sw_frame.buffs_frame.lhs.frame);
-    f:SetWidth(235);
-    f:SetHeight(470);
-    f:SetPoint("TOPLEFT", sw_frame.buffs_frame.lhs.frame, 0, -25);
-    sw_frame.buffs_frame.lhs.buffs_list_frame = f;
-
-    f = CreateFrame("ScrollFrame", "sw_frame_rhs_buffs_list_frame", sw_frame.buffs_frame.rhs.frame);
-    f:SetWidth(235);
-    f:SetHeight(470);
-    f:SetPoint("TOPLEFT", sw_frame.buffs_frame.rhs.frame, 0, -25);
-    sw_frame.buffs_frame.rhs.buffs_list_frame = f;
-
-    sw_frame.buffs_frame.lhs.num_checked = 0;
-    sw_frame.buffs_frame.rhs.num_checked = 0;
-
-    sw_frame.buffs_frame.lhs.buffs = {};
-    sw_frame.buffs_frame.lhs.buffs.num = 0;
-    sw_frame.buffs_frame.rhs.buffs = {};
-    sw_frame.buffs_frame.rhs.buffs.num = 0;
-
-    local y_offset = sw_frame.buffs_frame.y_offset;
-
-    local y_offset_buffs = y_offset;
-    local y_offset_target_buffs = y_offset;
-
-    local check_button_buff_func = function(self)
-
-        if not config.loadout.force_apply_buffs then
-            self:SetChecked(true);
-            return;
-        end
-        if self:GetChecked() then
-            if self.buff_type == "self" then
-                config.loadout.buffs[self.buff_id] = self.buff_info;
-                sw_frame.buffs_frame.lhs.buffs.num_checked = sw_frame.buffs_frame.lhs.buffs.num_checked + 1;
-            elseif self.buff_type == "target_buffs" then
-                config.loadout.target_buffs[self.buff_id] = self.buff_info;
-                sw_frame.buffs_frame.rhs.buffs.num_checked = sw_frame.buffs_frame.rhs.buffs.num_checked + 1;
-            end
-
-        else    
-            if self.buff_type == "self" then
-                config.loadout.buffs[self.buff_id] = nil;
-                sw_frame.buffs_frame.lhs.buffs.num_checked = sw_frame.buffs_frame.lhs.buffs.num_checked - 1;
-            elseif self.buff_type == "target_buffs" then
-                config.loadout.target_buffs[self.buff_id] = nil;
-                sw_frame.buffs_frame.rhs.buffs.num_checked = sw_frame.buffs_frame.rhs.buffs.num_checked - 1;
-            end
-        end
-
-        if sw_frame.buffs_frame.lhs.buffs.num_checked == 0 then
-            sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton:SetChecked(false);
-        else
-            sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton:SetChecked(true);
-        end
-
-        if sw_frame.buffs_frame.rhs.buffs.num_checked == 0 then
-            sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton:SetChecked(false);
-        else
-            sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton:SetChecked(true);
-        end
-    end
-
-    f = CreateFrame("CheckButton", "sw_frame_buffs_frame_lhs_select_buffs", sw_frame.buffs_frame.lhs.frame, "ChatConfigCheckButtonTemplate");
-    f:SetPoint("TOPLEFT", 20, y_offset_buffs);
-    getglobal(f:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
-    getglobal(f:GetName() .. 'Text'):SetTextColor(1, 0, 0);
-
-    f:SetScript("OnClick", function(self)
-
-        if not config.loadout.force_apply_buffs then
-            --self:SetChecked(true)
-            return;
-        end
-        if self:GetChecked() then
-            for i = 1, sw_frame.buffs_frame.lhs.buffs.num do
-                config.loadout.buffs[sw_frame.buffs_frame.lhs.buffs[i].checkbutton.buff_id] =
-                    sw_frame.buffs_frame.lhs.buffs[i].checkbutton.buff_info;
+    local f = CreateFrame("EditBox", "sw_frame_buffs_search", sw_frame.buffs_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", 8, sw_frame.buffs_frame.y_offset);
+    f:SetSize(160, 15);
+    f:SetAutoFocus(false);
+    f:SetScript("OnTextChanged", function(self)
+        local txt = self:GetText();
+        if txt == "" then
+            sw_frame.buffs_frame.search_empty_label:Show();
+            for _, view in ipairs(buffs_views) do
+                for k, _ in ipairs(view.buffs) do
+                    view.filtered[k] = k;
+                end
             end
         else
-            config.loadout.buffs = {};
+            sw_frame.buffs_frame.search_empty_label:Hide();
+            local num = tonumber(txt);
+            for _, view in ipairs(buffs_views) do
+                view.filtered = {};
+                for k, v in ipairs(view.buffs) do
+                    if string.find(string.lower(v.lname), string.lower(txt)) or 
+                        (num and num == v.id) then
+                        table.insert(view.filtered, k);
+                    end
+                end
+            end
         end
-
+        for _, view in ipairs(buffs_views) do
+            sw_frame.buffs_frame[view.side].slider:SetMinMaxValues(1, max(1, #view.filtered - math.floor(sw_frame.buffs_frame[view.side].num_buffs_can_fit/2)));
+        end
         update_buffs_frame();
     end);
-    sw_frame.buffs_frame.lhs.select_all_buffs_checkbutton = f;
+    sw_frame.buffs_frame.search = f;
 
-    f = CreateFrame("CheckButton", "sw_frame_buffs_frame_rhs_select_buffs", sw_frame.buffs_frame.rhs.frame, "ChatConfigCheckButtonTemplate");
-    f:SetPoint("TOPLEFT", 20, y_offset_buffs);
-    getglobal(f:GetName() .. 'Text'):SetText("SELECT ALL/NONE");
-    getglobal(f:GetName() .. 'Text'):SetTextColor(1, 0, 0);
+    local f = sw_frame.buffs_frame:CreateFontString(nil, "OVERLAY");
+    f:SetFontObject(font);
+    f:SetText("Search");
+    f:SetPoint("LEFT", sw_frame.buffs_frame.search, 5, 0);
+    sw_frame.buffs_frame.search_empty_label = f;
 
-    f:SetScript("OnClick", function(self) 
+    for view_idx, view in ipairs(buffs_views) do
 
-        if not config.loadout.force_apply_buffs then
-            --self:SetChecked(true)
-            return;
+        -- init without any filter, 1 to 1
+        for k, _ in ipairs(view.buffs) do
+            view.filtered[k] = k;
         end
-        if self:GetChecked() then
-            for i = 1, sw_frame.buffs_frame.rhs.buffs.num do
-                config.loadout.target_buffs[sw_frame.buffs_frame.rhs.buffs[i].checkbutton.buff_id] =
-                    sw_frame.buffs_frame.rhs.buffs[i].checkbutton.buff_info;
-            end
+
+        local y_offset = sw_frame.buffs_frame.y_offset;
+
+        y_offset = y_offset - 20;
+
+        local f = CreateFrame("ScrollFrame", "sw_frame_buffs_frame_"..view.side, sw_frame.buffs_frame);
+        f:SetWidth(235);
+        f:SetHeight(490);
+        f:SetPoint("TOPLEFT", sw_frame.buffs_frame, 240*(view_idx-1), y_offset);
+        sw_frame.buffs_frame[view.side] = {}
+        sw_frame.buffs_frame[view.side].frame = f;
+
+        f = CreateFrame("ScrollFrame", "sw_frame_buffs_list_"..view.side, sw_frame.buffs_frame[view.side].frame);
+        f:SetWidth(235);
+        f:SetHeight(455);
+        f:SetPoint("TOPLEFT", sw_frame.buffs_frame[view.side].frame, 0, -35);
+        sw_frame.buffs_frame[view.side].buffs_list_frame = f;
+
+        sw_frame.buffs_frame[view.side].num_checked = 0;
+        sw_frame.buffs_frame[view.side].buffs = {};
+        sw_frame.buffs_frame[view.side].buffs_num = 0;
+
+        y_offset = -5;
+
+        f = sw_frame.buffs_frame[view.side].frame:CreateFontString(nil, "OVERLAY");
+        f:SetFontObject(GameFontNormal);
+        local fp, _, flags = f:GetFont();
+        f:SetFont(fp, 17, flags);
+        if (view_idx == 1) then
+            f:SetText("Player auras");
         else
-            config.loadout.target_buffs = {};
+            f:SetText("Subject auras");
         end
+        f:SetPoint("TOPLEFT", 5, y_offset);
 
-        update_buffs_frame();
-    end);
-    sw_frame.buffs_frame.rhs.select_all_buffs_checkbutton = f;
+        y_offset = y_offset - 15;
+        local f = CreateFrame("CheckButton", "sw_frame_check_all_"..view.side, sw_frame.buffs_frame[view.side].frame, "ChatConfigCheckButtonTemplate");
+        f:SetPoint("TOPLEFT", 20, y_offset);
+        getglobal(f:GetName() .. 'Text'):SetText("Select all/none");
+        getglobal(f:GetName() .. 'Text'):SetTextColor(1, 0, 0);
 
-    -- 
-    y_offset_buffs = y_offset_buffs - 20;
-    y_offset_target_buffs = y_offset_target_buffs - 20;
+        f:SetScript("OnClick", function(self)
 
-    -- buffs
-    local sorted_buffs_by_name = {};
-    for k, v in pairs(buffs) do
-        if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-            local lname = select(1, GetSpellInfo(k));
-            table.insert(sorted_buffs_by_name, {lname, v.category, k});
-        end
-    end
-    table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
-    for _, k in ipairs(sorted_buffs_by_name) do
-        local buff_id = k[3];
-        local v = buffs[buff_id];
-        create_loadout_buff_checkbutton(
-            sw_frame.buffs_frame.lhs.buffs, buff_id, v, "self",
-            sw_frame.buffs_frame.lhs.buffs_list_frame, check_button_buff_func
-        );
-    end
+            if self:GetChecked() then
+                if view.side == "lhs" then
+                    for _, v in ipairs(view.buffs) do
+                        config.loadout.buffs[v.id] = 1;
+                    end
+                else
+                    for _, v in ipairs(view.buffs) do
+                        config.loadout.target_buffs[v.id] = 1;
+                    end
+                end
+            else
+                if view.side == "lhs" then
+                    config.loadout.buffs = {};
+                else
+                    config.loadout.target_buffs = {};
+                end
+            end
 
-    -- debuffs
-    sorted_buffs_by_name = {};
-    for k, v in pairs(target_buffs) do
-        if bit.band(filter_flags_active, v.filter) ~= 0 and bit.band(buff_filters.hidden, v.filter) == 0 then
-            local lname = select(1, GetSpellInfo(k));
-            table.insert(sorted_buffs_by_name, {lname, v.category, k});
-        end
-    end
-    table.sort(sorted_buffs_by_name, function(lhs, rhs)  return lhs[2]..lhs[1] < rhs[2]..rhs[1] end);
-    for _, k in ipairs(sorted_buffs_by_name) do
-        local buff_id = k[3];
-        local v = target_buffs[buff_id];
-        create_loadout_buff_checkbutton(
-            sw_frame.buffs_frame.rhs.buffs, buff_id, v, "target_buffs",
-            sw_frame.buffs_frame.rhs.buffs_list_frame, check_button_buff_func
-        );
-    end
-
-    -- sliders
-    f = CreateFrame("Slider", nil, sw_frame.buffs_frame.lhs.buffs_list_frame, "UISliderTemplate");
-    f:SetOrientation('VERTICAL');
-    f:SetPoint("RIGHT", sw_frame.buffs_frame.lhs.buffs_list_frame, "RIGHT", 0, 5);
-    f:SetSize(15, sw_frame.buffs_frame.lhs.buffs_list_frame:GetHeight());
-    sw_frame.buffs_frame.lhs.num_buffs_can_fit =
-        math.floor(f:GetHeight()/20);
-    f:SetMinMaxValues(
-        0,
-        max(0, sw_frame.buffs_frame.lhs.buffs.num - sw_frame.buffs_frame.lhs.num_buffs_can_fit)
-    );
-    f:SetValue(0);
-    f:SetValueStep(1);
-    f:SetScript("OnValueChanged", function(self, val)
-        update_buffs_frame();
-    end);
-    sw_frame.buffs_frame.lhs.slider = f;
-
-    sw_frame.buffs_frame.lhs.buffs_list_frame:SetScript("OnMouseWheel", function(self, dir)
-        local min_val, max_val = sw_frame.buffs_frame.lhs.slider:GetMinMaxValues();
-        local val = sw_frame.buffs_frame.lhs.slider:GetValue();
-        if val - dir >= min_val and val - dir <= max_val then
-            sw_frame.buffs_frame.lhs.slider:SetValue(val - dir);
             update_buffs_frame();
-        end
-    end);
+        end);
+        sw_frame.buffs_frame[view.side].select_all_buffs_checkbutton = f;
 
-    f = CreateFrame("Slider", nil, sw_frame.buffs_frame.rhs.buffs_list_frame, "UISliderTemplate");
-    f:SetOrientation('VERTICAL');
-    f:SetPoint("RIGHT", sw_frame.buffs_frame.rhs.buffs_list_frame, "RIGHT", 0, 5);
-    f:SetSize(15, sw_frame.buffs_frame.rhs.buffs_list_frame:GetHeight());
-    sw_frame.buffs_frame.rhs.num_buffs_can_fit = 
-        math.floor(f:GetHeight()/20);
-    f:SetMinMaxValues(
-        0,
-        max(0, sw_frame.buffs_frame.rhs.buffs.num - sw_frame.buffs_frame.rhs.num_buffs_can_fit)
-    );
-    f:SetValue(0);
-    f:SetValueStep(1);
-    f:SetScript("OnValueChanged", function(self, val)
-        update_buffs_frame();
-    end);
-
-    sw_frame.buffs_frame.rhs.buffs_list_frame:SetScript("OnMouseWheel", function(self, dir)
-        local min_val, max_val = sw_frame.buffs_frame.rhs.slider:GetMinMaxValues();
-        local val = sw_frame.buffs_frame.rhs.slider:GetValue();
-        if val - dir >= min_val and val - dir <= max_val then
-            sw_frame.buffs_frame.rhs.slider:SetValue(val - dir);
+        local f = CreateFrame("Slider", nil, sw_frame.buffs_frame[view.side].buffs_list_frame, "UIPanelScrollBarTrimTemplate");
+        f:SetOrientation('VERTICAL');
+        f:SetPoint("RIGHT", sw_frame.buffs_frame[view.side].buffs_list_frame, "RIGHT", 0, 2);
+        f:SetHeight(sw_frame.buffs_frame[view.side].buffs_list_frame:GetHeight()-30);
+        sw_frame.buffs_frame[view.side].num_buffs_can_fit =
+            math.floor(sw_frame.buffs_frame[view.side].buffs_list_frame:GetHeight()/15);
+        f:SetMinMaxValues( 1, max(1, #view.filtered - math.floor(sw_frame.buffs_frame[view.side].num_buffs_can_fit/2)));
+        f:SetValue(1);
+        f:SetValueStep(1);
+        f:SetScript("OnValueChanged", function(self, val)
             update_buffs_frame();
+        end);
+
+        local bg = f:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints(f);
+        bg:SetColorTexture(0, 0, 0, 0.5);
+
+        sw_frame.buffs_frame[view.side].slider = f;
+
+        sw_frame.buffs_frame[view.side].buffs_list_frame:SetScript("OnMouseWheel", function(self, dir)
+            local min_val, max_val = sw_frame.buffs_frame[view.side].slider:GetMinMaxValues();
+            local val = sw_frame.buffs_frame[view.side].slider:GetValue();
+            if val - dir >= min_val and val - dir <= max_val then
+                sw_frame.buffs_frame[view.side].slider:SetValue(val - dir);
+                update_buffs_frame();
+            end
+        end);
+
+
+        y_offset = 0;
+        for i = 1, sw_frame.buffs_frame[view.side].num_buffs_can_fit do
+            sw_frame.buffs_frame[view.side].buffs[i] = {};
+
+            local checkbtn = CreateFrame("CheckButton", "loadout_buffs_checkbutton"..view.side..i, sw_frame.buffs_frame[view.side].buffs_list_frame, "ChatConfigCheckButtonTemplate");
+            checkbtn.side = view.side;
+            checkbtn:SetScript("OnMouseDown", function(self, btn)
+
+                local config_buffs;
+                if view.side == "lhs" then
+                    config_buffs = config.loadout.buffs;
+                else
+                    config_buffs = config.loadout.target_buffs;
+                end
+                if btn == "LeftButton" then
+                    if not config_buffs[self.buff_id] then
+                        config_buffs[self.buff_id] = 1;
+                        sw_frame.buffs_frame[view.side].num_checked = sw_frame.buffs_frame[view.side].num_checked + 1;
+                    else
+                        config_buffs[self.buff_id] = nil;
+                        sw_frame.buffs_frame[view.side].num_checked = sw_frame.buffs_frame[view.side].num_checked - 1;
+                    end
+
+                    if sw_frame.buffs_frame[view.side].num_checked == 0 then
+                        sw_frame.buffs_frame[view.side].select_all_buffs_checkbutton:SetChecked(false);
+                    else
+                        sw_frame.buffs_frame[view.side].select_all_buffs_checkbutton:SetChecked(true);
+                    end
+                elseif btn == "Button4" then
+                    if config_buffs[self.buff_id] then
+                        config_buffs[self.buff_id] = math.max(1, config_buffs[self.buff_id] - 1);
+                    end
+                elseif btn == "Button5"  or btn == "RightButton" then
+                    if config_buffs[self.buff_id] then
+                        config_buffs[self.buff_id] = config_buffs[self.buff_id] + 1;
+                    end
+                end
+                self.__stacks_str:SetText(tostring(config_buffs[self.buff_id] or 0));
+            end);
+            local icon = CreateFrame("Frame", "loadout_buffs_icon"..view.side..i, sw_frame.buffs_frame[view.side].buffs_list_frame);
+            icon:SetSize(15, 15);
+            local tex = icon:CreateTexture(nil);
+            icon.tex = tex;
+            tex:SetAllPoints(icon);
+
+            checkbtn:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT");
+                GameTooltip:SetSpellByID(self.buff_id);
+                GameTooltip:Show();
+            end);
+            checkbtn:SetScript("OnLeave", function()
+                GameTooltip:Hide();
+            end);
+
+            local stacks_str = icon:CreateFontString(nil, "OVERLAY");
+            stacks_str:SetFontObject(font);
+            stacks_str:SetPoint("BOTTOMRIGHT", 0, 0);
+            checkbtn.__stacks_str = stacks_str;
+
+            checkbtn:SetPoint("TOPLEFT", 20, y_offset);
+            icon:SetPoint("TOPLEFT", 5, y_offset -4);
+            y_offset = y_offset - 15;
+
+            sw_frame.buffs_frame[view.side].buffs[i].checkbutton = checkbtn;
+            sw_frame.buffs_frame[view.side].buffs[i].icon = icon;
         end
-    end);
-    sw_frame.buffs_frame.rhs.slider = f;
+    end
 end
 
 local function update_profile_frame()
 
-    swc.config.set_active_settings(swc.core.active_spec);
+    swc.config.set_active_settings();
+    swc.config.activate_settings();
 
     sw_frame.profile_frame.primary_spec.init_func();
     sw_frame.profile_frame.second_spec.init_func();
@@ -2884,17 +2951,6 @@ local function update_profile_frame()
     end
 
     sw_frame.profile_frame.rename_editbox:SetText(config.active_profile_name);
-
-    --if sw_frame.profile_frame.new_profile_name_editbox:GetText() ~= "" then
-    --    for _, v in pairs(sw_frame.profile_frame.new_profile_section) do
-    --        v:Show();
-    --    end
-    --else
-    --    for _, v in pairs(sw_frame.profile_frame.new_profile_section) do
-    --        v:Hide();
-    --    end
-    --end
-
 end
 
 local function create_sw_ui_profile_frame()
@@ -2935,7 +2991,6 @@ local function create_sw_ui_profile_frame()
                             p_char.main_spec_profile = k;
                             UIDropDownMenu_SetText(sw_frame.profile_frame.primary_spec, k);
                             update_profile_frame();
-                            swc.config.activate_settings();
                         end
                     }
                 );
@@ -2976,7 +3031,6 @@ local function create_sw_ui_profile_frame()
                             p_char.second_spec_profile = k;
                             UIDropDownMenu_SetText(sw_frame.profile_frame.second_spec, k);
                             update_profile_frame();
-                            swc.config.activate_settings();
                         end
                     }
                 );
@@ -3269,32 +3323,7 @@ local function create_sw_base_ui()
     end
 
     PanelTemplates_SetNumTabs(sw_frame, i);
-
-    -- add button to SpellBookFrame
-    if SpellBookFrame and SpellBookSkillLineTab1 then
-        local button = CreateFrame("Button", "__swc_frame_spellbook_tab", SpellBookFrame);
-        button.background = button:CreateTexture(nil, "BACKGROUND");
-        button:ClearAllPoints();
-        button:SetSize(32, 32);
-        button:SetNormalTexture("Interface\\Icons\\spell_fire_elementaldevastation");
-        button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
-
-        button.background:ClearAllPoints()
-        button.background:SetPoint("TOPLEFT", -3, 11)
-        button.background:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
-        button:SetScript("OnClick", function() sw_activate_tab(sw_frame.tabs[1]); end);
-
-        local n = GetNumSpellTabs();
-        local y_padding = 17;
-        local y_tab_offsets = SpellBookSkillLineTab2:GetHeight() + y_padding;
-        -- have one empty slot between last tab and this one
-        button:SetPoint("TOPLEFT", _G["SpellBookSkillLineTab"..n], "BOTTOMLEFT", 0, -(y_tab_offsets + y_padding));
-
-
-
-    end
 end
-
 
 local function load_sw_ui()
 
@@ -3316,7 +3345,6 @@ local function load_sw_ui()
                     if sw_frame:IsShown() then
                         sw_frame:Hide();
                     else
-
                         sw_activate_tab(sw_frame.tabs[1]);
                     end
                 end
@@ -3350,24 +3378,65 @@ local function load_sw_ui()
     create_sw_ui_profile_frame();
 
     sw_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-    sw_frame.calculator_frame.spell_diff_header_right_spam_cast:Show();
-    sw_frame.calculator_frame.spell_diff_header_right_cast_until_oom:Hide();
     sw_frame.calculator_frame.sim_type_button.init_func();
 
     sw_activate_tab(sw_frame.tabs[1]);
     sw_frame:Hide();
 end
 
+local function add_spell_book_button()
+    -- add button to SpellBookFrame
+    if SpellBookFrame and SpellBookSkillLineTab1 then
+        local button = CreateFrame("Button", "__swc_frame_spellbook_tab", SpellBookFrame);
+        button.background = button:CreateTexture(nil, "BACKGROUND");
+        button:ClearAllPoints();
+        button:SetSize(32, 32);
+        button:SetNormalTexture("Interface\\Icons\\spell_fire_elementaldevastation");
+        button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
+
+        button.background:ClearAllPoints()
+        button.background:SetPoint("TOPLEFT", -3, 11)
+        button.background:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
+        button:SetScript("OnClick", function() 
+            if sw_frame:IsShown() then
+                sw_frame:Hide();
+            else
+                sw_activate_tab(sw_frame.tabs[1]);
+            end
+        end);
+
+        local n = GetNumSpellTabs();
+        local y_padding = 17;
+        local y_tab_offsets = SpellBookSkillLineTab2:GetHeight() + y_padding;
+        -- Clique is right after last slot, put after where clique could be
+        button:SetPoint("TOPLEFT", _G["SpellBookSkillLineTab"..n], "BOTTOMLEFT", 0, -(y_tab_offsets + y_padding));
+        button:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT");
+            GameTooltip:ClearLines();
+            GameTooltip:SetText("SpellCoda ability catalogue");
+        end);
+        button:SetScript("OnLeave", function()
+            GameTooltip:Hide();
+        end);
+
+
+    end
+
+end
+
+
 ui.font                                 = font;
 ui.load_sw_ui                           = load_sw_ui;
 ui.icon_overlay_font                    = icon_overlay_font;
 ui.create_sw_base_ui                    = create_sw_base_ui;
 ui.effects_from_ui                      = effects_from_ui;
-ui.update_and_display_spell_diffs       = update_and_display_spell_diffs;
+ui.display_spell_diff                   = display_spell_diff;
+ui.update_calc_list                     = update_calc_list;
 ui.sw_activate_tab                      = sw_activate_tab;
 ui.update_buffs_frame                   = update_buffs_frame;
 ui.update_profile_frame                 = update_profile_frame;
 ui.update_loadout_frame                 = update_loadout_frame;
+ui.add_spell_book_button                = add_spell_book_button;
 
 swc.ui = ui;
 

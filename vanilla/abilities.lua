@@ -9160,16 +9160,9 @@ elseif class == "WARLOCK" then
     spells[705].cast_time = 2.8;
 end
 
-local function spell_coef_lvl_adjusted(coef, lvl_req)
-    local coef_mod = 1.0;
-    if (lvl_req ~= 0) then
-        coef_mod = math.min(1, 1 - (20 - lvl_req) * 0.0375);
-    end
-    return coef * coef_mod;
-end
-
 for k, v in pairs(spells) do
-    local lvl_mod = spell_coef_lvl_adjusted(1, v.lvl_req);
+    --local lvl_mod = spell_coef_lvl_adjusted(1, v.lvl_req);
+    local lvl_mod = 60;
     if bit.band(v.flags, spell_flags.sod_rune) ~= 0 then
         lvl_mod = 1.0;
     end
@@ -9296,68 +9289,6 @@ spids = swc.spids;
 rank_seqs = swc.rank_seqs;
 
 
--- MANUAL OVERWRITES OR ADDITIONS TO THE GENERATED DATA THAT NEEDS SPECIAL CARE
---swc.auto_attack_spell_id = 6603;
---spells[swc.auto_attack_spell_id] = {
---    direct = {
---        base = 0,
---        min = 1,
---        max = 1,
---        school1 = swc.schools.physical,
---        coef = 0,
---        coef_ap = 0,
---        per_lvl = 0,
---        per_lvl_sq = 0,
---        flags = bit.bor(0, swc.comp_flags.applies_mh),
---    },
---    cast_time = 0,
---    cost = 0,
---    rank = 0,
---    lvl_req = 0,
---    lvl_max = 100,
---    lvl_outdated = 100,
---    base_id = 6603,
---    gcd = 0,
---    train = 0,
---    flags = bit.bor(0, swc.spell_flags.eval, swc.spell_flags.uses_attack_speed),
---};
--- TODO: issue spells
--- swiftmend, effloresence
-
--- manual overwrite list
--- deal with lvl scaling < 20
--- absorb 0.1
--- holy light 0.1
-
---TODO: iterate over rank list, apply coef and lvl scaling reduction at < 20
-if class == "MAGE" then
-    for _, v in pairs(rank_seqs[spids.ice_lance]) do
-        spells[v].direct.coef = spell_coef_lvl_adjusted(0.42899999022, spells[v].lvl_req);
-    end
-elseif class == "DRUID" then
-    -- TEMPORARY:
-    -- temporary, swiftmend is broken due to ordering of calc
-    spells[spids.swiftmend].flags = bit.band(spells[spids.swiftmend].flags, bit.bnot(spell_flags.eval));
-    -- issue with not taking periodic component of detected trigger of entangling roots
-    --for _, v in pairs(rank_seqs[spids.natures_grasp]) do
-    --    spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
-    --end
-    --for _, v in pairs(rank_seqs[spids.pounce]) do
-    --    spells[v].flags = bit.band(spells[v].flags, bit.bnot(spell_flags.eval));
-    --end
-
-    for _, v in pairs(rank_seqs[spids.lifebloom]) do
-        spells[v].periodic.coef = spell_coef_lvl_adjusted(0.051, spells[v].lvl_req);
-    end
-elseif class == "PRIEST" then
-    for _, v in pairs(rank_seqs[spids.power_word_shield]) do
-        spells[v].direct.coef = spell_coef_lvl_adjusted(0.1, spells[v].lvl_req);
-    end
-elseif class == "SHAMAN" then
-    for _, v in pairs(rank_seqs[spids.earth_shield]) do
-        spells[v].direct.coef = spell_coef_lvl_adjusted(0.27099999785, spells[v].lvl_req);
-    end
-end
 
 for k, v in pairs(spells) do
     if not v.periodic and not v.direct and bit.band(v.flags, swc.spell_flags.eval) ~= 0 then
@@ -9378,55 +9309,54 @@ local function best_rank_by_lvl(spell, lvl)
     return nil;
 end
 
+local function highest_learned_rank(base_id)
+    local n = #swc.rank_seqs[base_id];
+    local i = n;
+    while i ~= 0 do
+        if IsSpellKnownOrOverridesKnown(swc.rank_seqs[base_id][i]) or
+            IsSpellKnownOrOverridesKnown(swc.rank_seqs[base_id][i], true) then
+            return swc.rank_seqs[base_id][i];
+        end
+        i = i - 1;
+    end
+    return nil;
+end
+
 local function next_rank(spell_data)
     return spells[swc.rank_seqs[spell_data.base_id][spell_data.rank + 1]];
 end
 
-local spell_groups = {};
-spell_groups.heal = {};
-spell_groups.instant = {};
-
-for _, v in pairs(spells) do
-    if bit.band(v.flags, spell_flags.heal) ~= 0 or v.healing_version then
-        spell_groups.heal[v.base_id] = v.base_id;
-    end
-    if bit.band(v.flags, spell_flags.instant) ~= 0 then
-        spell_groups.instant[v.base_id] = v.base_id;
-    end
-end
-
-if class == "WARLOCK" then
-    spell_groups.destruction = {};
-    for _, v in pairs(spells) do
-        --if bit.band(v.flags, spell_flags.destruction) ~= 0 then
-        --    spell_groups.destruction[v.base_id] = v.base_id;
-        --end
-    end
-elseif class == "PRIEST" then
-    spell_groups.serendipity_affected =
-    { spids.lesser_heal, spids.heal, spids.greater_heal, spids.prayer_of_healing };
-    spell_groups.weakened_soul_affected =
-    { spids.flash_heal, spids.lesser_heal, spids.heal, spids.greater_heal, spids.penance };
-elseif class == "SHAMAN" then
-    spell_groups.maelstrom_affected =
-    { spids.lightning_bolt, spids.chain_lightning, spids.lesser_healing_wave, spids.healing_wave, spids.chain_heal,
-        spids.lava_burst };
-    spell_groups.power_surge_affected =
-    { spids.chain_lightning, spids.lava_burst, spids.chain_heal };
-elseif class == "MAGE" then
-    spell_groups.brain_freeze_affected =
-    { spids.fireball, spids.spellfrost_bolt, spids.frostfire_bolt };
-end
-
+--if class == "WARLOCK" then
+--    spell_groups.destruction = {};
+--    for _, v in pairs(spells) do
+--        --if bit.band(v.flags, spell_flags.destruction) ~= 0 then
+--        --    spell_groups.destruction[v.base_id] = v.base_id;
+--        --end
+--    end
+--elseif class == "PRIEST" then
+--    spell_groups.serendipity_affected =
+--    { spids.lesser_heal, spids.heal, spids.greater_heal, spids.prayer_of_healing };
+--    spell_groups.weakened_soul_affected =
+--    { spids.flash_heal, spids.lesser_heal, spids.heal, spids.greater_heal, spids.penance };
+--elseif class == "SHAMAN" then
+--    spell_groups.maelstrom_affected =
+--    { spids.lightning_bolt, spids.chain_lightning, spids.lesser_healing_wave, spids.healing_wave, spids.chain_heal,
+--        spids.lava_burst };
+--    spell_groups.power_surge_affected =
+--    { spids.chain_lightning, spids.lava_burst, spids.chain_heal };
+--elseif class == "MAGE" then
+--    spell_groups.brain_freeze_affected =
+--    { spids.fireball, spids.spellfrost_bolt, spids.frostfire_bolt };
+--end
 
 abilities.spells = spells;
 abilities.english_spell_name_to_base_id = english_spell_name_to_base_id;
 abilities.magic_school = magic_school;
 abilities.spell_flags = spell_flags;
 abilities.best_rank_by_lvl = best_rank_by_lvl;
+abilities.highest_learned_rank = highest_learned_rank
 abilities.next_rank = next_rank;
 abilities.spell_groups = spell_groups;
 abilities.spids = spids;
-
 
 swc.abilities = abilities;

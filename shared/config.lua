@@ -43,10 +43,7 @@ local default_settings = {
     tooltip_display_spell_rank          = false,
     tooltip_display_hit                 = true,
     tooltip_display_normal              = false,
-    tooltip_display_normal_hit_combined = true,
-    tooltip_display_crit_chance         = true,
     tooltip_display_crit                = false,
-    tooltip_display_crit_combined       = true,
     tooltip_display_expected            = true,
     tooltip_display_effect_per_sec      = true,
     tooltip_display_effect_per_cost     = true,
@@ -83,9 +80,11 @@ local default_settings = {
     overlay_display_effect_until_oom    = false,
     overlay_display_time_until_oom      = false,
 
+
     overlay_disable                     = false,
     overlay_mana_abilities              = true,
     overlay_old_rank                    = false,
+    overlay_old_rank_limit_to_known     = false,
     overlay_single_effect_only          = false,
     overlay_top_clearance               = false,
     overlay_bottom_clearance            = false,
@@ -99,11 +98,27 @@ local default_settings = {
     profiles_dual_spec                  = false,
 
     -- spell catalogue
-    spells_list                         = {},
     spells_ignore_list                  = {},
 
     -- calculator
-    spell_calc_list                     = {},
+    spell_calc_list                     = {
+        [6603] = 6603,
+        [78] = 78,
+        [75] = 75,
+        [2973] = 2973,
+        [133] = 133,
+        [5176] = 5176,
+        [5185] = 5185,
+        [403] = 403,
+        [331] = 331,
+        [635] = 635,
+        [585] = 585,
+        [2050] = 2050,
+        [1752] = 1752,
+        [2098] = 2098,
+        [686] = 686,
+    },
+    calc_list_use_highest_rank          = true,
 
     -- general
     libstub_minimap_icon                = { hide = false },
@@ -165,10 +180,15 @@ local default_loadout_config = {
     default_target_hp_perc = 100.0,
 
     target_res = 0,
+    target_automatic_armor = true,
+    target_automatic_armor_pct = 100,
+    target_armor = 0,
+    target_facing = false,
 
     unbounded_aoe_targets = 1,
 
-    always_max_mana = false,
+    always_max_resource = false,
+    behind_target = false,
     extra_mana = 0,
 
     buffs = {},
@@ -219,13 +239,13 @@ local spec_keys = {
     [2] = "second_spec_profile",
 };
 
-local function set_active_settings(spec)
+local function set_active_settings()
     for k, v in pairs(spec_keys) do
         if not p_acc.profiles[p_char[v]] then
             p_char[v] = next(p_acc.profiles);
         end
 
-        if spec == k then
+        if swc.core.active_spec == k then
             config.settings = p_acc.profiles[p_char[v]].settings;
         end
     end
@@ -233,6 +253,7 @@ local function set_active_settings(spec)
 end
 
 local function activate_settings()
+
     for k, v in pairs(config.settings) do
         local f = getglobal("sw_frame_setting_" .. k);
         if f then
@@ -316,11 +337,19 @@ local function new_profile(profile_name, profile_to_copy)
     p_acc.profiles[profile_name] = {};
     load_persistent_data(p_acc.profiles[profile_name], profile_to_copy);
     p_acc.profiles[profile_name].settings = swc.utils.deep_table_copy(profile_to_copy.settings);
+    print(p_acc.profiles[profile_name].settings);
+    -- switch to new profile
+    p_char[spec_keys[swc.core.active_spec]] = profile_name;
+    print(config.settings);
+    set_active_settings()
+    print(config.settings);
+    activate_settings();
+    print(config.settings);
     return true;
 end
 
 local function new_profile_from_default(profile_name)
-    return new_profile(profile_name, swc.utils.deep_table_copy(default_loadout_config));
+    return new_profile(profile_name, swc.utils.deep_table_copy(default_profile()));
 end
 
 local function new_profile_from_active_copy(profile_name)
