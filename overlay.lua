@@ -1,47 +1,24 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc = ...;
+
+local spell_cost                                    = sc.utils.spell_cost;
+local spell_cast_time                               = sc.utils.spell_cast_time;
+local effect_colors                                 = sc.utils.effect_colors;
+local format_number                                 = sc.utils.format_number;
+
+local spells                                        = sc.abilities.spells;
+local spell_flags                                   = sc.abilities.spell_flags;
+local highest_learned_rank                          = sc.abilities.highest_learned_rank;
+
+local update_loadout_and_effects                    = sc.loadout.update_loadout_and_effects;
+local update_loadout_and_effects_diffed_from_ui     = sc.loadout.update_loadout_and_effects_diffed_from_ui;
+local active_loadout                                = sc.loadout.active_loadout;
 
 
-local _, swc = ...;
+local stats_for_spell                               = sc.calc.stats_for_spell;
+local spell_info                                    = sc.calc.spell_info;
+local cast_until_oom                                = sc.calc.cast_until_oom;
 
-local spell_cost                                    = swc.utils.spell_cost;
-local spell_cast_time                               = swc.utils.spell_cast_time;
-local effect_colors                                 = swc.utils.effect_colors;
-local format_number                                 = swc.utils.format_number;
-
-local spells                                        = swc.abilities.spells;
-local spell_flags                                   = swc.abilities.spell_flags;
-local highest_learned_rank                          = swc.abilities.highest_learned_rank;
-
-local update_loadout_and_effects                    = swc.loadout.update_loadout_and_effects;
-local update_loadout_and_effects_diffed_from_ui     = swc.loadout.update_loadout_and_effects_diffed_from_ui;
-local active_loadout                                = swc.loadout.active_loadout;
-
-
-local stats_for_spell                               = swc.calc.stats_for_spell;
-local spell_info                                    = swc.calc.spell_info;
-local cast_until_oom                                = swc.calc.cast_until_oom;
-
-local config                                        = swc.config;
+local config                                        = sc.config;
 --------------------------------------------------------------------------------
 local overlay = {};
 
@@ -69,7 +46,7 @@ local externally_registered_spells = {};
 
 local mana_cost_overlay, cast_speed_overlay;
 
-swc.ext.register_spell = function(spell_id)
+sc.ext.register_spell = function(spell_id)
     if spells[spell_id] and bit.band(spell.flags, spell_flags.eval) ~= 0 then
         if not externally_registered_spells[spell_id] then
             externally_registered_spells[spell_id] = 0;
@@ -78,14 +55,14 @@ swc.ext.register_spell = function(spell_id)
     end
 end
 
-swc.ext.unregister_spell = function(spell_id)
+sc.ext.unregister_spell = function(spell_id)
     if spells[spell_id] and externally_registered_spells[spell_id] then
         externally_registered_spells[spell_id] = math.max(0, externally_registered_spells[spell_id] - 1);
     end
 end
 
-swc.ext.currently_casting_spell_id = function()
-    return swc.core.currently_casting_spell_id;
+sc.ext.currently_casting_spell_id = function()
+    return sc.core.currently_casting_spell_id;
 end
 
 local function check_old_rank(frame_info, spell_id, clvl)
@@ -143,7 +120,7 @@ local function init_frame_overlay(frame_info)
     end
     for i = 1, 3 do
         frame_info.overlay_frames[i]:SetFont(
-            swc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
+            sc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
         frame_info.overlay_frames[i]:SetPoint(anchors[i], config.settings.overlay_offset + 1.0, offsets[i]);
     end
 end
@@ -210,7 +187,7 @@ local function try_register_frame(action_id, frame_name)
         if spell_id ~= 0 then
             active_overlays[action_id] = spell_id;
             if spell_id == 5019 then
-                swc.core.action_id_of_wand = action_id;
+                sc.core.action_id_of_wand = action_id;
             end
         end
         action_id_frames[action_id].spell_id = spell_id;
@@ -328,7 +305,7 @@ local function reassign_overlay_icon_spell(action_id, spell_id)
         end
         action_id_frames[action_id].spell_id = spell_id;
         if spell_id == 5019 then
-            swc.core.action_id_of_wand = action_id;
+            sc.core.action_id_of_wand = action_id;
         end
     end
 end
@@ -590,9 +567,9 @@ local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
 
-    if spell_variant.seq ~= swc.core.sequence_counter then
+    if spell_variant.seq ~= sc.core.sequence_counter then
 
-        spell_variant.seq = swc.core.sequence_counter;
+        spell_variant.seq = sc.core.sequence_counter;
         stats_for_spell(stats, spell, loadout, effects, eval_flags);
         spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
         cast_until_oom(spell_effect, stats, loadout, effects);
@@ -661,8 +638,8 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
 
-    if spell_variant.seq ~= swc.core.sequence_counter then
-        spell_variant.seq = swc.core.sequence_counter;
+    if spell_variant.seq ~= sc.core.sequence_counter then
+        spell_variant.seq = sc.core.sequence_counter;
         -- fill dummy stats
         stats.cost = cost;
         stats.cast_time = cast_time;
@@ -720,30 +697,30 @@ local special_action_bar_changed_id = 0;
 
 local function update_spell_icons(loadout, effects, eval_flags)
 
-    if swc.core.setup_action_bar_needed then
+    if sc.core.setup_action_bar_needed then
         setup_action_bars();
-        swc.core.setup_action_bar_needed = false;
+        sc.core.setup_action_bar_needed = false;
     end
-    if swc.core.update_action_bar_needed then
+    if sc.core.update_action_bar_needed then
         update_action_bars();
-        swc.core.update_action_bar_needed = false;
+        sc.core.update_action_bar_needed = false;
     end
 
     --NOTE: sometimes the Action buttons 1-12 haven't been updated
     --      to reflect the new action id's for forms that change the action bar
     --      Schedule for this to be executed the next update as well to catch late updates
-    if swc.core.special_action_bar_changed then
+    if sc.core.special_action_bar_changed then
         on_special_action_bar_changed();
         special_action_bar_changed_id = special_action_bar_changed_id + 1;
         if special_action_bar_changed_id%2 == 0 then
-            swc.core.special_action_bar_changed = false;
+            sc.core.special_action_bar_changed = false;
         end
     end
 
-    if swc.core.old_ranks_checks_needed then
+    if sc.core.old_ranks_checks_needed then
 
         old_rank_warning_traversal(loadout.lvl);
-        swc.core.old_ranks_checks_needed = false;
+        sc.core.old_ranks_checks_needed = false;
     end
 
     -- update spell book icons
@@ -796,7 +773,7 @@ end
 local function overlay_eval_flags()
     local eval_flags = 0;
     if config.settings.overlay_single_effect_only then
-        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
+        eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.assume_single_effect);
     end
     return eval_flags;
 end
@@ -821,7 +798,7 @@ local function update_overlay()
         end
     end
 
-    local k = swc.core.currently_casting_spell_id;
+    local k = sc.core.currently_casting_spell_id;
 
     if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
         cache_spell(spells[k], k, loadout, effects, assume_single_target);
@@ -847,7 +824,7 @@ overlay.clear_overlays               = clear_overlays;
 overlay.old_rank_warning_traversal   = old_rank_warning_traversal;
 overlay.overlay_eval_flags           = overlay_eval_flags;
 
-swc.overlay = overlay;
+sc.overlay = overlay;
 
-swc.ext.spell_cache = spell_cache;
+sc.ext.spell_cache = spell_cache;
 

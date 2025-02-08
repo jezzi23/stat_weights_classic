@@ -1,55 +1,33 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc = ...;
 
-local _, swc = ...;
+local spells                                    = sc.abilities.spells;
+local spids                                     = sc.abilities.spids;
+local spell_flags                               = sc.abilities.spell_flags;
+local highest_learned_rank                      = sc.abilities.highest_learned_rank;
 
-local spells                                    = swc.abilities.spells;
-local spids                                     = swc.abilities.spids;
-local spell_flags                               = swc.abilities.spell_flags;
-local highest_learned_rank                      = swc.abilities.highest_learned_rank;
+local wowhead_talent_link                       = sc.talents.wowhead_talent_link;
+local wowhead_talent_code_from_url              = sc.talents.wowhead_talent_code_from_url;
 
-local wowhead_talent_link                       = swc.talents.wowhead_talent_link;
-local wowhead_talent_code_from_url              = swc.talents.wowhead_talent_code_from_url;
+local simulation_type                           = sc.calc.simulation_type;
 
-local simulation_type                           = swc.calc.simulation_type;
+local effect_colors                             = sc.utils.effect_colors;
+local format_number                             = sc.utils.format_number
 
-local effect_colors                             = swc.utils.effect_colors;
-local format_number                             = swc.utils.format_number
-
-local update_loadout_and_effects_diffed_from_ui = swc.loadout.update_loadout_and_effects_diffed_from_ui;
-local update_loadout_and_effects                = swc.loadout.update_loadout_and_effects;
-local active_loadout                            = swc.loadout.active_loadout
+local update_loadout_and_effects_diffed_from_ui = sc.loadout.update_loadout_and_effects_diffed_from_ui;
+local update_loadout_and_effects                = sc.loadout.update_loadout_and_effects;
+local active_loadout                            = sc.loadout.active_loadout
 
 
-local stats_for_spell                           = swc.calc.stats_for_spell;
-local spell_info                                = swc.calc.spell_info;
-local cast_until_oom                            = swc.calc.cast_until_oom;
-local spell_diff                                = swc.calc.spell_diff;
+local stats_for_spell                           = sc.calc.stats_for_spell;
+local spell_info                                = sc.calc.spell_info;
+local cast_until_oom                            = sc.calc.cast_until_oom;
+local spell_diff                                = sc.calc.spell_diff;
 
-local buff_category                             = swc.buffs.buff_category;
-local buffs                                     = swc.buffs.buffs;
-local target_buffs                              = swc.buffs.target_buffs;
+local buff_category                             = sc.buffs.buff_category;
+local buffs                                     = sc.buffs.buffs;
+local target_buffs                              = sc.buffs.target_buffs;
 
-local config                                    = swc.config;
+local config                                    = sc.config;
 
 -------------------------------------------------------------------------
 local ui = {};
@@ -323,11 +301,11 @@ end
 
 local function update_loadout_frame()
 
-    swc.config.activate_loadout_config();
+    sc.config.activate_loadout_config();
 
     sw_frame.loadout_frame.loadout_dropdown.init_func();
 
-    if #p_char.loadouts == 1 then
+    if #__sc_p_char.loadouts == 1 then
         sw_frame.loadout_frame.delete_button:Hide();
     else
         sw_frame.loadout_frame.delete_button:Show();
@@ -416,7 +394,7 @@ local info = {};
 
 local function filtered_spell_view(spell_ids, name_filter)
 
-    local eval_flags = swc.overlay.overlay_eval_flags();
+    local eval_flags = sc.overlay.overlay_eval_flags();
     local loadout, effects = update_loadout_and_effects();
 
     local lvl = active_loadout().lvl;
@@ -469,7 +447,7 @@ local function filtered_spell_view(spell_ids, name_filter)
             spells[id].train == 0 then
             filtered[i] = nil;
         end
-        if spells[id].race_flags and bit.band(spells[id].race_flags, bit.lshift(1, swc.race-1)) == 0 then
+        if spells[id].race_flags and bit.band(spells[id].race_flags, bit.lshift(1, sc.race-1)) == 0 then
             filtered[i] = nil;
         end
         if filtered[i] then
@@ -689,7 +667,7 @@ local function update_spells_frame()
     sw_frame.spells_frame.sort_by.init_func();
 
     local view = filtered_spell_view(
-        swc.spells_lvl_ordered,
+        sc.spells_lvl_ordered,
         sw_frame.spells_frame.search:GetText()
     );
     sw_frame.spells_frame.filtered_list = view;
@@ -797,7 +775,7 @@ local function create_sw_spell_id_viewer()
         end
     end);
 
-    if swc.core.__sw__test_all_spells then
+    if sc.core.__sw__test_all_spells then
         sw_frame.spell_id_viewer_editbox:SetText(pairs(spells)(spells));
     end
 
@@ -1505,7 +1483,7 @@ local function create_sw_ui_tooltip_frame()
     --sw_frame.tooltip_frame.reset_addon_button =
     --    CreateFrame("Button", nil, sw_frame.tooltip_frame, "UIPanelButtonTemplate");
     --sw_frame.tooltip_frame.reset_addon_button:SetScript("OnClick", function(self)
-    --    swc.core.use_char_defaults = 1;
+    --    sc.core.use_char_defaults = 1;
     --    ReloadUI();
     --end);
     --sw_frame.tooltip_frame.reset_addon_button:SetPoint("TOPLEFT", 10, sw_frame.tooltip_frame.y_offset);
@@ -1530,8 +1508,8 @@ local function create_sw_ui_overlay_frame()
             txt = "Disable action bar overlay",
             func = function(self)
                 config.settings[self._settings_id] = self:GetChecked();
-                swc.overlay.clear_overlays();
-                swc.core.old_ranks_checks_needed = true;
+                sc.overlay.clear_overlays();
+                sc.core.old_ranks_checks_needed = true;
             end
         },
         {
@@ -1546,7 +1524,7 @@ local function create_sw_ui_overlay_frame()
             color = effect_colors.crit,
             func = function(self)
                 config.settings[self._settings_id] = self:GetChecked();
-                swc.core.old_ranks_checks_needed = true;
+                sc.core.old_ranks_checks_needed = true;
             end
         },
         {
@@ -1555,7 +1533,7 @@ local function create_sw_ui_overlay_frame()
             color = effect_colors.crit,
             func = function(self)
                 config.settings[self._settings_id] = self:GetChecked();
-                swc.core.old_ranks_checks_needed = true;
+                sc.core.old_ranks_checks_needed = true;
             end,
             tooltip = "Does not warn about old rank when the higher rank is not learned/known by player. Requires old rank warning option to be toggled.",
         },
@@ -1633,7 +1611,7 @@ local function create_sw_ui_overlay_frame()
 
         self.val_txt:SetText(string.format("%.2fx", config.settings.overlay_font_size));
 
-        for _, v in pairs(swc.overlay.spell_book_frames) do
+        for _, v in pairs(sc.overlay.spell_book_frames) do
             if v.frame then
                 local spell_name = v.frame.SpellName:GetText();
                 local spell_rank_name = v.frame.SpellSubName:GetText();
@@ -1644,7 +1622,7 @@ local function create_sw_ui_overlay_frame()
                 end
             end
         end
-        for _, v in pairs(swc.overlay.action_id_frames) do
+        for _, v in pairs(sc.overlay.action_id_frames) do
             if v.frame then
                 for i = 1, 3 do
                     v.overlay_frames[i]:SetFont(
@@ -1681,8 +1659,8 @@ local function create_sw_ui_overlay_frame()
     f:SetScript("OnValueChanged", function(self, val)
         config.settings.overlay_offset = val;
         self.val_txt:SetText(string.format("%.1f", val))
-        swc.core.setup_action_bar_needed = true;
-        swc.overlay.update_overlay();
+        sc.core.setup_action_bar_needed = true;
+        sc.overlay.update_overlay();
     end);
 
     sw_frame.overlay_frame.y_offset = sw_frame.overlay_frame.y_offset - 20;
@@ -1718,7 +1696,7 @@ local function create_sw_ui_overlay_frame()
             config.settings[self._settings_id] = checked;
         end
 
-        swc.core.update_action_bar_needed = true;
+        sc.core.update_action_bar_needed = true;
     end;
 
     --local special_overlay_component_func = function(self)
@@ -1855,7 +1833,7 @@ local function create_sw_ui_calculator_frame()
 
     local comparison_stats_listing_order = {};
 
-    if swc.core.expansion_loaded == swc.core.expansions.wotlk then
+    if sc.core.expansion_loaded == sc.core.expansions.wotlk then
 
         sw_frame.calculator_frame.stats = {
             int = {
@@ -1990,7 +1968,7 @@ local function create_sw_ui_calculator_frame()
     end
 
     sw_frame.calculator_frame.stats.sp.editbox:SetText("1");
-    if swc.core.__sw__test_all_codepaths then
+    if sc.core.__sw__test_all_codepaths then
         for k, v in pairs(sw_frame.calculator_frame.stats) do
             v.editbox:SetText("1");
         end
@@ -2113,13 +2091,13 @@ local function create_sw_ui_loadout_frame()
 
             UIDropDownMenu_SetWidth(sw_frame.loadout_frame.loadout_dropdown, 100);
 
-            for k, v in pairs(p_char.loadouts) do
+            for k, v in pairs(__sc_p_char.loadouts) do
                 UIDropDownMenu_AddButton({
                         text = v.name,
-                        checked = p_char.active_loadout == k,
+                        checked = __sc_p_char.active_loadout == k,
                         func = function()
-                            swc.core.talents_update_needed = true;
-                            swc.core.equipment_update_needed = true;
+                            sc.core.talents_update_needed = true;
+                            sc.core.equipment_update_needed = true;
 
                             config.set_active_loadout(k);
                             update_loadout_frame();
@@ -2165,22 +2143,22 @@ local function create_sw_ui_loadout_frame()
     f:SetSize(80, 25);
     f:SetScript("OnClick", function(self)
 
-        local n = #p_char.loadouts;
+        local n = #__sc_p_char.loadouts;
         if n == 1 then
             return;
         end
 
         if n ~= active_loadout then
-            for i = p_char.active_loadout, n-1 do
-                p_char.loadouts[i] = p_char.loadouts[i+1]
+            for i = __sc_p_char.active_loadout, n-1 do
+                __sc_p_char.loadouts[i] = __sc_p_char.loadouts[i+1]
             end
         end
-        p_char.loadouts[n] = nil;
+        __sc_p_char.loadouts[n] = nil;
 
         config.set_active_loadout(1);
 
-        swc.core.talents_update_needed = true;
-        swc.core.equipment_update_needed = true;
+        sc.core.talents_update_needed = true;
+        sc.core.equipment_update_needed = true;
 
         update_loadout_frame();
     end);
@@ -2227,7 +2205,7 @@ local function create_sw_ui_loadout_frame()
 
         if config.new_loadout_from_default(sw_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
             sw_frame.loadout_frame.new_loadout_name_editbox:SetText("");
-            swc.core.talents_update_needed = true;
+            sc.core.talents_update_needed = true;
             update_loadout_frame();
         end
     end);
@@ -2247,7 +2225,7 @@ local function create_sw_ui_loadout_frame()
     f:SetScript("OnClick", function(self)
         if config.new_loadout_from_active_copy(sw_frame.loadout_frame.new_loadout_name_editbox:GetText()) then
             sw_frame.loadout_frame.new_loadout_name_editbox:SetText("");
-            swc.core.talents_update_needed = true;
+            sc.core.talents_update_needed = true;
             update_loadout_frame();
         end
     end);
@@ -2274,8 +2252,8 @@ local function create_sw_ui_loadout_frame()
         "Accepts a valid wowhead talents link, your loadout will use its talents & glyphs instead of your active ones.";
     f:SetScript("OnClick", function(self)
 
-        swc.core.talents_update_needed = true;
-        swc.core.equipment_update_needed = true;
+        sc.core.talents_update_needed = true;
+        sc.core.equipment_update_needed = true;
 
         config.loadout.use_custom_talents = self:GetChecked();
         if config.loadout.use_custom_talents then
@@ -2296,7 +2274,7 @@ local function create_sw_ui_loadout_frame()
     editbox_config(f, function(self)
 
         local txt = self:GetText();
-        swc.core.talents_update_needed = true;
+        sc.core.talents_update_needed = true;
 
         if config.loadout.use_custom_talents then
             config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
@@ -2333,7 +2311,7 @@ local function create_sw_ui_loadout_frame()
     f:SetScript("OnClick", function(self)
 
         config.loadout.use_custom_lvl = self:GetChecked();
-        swc.core.old_ranks_checks_needed = true;
+        sc.core.old_ranks_checks_needed = true;
         if config.loadout.use_custom_lvl then
             sw_frame.loadout_frame.loadout_clvl_editbox:Show();
         else
@@ -2352,7 +2330,7 @@ local function create_sw_ui_loadout_frame()
     local clvl_editbox_update = function(self)
         local lvl = tonumber(self:GetText());
         local valid = lvl and lvl >= 1 and lvl <= 100;
-        swc.core.old_ranks_checks_needed = true;
+        sc.core.old_ranks_checks_needed = true;
         if valid then
             config.loadout.lvl = lvl;
         end
@@ -2920,15 +2898,15 @@ end
 
 local function update_profile_frame()
 
-    swc.config.set_active_settings();
-    swc.config.activate_settings();
+    sc.config.set_active_settings();
+    sc.config.activate_settings();
 
     sw_frame.profile_frame.primary_spec.init_func();
     sw_frame.profile_frame.second_spec.init_func();
 
     sw_frame.profile_frame.active_main_spec:Hide();
     sw_frame.profile_frame.active_second_spec:Hide();
-    if swc.core.active_spec == 1 then
+    if sc.core.active_spec == 1 then
         sw_frame.profile_frame.active_main_spec:Show();
     else
         sw_frame.profile_frame.active_second_spec:Show();
@@ -2938,7 +2916,7 @@ local function update_profile_frame()
     sw_frame.profile_frame.delete_profile_label:Hide();
 
     local cnt = 0;
-    for _, _ in pairs(p_acc.profiles) do
+    for _, _ in pairs(__sc_p_acc.profiles) do
         cnt = cnt + 1;
         if cnt > 1 then
             break;
@@ -2978,17 +2956,17 @@ local function create_sw_ui_profile_frame()
     sw_frame.profile_frame.primary_spec:SetPoint("TOPLEFT", 170, sw_frame.profile_frame.y_offset+6);
     sw_frame.profile_frame.primary_spec.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.profile_frame.primary_spec, p_char.main_spec_profile);
+        UIDropDownMenu_SetText(sw_frame.profile_frame.primary_spec, __sc_p_char.main_spec_profile);
         UIDropDownMenu_Initialize(sw_frame.profile_frame.primary_spec, function()
 
             UIDropDownMenu_SetWidth(sw_frame.profile_frame.primary_spec, 130);
 
-            for k, _ in pairs(p_acc.profiles) do
+            for k, _ in pairs(__sc_p_acc.profiles) do
                 UIDropDownMenu_AddButton({
                         text = k,
-                        checked = p_char.main_spec_profile == k,
+                        checked = __sc_p_char.main_spec_profile == k,
                         func = function()
-                            p_char.main_spec_profile = k;
+                            __sc_p_char.main_spec_profile = k;
                             UIDropDownMenu_SetText(sw_frame.profile_frame.primary_spec, k);
                             update_profile_frame();
                         end
@@ -3017,18 +2995,18 @@ local function create_sw_ui_profile_frame()
     sw_frame.profile_frame.second_spec:SetPoint("TOPLEFT", 170, sw_frame.profile_frame.y_offset+6);
     sw_frame.profile_frame.second_spec.init_func = function()
 
-        UIDropDownMenu_SetText(sw_frame.profile_frame.second_spec, p_char.second_spec_profile);
+        UIDropDownMenu_SetText(sw_frame.profile_frame.second_spec, __sc_p_char.second_spec_profile);
         UIDropDownMenu_Initialize(sw_frame.profile_frame.second_spec, function()
 
             UIDropDownMenu_SetWidth(sw_frame.profile_frame.second_spec, 130);
 
-            for k, _ in pairs(p_acc.profiles) do
+            for k, _ in pairs(__sc_p_acc.profiles) do
 
                 UIDropDownMenu_AddButton({
                         text = k,
-                        checked = p_char.second_spec_profile == k,
+                        checked = __sc_p_char.second_spec_profile == k,
                         func = function()
-                            p_char.second_spec_profile = k;
+                            __sc_p_char.second_spec_profile = k;
                             UIDropDownMenu_SetText(sw_frame.profile_frame.second_spec, k);
                             update_profile_frame();
                         end
@@ -3059,13 +3037,13 @@ local function create_sw_ui_profile_frame()
     local editbox_save = function(self)
 
         local txt = self:GetText();
-        local k = swc.config.spec_keys[swc.core.active_spec];
+        local k = sc.config.spec_keys[sc.core.active_spec];
 
-        if p_char[k] ~= txt then
+        if __sc_p_char[k] ~= txt then
 
-            p_acc.profiles[txt] = p_acc.profiles[p_char[k]];
-            p_acc.profiles[p_char[k]] = nil
-            p_char[k] = txt;
+            __sc_p_acc.profiles[txt] = __sc_p_acc.profiles[__sc_p_char[k]];
+            __sc_p_acc.profiles[__sc_p_char[k]] = nil
+            __sc_p_char[k] = txt;
         end
 
         update_profile_frame()
@@ -3095,14 +3073,14 @@ local function create_sw_ui_profile_frame()
 
 
         local cnt = 0; 
-        for _, _ in pairs(p_acc.profiles) do
+        for _, _ in pairs(__sc_p_acc.profiles) do
             cnt = cnt + 1;
             if cnt > 1 then
                 break;
             end
         end
         if cnt > 1 then
-            p_acc.profiles[p_char[swc.config.spec_keys[swc.core.active_spec]]] = nil;
+            __sc_p_acc.profiles[__sc_p_char[sc.config.spec_keys[sc.core.active_spec]]] = nil;
             update_profile_frame();
         end
     end);
@@ -3212,7 +3190,7 @@ local function create_sw_base_ui()
 
     sw_frame.title = sw_frame:CreateFontString(nil, "OVERLAY");
     sw_frame.title:SetFontObject(font)
-    sw_frame.title:SetText("Stat Weights Classic v"..swc.core.version);
+    sw_frame.title:SetText("Stat Weights Classic v"..sc.core.version);
     sw_frame.title:SetPoint("CENTER", sw_frame.TitleBg, "CENTER", 0, 0);
 
     sw_frame:Hide();
@@ -3228,15 +3206,15 @@ local function create_sw_base_ui()
         sw_frame[v].y_offset = 0;
     end
 
-    for k, _ in pairs(swc.core.event_dispatch) do
-        if not swc.core.event_dispatch_client_exceptions[k] or
-                swc.core.event_dispatch_client_exceptions[k] == swc.core.expansion_loaded then
+    for k, _ in pairs(sc.core.event_dispatch) do
+        if not sc.core.event_dispatch_client_exceptions[k] or
+                sc.core.event_dispatch_client_exceptions[k] == sc.core.expansion_loaded then
             sw_frame:RegisterEvent(k);
         end
     end
 
     sw_frame:SetScript("OnEvent", function(self, event, msg, msg2, msg3)
-        swc.core.event_dispatch[event](self, msg, msg2, msg3);
+        sc.core.event_dispatch[event](self, msg, msg2, msg3);
         end
     );
 
@@ -3248,9 +3226,9 @@ local function create_sw_base_ui()
     sw_frame.libstub_icon_checkbox:SetScript("OnClick", function(self)
         local checked = self:GetChecked();
         if checked then
-            libstub_icon:Show(swc.core.sw_addon_name);
+            libstub_icon:Show(sc.core.sw_addon_name);
         else
-            libstub_icon:Hide(swc.core.sw_addon_name);
+            libstub_icon:Hide(sc.core.sw_addon_name);
         end
         config.settings.libstub_minimap_icon.hide = not checked;
     end);
@@ -3328,7 +3306,7 @@ end
 local function load_sw_ui()
 
     if libstub_data_broker then
-        local sw_launcher = libstub_data_broker:NewDataObject(swc.core.sw_addon_name, {
+        local sw_launcher = libstub_data_broker:NewDataObject(sc.core.sw_addon_name, {
             type = "launcher",
             icon = "Interface\\Icons\\spell_fire_elementaldevastation",
             OnClick = function(self, button)
@@ -3350,7 +3328,7 @@ local function load_sw_ui()
                 end
             end,
             OnTooltipShow = function(tooltip)
-                tooltip:AddLine(swc.core.sw_addon_name..": Version "..swc.core.version);
+                tooltip:AddLine(sc.core.sw_addon_name..": Version "..sc.core.version);
                 tooltip:AddLine("|cFF9CD6DELeft click:|r Interact with addon");
                 tooltip:AddLine("|cFF9CD6DEMiddle click:|r Hide this button");
                 if config.settings.overlay_old_rank then
@@ -3365,7 +3343,7 @@ local function load_sw_ui()
 
         });
         if libstub_icon then
-            libstub_icon:Register(swc.core.sw_addon_name, sw_launcher, config.settings.libstub_minimap_icon);
+            libstub_icon:Register(sc.core.sw_addon_name, sw_launcher, config.settings.libstub_minimap_icon);
         end
     end
 
@@ -3438,5 +3416,5 @@ ui.update_profile_frame                 = update_profile_frame;
 ui.update_loadout_frame                 = update_loadout_frame;
 ui.add_spell_book_button                = add_spell_book_button;
 
-swc.ui = ui;
+sc.ui = ui;
 

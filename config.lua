@@ -1,107 +1,84 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, swc               = ...;
 
-local _, swc           = ...;
-
--------------------------------------------------------------------------------
-local config           = {};
+local config               = {};
 
 local spell_filter_options = {
-    spells_filter_already_known         = true,
-    spells_filter_available             = true,
-    spells_filter_unavailable           = true,
-    spells_filter_learned_from_item     = true,
-    spells_filter_pet                   = true,
-    spells_filter_ignored_spells        = false,
-    spells_filter_other_spells          = false,
+    spells_filter_already_known     = true,
+    spells_filter_available         = true,
+    spells_filter_unavailable       = true,
+    spells_filter_learned_from_item = true,
+    spells_filter_pet               = true,
+    spells_filter_ignored_spells    = false,
+    spells_filter_other_spells      = false,
 };
 
 -- Avoiding all bit flags here simply any changes between versions
-local default_settings = {
+local default_settings     = {
     -- tooltip
-    tooltip_display_addon_name          = true,
-    tooltip_display_loadout_info        = true,
-    tooltip_display_spell_rank          = false,
-    tooltip_display_hit                 = true,
-    tooltip_display_normal              = false,
-    tooltip_display_crit                = false,
-    tooltip_display_expected            = true,
-    tooltip_display_effect_per_sec      = true,
-    tooltip_display_effect_per_cost     = true,
-    tooltip_display_cost_per_sec        = false,
-    tooltip_display_stat_weights_dps    = false,
-    tooltip_display_stat_weights_doom   = false,
-    tooltip_display_avg_cost            = false,
-    tooltip_display_avg_cast            = false,
-    tooltip_display_cast_until_oom      = false,
-    tooltip_display_cast_and_tap        = false,
-    tooltip_display_sp_effect_calc      = false,
-    tooltip_display_sp_effect_ratio     = false,
-    tooltip_display_base_mod            = false,
-    tooltip_display_spell_id            = false,
-    tooltip_display_dynamic_tip         = true,
+    tooltip_display_addon_name        = true,
+    tooltip_display_loadout_info      = true,
+    tooltip_display_spell_rank        = false,
+    tooltip_display_hit               = true,
+    tooltip_display_normal            = false,
+    tooltip_display_crit              = false,
+    tooltip_display_expected          = true,
+    tooltip_display_effect_per_sec    = true,
+    tooltip_display_effect_per_cost   = true,
+    tooltip_display_cost_per_sec      = false,
+    tooltip_display_stat_weights_dps  = false,
+    tooltip_display_stat_weights_doom = false,
+    tooltip_display_avg_cost          = false,
+    tooltip_display_avg_cast          = false,
+    tooltip_display_cast_until_oom    = false,
+    tooltip_display_cast_and_tap      = false,
+    tooltip_display_sp_effect_calc    = false,
+    tooltip_display_sp_effect_ratio   = false,
+    tooltip_display_base_mod          = false,
+    tooltip_display_spell_id          = false,
+    tooltip_display_dynamic_tip       = true,
 
-    tooltip_disable                     = false,
-    tooltip_shift_to_show               = false,
-    tooltip_clear_original              = false,
+    tooltip_disable                   = false,
+    tooltip_shift_to_show             = false,
+    tooltip_clear_original            = false,
 
     -- overlay
-    overlay_display_normal              = false,
-    overlay_display_crit                = false,
-    overlay_display_expected            = false,
-    overlay_display_effect_per_sec      = true,
-    overlay_display_effect_per_cost     = false,
-    overlay_display_avg_cost            = false,
-    overlay_display_actual_cost         = false,
-    overlay_display_avg_cast            = false,
-    overlay_display_actual_cast         = false,
-    overlay_display_hit                 = false,
-    overlay_display_crit_chance         = false,
-    overlay_display_casts_until_oom     = false,
-    overlay_display_effect_until_oom    = false,
-    overlay_display_time_until_oom      = false,
+    overlay_display_normal            = false,
+    overlay_display_crit              = false,
+    overlay_display_expected          = false,
+    overlay_display_effect_per_sec    = true,
+    overlay_display_effect_per_cost   = false,
+    overlay_display_avg_cost          = false,
+    overlay_display_actual_cost       = false,
+    overlay_display_avg_cast          = false,
+    overlay_display_actual_cast       = false,
+    overlay_display_hit               = false,
+    overlay_display_crit_chance       = false,
+    overlay_display_casts_until_oom   = false,
+    overlay_display_effect_until_oom  = false,
+    overlay_display_time_until_oom    = false,
 
 
-    overlay_disable                     = false,
-    overlay_mana_abilities              = true,
-    overlay_old_rank                    = false,
-    overlay_old_rank_limit_to_known     = false,
-    overlay_single_effect_only          = false,
-    overlay_top_clearance               = false,
-    overlay_bottom_clearance            = false,
-    overlay_prioritize_heal             = true,
+    overlay_disable                 = false,
+    overlay_mana_abilities          = true,
+    overlay_old_rank                = false,
+    overlay_old_rank_limit_to_known = false,
+    overlay_single_effect_only      = false,
+    overlay_top_clearance           = false,
+    overlay_bottom_clearance        = false,
+    overlay_prioritize_heal         = true,
 
-    overlay_update_freq                 = 3,
-    overlay_font_size                   = 8,
-    overlay_offset                      = 0.0,
+    overlay_update_freq             = 3,
+    overlay_font_size               = 8,
+    overlay_offset                  = 0.0,
 
     -- profiles
-    profiles_dual_spec                  = false,
+    profiles_dual_spec              = false,
 
     -- spell catalogue
-    spells_ignore_list                  = {},
+    spells_ignore_list              = {},
 
     -- calculator
-    spell_calc_list                     = {
+    spell_calc_list                 = {
         [6603] = 6603,
         [78] = 78,
         [75] = 75,
@@ -118,10 +95,10 @@ local default_settings = {
         [2098] = 2098,
         [686] = 686,
     },
-    calc_list_use_highest_rank          = true,
+    calc_list_use_highest_rank      = true,
 
     -- general
-    libstub_minimap_icon                = { hide = false },
+    libstub_minimap_icon            = { hide = false },
 };
 
 for k, v in pairs(spell_filter_options) do
@@ -164,7 +141,7 @@ end
 
 local default_loadout_config = {
 
-    name = "Default";
+    name = "Default",
 
     use_custom_talents = false,
     talents_code = "",
@@ -202,34 +179,31 @@ local function default_p_char()
         active_loadout = 1,
         loadouts = {
             swc.utils.deep_table_copy(default_loadout_config),
-            swc.utils.deep_table_copy(default_loadout_config),
         },
     };
-    data.loadouts[2].name = "PVP";
-    data.loadouts[2].default_target_lvl_diff = 0;
     return data;
 end
 
 local function load_config()
-    if not p_acc then
+    if not __sc_p_acc then
         --swc.core.use_acc_defaults = true;
-        p_acc = {};
+        __sc_p_acc = {};
     end
-    load_persistent_data(p_acc, default_p_acc());
-    for _, v in pairs(p_acc.profiles) do
+    load_persistent_data(__sc_p_acc, default_p_acc());
+    for _, v in pairs(__sc_p_acc.profiles) do
         load_persistent_data(v, default_profile());
     end
-    for _, v in pairs(p_acc.profiles) do
+    for _, v in pairs(__sc_p_acc.profiles) do
         load_persistent_data(v.settings, default_settings);
     end
 
     -- load settings
-    if not p_char then
+    if not __sc_p_char then
         --swc.core.use_char_defaults = true;
-        p_char = {};
+        __sc_p_char = {};
     end
-    load_persistent_data(p_char, default_p_char());
-    for _, v in pairs(p_char.loadouts) do
+    load_persistent_data(__sc_p_char, default_p_char());
+    for _, v in pairs(__sc_p_char.loadouts) do
         load_persistent_data(v, default_loadout_config);
     end
 end
@@ -241,19 +215,18 @@ local spec_keys = {
 
 local function set_active_settings()
     for k, v in pairs(spec_keys) do
-        if not p_acc.profiles[p_char[v]] then
-            p_char[v] = next(p_acc.profiles);
+        if not __sc_p_acc.profiles[__sc_p_char[v]] then
+            __sc_p_char[v] = next(__sc_p_acc.profiles);
         end
 
         if swc.core.active_spec == k then
-            config.settings = p_acc.profiles[p_char[v]].settings;
+            config.settings = __sc_p_acc.profiles[__sc_p_char[v]].settings;
         end
     end
-    config.active_profile_name = p_char[spec_keys[swc.core.active_spec]];
+    config.active_profile_name = __sc_p_char[spec_keys[swc.core.active_spec]];
 end
 
 local function activate_settings()
-
     for k, v in pairs(config.settings) do
         local f = getglobal("sw_frame_setting_" .. k);
         if f then
@@ -286,8 +259,8 @@ local function activate_settings()
 end
 
 local function set_active_loadout(idx)
-    p_char.active_loadout = idx;
-    config.loadout = p_char.loadouts[idx];
+    __sc_p_char.active_loadout = idx;
+    config.loadout = __sc_p_char.loadouts[idx];
 end
 
 local function activate_loadout_config()
@@ -320,26 +293,26 @@ end
 
 local function save_config()
     --
-    p_acc.version_saved = swc.core.version_id;
-    p_char.version_saved = swc.core.version_id;
+    __sc_p_acc.version_saved = swc.core.version_id;
+    __sc_p_char.version_saved = swc.core.version_id;
     if swc.core.use_acc_defaults then
-        p_acc = nil;
+        __sc_p_acc = nil;
     end
     if swc.core.use_char_defaults then
-        p_char = nil;
+        __sc_p_char = nil;
     end
 end
 
 local function new_profile(profile_name, profile_to_copy)
-    if p_acc.profiles[profile_name] or profile_name == "" then
+    if __sc_p_acc.profiles[profile_name] or profile_name == "" then
         return false;
     end
-    p_acc.profiles[profile_name] = {};
-    load_persistent_data(p_acc.profiles[profile_name], profile_to_copy);
-    p_acc.profiles[profile_name].settings = swc.utils.deep_table_copy(profile_to_copy.settings);
-    print(p_acc.profiles[profile_name].settings);
+    __sc_p_acc.profiles[profile_name] = {};
+    load_persistent_data(__sc_p_acc.profiles[profile_name], profile_to_copy);
+    __sc_p_acc.profiles[profile_name].settings = swc.utils.deep_table_copy(profile_to_copy.settings);
+    print(__sc_p_acc.profiles[profile_name].settings);
     -- switch to new profile
-    p_char[spec_keys[swc.core.active_spec]] = profile_name;
+    __sc_p_char[spec_keys[swc.core.active_spec]] = profile_name;
     print(config.settings);
     set_active_settings()
     print(config.settings);
@@ -353,24 +326,24 @@ local function new_profile_from_default(profile_name)
 end
 
 local function new_profile_from_active_copy(profile_name)
-    return new_profile(profile_name, p_acc.profiles[config.active_profile_name]);
+    return new_profile(profile_name, __sc_p_acc.profiles[config.active_profile_name]);
 end
 
 local function new_loadout(name, loadout_to_copy)
     if name == "" then
         return false;
     end
-    for _, v in pairs(p_char.loadouts) do
+    for _, v in pairs(__sc_p_char.loadouts) do
         if v.name == name then
             return false;
         end
     end
 
-    local n = #p_char.loadouts + 1;
-    p_char.loadouts[n] = {};
-    load_persistent_data(p_char.loadouts[n], loadout_to_copy);
-    p_char.active_loadout = n;
-    p_char.loadouts[n].name = name;
+    local n = #__sc_p_char.loadouts + 1;
+    __sc_p_char.loadouts[n] = {};
+    load_persistent_data(__sc_p_char.loadouts[n], loadout_to_copy);
+    __sc_p_char.active_loadout = n;
+    __sc_p_char.loadouts[n].name = name;
 
     set_active_loadout(n);
 
@@ -378,7 +351,7 @@ local function new_loadout(name, loadout_to_copy)
 end
 
 local function new_loadout_from_active_copy(name)
-    return new_loadout(name, swc.utils.deep_table_copy(p_char.loadouts[p_char.active_loadout]));
+    return new_loadout(name, swc.utils.deep_table_copy(__sc_p_char.loadouts[__sc_p_char.active_loadout]));
 end
 
 local function new_loadout_from_default(name)

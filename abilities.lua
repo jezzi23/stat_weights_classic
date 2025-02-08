@@ -1,7 +1,7 @@
 local _, class = UnitClass("player");
 local _, race = UnitRace("player");
 
-local _, swc = ...;
+local _, sc = ...;
 local abilities = {};
 
 local spids = (function()
@@ -9272,37 +9272,37 @@ for k, v in pairs(spells) do
 end
 
 --for k, v in pairs(spells) do
---    if not swc.spells[k] then
---        swc.spells[k] = v;
+--    if not sc.spells[k] then
+--        sc.spells[k] = v;
 --    end
 --end
 for k, v in pairs(spids) do
-    if not swc.spids[k] then
+    if not sc.spids[k] then
         print("Missing spid", k, v);
-        swc.spids[k] = v;
+        sc.spids[k] = v;
     end
 end
 
-spells = swc.spells;
-spell_flags = swc.spell_flags;
-spids = swc.spids;
-rank_seqs = swc.rank_seqs;
+spells = sc.spells;
+spell_flags = sc.spell_flags;
+spids = sc.spids;
+rank_seqs = sc.rank_seqs;
 
 
 
 for k, v in pairs(spells) do
-    if not v.periodic and not v.direct and bit.band(v.flags, swc.spell_flags.eval) ~= 0 then
+    if not v.periodic and not v.direct and bit.band(v.flags, sc.spell_flags.eval) ~= 0 then
         print("Warning: spell", k, "has no components yet eval flag");
     end
 end
 
 
 local function best_rank_by_lvl(spell, lvl)
-    local n = #swc.rank_seqs[spell.base_id];
+    local n = #sc.rank_seqs[spell.base_id];
     local i = n;
     while i ~= 0 do
-        if spells[swc.rank_seqs[spell.base_id][i]].lvl_req <= lvl then
-            return spells[swc.rank_seqs[spell.base_id][i]];
+        if spells[sc.rank_seqs[spell.base_id][i]].lvl_req <= lvl then
+            return spells[sc.rank_seqs[spell.base_id][i]];
         end
         i = i - 1;
     end
@@ -9310,12 +9310,12 @@ local function best_rank_by_lvl(spell, lvl)
 end
 
 local function highest_learned_rank(base_id)
-    local n = #swc.rank_seqs[base_id];
+    local n = #sc.rank_seqs[base_id];
     local i = n;
     while i ~= 0 do
-        if IsSpellKnownOrOverridesKnown(swc.rank_seqs[base_id][i]) or
-            IsSpellKnownOrOverridesKnown(swc.rank_seqs[base_id][i], true) then
-            return swc.rank_seqs[base_id][i];
+        if IsSpellKnownOrOverridesKnown(sc.rank_seqs[base_id][i]) or
+            IsSpellKnownOrOverridesKnown(sc.rank_seqs[base_id][i], true) then
+            return sc.rank_seqs[base_id][i];
         end
         i = i - 1;
     end
@@ -9323,7 +9323,7 @@ local function highest_learned_rank(base_id)
 end
 
 local function next_rank(spell_data)
-    return spells[swc.rank_seqs[spell_data.base_id][spell_data.rank + 1]];
+    return spells[sc.rank_seqs[spell_data.base_id][spell_data.rank + 1]];
 end
 
 --if class == "WARLOCK" then
@@ -9359,4 +9359,4 @@ abilities.next_rank = next_rank;
 abilities.spell_groups = spell_groups;
 abilities.spids = spids;
 
-swc.abilities = abilities;
+sc.abilities = abilities;

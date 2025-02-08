@@ -1,28 +1,5 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc = ...;
 
-local _, swc = ...;
-
---------------------------------------------------------------------------------
 local equipment = {};
 
 local set_tiers = {
@@ -807,14 +784,14 @@ local function detect_sets(loadout)
         loadout.num_set_pieces[v] = 0;
     end
     -- Real ting
-    for k, _ in pairs(swc.set_bonuses) do
+    for k, _ in pairs(sc.set_bonuses) do
         loadout.num_set_pieces[k] = 0;
     end
 
     for item = 1, 18 do
         local id = GetInventoryItemID("player", item);
-        if swc.set_items[id] then
-            local set_id = swc.set_items[id];
+        if sc.set_items[id] then
+            local set_id = sc.set_items[id];
             if not loadout.num_set_pieces[set_id] then
                 loadout.num_set_pieces[set_id] = 0;
             end
@@ -834,12 +811,12 @@ local function apply_equipment(loadout, effects)
     for set_id, num in pairs(loadout.num_set_pieces) do
         if num < 2 then
 
-            if swc.set_bonuses[set_id] then -- remove this check when old sets handling is gone
-                for threshold, effect_id in pairs(swc.set_bonuses[set_id]) do
+            if sc.set_bonuses[set_id] then -- remove this check when old sets handling is gone
+                for threshold, effect_id in pairs(sc.set_bonuses[set_id]) do
                     if num < threshold then
                         break;
                     end
-                    swc.loadout.apply_effect(loadout, effects, effect_id, swc.set_effects[effect_id], false, 1.0);
+                    sc.loadout.apply_effect(loadout, effects, effect_id, sc.set_effects[effect_id], false, 1.0);
                 end
             end
         end
@@ -854,8 +831,8 @@ local function apply_equipment(loadout, effects)
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
             local id = GetInventoryItemID("player", i);
-            if id and swc.items[id] then
-                swc.loadout.apply_effect(loadout, effects, id, swc.item_effects[id], false, 1.0);
+            if id and sc.items[id] then
+                sc.loadout.apply_effect(loadout, effects, id, sc.item_effects[id], false, 1.0);
             end
             found_anything = true;
             local item_stats = GetItemStats(item_link);
@@ -886,9 +863,9 @@ local function apply_equipment(loadout, effects)
     loadout.enchant_effects_applied = {};
     -- just do weapon enchants for now, are others even needed?
     local _, _, _, enchant_id = GetWeaponEnchantInfo();
-    if swc.enchants[enchant_id] then
-        for _, spid in pairs(swc.enchants[enchant_id]) do
-            swc.loadout.apply_effect(loadout, effects, spid, swc.enchant_effects[spid], false, 1.0, false);
+    if sc.enchants[enchant_id] then
+        for _, spid in pairs(sc.enchants[enchant_id]) do
+            sc.loadout.apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
             loadout.enchant_effects_applied[spid] = 1;
         end
     end
@@ -898,9 +875,9 @@ local function apply_equipment(loadout, effects)
             local rune_slot = C_Engraving.GetRuneForEquipmentSlot(i);
             if rune_slot then
                 if rune_slot.itemEnchantmentID then
-                    if swc.enchants[rune_slot.itemEnchantmentID] then
-                        for _, spid in pairs(swc.enchants[rune_slot.itemEnchantmentID]) do
-                            swc.loadout.apply_effect(loadout, effects, spid, swc.enchant_effects[spid], false, 1.0, false);
+                    if sc.enchants[rune_slot.itemEnchantmentID] then
+                        for _, spid in pairs(sc.enchants[rune_slot.itemEnchantmentID]) do
+                            sc.loadout.apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
                             loadout.enchant_effects_applied[spid] = 1;
                         end
                     end
@@ -914,7 +891,7 @@ local function apply_equipment(loadout, effects)
 
     end
 
-    if swc.core.__sw__test_all_codepaths then
+    if sc.core.__sw__test_all_codepaths then
         --for k, v in pairs(items) do
         --    if v then
         --        v(effects);
@@ -936,29 +913,29 @@ local function apply_equipment(loadout, effects)
 
         -- Testing all items
         local items_applied = 0;
-        for _, v in pairs(swc.items) do
+        for _, v in pairs(sc.items) do
             for _, id in pairs(v) do
-                swc.loadout.apply_effect(loadout, effects, id, swc.item_effects[id], true, 1.0);
+                sc.loadout.apply_effect(loadout, effects, id, sc.item_effects[id], true, 1.0);
                 items_applied = items_applied + 1;
             end
         end
         print(items_applied, "gen items applied");
         local sets_applied = 0;
-        for _, v in pairs(swc.set_bonuses) do
+        for _, v in pairs(sc.set_bonuses) do
             for _, bonus in pairs(v) do
                 local id = bonus[2];
 
-                swc.loadout.apply_effect(loadout, effects, id, swc.set_effects[id], true, 1.0);
+                sc.loadout.apply_effect(loadout, effects, id, sc.set_effects[id], true, 1.0);
                 sets_applied = sets_applied + 1;
             end
         end
         print(sets_applied, "gen sets applied");
 
         local enchants_applied = 0;
-        for _, v in pairs(swc.enchants) do
+        for _, v in pairs(sc.enchants) do
             for _, id in pairs(v) do
 
-                swc.loadout.apply_effect(loadout, effects, id, swc.enchant_effects[id], true, 1.0);
+                sc.loadout.apply_effect(loadout, effects, id, sc.enchant_effects[id], true, 1.0);
                 enchants_applied = enchants_applied + 1;
             end
         end
@@ -971,4 +948,4 @@ end
 equipment.set_tiers = set_tiers;
 equipment.apply_equipment = apply_equipment;
 
-swc.equipment = equipment;
+sc.equipment = equipment;

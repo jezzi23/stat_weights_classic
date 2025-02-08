@@ -1,58 +1,36 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc                    = ...;
 
-local _, swc                    = ...;
+local wowhead_talent_code       = sc.talents.wowhead_talent_code;
 
-local wowhead_talent_code       = swc.talents.wowhead_talent_code;
+local spells                    = sc.abilities.spells;
+local spell_flags               = sc.abilities.spell_flags;
 
-local spells                    = swc.abilities.spells;
-local spell_flags               = swc.abilities.spell_flags;
+local font                      = sc.ui.font;
+local load_sw_ui                = sc.ui.load_sw_ui;
+local create_sw_base_ui         = sc.ui.create_sw_base_ui;
+local sw_activate_tab           = sc.ui.sw_activate_tab;
+local update_buffs_frame        = sc.ui.update_buffs_frame;
+local update_profile_frame      = sc.ui.update_profile_frame;
+local update_loadout_frame      = sc.ui.update_loadout_frame;
 
-local font                      = swc.ui.font;
-local load_sw_ui                = swc.ui.load_sw_ui;
-local create_sw_base_ui         = swc.ui.create_sw_base_ui;
-local sw_activate_tab           = swc.ui.sw_activate_tab;
-local update_buffs_frame        = swc.ui.update_buffs_frame;
-local update_profile_frame      = swc.ui.update_profile_frame;
-local update_loadout_frame      = swc.ui.update_loadout_frame;
-
-local config                    = swc.config;
-local load_config               = swc.config.load_config;
-local save_config               = swc.config.save_config;
-local set_active_settings       = swc.config.set_active_settings;
-local set_active_loadout        = swc.config.set_active_loadout;
-local activate_settings         = swc.config.activate_settings;
-local activate_loadout_config   = swc.config.activate_loadout_config;
+local config                    = sc.config;
+local load_config               = sc.config.load_config;
+local save_config               = sc.config.save_config;
+local set_active_settings       = sc.config.set_active_settings;
+local set_active_loadout        = sc.config.set_active_loadout;
+local activate_settings         = sc.config.activate_settings;
+local activate_loadout_config   = sc.config.activate_loadout_config;
 
 
-local reassign_overlay_icon     = swc.overlay.reassign_overlay_icon;
-local update_overlay            = swc.overlay.update_overlay;
+local reassign_overlay_icon     = sc.overlay.reassign_overlay_icon;
+local update_overlay            = sc.overlay.update_overlay;
 
-local update_tooltip            = swc.tooltip.update_tooltip;
-local tooltip_spell_info        = swc.tooltip.tooltip_spell_info;
+local update_tooltip            = sc.tooltip.update_tooltip;
+local tooltip_spell_info        = sc.tooltip.tooltip_spell_info;
 
 -------------------------------------------------------------------------
 local core                      = {};
-swc.core                        = core;
+sc.core                        = core;
 
 core.sw_addon_name              = "Stat Weights Classic";
 
@@ -155,7 +133,7 @@ local event_dispatch = {
             load_config();
             core.active_spec = GetActiveTalentGroup();
             set_active_settings();
-            set_active_loadout(p_char.active_loadout);
+            set_active_loadout(__sc_p_char.active_loadout);
             load_sw_ui();
             activate_settings();
             activate_loadout_config();
@@ -184,7 +162,7 @@ local event_dispatch = {
                 HideUIPanel(CharacterFrame);
             end
         end
-        swc.ui.add_spell_book_button();
+        sc.ui.add_spell_book_button();
         C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_swc_id)
         if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             for i = 1, 10 do
@@ -316,7 +294,7 @@ local function spell_tracking(dt)
 end
 
 local function main_update()
-    local dt = 1.0 / swc.config.settings.overlay_update_freq;
+    local dt = 1.0 / sc.config.settings.overlay_update_freq;
 
     local t = GetTime();
 
@@ -484,17 +462,17 @@ SLASH_STAT_WEIGHTS3 = "/statweightsclassic"
 SLASH_STAT_WEIGHTS4 = "/swc"
 SlashCmdList["STAT_WEIGHTS"] = command
 
-swc.ext.enable_addon_message_on_update = function()
+sc.ext.enable_addon_message_on_update = function()
     core.addon_message_on_update = true;
 end
-swc.ext.disable_addon_message_on_update = function()
+sc.ext.disable_addon_message_on_update = function()
     core.addon_message_on_update = false;
 end
-swc.ext.version_id = core.version_id;
+sc.ext.version_id = core.version_id;
 
-__SWC = swc.ext;
+__SWC = sc.ext;
 
 --core.__sw__debug__ = 1;
---core.swc.core.use_char_defaults = 1;
+--core.sc.core.use_char_defaults = 1;
 --core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;

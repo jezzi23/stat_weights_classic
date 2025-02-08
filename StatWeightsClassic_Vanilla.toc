@@ -1,8 +1,8 @@
 ## Interface: 11505
 ## Title: Stat Weights Classic Vanilla
 ## Notes: All things spells!
-## SavedVariablesPerCharacter: p_char
-## SavedVariables: p_acc
+## SavedVariablesPerCharacter: __sc_p_char
+## SavedVariables: __sc_p_acc
 
 lib/LibStub/Libstub.lua
 lib/CallbackHandler-1.0/CallbackHandler-1.0.xml
@@ -40,17 +40,17 @@ locale/enTW.lua
 
 vanilla/data_override.lua
 
-shared/utils.lua
-shared/config.lua
-vanilla/abilities.lua
-shared/loadout.lua
+utils.lua
+config.lua
+abilities.lua
+loadout.lua
 vanilla/loadout.lua
-vanilla/equipment.lua
-vanilla/buffs.lua
-vanilla/talents.lua
-vanilla/calc.lua
-shared/tooltip.lua
+equipment.lua
+buffs.lua
+talents.lua
+calc.lua
+tooltip.lua
 vanilla/tooltip.lua
-shared/overlay.lua
-shared/ui.lua
-shared/core.lua
+overlay.lua
+ui.lua
+core.lua

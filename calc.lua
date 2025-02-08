@@ -1,27 +1,27 @@
-local _, swc = ...;
+local _, sc = ...;
 
-local spells            = swc.abilities.spells;
-local spids             = swc.abilities.spids;
-local schools           = swc.schools;
-local spell_flags       = swc.abilities.spell_flags;
-local best_rank_by_lvl  = swc.abilities.best_rank_by_lvl;
+local spells            = sc.abilities.spells;
+local spids             = sc.abilities.spids;
+local schools           = sc.schools;
+local spell_flags       = sc.abilities.spell_flags;
+local best_rank_by_lvl  = sc.abilities.best_rank_by_lvl;
 
-local schools           = swc.schools;
-local comp_flags        = swc.comp_flags;
+local schools           = sc.schools;
+local comp_flags        = sc.comp_flags;
 
-local config            = swc.config;
+local config            = sc.config;
 
-local stat              = swc.utils.stat;
-local class             = swc.utils.class;
-local deep_table_copy   = swc.utils.deep_table_copy;
+local stat              = sc.utils.stat;
+local class             = sc.utils.class;
+local deep_table_copy   = sc.utils.deep_table_copy;
 
-local effects_zero_diff = swc.loadout.effects_zero_diff;
-local effects_diff      = swc.loadout.effects_diff;
-local loadout_flags     = swc.loadout.loadout_flags;
+local effects_zero_diff = sc.loadout.effects_zero_diff;
+local effects_diff      = sc.loadout.effects_diff;
+local loadout_flags     = sc.loadout.loadout_flags;
 
-local set_tiers         = swc.equipment.set_tiers;
+local set_tiers         = sc.equipment.set_tiers;
 
-local is_buff_up        = swc.buffs.is_buff_up;
+local is_buff_up        = sc.buffs.is_buff_up;
 
 --------------------------------------------------------------------------------
 local calc              = {};
@@ -738,8 +738,8 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     stats.gcd = math.min(spell.gcd, 1.5);
 
     local base_mana = 0;
-    if swc.base_mana_by_lvl then
-        base_mana = swc.base_mana_by_lvl[loadout.lvl];
+    if sc.base_mana_by_lvl then
+        base_mana = sc.base_mana_by_lvl[loadout.lvl];
     end
 
     if bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
@@ -809,7 +809,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     elseif class == "DRUID" then
         -- clearcast
         local pts = loadout.talents_table[109];
-        if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
+        if bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 and
             bit.band(spell_flags.instant, spell.flags) == 0 then
             cost_mod = cost_mod * (1.0 - 0.1 * pts);
         end
@@ -862,7 +862,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
             stats.cast_time = stats.cast_time * (1.0 - stats.cast_mod);
         end
 
-        if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
+        if bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 and
             is_buff_up(loadout, "player", lookups.moonkin_form, true) and
             bit.band(spell.flags, spell_flags.heal) == 0 then
             --moonkin form periodic crit
@@ -951,7 +951,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         --if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 then
         --    local mh_speed, oh_speed = UnitAttackSpeed("player");
         --    local wep_speed = mh_speed;
-        --    if bit.band(eval_flags, swc.calc.evaluation_flags.isolate_offhand) ~= 0 then
+        --    if bit.band(eval_flags, sc.calc.evaluation_flags.isolate_offhand) ~= 0 then
         --        if oh_speed then
         --            wep_speed = oh_speed;
         --        end
@@ -1076,7 +1076,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         --    resource_refund_mul_crit = resource_refund_mul_crit + 0.02 * loadout.max_mana;
         --end
 
-        --if loadout.runes[swc.talents.rune_ids.soul_siphon] then
+        --if loadout.runes[sc.talents.rune_ids.soul_siphon] then
         --    if bid == spids.drain_soul then
         --        if loadout.enemy_hp_perc and loadout.enemy_hp_perc <= 0.2 then
         --            stats.target_vuln_mod_ot_mul = stats.target_vuln_mod_ot_mul *
@@ -1134,7 +1134,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
     if effects.ability.refund[bid] and effects.ability.refund[bid] ~= 0 then
         local refund = effects.ability.refund[bid];
-        local max_rank = spells[swc.rank_seqs[spell.base_id][#swc.rank_seqs[spell.base_id]]].rank;
+        local max_rank = spells[sc.rank_seqs[spell.base_id][#sc.rank_seqs[spell.base_id]]].rank;
         -- TODO: find max rank
         -- NOTE: unclear how this works, best guess it to interopolate between first and last rank
         local coef_estimate = 1.0;
@@ -1951,7 +1951,7 @@ elseif class == "PRIEST" then
         [spids.penance] = function(spell, info, loadout, stats, effects)
 
             if is_buff_up(loadout, "player", lookups.rapid_healing, true) and
-                bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+                bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 then
 
                 add_expectation_ot_st(info, 2);
             end
@@ -2219,4 +2219,4 @@ calc.evaluate_spell           = evaluate_spell;
 calc.get_combat_rating_effect = get_combat_rating_effect;
 calc.spell_diff               = spell_diff;
 
-swc.calc                      = calc;
+sc.calc                      = calc;

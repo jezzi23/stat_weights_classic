@@ -1,31 +1,9 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc = ...;
 
-local _, swc = ...;
+local stat                              = sc.utils.stat;
+local deep_table_copy                   = sc.utils.deep_table_copy;
 
-local stat                              = swc.utils.stat;
-local deep_table_copy                   = swc.utils.deep_table_copy;
-
-local config                            = swc.config;
+local config                            = sc.config;
 
 --------------------------------------------------------------------------------
 local loadout_export = {};
@@ -425,7 +403,7 @@ local function effects_from_ui_diff(frame)
 
     diff.sp = stats.sp.editbox_val;
 
-    if swc.core.expansion_loaded == swc.core.expansions.vanilla then
+    if sc.core.expansion_loaded == sc.core.expansions.vanilla then
         diff.sd = stats.sd.editbox_val;
         diff.hp = stats.hp.editbox_val;
         diff.spell_pen = stats.spell_pen.editbox_val;
@@ -438,7 +416,7 @@ end
 
 local function print_loadout(loadout, effects)
 
-    print("Stat Weights Classic - Version: "..swc.core.version);
+    print("Stat Weights Classic - Version: "..sc.core.version);
     for k, v in pairs(loadout) do
         print(k, v);
     end
@@ -522,7 +500,7 @@ local function dynamic_loadout(loadout)
         loadout.phys_hit = 0.01*phys_hit;
     end
 
-    if swc.core.expansion_loaded == swc.core.expansions.vanilla then
+    if sc.core.expansion_loaded == sc.core.expansions.vanilla then
         loadout.healing_power = GetSpellBonusHealing();
         for i = 1, 7 do
             loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
@@ -578,7 +556,7 @@ local function dynamic_loadout(loadout)
 
     loadout.m1_speed, loadout.m2_speed = UnitAttackSpeed("player");
 
-    loadout.shapeshift_no_weapon = swc.class == "DRUID" and GetShapeshiftForm() ~= 5;
+    loadout.shapeshift_no_weapon = sc.class == "DRUID" and GetShapeshiftForm() ~= 5;
 
     loadout.player_name = UnitName("player");
     loadout.target_name = UnitName("target");
@@ -614,7 +592,7 @@ local function dynamic_loadout(loadout)
 
         local creature = UnitCreatureType("target");
         if creature then
-            local creature_id = swc.creature_lname_to_id[creature];
+            local creature_id = sc.creature_lname_to_id[creature];
             if creature_id then
                 loadout.target_creature_mask = bit.lshift(1, creature_id-1);
             end
@@ -644,12 +622,12 @@ local function dynamic_loadout(loadout)
 
     loadout.armor = config.loadout.target_armor;
     if config.loadout.target_automatic_armor then
-        if swc.npc_armor_by_lvl[loadout.target_lvl] then
-            loadout.armor = swc.npc_armor_by_lvl[loadout.target_lvl] * config.loadout.target_automatic_armor_pct * 0.01;
+        if sc.npc_armor_by_lvl[loadout.target_lvl] then
+            loadout.armor = sc.npc_armor_by_lvl[loadout.target_lvl] * config.loadout.target_automatic_armor_pct * 0.01;
         end
     end
 
-    swc.buffs.detect_buffs(loadout);
+    sc.buffs.detect_buffs(loadout);
 end
 
 local function apply_effect(loadout, effects, spid, auras, forced, stacks, undo)
@@ -683,8 +661,8 @@ local function apply_effect(loadout, effects, spid, auras, forced, stacks, undo)
             val = (aura[3] + add) * mul;
         end
 
-        if bit.band(aura[5], swc.aura_flags.inactive_forced) == 0 or forced then
-            if bit.band(aura[5], swc.aura_flags.mul) ~= 0 then
+        if bit.band(aura[5], sc.aura_flags.inactive_forced) == 0 or forced then
+            if bit.band(aura[5], sc.aura_flags.mul) ~= 0 then
                 if not effects["mul"][aura[1]][aura[2]] then
                     print("Missing effects.mul."..aura[1].."."..aura[2]);
                 end
@@ -739,24 +717,24 @@ local function update_loadout_and_effects()
 
     dynamic_loadout(base_loadout);
 
-    if swc.core.equipment_update_needed then
+    if sc.core.equipment_update_needed then
         zero_effects(equipped);
-        local equipment_api_worked = swc.equipment.apply_equipment(base_loadout, equipped);
+        local equipment_api_worked = sc.equipment.apply_equipment(base_loadout, equipped);
         -- need eq update again next because api failed
-        swc.core.equipment_update_needed = not equipment_api_worked;
-        swc.core.talents_update_needed = true;
+        sc.core.equipment_update_needed = not equipment_api_worked;
+        sc.core.talents_update_needed = true;
     end
 
-    if swc.core.talents_update_needed or
+    if sc.core.talents_update_needed or
         (config.loadout.talents_code == "_" and UnitLevel("player") >= 10) -- workaround around edge case when the talents query won't work shortly after logging in
         then
 
-        config.loadout.talents_code = swc.talents.wowhead_talent_code();
+        config.loadout.talents_code = sc.talents.wowhead_talent_code();
 
         zero_effects(talented);
         effects_add(talented, equipped);
         -- load special passives along with talents
-        for k, v in pairs(swc.special_passives) do
+        for k, v in pairs(sc.special_passives) do
             if IsPlayerSpell(k) then
                 local lname = GetSpellInfo(k);
                 print("Applying special passive", k, v, lname);
@@ -764,18 +742,18 @@ local function update_loadout_and_effects()
             end
         end
 
-        swc.talents.apply_talents(base_loadout, talented);
+        sc.talents.apply_talents(base_loadout, talented);
 
 
 
-        swc.core.talents_update_needed = false;
+        sc.core.talents_update_needed = false;
     end
 
     -- equipment and talents updates above are rare
 
     zero_effects(final_effects);
     effects_add(final_effects, talented);
-    swc.buffs.apply_buffs(base_loadout, final_effects);
+    sc.buffs.apply_buffs(base_loadout, final_effects);
 
     -- DELETE THIS
     __swc_loadout = base_loadout;
@@ -792,7 +770,7 @@ local function update_loadout_and_effects_diffed_from_ui()
     local diff = effects_from_ui_diff(sw_frame.calculator_frame);
 
     local effects_diffed = deep_table_copy(effects);
-    swc.loadout.effects_diff(loadout, effects_diffed, diff);
+    sc.loadout.effects_diff(loadout, effects_diffed, diff);
 
     return loadout, effects, effects_diffed;
 end
@@ -811,5 +789,5 @@ loadout_export.update_loadout_and_effects_diffed_from_ui    = update_loadout_and
 loadout_export.loadout_flags                                = loadout_flags;
 loadout_export.apply_effect                                 = apply_effect;
 
-swc.loadout = loadout_export;
+sc.loadout = loadout_export;
 

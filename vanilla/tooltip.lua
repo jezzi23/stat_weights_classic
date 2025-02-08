@@ -1,50 +1,25 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc                    = ...;
 
-local _, swc                    = ...;
+local spell_flags               = sc.abilities.spell_flags;
+local spids                     = sc.abilities.spids;
+local schools                   = sc.schools;
 
-local spells                    = swc.abilities.spells;
-local spell_flags               = swc.abilities.spell_flags;
-local spids                     = swc.abilities.spids;
-local schools                   = swc.schools;
+local comp_flags                = sc.comp_flags;
 
-local comp_flags                = swc.comp_flags;
+local spell_cost                = sc.utils.spell_cost;
+local spell_cast_time           = sc.utils.spell_cast_time;
+local effect_colors             = sc.utils.effect_colors;
 
-local spell_cost                = swc.utils.spell_cost;
-local spell_cast_time           = swc.utils.spell_cast_time;
-local effect_colors             = swc.utils.effect_colors;
+local set_tiers                 = sc.equipment.set_tiers;
 
-local set_tiers                 = swc.equipment.set_tiers;
+local stats_for_spell           = sc.calc.stats_for_spell;
+local evaluate_spell            = sc.calc.evaluate_spell;
 
-local rune_ids                  = swc.talents.rune_ids;
+local sort_stat_weights         = sc.tooltip.sort_stat_weights;
+local format_bounce_spell       = sc.tooltip.format_bounce_spell;
+local append_tooltip_spell_rank = sc.tooltip.append_tooltip_spell_rank;
 
-local stats_for_spell           = swc.calc.stats_for_spell;
-local evaluate_spell            = swc.calc.evaluate_spell;
-
-local sort_stat_weights         = swc.tooltip.sort_stat_weights;
-local format_bounce_spell       = swc.tooltip.format_bounce_spell;
-local append_tooltip_spell_rank = swc.tooltip.append_tooltip_spell_rank;
-
-local config                    = swc.config;
+local config                    = sc.config;
 
 -------------------------------------------------------------------------------
 
@@ -63,14 +38,13 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
     local effect_per_sec_per_sp = "";
     local cost_str = "";
     local cost_str_cap = "";
-    local coef_power_type = "SP";
-    if spell.power_type == swc.powers.mana then
+    if spell.power_type == sc.powers.mana then
         cost_str = "mana";
         cost_str_cap = "Mana";
-    elseif spell.power_type == swc.powers.rage then
+    elseif spell.power_type == sc.powers.rage then
         cost_str = "rage";
         cost_str_cap = "Rage";
-    elseif spell.power_type == swc.powers.energy then
+    elseif spell.power_type == sc.powers.energy then
         cost_str = "energy";
         cost_str_cap = "Energy";
     end
@@ -143,10 +117,10 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
     if spell.direct then
         if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             if config.settings.tooltip_display_hit and
-                bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 and
+                bit.band(eval_flags, sc.calc.evaluation_flags.isolate_periodic) == 0 and
                 bit.band(spell.direct.flags, comp_flags.periodic) == 0 then
 
-                if spell.direct.school1 == swc.schools.physical then
+                if spell.direct.school1 == sc.schools.physical then
                     tooltip:AddLine(
                         string.format("Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
                             stats.attack_skill,
@@ -167,14 +141,13 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
                         string.format("Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
                             stats.extra_hit * 100,
                             100 - (stats.hit * 100),
-                            stats.target_resi,
                             stats.target_avg_resi*100),
                         effect_colors.miss_info[1], effect_colors.miss_info[2], effect_colors.miss_info[3]);
                 end
             end
         end
     end
-    if config.settings.tooltip_display_normal and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 and eval.spell.num_direct_effects > 0 then
+    if config.settings.tooltip_display_normal and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_periodic) == 0 and eval.spell.num_direct_effects > 0 then
         if spell.direct then
 
             local hit_str = string.format(" (%.1f%% hit)", stats.hit * 100);
@@ -195,7 +168,7 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
                             math.ceil(eval.spell.max_noncrit_if_hit1)),
                         effect_colors.normal[1], effect_colors.normal[2], effect_colors.normal[3]);
                 end
-                if bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
+                if bit.band(eval_flags, sc.calc.evaluation_flags.assume_single_effect) == 0 then
                     if spell.base_id == spids.chain_heal then
                         local bounces = 2;
                         local falloff = 0.5;
@@ -282,12 +255,12 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
     local special_crit_mod_str = "";
 
     if eval.spell.min_crit_if_hit1 ~= 0 and stats.special_crit_mod_tracked ~= 0 and
-        (not stats["extra_effect_is_periodic" .. stats.special_crit_mod_tracked] or bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0) then
+        (not stats["extra_effect_is_periodic" .. stats.special_crit_mod_tracked] or bit.band(eval_flags, sc.calc.evaluation_flags.isolate_direct) == 0) then
         special_crit_mod_str = " + "..stats["extra_effect_desc" .. stats.special_crit_mod_tracked];
         crit_mod = stats.crit_mod * (1.0 + stats["extra_effect_val" .. stats.special_crit_mod_tracked]);
     end
 
-    if config.settings.tooltip_display_crit and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 and eval.spell.num_direct_effects > 0 then
+    if config.settings.tooltip_display_crit and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_periodic) == 0 and eval.spell.num_direct_effects > 0 then
 
         local crit_chance_info_str = string.format(" (%.2f%%||%.2fx)", stats.crit*100, crit_mod);
         if stats.crit ~= 0 and spell.direct then
@@ -306,7 +279,7 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
                     effect_colors.crit[1], effect_colors.crit[2], effect_colors.crit[3]);
             end
 
-            if bit.band(eval_flags, swc.calc.evaluation_flags.assume_single_effect) == 0 then
+            if bit.band(eval_flags, sc.calc.evaluation_flags.assume_single_effect) == 0 then
                 if spell.base_id == spids.chain_heal then
                     local bounces = 2;
                     local falloff = 0.5;
@@ -371,9 +344,9 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
     end
 
     if spell.periodic and bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
-        if config.settings.tooltip_display_hit and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
+        if config.settings.tooltip_display_hit and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_direct) == 0 then
 
-            if spell.periodic.school1 == swc.schools.physical and bit.band(spell.periodic.flags, comp_flags.periodic) == 0 then
+            if spell.periodic.school1 == sc.schools.physical and bit.band(spell.periodic.flags, comp_flags.periodic) == 0 then
                 tooltip:AddLine(
                     string.format("Armor %d -> %.1f%% mitigated",
                         stats.armor,
@@ -391,7 +364,7 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
         end
     end
 
-    if config.settings.tooltip_display_normal and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 and eval.spell.num_periodic_effects > 0 then
+    if config.settings.tooltip_display_normal and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_direct) == 0 and eval.spell.num_periodic_effects > 0 then
         if spell.periodic then
             local hit_str = string.format(" (%.1f%%hit)", stats.hit_ot * 100, stats.target_avg_resi_dot * 100);
             if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -699,7 +672,7 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
     end
     if config.settings.tooltip_display_sp_effect_calc then
 
-        if spell.direct and stats.coef > 0 and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_periodic) == 0 then
+        if spell.direct and stats.coef > 0 and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_periodic) == 0 then
             local pwr = "SP";
             if spell.direct.school1 == schools.physical then
                 if bit.band(spell.direct.flags, comp_flags.applies_ranged) ~= 0 then
@@ -717,7 +690,7 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
                 ),
                 effect_colors.sp_effect[1], effect_colors.sp_effect[2], effect_colors.sp_effect[3]);
         end
-        if spell.periodic and stats.ot_coef > 0 and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_direct) == 0 then
+        if spell.periodic and stats.ot_coef > 0 and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_direct) == 0 then
             local pwr = "SP";
             if spell.periodic.school1 == schools.physical then
                 if bit.band(spell.periodic.flags, comp_flags.applies_ranged) ~= 0 then
@@ -943,14 +916,14 @@ local function append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effe
         if evaluation_options ~= "" then
             tooltip:AddLine("To isolate: Hold " .. evaluation_options, 1.0, 1.0, 1.0);
         end
-        --if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_offhand) == 0 then
+        --if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_offhand) == 0 then
         --    tooltip:AddLine("Hold ALT key to show for offhand", 1.0, 1.0, 1.0);
         --end
         local dual_wield_flags = bit.bor(comp_flags.applies_mh, comp_flags.applies_oh);
-        if loadout.m2_speed and bit.band(anycomp.flags, dual_wield_flags) == dual_wield_flags and bit.band(eval_flags, swc.calc.evaluation_flags.isolate_offhand) == 0 then
+        if loadout.m2_speed and bit.band(anycomp.flags, dual_wield_flags) == dual_wield_flags and bit.band(eval_flags, sc.calc.evaluation_flags.isolate_offhand) == 0 then
             tooltip:AddLine("Showing for MH and OH. Hold ALT key isolate OH", 1.0, 1.0, 1.0);
         end
     end
 end
 
-swc.tooltip.append_tooltip_spell_info = append_tooltip_spell_info;
+sc.tooltip.append_tooltip_spell_info = append_tooltip_spell_info;

@@ -1,35 +1,13 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc                = ...;
 
-local _, swc                = ...;
+local spell_mod_add = sc.utils.spell_mod_add;
+local class                 = sc.utils.class;
+local stat                  = sc.utils.stat;
 
-local spell_mod_add = swc.utils.spell_mod_add;
-local class                 = swc.utils.class;
-local stat                  = swc.utils.stat;
+local config                = sc.config;
 
-local config                = swc.config;
-
-local magic_school          = swc.abilities.magic_school;
-local spids                 = swc.abilities.spids;
+local magic_school          = sc.abilities.magic_school;
+local spids                 = sc.abilities.spids;
 -------------------------------------------------------------------------------
 local talents_export        = {};
 
@@ -602,7 +580,7 @@ local function create_talents()
             },
             [112] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    swc.loadout.add_mana_mod(loadout, effects, missing_pts * 0.02, pts * 0.02);
+                    sc.loadout.add_mana_mod(loadout, effects, missing_pts * 0.02, pts * 0.02);
                 end
             },
             [114] = {
@@ -712,7 +690,7 @@ local function create_talents()
             },
             [106] = {
                 apply = function(loadout, effects, pts)
-                    if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+                    if bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 then
                         effects.mul.by_school.spell_dmg_mod[magic_school.nature] =
                             effects.mul.by_school.spell_dmg_mod[magic_school.nature] * (1.0 + 0.02 * pts);
                         effects.mul.by_school.spell_dmg_mod[magic_school.arcane] =
@@ -754,7 +732,7 @@ local function create_talents()
             },
             [215] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    swc.loadout.add_int_mod(loadout, effects, 0.04 * missing_pts, 0.04 * pts);
+                    sc.loadout.add_int_mod(loadout, effects, 0.04 * missing_pts, 0.04 * pts);
                 end
             },
             [303] = {
@@ -801,7 +779,7 @@ local function create_talents()
         return {
             [102] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    swc.loadout.add_int_mod(loadout, effects, missing_pts * 0.02, pts * 0.02);
+                    sc.loadout.add_int_mod(loadout, effects, missing_pts * 0.02, pts * 0.02);
                 end
             },
             [105] = {
@@ -878,7 +856,7 @@ local function create_talents()
             },
             [201] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    swc.loadout.add_mana_mod(loadout, effects, missing_pts * 0.01, pts * 0.01);
+                    sc.loadout.add_mana_mod(loadout, effects, missing_pts * 0.01, pts * 0.01);
                 end
             },
             [206] = {
@@ -983,7 +961,7 @@ local function create_talents()
             },
             [114] = {
                 apply = function(loadout, effects, pts, missing_pts)
-                    swc.loadout.add_mana_mod(loadout, effects, missing_pts * 0.02, pts * 0.02);
+                    sc.loadout.add_mana_mod(loadout, effects, missing_pts * 0.02, pts * 0.02);
                 end
             },
             [115] = {
@@ -1250,7 +1228,7 @@ local function wowhead_talent_code()
     for i = 1, 3 do
         -- NOTE: GetNumTalents(i) will return 0 on early calls after logging in,
         --       but works fine after reload
-        for _, v in pairs(swc.talent_order[i]) do
+        for _, v in pairs(sc.talent_order[i]) do
             local _, _, _, _, pts, _, _, _ = GetTalentInfo(i, v);
             sub_codes[i] = sub_codes[i]..tostring(pts);
         end
@@ -1293,7 +1271,7 @@ end
 local function talent_table(wowhead_code)
     local talents_t = {};
 
-    for k, v in pairs(swc.talent_order) do
+    for k, v in pairs(sc.talent_order) do
         for i, _ in pairs(v) do
             talents_t[k*100+i] = 0;
         end
@@ -1340,7 +1318,7 @@ local function apply_talents(loadout, effects)
     -- weapon skills 
     for i = 1, GetNumSkillLines() do
         local skill_lname, _, _, skill = GetSkillLineInfo(i);
-        local wep_subclass = swc.wpn_skill_lname_to_subclass[skill_lname];
+        local wep_subclass = sc.wpn_skill_lname_to_subclass[skill_lname];
         if wep_subclass then
             loadout.wpn_skills[wep_subclass] = skill;
         end
@@ -1361,13 +1339,13 @@ local function apply_talents(loadout, effects)
     end
 
     for id, pts in pairs(loadout.talents_table) do
-        if pts > 0 and swc.talent_ranks[id] then
-            local effect_id = swc.talent_ranks[id][pts];
+        if pts > 0 and sc.talent_ranks[id] then
+            local effect_id = sc.talent_ranks[id][pts];
             if effect_id then
-                swc.loadout.apply_effect(loadout,
+                sc.loadout.apply_effect(loadout,
                                          effects,
                                          effect_id,
-                                         swc.talent_effects[effect_id],
+                                         sc.talent_effects[effect_id],
                                          config.loadout.use_custom_talents,
                                          1,
                                          false);
@@ -1377,13 +1355,13 @@ local function apply_talents(loadout, effects)
     --if config.loadout.use_custom_talents then
     --    -- undo dynamic talents
     --    for id, pts in pairs(dynamic_talents) do
-    --        if pts > 0 and swc.talent_ranks[id] then
-    --            local effect_id = swc.talent_ranks[id][pts];
+    --        if pts > 0 and sc.talent_ranks[id] then
+    --            local effect_id = sc.talent_ranks[id][pts];
     --            if effect_id then
-    --                swc.loadout.apply_effect(loadout,
+    --                sc.loadout.apply_effect(loadout,
     --                                         effects,
     --                                         effect_id,
-    --                                         swc.talent_effects[effect_id],
+    --                                         sc.talent_effects[effect_id],
     --                                         false,
     --                                         1,
     --                                         true);
@@ -1392,7 +1370,7 @@ local function apply_talents(loadout, effects)
     --    end
     --end
 
-    if swc.core.__sw__test_all_codepaths then
+    if sc.core.__sw__test_all_codepaths then
         --for k, v in pairs(runes) do
         --    loadout.runes[k] = v;
         --    if v.apply then
@@ -1417,8 +1395,8 @@ local function apply_talents(loadout, effects)
         --end
         -- Testing all special passives
         local passives_applied = 0;
-        for id, e in pairs(swc.special_passives) do
-            swc.loadout.apply_effect(loadout, effects, id, e, true, 1);
+        for id, e in pairs(sc.special_passives) do
+            sc.loadout.apply_effect(loadout, effects, id, e, true, 1);
             passives_applied = passives_applied + 1;
         end
 
@@ -1426,9 +1404,9 @@ local function apply_talents(loadout, effects)
 
         -- Testing all talents
         local applied = 0;
-        for _, v in pairs(swc.talent_ranks) do
+        for _, v in pairs(sc.talent_ranks) do
             for _, i in pairs(v) do
-                swc.loadout.apply_effect(loadout, effects, i, swc.talent_effects[i], true, 1);
+                sc.loadout.apply_effect(loadout, effects, i, sc.talent_effects[i], true, 1);
                 applied = applied + 1;
             end
         end
@@ -1444,4 +1422,4 @@ talents_export.talent_table = talent_table;
 talents_export.apply_talents = apply_talents;
 talents_export.rune_ids = rune_ids;
 
-swc.talents = talents_export;
+sc.talents = talents_export;

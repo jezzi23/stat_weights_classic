@@ -1,30 +1,8 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
---
-local _, swc              = ...;
+local _, sc              = ...;
 
-local apply_effect        = swc.loadout.apply_effect;
+local apply_effect        = sc.loadout.apply_effect;
 
-local config              = swc.config;
+local config              = sc.config;
 
 -------------------------------------------------------------------------------
 local buffs_export        = {};
@@ -197,11 +175,11 @@ local buff_category = {
 --    [24425] = {
 --        apply = function(loadout, effects, buff, inactive)
 --            if inactive then
---                swc.loadout.add_int_mod(loadout, effects, 0.15, 0.15);
---                swc.loadout.add_spirit_mod(loadout, effects, 0.15, 0.15);
+--                sc.loadout.add_int_mod(loadout, effects, 0.15, 0.15);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.15, 0.15);
 --            else
---                swc.loadout.add_int_mod(loadout, effects, 0.0, 0.15);
---                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.15);
+--                sc.loadout.add_int_mod(loadout, effects, 0.0, 0.15);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.15);
 --            end
 --        end,
 --        filter = buff_filters.caster,
@@ -341,7 +319,7 @@ local buff_category = {
 --    -- shadow form
 --    [15473] = {
 --        apply = function(loadout, effects, buff)
---            if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+--            if bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 then
 --                effects.by_school.cost_mod[magic_school.shadow] =
 --                    effects.by_school.cost_mod[magic_school.shadow] + 0.5;
 --                effects.mul.by_school.target_vuln_dmg[magic_school.shadow] =
@@ -390,11 +368,11 @@ local buff_category = {
 --        apply = function(loadout, effects, buff, inactive)
 --            if bit.band(effects.raw.non_stackable_effect_flags, non_stackable_effects.bok) == 0 then
 --                if inactive then
---                    swc.loadout.add_int_mod(loadout, effects, 0.1, 0.1);
---                    swc.loadout.add_spirit_mod(loadout, effects, 0.1, 0.1);
+--                    sc.loadout.add_int_mod(loadout, effects, 0.1, 0.1);
+--                    sc.loadout.add_spirit_mod(loadout, effects, 0.1, 0.1);
 --                else
---                    swc.loadout.add_int_mod(loadout, effects, 0.0, 0.1);
---                    swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.1);
+--                    sc.loadout.add_int_mod(loadout, effects, 0.0, 0.1);
+--                    sc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.1);
 --                end
 --
 --                effects.raw.non_stackable_effect_flags =
@@ -512,7 +490,7 @@ local buff_category = {
 --    -- moonkin form
 --    [24858] = {
 --        apply = function(loadout, effects, buff, inactive)
---            if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 then
+--            if bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 then
 --                spell_mod_add(effects.ability.cost_mod, spids.moonfire, 0.5);
 --                spell_mod_add(effects.ability.cost_mod, spids.sunfire, 0.5);
 --
@@ -1176,11 +1154,11 @@ local buff_category = {
 --            add_all_spell_crit(effects, 0.05, inactive);
 --            if inactive then
 --                effects.raw.spell_dmg = effects.raw.spell_dmg + 65;
---                swc.loadout.add_int_mod(loadout, effects, 0.08, 0.08);
---                swc.loadout.add_spirit_mod(loadout, effects, 0.08, 0.08);
+--                sc.loadout.add_int_mod(loadout, effects, 0.08, 0.08);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.08, 0.08);
 --            else
---                swc.loadout.add_int_mod(loadout, effects, 0.0, 0.08);
---                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
+--                sc.loadout.add_int_mod(loadout, effects, 0.0, 0.08);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
 --            end
 --        end,
 --        filter = bit.bor(buff_filters.caster, buff_filters.sod),
@@ -1192,11 +1170,11 @@ local buff_category = {
 --            add_all_spell_crit(effects, 0.05, inactive);
 --            if inactive then
 --                effects.raw.spell_dmg = effects.raw.spell_dmg + 65;
---                swc.loadout.add_int_mod(loadout, effects, 0.08, 0.08);
---                swc.loadout.add_spirit_mod(loadout, effects, 0.08, 0.08);
+--                sc.loadout.add_int_mod(loadout, effects, 0.08, 0.08);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.08, 0.08);
 --            else
---                swc.loadout.add_int_mod(loadout, effects, 0.0, 0.08);
---                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
+--                sc.loadout.add_int_mod(loadout, effects, 0.0, 0.08);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.08);
 --            end
 --        end,
 --        filter = bit.bor(buff_filters.caster, buff_filters.sod),
@@ -1214,9 +1192,9 @@ local buff_category = {
 --            spell_mod_add(effects.ability.effect_mod, spids.wild_growth, 0.6);
 --
 --            if inactive then
---                swc.loadout.add_spirit_mod(loadout, effects, 0.25, 0.25);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.25, 0.25);
 --            else
---                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.25);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.0, 0.25);
 --            end
 --        end,
 --        filter = bit.bor(buff_filters.druid, buff_filters.sod),
@@ -1301,12 +1279,12 @@ local buff_category = {
 --    [15271] = {
 --        apply = function(loadout, effects, buff, inactive)
 --            if inactive then
---                swc.loadout.add_spirit_mod(loadout, effects, 1.0, 1.0);
+--                sc.loadout.add_spirit_mod(loadout, effects, 1.0, 1.0);
 --            else
---                swc.loadout.add_spirit_mod(loadout, effects, 0.0, 1.0);
+--                sc.loadout.add_spirit_mod(loadout, effects, 0.0, 1.0);
 --            end
 --            effects.raw.regen_while_casting = effects.raw.regen_while_casting + 0.5;
---            if bit.band(swc.core.client_deviation, swc.core.client_deviation_flags.sod) ~= 0 and
+--            if bit.band(sc.core.client_deviation, sc.core.client_deviation_flags.sod) ~= 0 and
 --                loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
 --                effects.mul.by_school.target_vuln_dmg[magic_school.shadow] =
 --                    effects.mul.by_school.target_vuln_dmg[magic_school.shadow] * 1.25;
@@ -1701,7 +1679,7 @@ local buff_category = {
 --    -- weakened soul
 --    [6788] = {
 --        apply = function(loadout, effects, buff)
---            --if loadout.runes[swc.talents.rune_ids.renewed_hope] then
+--            --if loadout.runes[sc.talents.rune_ids.renewed_hope] then
 --            --    for k, v in pairs(spell_groups.weakened_soul_affected) do
 --            --        spell_mod_add(effects.ability.crit, v, 0.2);
 --            --    end
@@ -1860,36 +1838,36 @@ local buff_category = {
 
 local buffs = {};
 local target_buffs = {};
-for k, _ in pairs(swc.class_buffs) do
+for k, _ in pairs(sc.class_buffs) do
     table.insert(buffs, {
         id = k,
         lname = GetSpellInfo(k),
         cat = buff_category.class,
     });
 end
-for k, _ in pairs(swc.player_buffs) do
+for k, _ in pairs(sc.player_buffs) do
     table.insert(buffs, {
         id = k,
         lname = GetSpellInfo(k),
         cat = buff_category.player,
     });
 end
-for k, _ in pairs(swc.enchant_effects) do
+for k, _ in pairs(sc.enchant_effects) do
     table.insert(buffs, {
         id = k,
-        --lname = GetSpellInfo(swc.enchant_effects[k]),
+        --lname = GetSpellInfo(sc.enchant_effects[k]),
         lname = GetSpellInfo(k),
         cat = buff_category.enchant,
     });
 end
-for k, _ in pairs(swc.friendly_buffs) do
+for k, _ in pairs(sc.friendly_buffs) do
     table.insert(target_buffs, {
         id = k,
         lname = GetSpellInfo(k),
         cat = buff_category.friendly,
     });
 end
-for k, _ in pairs(swc.hostile_buffs) do
+for k, _ in pairs(sc.hostile_buffs) do
     table.insert(target_buffs, {
         id = k,
         lname = GetSpellInfo(k),
@@ -1951,27 +1929,27 @@ end
 local function apply_buffs(loadout, effects)
 
     for k, v in pairs(loadout.dynamic_buffs["player"]) do
-        if swc.class_buffs[k] then
-            swc.loadout.apply_effect(loadout, effects, k, swc.class_buffs[k], false, v.count);
-        elseif swc.player_buffs[k] then
-            swc.loadout.apply_effect(loadout, effects, k, swc.player_buffs[k], false, v.count);
+        if sc.class_buffs[k] then
+            sc.loadout.apply_effect(loadout, effects, k, sc.class_buffs[k], false, v.count);
+        elseif sc.player_buffs[k] then
+            sc.loadout.apply_effect(loadout, effects, k, sc.player_buffs[k], false, v.count);
         end
     end
     for k, v in pairs(loadout.dynamic_buffs[loadout.friendly_towards]) do
-        if swc.friendly_buffs[k] then
-            swc.loadout.apply_effect(loadout, effects, k, swc.friendly_buffs[k], false, v.count);
+        if sc.friendly_buffs[k] then
+            sc.loadout.apply_effect(loadout, effects, k, sc.friendly_buffs[k], false, v.count);
         end
     end
     if loadout.hostile_towards then
         for k, v in pairs(loadout.dynamic_buffs[loadout.hostile_towards]) do
-            if swc.hostile_buffs[k] then
-                swc.loadout.apply_effect(loadout, effects, k, swc.hostile_buffs[k], false, v.count);
+            if sc.hostile_buffs[k] then
+                sc.loadout.apply_effect(loadout, effects, k, sc.hostile_buffs[k], false, v.count);
             end
         end
     end
 
     local beacon_duration = 60;
-    if class == "PALADIN" and loadout.enchant_effects_applied[407613] and swc.core.beacon_snapshot_time + beacon_duration >= swc.core.addon_running_time then
+    if class == "PALADIN" and loadout.enchant_effects_applied[407613] and sc.core.beacon_snapshot_time + beacon_duration >= sc.core.addon_running_time then
         loadout.beacon = true;
     else
         loadout.beacon = nil
@@ -1980,12 +1958,12 @@ local function apply_buffs(loadout, effects)
     if config.loadout.force_apply_buffs then
         for k, cnt in pairs(config.loadout.buffs) do
             if not loadout.dynamic_buffs["player"][k] then
-                if swc.class_buffs[k] then
-                    swc.loadout.apply_effect(loadout, effects, k, swc.class_buffs[k], true, cnt, false);
-                elseif swc.player_buffs[k] then
-                    swc.loadout.apply_effect(loadout, effects, k, swc.player_buffs[k], true, cnt, false);
-                elseif swc.enchant_effects[k] and not loadout.enchant_effects_applied[k] then
-                    swc.loadout.apply_effect(loadout, effects, k, swc.player_buffs[k], true, cnt, false);
+                if sc.class_buffs[k] then
+                    sc.loadout.apply_effect(loadout, effects, k, sc.class_buffs[k], true, cnt, false);
+                elseif sc.player_buffs[k] then
+                    sc.loadout.apply_effect(loadout, effects, k, sc.player_buffs[k], true, cnt, false);
+                elseif sc.enchant_effects[k] and not loadout.enchant_effects_applied[k] then
+                    sc.loadout.apply_effect(loadout, effects, k, sc.player_buffs[k], true, cnt, false);
                 end
             end
         end
@@ -1993,11 +1971,11 @@ local function apply_buffs(loadout, effects)
             if not loadout.dynamic_buffs[loadout.friendly_towards][k] and
                 (not loadout.hostile_towards or not loadout.dynamic_buffs[loadout.hostile_towards][k])
                 then
-                if swc.friendly_buffs[k] then
-                    swc.loadout.apply_effect(loadout, effects, k, swc.friendly_buffs[k], true, cnt);
+                if sc.friendly_buffs[k] then
+                    sc.loadout.apply_effect(loadout, effects, k, sc.friendly_buffs[k], true, cnt);
                 end
-                if swc.hostile_buffs[k] then
-                    swc.loadout.apply_effect(loadout, effects, k, swc.hostile_buffs[k], true, cnt);
+                if sc.hostile_buffs[k] then
+                    sc.loadout.apply_effect(loadout, effects, k, sc.hostile_buffs[k], true, cnt);
                 end
             end
         end
@@ -2007,23 +1985,23 @@ local function apply_buffs(loadout, effects)
         end
     end
 
-    if swc.core.__sw__test_all_codepaths then
+    if sc.core.__sw__test_all_codepaths then
 
         -- Testing all buffs
         local buffs_applied = 0;
-        for k, v in pairs(swc.player_buffs) do
+        for k, v in pairs(sc.player_buffs) do
             apply_effect(loadout, effects, k, v, true, 1);
             buffs_applied = buffs_applied + 1;
         end
-        for k, v in pairs(swc.class_buffs) do
+        for k, v in pairs(sc.class_buffs) do
             apply_effect(loadout, effects, k, v, true, 1);
             buffs_applied = buffs_applied + 1;
         end
-        for k, v in pairs(swc.friendly_buffs) do
+        for k, v in pairs(sc.friendly_buffs) do
             apply_effect(loadout, effects, k, v, true, 1);
             buffs_applied = buffs_applied + 1;
         end
-        for k, v in pairs(swc.hostile_buffs) do
+        for k, v in pairs(sc.hostile_buffs) do
             apply_effect(loadout, effects, k, v, true, 1);
             buffs_applied = buffs_applied + 1;
         end
@@ -2052,4 +2030,4 @@ buffs_export.apply_buffs = apply_buffs;
 buffs_export.non_stackable_effects = non_stackable_effects;
 buffs_export.is_buff_up = is_buff_up;
 
-swc.buffs = buffs_export;
+sc.buffs = buffs_export;

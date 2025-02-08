@@ -1,38 +1,16 @@
---MIT License
---
---Copyright (c) Stat Weights Classic
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
---
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
---
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
+local _, sc = ...;
 
-local _, swc = ...;
+local spells                                    = sc.abilities.spells;
+local spell_flags                               = sc.spell_flags;
+local next_rank                                 = sc.abilities.next_rank;
+local best_rank_by_lvl                          = sc.abilities.best_rank_by_lvl;
 
-local spells                                    = swc.abilities.spells;
-local spell_flags                               = swc.spell_flags;
-local next_rank                                 = swc.abilities.next_rank;
-local best_rank_by_lvl                          = swc.abilities.best_rank_by_lvl;
+local effect_colors                             = sc.utils.effect_colors;
 
-local effect_colors                             = swc.utils.effect_colors;
+local update_loadout_and_effects                = sc.loadout.update_loadout_and_effects;
+local update_loadout_and_effects_diffed_from_ui = sc.loadout.update_loadout_and_effects_diffed_from_ui;
 
-local update_loadout_and_effects                = swc.loadout.update_loadout_and_effects;
-local update_loadout_and_effects_diffed_from_ui = swc.loadout.update_loadout_and_effects_diffed_from_ui;
-
-local config                                    = swc.config;
+local config                                    = sc.config;
 -------------------------------------------------------------------------------
 local tooltip_export = {};
 
@@ -123,7 +101,7 @@ local clear_tooltip_refresh_id = 463;
 local function update_tooltip(tooltip)
 
 
-    if swc.core.__sw__test_all_spells and sw_frame.spells_frame:IsShown() then
+    if sc.core.__sw__test_all_spells and sw_frame.spells_frame:IsShown() then
 
         spell_jump_key = spell_jump_itr(spells, spell_jump_key);
         if not spell_jump_key then
@@ -133,16 +111,16 @@ local function update_tooltip(tooltip)
     end
     --tooltips update dynamically without debug setting
     if not (PlayerTalentFrame and MouseIsOver(PlayerTalentFrame)) and
-        not swc.core.__sw__debug__ and tooltip:IsShown() then
+        not sc.core.__sw__debug__ and tooltip:IsShown() then
 
         local spell_name, id = tooltip:GetSpell();
         if not spell_name then
             -- Attack tooltip may be a dummy, so link it to its actual spell id
-            local attack_lname = GetSpellInfo(swc.auto_attack_spell_id);
+            local attack_lname = GetSpellInfo(sc.auto_attack_spell_id);
             local txt = getglobal("GameTooltipTextLeft1");
             if txt and txt:GetText() == attack_lname then
                 spell_name = attack_lname;
-                id = swc.auto_attack_spell_id;
+                id = sc.auto_attack_spell_id;
             end
         end
 
@@ -189,9 +167,9 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
 
     local eval_flags = 0;
     if IsAltKeyDown() then
-        eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.assume_single_effect);
+        eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.assume_single_effect);
         if loadout.m2_speed then
-            eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.isolate_offhand);
+            eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.isolate_offhand);
         end
     end
 
@@ -199,9 +177,9 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
         local dir = GetPlayerFacing();
         if dir and math.abs(dir - math.pi) > 0.5 * math.pi then
             -- facing north
-            eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.isolate_periodic);
+            eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.isolate_periodic);
         else
-            eval_flags = bit.bor(eval_flags, swc.calc.evaluation_flags.isolate_direct);
+            eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.isolate_direct);
         end
     end
 
@@ -227,7 +205,7 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                 if config.loadout.use_custom_lvl then
                     loadout_extra_info = string.format(" (clvl %d)", config.loadout.lvl);
                 end
-                tooltip:AddLine("Stat Weights Classic v"..swc.core.version.." | "..config.loadout.name..loadout_extra_info, 1, 1, 1);
+                tooltip:AddLine("Stat Weights Classic v"..sc.core.version.." | "..config.loadout.name..loadout_extra_info, 1, 1, 1);
             end
             if sw_frame.calculator_frame:IsShown() and sw_frame:IsShown() then
                 tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
@@ -235,10 +213,10 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
         else
             tooltip:AddLine("BEFORE STAT CHANGES", 1.0, 0.0, 0.0);
         end
-        swc.tooltip.append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effects, eval_flags, repeated_tooltip_on);
+        sc.tooltip.append_tooltip_spell_info(tooltip, spell, spell_id, loadout, effects, eval_flags, repeated_tooltip_on);
         if spell.healing_version then
             -- used for holy nova
-            swc.tooltip.append_tooltip_spell_info(tooltip, spell.healing_version, spell_id, loadout, effects, eval_flags, true);
+            sc.tooltip.append_tooltip_spell_info(tooltip, spell.healing_version, spell_id, loadout, effects, eval_flags, true);
         end
     else
 
@@ -302,5 +280,5 @@ tooltip_export.tooltip_spell_info               = tooltip_spell_info;
 tooltip_export.update_tooltip                   = update_tooltip;
 tooltip_export.append_tooltip_spell_rank        = append_tooltip_spell_rank;
 
-swc.tooltip = tooltip_export;
+sc.tooltip = tooltip_export;
 
