@@ -2,8 +2,8 @@ local _, sc                    = ...;
 
 local wowhead_talent_code       = sc.talents.wowhead_talent_code;
 
-local spells                    = sc.abilities.spells;
-local spell_flags               = sc.abilities.spell_flags;
+local spells                    = sc.spells;
+local spell_flags               = sc.spell_flags;
 
 local font                      = sc.ui.font;
 local load_sw_ui                = sc.ui.load_sw_ui;
@@ -30,65 +30,79 @@ local tooltip_spell_info        = sc.tooltip.tooltip_spell_info;
 
 -------------------------------------------------------------------------
 local core                      = {};
-sc.core                        = core;
+sc.core                         = core;
 
 core.sw_addon_name              = "SpellCoda";
 
---local version_id              = 10000;
---local version_id                = 00101;
-local version_id                = 30309;
-core.version_id                 = version_id;
-local version                   = tostring(version_id);
-core.version                    = (tonumber(version:sub(1, 1)) or 0) ..
-    "." .. (tonumber(version:sub(2, 3)) or 0) .. "." .. (tonumber(version:sub(4, 5)) or 0);
+local version_major             = 0;
+local version_minor             = 9;
+local version_patch             = 0;
 
-core.expansions                 = {
-    vanilla = 1,
-    tbc     = 2,
-    wotlk   = 3
-};
-
-local client_build_version      = GetBuildInfo();
-core.expansion_loaded           = tonumber(client_build_version:sub(1, 1));
+core.version_id                 = version_patch + version_minor*1000 + version_major*1000000;
+core.version                    = tostring(version_major) .. "." ..
+                                  tostring(version_minor) .. "." ..
+                                  tostring(version_patch);
 
 core.sw_addon_loaded            = false;
 
-core.client_deviation_flags     = {
-    sod = bit.lshift(1, 0)
-};
+sc.sequence_counter             = 0;
 
-core.client_deviation           = 0;
-
-if C_Engraving and C_Engraving.IsEngravingEnabled() then
-    core.client_deviation = bit.bor(core.client_deviation, core.client_deviation_flags.sod);
-end
-
-core.talents_update_needed = true;
-core.equipment_update_needed = true;
+core.talents_update_needed      = true;
+core.equipment_update_needed    = true;
 core.special_action_bar_changed = true;
-core.setup_action_bar_needed = true;
-core.update_action_bar_needed = false;
-core.addon_message_on_update = false;
-core.old_ranks_checks_needed = true;
+core.setup_action_bar_needed    = true;
+core.update_action_bar_needed   = false;
+core.addon_message_on_update    = false;
+core.old_ranks_checks_needed    = true;
 
-core.sequence_counter = 0;
-core.addon_running_time = 0;
-core.active_spec = 1;
+core.addon_running_time         = 0;
+core.active_spec                = 1;
 
-core.beacon_snapshot_time = -1000;
+core.beacon_snapshot_time       = -1000;
 core.currently_casting_spell_id = 0;
-core.cast_expire_timer = 0;
-core.action_id_of_wand = 0;
+core.cast_expire_timer          = 0;
+core.action_id_of_wand          = 0;
 
+local addon_msg_sc_id = "__SpellCoda";
 
-local function class_supported()
-    --return utils.class == "MAGE" or utils.class == "PRIEST" or utils.class == "WARLOCK" or
-    --    utils.class == "SHAMAN" or utils.class == "DRUID" or utils.class == "PALADIN";
-    return true;
+local function generated_data_is_outdated(loaded_version, gen_version)
+    local loaded = string.gmatch(loaded_version, "[^.]+");
+    local gen = string.gmatch(gen_version, "[^.]+");
+    for _ = 1, 4 do
+        local l = loaded();
+        local g = gen();
+        if l and g then
+            local l_num = tonumber(l);
+            local g_num = tonumber(g);
+            if g_num < l_num then
+                return true;
+            end
+        end
+    end
+    return false;
 end
-local class_is_supported = class_supported();
 
-local addon_msg_sc_id = "__SC";
+local function client_age_days()
+    local months = { Jan = 1, Feb = 2, Mar = 3, Apr = 4, May = 5, Jun = 6,
+        Jul = 7, Aug = 8, Sep = 9, Oct = 10, Nov = 11, Dec = 12
+    };
+
+    local client_month_str, client_day, client_year = sc.client_date_loaded:match("(%a+) (%d+) (%d+)");
+    local month_str, day, year = date("%b %d %Y"):match("(%a+) (%d+) (%d+)");
+    if not client_month_str or not client_day or not client_year or not month_str or not day or not year then
+        return 0;
+    end
+    local client_month = months[client_month_str] or 1;
+    local month = months[month_str] or 1;
+
+    local client_build_time = time({year = tonumber(client_year), month = client_month, day = tonumber(client_day)});
+    local now = time({year = tonumber(year), month = month, day = tonumber(day)});
+
+    local diff_seconds = math.abs(now - client_build_time);
+    local diff_days = diff_seconds / 86400;
+
+    return diff_days;
+end
 
 local function set_current_casting_spell(spell_id)
     if spells[spell_id] and bit.band(spells[spell_id].flags, spell_flags.eval) ~= 0 then
@@ -146,11 +160,13 @@ local event_dispatch = {
         save_config();
     end,
     ["PLAYER_LOGIN"] = function()
-        core.setup_action_bar_needed = true;
+        --core.setup_action_bar_needed = true;
+        -- force setup action bar to hook scroll script
+        -- even if overlays are disabled
+        sc.overlay.setup_action_bars();
         core.sw_addon_loaded = true;
-        -- Don't do this in case this was causing "prevented from a forbidden action" type of bug
-        --table.insert(UISpecialFrames, __sc_frame:GetName()) -- Allows ESC to close frame
-        if core.expansion_loaded == core.expansions.vanilla and C_Engraving.IsEngravingEnabled then
+        table.insert(UISpecialFrames, __sc_frame:GetName()) -- Allows ESC to close frame
+        if sc.expansion == sc.expansions.vanilla and C_Engraving.IsEngravingEnabled then
             --after fresh login the runes cannot be queried until
             --character frame has been opened!!!
 
@@ -165,9 +181,18 @@ local event_dispatch = {
         sc.ui.add_spell_book_button();
         C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_sc_id)
         if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
-            for i = 1, 10 do
+            for _ = 1, 10 do
                 print("WARNING: SC DEBUG TOOLS ARE ON!!!");
             end
+        end
+        -- don't warn about updates when build is relatively fresh
+        local version_warning_build_threshold_days = 3;
+        if core.__sw__debug__ then
+            version_warning_build_threshold_days = 0;
+        end
+        if generated_data_is_outdated(sc.client_version_loaded, sc.client_version_src) and
+            client_age_days() > version_warning_build_threshold_days then
+            print("SpellCoda: detected client and spell data version mismatch. Consider checking for an update");
         end
 
     end,
@@ -271,15 +296,14 @@ local event_dispatch = {
 
 
 local event_dispatch_client_exceptions = {
-    ["ENGRAVING_MODE_CHANGED"] = core.expansions.vanilla,
-    ["RUNE_UPDATED"]           = core.expansions.vanilla,
+    ["ENGRAVING_MODE_CHANGED"] = sc.expansions.vanilla,
+    ["RUNE_UPDATED"]           = sc.expansions.vanilla,
 };
 
 core.event_dispatch = event_dispatch;
 core.event_dispatch_client_exceptions = event_dispatch_client_exceptions;
 
 
-local timestamp = 0;
 
 local pname = UnitName("player");
 
@@ -298,6 +322,8 @@ local function spell_tracking(dt)
     end
 end
 
+local timestamp = 0.0;
+
 local function main_update()
     local dt = 1.0 / sc.config.settings.overlay_update_freq;
 
@@ -314,35 +340,61 @@ local function main_update()
         C_ChatInfo.SendAddonMessage(addon_msg_sc_id, "UPDATE_TRIGGER", "WHISPER", pname);
     end
 
-    core.sequence_counter = core.sequence_counter + 1;
+    sc.sequence_counter = sc.sequence_counter + 1;
     timestamp = t;
 
     C_Timer.After(dt, main_update);
 end
 
+local tooltip_timestamp = 0.0;
+sc.tooltip_mod = 0;
+sc.tooltip_mod_flags = {
+    ALT =   bit.lshift(1, 0),
+    CTRL =  bit.lshift(1, 1),
+    SHIFT = bit.lshift(1, 2),
+}
+
+local tooltip_time = 1.0/2.0;
+
 local function refresh_tooltip()
+    local mod = 0;
+    if IsAltKeyDown() then
+        mod = bit.bor(mod, sc.tooltip_mod_flags.ALT);
+    end
+    if IsControlKeyDown() then
+        mod = bit.bor(mod, sc.tooltip_mod_flags.CTRL);
+    end
+    if IsShiftKeyDown() then
+        mod = bit.bor(mod, sc.tooltip_mod_flags.SHIFT);
+    end
+    mod = bit.bor(mod, bit.lshift(sc.tooltip.eval_mode, 3));
+
     local dt = 0.1;
     if core.__sw__test_all_spells then
         dt = 0.01;
+        sc.tooltip_mod = mod;
+        update_tooltip(GameTooltip);
+    else
+        local t = GetTime();
+        local t_elapsed = t - tooltip_timestamp;
+        if t_elapsed > tooltip_time or sc.tooltip_mod ~= mod then
+            sc.tooltip_mod = mod;
+            update_tooltip(GameTooltip);
+            tooltip_timestamp = t;
+        end
     end
-
-    update_tooltip(GameTooltip);
 
     C_Timer.After(dt, refresh_tooltip);
 end
 
-if class_is_supported then
-    create_sw_base_ui();
+create_sw_base_ui();
 
-    C_Timer.After(1.0, main_update);
-    C_Timer.After(1.0, refresh_tooltip);
+C_Timer.After(1.0, main_update);
+C_Timer.After(1.0, refresh_tooltip);
 
-    GameTooltip:HookScript("OnTooltipSetSpell", function(_, is_fake)
-        tooltip_spell_info(is_fake);
-    end)
-else
-    --print("SpellCoda currently does not support your class :(");
-end
+GameTooltip:HookScript("OnTooltipSetSpell", function()
+    tooltip_spell_info();
+end)
 
 -- add addon to Addons list under Interface
 if InterfaceOptions_AddCategory then
@@ -375,14 +427,6 @@ if InterfaceOptions_AddCategory then
     str:SetText("Author: jezzi23");
 
     y_offset = y_offset - 30;
-
-    if not class_is_supported then
-        str = addon_interface_panel:CreateFontString(nil, "OVERLAY");
-        str:SetFontObject(font);
-        str:SetPoint("TOPLEFT", x_offset, y_offset);
-        str:SetText("This addon only loads for caster classes. Sorry!");
-        return;
-    end
 
     addon_interface_panel.open___sc_frame_button =
         CreateFrame("Button", "sw_addon_interface_open_frame_button", addon_interface_panel, "UIPanelButtonTemplate");

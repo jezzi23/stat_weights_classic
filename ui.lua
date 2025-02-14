@@ -1,9 +1,9 @@
 local _, sc = ...;
 
-local spells                                    = sc.abilities.spells;
-local spids                                     = sc.abilities.spids;
-local spell_flags                               = sc.abilities.spell_flags;
-local highest_learned_rank                      = sc.abilities.highest_learned_rank;
+local spells                                    = sc.spells;
+local spids                                     = sc.spids;
+local spell_flags                               = sc.spell_flags;
+local highest_learned_rank                      = sc.utils.highest_learned_rank;
 
 local wowhead_talent_link                       = sc.talents.wowhead_talent_link;
 local wowhead_talent_code_from_url              = sc.talents.wowhead_talent_code_from_url;
@@ -363,6 +363,7 @@ local spell_filter_listing = {
     {
         id = "spells_filter_other_spells",
         disp = "Other spells",
+        tooltip = "Uncategorized spells. Contains seasonal spells and junk"
     },
 };
 local spell_filters = {};
@@ -945,7 +946,10 @@ local function create_sw_ui_spells_frame()
                             update_spells_frame();
                         end,
                         keepShownOnClick = true,
-                        notCheckable = false
+                        notCheckable = false,
+                        tooltipTitle = "",
+                        tooltipText = v.tooltip,
+                        tooltipOnButton = v.tooltip ~= nil,
                     }
                 );
             end
@@ -1061,6 +1065,7 @@ local function create_sw_ui_spells_frame()
         tooltip_area_f:SetScript("OnLeave", function(self)
             GameTooltip:Hide();
         end);
+        tooltip_area_f:HookScript("OnMouseWheel", sc.tooltip.eval_mode_scroll_fn);
 
 
         local icon = CreateFrame("Frame", nil, __sc_frame.spells_frame);
@@ -1244,6 +1249,11 @@ local function create_sw_ui_tooltip_frame()
         {
             id = "tooltip_clear_original",
             txt = "Clear original tooltip",
+        },
+        {
+            id = "tooltip_hide_cd_coom",
+            txt = "Disable casts until OOM for CDs",
+            tooltip = "Hides casts until OOM for spells with cooldowns."
         }
     };
 
@@ -1277,20 +1287,15 @@ local function create_sw_ui_tooltip_frame()
             txt = "Addon & loadout name"
         },
         {
-            id = "tooltip_display_dynamic_tip",
-            txt = "Evaluation options",
-            tooltip = "For certain spells, shows hotkey to change evaluation method dynamically in the tooltip.";
-        },
-        {
-            id = "tooltip_display_loadout_info",
+            id = "tooltip_display_target_info",
             txt = "Target info",
-            color = effect_colors.loadout_info,
+            color = effect_colors.target_info,
             tooltip = "Target level, armor and resistance assumed in calculation."
         },
         {
-            id = "tooltip_display_hit",
+            id = "tooltip_display_avoidance_info",
             txt = "Miss, avoidance & mitigation",
-            color = effect_colors.miss_info,
+            color = effect_colors.avoidance_info,
             tooltip = "Avoidance based on weapon skill & target level. Mitigation based on target armor or resistance."
         },
         {
@@ -1313,6 +1318,21 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_display_effect_per_sec",
             txt = "Effect per second",
             color = effect_colors.effect_per_sec
+        },
+        {
+            id = "tooltip_display_threat",
+            txt = "Expected threat",
+            color = effect_colors.threat,
+        },
+        {
+            id = "tooltip_display_threat_per_sec",
+            txt = "Threat per second",
+            color = effect_colors.threat
+        },
+        {
+            id = "tooltip_display_threat_per_cost",
+            txt = "Threat per cost",
+            color = effect_colors.effect_per_cost
         },
         {
             id = "tooltip_display_effect_per_cost",
@@ -1341,18 +1361,18 @@ local function create_sw_ui_tooltip_frame()
             tooltip = "Assumes you cast a particular ability until you are OOM with no cooldowns."
         },
         {
+            id = "tooltip_display_base_mod",
+            txt = "Base only spell mod",
+            color = effect_colors.sp_effect,
+        },
+        {
             id = "tooltip_display_sp_effect_calc",
-            txt = "Coef & SP effect calculation",
+            txt = "Coef & SP/AP effect",
             color = effect_colors.sp_effect,
         },
         {
             id = "tooltip_display_sp_effect_ratio",
-            txt = "SP to base effect ratio",
-            color = effect_colors.sp_effect,
-        },
-        {
-            id = "tooltip_display_base_mod",
-            txt = "Base only spell mod",
+            txt = "SP/AP to base effect ratio",
             color = effect_colors.sp_effect,
         },
         {
@@ -1366,14 +1386,24 @@ local function create_sw_ui_tooltip_frame()
             color = effect_colors.spell_rank,
         },
         {
-            id = "tooltip_display_stat_weights_dps",
+            id = "tooltip_display_stat_weights_effect",
+            txt = "Stat weights: Effect",
+            color = effect_colors.stat_weights
+        },
+        {
+            id = "tooltip_display_stat_weights_effect_per_sec",
             txt = "Stat weights: Effect per sec",
             color = effect_colors.stat_weights
         },
         {
-            id = "tooltip_display_stat_weights_doom",
+            id = "tooltip_display_stat_weights_effect_until_oom",
             txt = "Stat weights: Effect until OOM",
             color = effect_colors.stat_weights
+        },
+        {
+            id = "tooltip_display_dynamic_tip",
+            txt = "Evaluation modes",
+            tooltip = "Shows evaluation options for some spells which can be switched between dynamically. Example: Switch between healing and damage component of Holy shock or Heroic strike";
         },
         --tooltip_display_cast_and_tap       
     };
@@ -1392,6 +1422,7 @@ local function create_sw_ui_tooltip_frame()
         getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
         getglobal("__sc_frame_setting_tooltip_display_effect_per_sec"):Click();
         getglobal("__sc_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_dynamic_tip"):Click();
 
     end);
 
@@ -1411,7 +1442,7 @@ local function create_sw_ui_tooltip_frame()
         end
 
         getglobal("__sc_frame_setting_tooltip_display_addon_name"):Click();
-        getglobal("__sc_frame_setting_tooltip_display_loadout_info"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_target_info"):Click();
         getglobal("__sc_frame_setting_tooltip_display_normal"):Click();
         getglobal("__sc_frame_setting_tooltip_display_crit"):Click();
         getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
@@ -1435,15 +1466,18 @@ local function create_sw_ui_tooltip_frame()
         end
 
         getglobal("__sc_frame_setting_tooltip_display_addon_name"):Click();
-        getglobal("__sc_frame_setting_tooltip_display_loadout_info"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_target_info"):Click();
         getglobal("__sc_frame_setting_tooltip_display_spell_rank"):Click();
         getglobal("__sc_frame_setting_tooltip_display_normal"):Click();
         getglobal("__sc_frame_setting_tooltip_display_crit"):Click();
-        getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
         getglobal("__sc_frame_setting_tooltip_display_avg_cost"):Click();
         getglobal("__sc_frame_setting_tooltip_display_avg_cast"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_expected"):Click();
         getglobal("__sc_frame_setting_tooltip_display_effect_per_sec"):Click();
         getglobal("__sc_frame_setting_tooltip_display_effect_per_cost"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_threat"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_threat_per_sec"):Click();
+        getglobal("__sc_frame_setting_tooltip_display_threat_per_cost"):Click();
         getglobal("__sc_frame_setting_tooltip_display_cost_per_sec"):Click();
         getglobal("__sc_frame_setting_tooltip_display_cast_until_oom"):Click();
         getglobal("__sc_frame_setting_tooltip_display_sp_effect_calc"):Click();
@@ -1734,6 +1768,21 @@ local function create_sw_ui_overlay_frame()
             color = effect_colors.effect_per_sec,
         },
         {
+            id = "overlay_display_threat",
+            txt = "Expected threat",
+            color = effect_colors.threat,
+        },
+        {
+            id = "overlay_display_threat_per_sec",
+            txt = "Threat per sec",
+            color = effect_colors.threat,
+        },
+        {
+            id = "overlay_display_threat_per_cost",
+            txt = "Threat per cost",
+            color = effect_colors.effect_per_cost
+        },
+        {
             id = "overlay_display_effect_per_cost",
             txt = "Effect per cost",
             color = effect_colors.effect_per_cost
@@ -1763,9 +1812,9 @@ local function create_sw_ui_overlay_frame()
             optional_evaluation = true,
         },
         {
-            id = "overlay_display_hit",
+            id = "overlay_display_hit_chance",
             txt = "Hit chance",
-            color = effect_colors.hit
+            color = effect_colors.hit_chance
         },
         {
             id = "overlay_display_crit_chance",
@@ -1833,68 +1882,39 @@ local function create_sw_ui_calculator_frame()
 
     local comparison_stats_listing_order = {};
 
-    if sc.core.expansion_loaded == sc.core.expansions.wotlk then
-
-        __sc_frame.calculator_frame.stats = {
-            int = {
-                label_str = "Intellect"
-            },
-            spirit = {
-                label_str = "Spirit"
-            },
-            mp5 = {
-                label_str = "MP5"
-            },
-            sp = {
-                label_str = "Spell Power"
-            },
-            spell_crit = {
-                label_str = "Critical rating"
-            },
-            spell_hit = {
-                label_str = "Hit rating"
-            },
-            spell_haste = {
-                label_str = "Haste rating"
-            },
-        };
-        comparison_stats_listing_order = {"int", "spirit", "mp5", "sp", "spell_crit", "spell_hit", "spell_haste"};
-    else
-        __sc_frame.calculator_frame.stats = {
-            int = {
-                label_str = "Intellect"
-            },
-            spirit = {
-                label_str = "Spirit"
-            },
-            mp5 = {
-                label_str = "MP5"
-            },
-            sp = {
-                label_str = "Spell Power"
-            },
-            sd = {
-                label_str = "Spell Damage"
-            },
-            hp = {
-                label_str = "Healing Power"
-            },
-            spell_crit = {
-                label_str = "Critical %"
-            },
-            spell_hit = {
-                label_str = "Hit %"
-            },
-            spell_haste = {
-                label_str = "Cast Speed %"
-            },
-            spell_pen = {
-                label_str = "Spell Penetration"
-            },
-        };
-        comparison_stats_listing_order = {"int", "spirit", "mp5", "sp", "sd", "hp", "spell_crit", "spell_hit", "spell_haste", "spell_pen"};
-    end
-
+     __sc_frame.calculator_frame.stats = {
+         int = {
+             label_str = "Intellect"
+         },
+         spirit = {
+             label_str = "Spirit"
+         },
+         mp5 = {
+             label_str = "MP5"
+         },
+         sp = {
+             label_str = "Spell Power"
+         },
+         sd = {
+             label_str = "Spell Damage"
+         },
+         hp = {
+             label_str = "Healing Power"
+         },
+         spell_crit = {
+             label_str = "Critical %"
+         },
+         spell_hit = {
+             label_str = "Hit %"
+         },
+         spell_haste = {
+             label_str = "Cast Speed %"
+         },
+         spell_pen = {
+             label_str = "Spell Penetration"
+         },
+     };
+     comparison_stats_listing_order = {"int", "spirit", "mp5", "sp", "sd", "hp", "spell_crit", "spell_hit", "spell_haste", "spell_pen"};
 
     local num_stats = 0;
     for _ in pairs(__sc_frame.calculator_frame.stats) do
@@ -2663,7 +2683,7 @@ local function create_sw_ui_loadout_frame()
     f = CreateFrame("CheckButton", "__sc_frame_loadout_behind_target", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    getglobal(f:GetName()..'Text'):SetText("Always behind target, eliminating parried attacks");
+    getglobal(f:GetName()..'Text'):SetText("Always behind target, eliminating parried and blocked attacks");
     f:SetScript("OnClick", function(self)
         config.loadout.behind_target = self:GetChecked();
     end)
@@ -3208,14 +3228,13 @@ local function create_sw_base_ui()
 
     for k, _ in pairs(sc.core.event_dispatch) do
         if not sc.core.event_dispatch_client_exceptions[k] or
-                sc.core.event_dispatch_client_exceptions[k] == sc.core.expansion_loaded then
+                sc.core.event_dispatch_client_exceptions[k] == sc.expansion then
             __sc_frame:RegisterEvent(k);
         end
     end
-    if C_GameRules and C_GameRules.IsHardcoreActive then
-        if C_GameRules.IsHardcoreActive() then
-            __sc_frame:RegisterEvent("PLAYER_REGEN_DISABLED");
-        end
+
+    if bit.band(sc.game_mode, sc.game_modes.hardcore) == 0 then
+        __sc_frame:UnregisterEvent("PLAYER_REGEN_DISABLED");
     end
 
     __sc_frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
@@ -3333,7 +3352,7 @@ local function load_sw_ui()
                 end
             end,
             OnTooltipShow = function(tooltip)
-                tooltip:AddLine(sc.core.sw_addon_name..": Version "..sc.core.version);
+                tooltip:AddLine(sc.core.sw_addon_name.." v"..sc.core.version);
                 tooltip:AddLine("|cFF9CD6DELeft click:|r Interact with addon");
                 tooltip:AddLine("|cFF9CD6DEMiddle click:|r Hide this button");
                 if config.settings.overlay_old_rank then
@@ -3341,7 +3360,8 @@ local function load_sw_ui()
                 else
                     tooltip:AddLine("|cFF9CD6DERight click:|r |cFFFF0000(IS OFF)|r Toggle old rank warning overlay");
                 end
-                tooltip:AddLine("More info about this addon at:");
+                tooltip:AddLine("Current client build: "..sc.client_version_loaded);
+                tooltip:AddLine("Addon data generated from: "..sc.client_name_src.." v"..sc.client_version_src);
                 tooltip:AddLine("https://www.curseforge.com/wow/addons/spellcoda");
                 tooltip:AddLine("|cFF9CD6DEFactory reset:|r /sc reset");
             end
@@ -3390,9 +3410,9 @@ local function add_spell_book_button()
 
         local n = GetNumSpellTabs();
         local y_padding = 17;
-        local y_tab_offsets = SpellBookSkillLineTab2:GetHeight() + y_padding;
+        local y_tab_offsets = SpellBookSkillLineTab1:GetHeight() + y_padding;
         -- Clique is right after last slot, put after where clique could be
-        button:SetPoint("TOPLEFT", _G["SpellBookSkillLineTab"..n], "BOTTOMLEFT", 0, -(y_tab_offsets + y_padding));
+        button:SetPoint("TOPLEFT", _G["SpellBookSkillLineTab1"], "BOTTOMLEFT", 0, -(y_tab_offsets*math.max(n, 4) + y_padding));
         button:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT");
             GameTooltip:ClearLines();

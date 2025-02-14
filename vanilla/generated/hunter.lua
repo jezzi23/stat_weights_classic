@@ -43,14 +43,15 @@ sc.spells = {
 	},
 	[20902] = {
 		direct = {
-			base = 330,
+			base_min = 330,
+			base_max = 330,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 3.0000002,
 		cost = 210,
@@ -136,7 +137,8 @@ sc.spells = {
 	},
 	[6603] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -147,7 +149,7 @@ sc.spells = {
 		},
 		cast_time = 0,
 		cost = 0,
-		power_type = powers.mana,
+		power_type = powers.rage,
 		rank = 0,
 		lvl_req = 0,
 		lvl_max = 0,
@@ -155,7 +157,7 @@ sc.spells = {
 		base_id = 6603,
 		gcd = 0,
 		train = 0,
-		flags = bit.bor(0, spell_flags.instant, spell_flags.eval, spell_flags.uses_attack_speed),
+		flags = bit.bor(0, spell_flags.eval, spell_flags.uses_attack_speed),
 	},
 	[3045] = {
 		cast_time = 0,
@@ -172,14 +174,15 @@ sc.spells = {
 	},
 	[20903] = {
 		direct = {
-			base = 460,
+			base_min = 460,
+			base_max = 460,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 3.0000002,
 		cost = 260,
@@ -300,7 +303,8 @@ sc.spells = {
 	},
 	[13550] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 16,
 			max = 16,
 			tick_time = 3.0000002,
@@ -325,7 +329,8 @@ sc.spells = {
 	},
 	[14296] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 10,
 			max = 10,
 			tick_time = 2,
@@ -429,7 +434,8 @@ sc.spells = {
 	},
 	[24132] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 70,
 			max = 70,
 			tick_time = 2,
@@ -489,7 +495,8 @@ sc.spells = {
 	},
 	[14262] = {
 		direct = {
-			base = 34,
+			base_min = 34,
+			base_max = 34,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -547,7 +554,8 @@ sc.spells = {
 	},
 	[415343] = {
 		direct = {
-			base = 140,
+			base_min = 140,
+			base_max = 140,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -583,14 +591,15 @@ sc.spells = {
 	},
 	[19434] = {
 		direct = {
-			base = 70,
+			base_min = 70,
+			base_max = 70,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 3.0000002,
 		cost = 75,
@@ -667,7 +676,8 @@ sc.spells = {
 	},
 	[14265] = {
 		direct = {
-			base = 110,
+			base_min = 110,
+			base_max = 110,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -712,7 +722,8 @@ sc.spells = {
 	},
 	[415337] = {
 		direct = {
-			base = 21,
+			base_min = 21,
+			base_max = 21,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -761,14 +772,15 @@ sc.spells = {
 	},
 	[458482] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1.4,
 			max = 1.4,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_mh),
+			flags = bit.bor(0, comp_flags.applies_mh, comp_flags.normalized_weapon),
 		},
 		periodic = {
 			min = 0.099999994,
@@ -880,7 +892,8 @@ sc.spells = {
 	},
 	[14266] = {
 		direct = {
-			base = 140,
+			base_min = 140,
+			base_max = 140,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -938,14 +951,15 @@ sc.spells = {
 	},
 	[458436] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1.4,
 			max = 1.4,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_mh),
+			flags = bit.bor(0, comp_flags.applies_mh, comp_flags.normalized_weapon),
 		},
 		periodic = {
 			min = 0.06,
@@ -972,7 +986,8 @@ sc.spells = {
 	},
 	[25295] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 111,
 			max = 111,
 			tick_time = 3.0000002,
@@ -997,7 +1012,8 @@ sc.spells = {
 	},
 	[14264] = {
 		direct = {
-			base = 80,
+			base_min = 80,
+			base_max = 80,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1046,7 +1062,8 @@ sc.spells = {
 	},
 	[14294] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 65,
 			max = 65,
 			tick_time = 1,
@@ -1092,6 +1109,7 @@ sc.spells = {
 			coef = 0.2,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -1121,7 +1139,8 @@ sc.spells = {
 	},
 	[75] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1317,7 +1336,8 @@ sc.spells = {
 	},
 	[13553] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 58,
 			max = 58,
 			tick_time = 3.0000002,
@@ -1342,7 +1362,8 @@ sc.spells = {
 	},
 	[19503] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 0.5,
 			max = 0.5,
 			school1 = schools.physical,
@@ -1365,14 +1386,15 @@ sc.spells = {
 	},
 	[415320] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_mh),
+			flags = bit.bor(0, comp_flags.applies_mh, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 0.015,
@@ -1396,6 +1418,7 @@ sc.spells = {
 			coef = 0.2,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -1491,7 +1514,8 @@ sc.spells = {
 	},
 	[415340] = {
 		direct = {
-			base = 50,
+			base_min = 50,
+			base_max = 50,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1514,7 +1538,8 @@ sc.spells = {
 	},
 	[14289] = {
 		direct = {
-			base = 80,
+			base_min = 80,
+			base_max = 80,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1523,7 +1548,7 @@ sc.spells = {
 			per_lvl_sq = 0,
 			jumps = 2,
 			jump_red = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 175,
@@ -1539,14 +1564,15 @@ sc.spells = {
 	},
 	[409433] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1.35,
 			max = 1.35,
 			school1 = schools.nature,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = -1000.00006,
 		cost = 0.06,
@@ -1599,7 +1625,8 @@ sc.spells = {
 	},
 	[14263] = {
 		direct = {
-			base = 50,
+			base_min = 50,
+			base_max = 50,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1635,7 +1662,8 @@ sc.spells = {
 	},
 	[13549] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 8,
 			max = 8,
 			tick_time = 3.0000002,
@@ -1789,7 +1817,8 @@ sc.spells = {
 	},
 	[415342] = {
 		direct = {
-			base = 110,
+			base_min = 110,
+			base_max = 110,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1812,7 +1841,8 @@ sc.spells = {
 	},
 	[415335] = {
 		direct = {
-			base = 5,
+			base_min = 5,
+			base_max = 5,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -1874,7 +1904,8 @@ sc.spells = {
 	},
 	[13552] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 42,
 			max = 42,
 			tick_time = 3.0000002,
@@ -1899,7 +1930,8 @@ sc.spells = {
 	},
 	[13551] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 28,
 			max = 28,
 			tick_time = 3.0000002,
@@ -2003,7 +2035,8 @@ sc.spells = {
 	},
 	[2643] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2012,7 +2045,7 @@ sc.spells = {
 			per_lvl_sq = 0,
 			jumps = 2,
 			jump_red = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 100,
@@ -2028,7 +2061,8 @@ sc.spells = {
 	},
 	[409530] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 138,
 			max = 138,
 			tick_time = 3.0000002,
@@ -2118,7 +2152,8 @@ sc.spells = {
 	},
 	[415336] = {
 		direct = {
-			base = 11,
+			base_min = 11,
+			base_max = 11,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2141,7 +2176,8 @@ sc.spells = {
 	},
 	[24133] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 100,
 			max = 100,
 			tick_time = 2,
@@ -2166,7 +2202,8 @@ sc.spells = {
 	},
 	[415341] = {
 		direct = {
-			base = 80,
+			base_min = 80,
+			base_max = 80,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2189,7 +2226,8 @@ sc.spells = {
 	},
 	[14290] = {
 		direct = {
-			base = 120,
+			base_min = 120,
+			base_max = 120,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2198,7 +2236,7 @@ sc.spells = {
 			per_lvl_sq = 0,
 			jumps = 2,
 			jump_red = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 210,
@@ -2236,7 +2274,8 @@ sc.spells = {
 	},
 	[415338] = {
 		direct = {
-			base = 34,
+			base_min = 34,
+			base_max = 34,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2285,14 +2324,15 @@ sc.spells = {
 	},
 	[20904] = {
 		direct = {
-			base = 600,
+			base_min = 600,
+			base_max = 600,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 3.0000002,
 		cost = 310,
@@ -2366,14 +2406,15 @@ sc.spells = {
 	},
 	[20900] = {
 		direct = {
-			base = 125,
+			base_min = 125,
+			base_max = 125,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 3.0000002,
 		cost = 115,
@@ -2389,7 +2430,8 @@ sc.spells = {
 	},
 	[13555] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 98,
 			max = 98,
 			tick_time = 3.0000002,
@@ -2427,14 +2469,15 @@ sc.spells = {
 	},
 	[458481] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1.4,
 			max = 1.4,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_mh),
+			flags = bit.bor(0, comp_flags.applies_mh, comp_flags.normalized_weapon),
 		},
 		periodic = {
 			min = 0.08,
@@ -2748,6 +2791,7 @@ sc.spells = {
 			coef = 0.14,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -2786,14 +2830,15 @@ sc.spells = {
 	},
 	[20901] = {
 		direct = {
-			base = 200,
+			base_min = 200,
+			base_max = 200,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
 			coef = 0,
 			per_lvl = 0,
 			per_lvl_sq = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 3.0000002,
 		cost = 160,
@@ -2844,7 +2889,8 @@ sc.spells = {
 	},
 	[425711] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 0.65,
 			max = 0.65,
 			school1 = schools.physical,
@@ -2853,7 +2899,7 @@ sc.spells = {
 			per_lvl_sq = 0,
 			jumps = 999,
 			jump_red = 0,
-			flags = bit.bor(0, comp_flags.applies_mh),
+			flags = bit.bor(0, comp_flags.applies_mh, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 0.04,
@@ -2882,7 +2928,8 @@ sc.spells = {
 	},
 	[437123] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2940,7 +2987,8 @@ sc.spells = {
 	},
 	[14261] = {
 		direct = {
-			base = 21,
+			base_min = 21,
+			base_max = 21,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -2998,7 +3046,8 @@ sc.spells = {
 	},
 	[13554] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 77,
 			max = 77,
 			tick_time = 3.0000002,
@@ -3023,7 +3072,8 @@ sc.spells = {
 	},
 	[409593] = {
 		direct = {
-			base = 2.976264,
+			base_min = 2.976264,
+			base_max = 2.976264,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3059,7 +3109,8 @@ sc.spells = {
 	},
 	[1978] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 4,
 			max = 4,
 			tick_time = 3.0000002,
@@ -3084,7 +3135,8 @@ sc.spells = {
 	},
 	[2973] = {
 		direct = {
-			base = 5,
+			base_min = 5,
+			base_max = 5,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3120,7 +3172,8 @@ sc.spells = {
 	},
 	[409521] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 21,
 			max = 21,
 			tick_time = 3.0000002,
@@ -3206,7 +3259,8 @@ sc.spells = {
 	},
 	[14260] = {
 		direct = {
-			base = 11,
+			base_min = 11,
+			base_max = 11,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3242,7 +3296,8 @@ sc.spells = {
 	},
 	[19386] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 100,
 			max = 100,
 			tick_time = 2,
@@ -3297,6 +3352,7 @@ sc.spells = {
 			coef = 0.2,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -3378,6 +3434,7 @@ sc.spells = {
 			coef = 0.2,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -3503,7 +3560,8 @@ sc.spells = {
 	},
 	[2480] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3574,7 +3632,8 @@ sc.spells = {
 	},
 	[25294] = {
 		direct = {
-			base = 150,
+			base_min = 150,
+			base_max = 150,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3583,7 +3642,7 @@ sc.spells = {
 			per_lvl_sq = 0,
 			jumps = 2,
 			jump_red = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 230,
@@ -3629,6 +3688,7 @@ sc.spells = {
 			coef = 0.2,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -3658,7 +3718,8 @@ sc.spells = {
 	},
 	[409552] = {
 		periodic = {
-			base = 2.976264,
+			base_min = 2.976264,
+			base_max = 2.976264,
 			min = 0.099999994,
 			max = 0.099999994,
 			tick_time = 1,
@@ -3696,7 +3757,8 @@ sc.spells = {
 	},
 	[1510] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 50,
 			max = 50,
 			tick_time = 1,
@@ -3755,6 +3817,7 @@ sc.spells = {
 			coef = 0.2,
 			per_lvl = 0,
 			per_lvl_sq = 0,
+			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},
 		cast_time = 0,
@@ -3771,7 +3834,8 @@ sc.spells = {
 	},
 	[7918] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3830,7 +3894,8 @@ sc.spells = {
 	},
 	[3674] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 10,
 			max = 10,
 			tick_time = 2,
@@ -3855,7 +3920,8 @@ sc.spells = {
 	},
 	[7919] = {
 		direct = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3892,7 +3958,8 @@ sc.spells = {
 	},
 	[14295] = {
 		periodic = {
-			base = 0,
+			base_min = 0,
+			base_max = 0,
 			min = 80,
 			max = 80,
 			tick_time = 1,
@@ -3954,7 +4021,8 @@ sc.spells = {
 	},
 	[14288] = {
 		direct = {
-			base = 40,
+			base_min = 40,
+			base_max = 40,
 			min = 1,
 			max = 1,
 			school1 = schools.physical,
@@ -3963,7 +4031,7 @@ sc.spells = {
 			per_lvl_sq = 0,
 			jumps = 2,
 			jump_red = 0,
-			flags = bit.bor(0, comp_flags.applies_ranged),
+			flags = bit.bor(0, comp_flags.applies_ranged, comp_flags.normalized_weapon),
 		},
 		cast_time = 0,
 		cost = 140,
@@ -4391,7 +4459,8 @@ sc.talent_ranks = {
 };
 sc.class_buffs = {
 	[3045] = {
-			{"raw", "ranged_haste", 0.39999998, nil, 3, 0},
+			{"raw", "ranged_haste", 0.39999998, nil, 33, 0},
+			{"raw", "melee_haste", 0, nil, 33, 1},
 	},
 	[34074] = {
 			{"by_school", "dmg_mod", -0.5, {1,2,3,4,5,6,7,}, 1, 1},
@@ -4408,6 +4477,9 @@ sc.class_buffs = {
 	},
 	[425714] = {
 			{"ability", "crit", 10, {26090,24844,444678,16827,24640,17253,}, 0, 0},
+	},
+	[409365] = {
+			{"raw", "melee_haste", 0, nil, 33, 0},
 	},
 	[467331] = {
 			{"ability", "effect_mod", 0.19999999, {1495,425711,415320,458436,}, 0, 0},
@@ -4461,7 +4533,7 @@ sc.class_buffs = {
 			{"ability", "effect_mod_ot", 0.19999999, {409493,409593,437123,2643,19434,3044,19503,409433,}, 0, 1},
 	},
 	[428726] = {
-			{"raw", "ranged_haste", 0.03, nil, 3, 0},
+			{"raw", "ranged_haste", 0.03, nil, 33, 0},
 	},
 	[13165] = {
 			{"raw", "rap_flat", 20, nil, 2, 0},
@@ -4483,7 +4555,11 @@ sc.class_buffs = {
 	},
 	[17331] = {
 			{"raw", "cast_haste", -0.099999994, nil, 0, 0},
-			{"raw", "ranged_haste", -0.11, nil, 3, 2},
+			{"raw", "melee_haste", -0.11, nil, 33, 1},
+			{"raw", "ranged_haste", -0.11, nil, 33, 2},
+	},
+	[428728] = {
+			{"raw", "melee_haste", 0.06, nil, 33, 0},
 	},
 	[14325] = {
 			{"raw", "ap_flat", 110, nil, 0, 1},
@@ -4687,6 +4763,7 @@ local special_passives = {
 			{"by_school", "sp_dmg_flat", 0, {1,2,3,4,5,6,7,}, 2, 2},
 			{"raw", "phys_hit", 0, nil, 2, 9},
 			{"by_school", "spell_hit", 0, {1,2,3,4,5,6,7,}, 2, 10},
+			{"raw", "melee_haste", 0, nil, 33, 11},
 			{"raw", "cast_haste", 0, nil, 0, 12},
 			{"raw", "phys_crit", 0, nil, 2, 13},
 			{"by_school", "crit", 0, {1,}, 2, 14},
@@ -4696,6 +4773,7 @@ local special_passives = {
 			{"by_school", "sp_dmg_flat", 0, {1,2,3,4,5,6,7,}, 2, 2},
 			{"raw", "phys_hit", 0, nil, 2, 9},
 			{"by_school", "spell_hit", 0, {1,2,3,4,5,6,7,}, 2, 10},
+			{"raw", "melee_haste", 0, nil, 33, 11},
 			{"raw", "cast_haste", 0, nil, 0, 12},
 			{"raw", "phys_crit", 0, nil, 2, 13},
 			{"by_school", "crit", 0, {1,}, 2, 14},
@@ -4707,3 +4785,5 @@ local special_passives = {
 	},
 };
 for k, v in pairs(special_passives) do sc.special_passives[k] = v; end
+sc.shapeshift_passives = {
+};

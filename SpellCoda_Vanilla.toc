@@ -38,20 +38,19 @@ locale/esES.lua
 locale/zhTW.lua
 locale/enTW.lua
 
-vanilla/data_override.lua
-
 utils.lua
+
+vanilla/data_override.lua
+vanilla/scaling.lua
+
 config.lua
-abilities.lua
 loadout.lua
-vanilla/loadout.lua
 equipment.lua
 buffs.lua
 talents.lua
 calc.lua
-tooltip.lua
-vanilla/tooltip.lua
 overlay.lua
+tooltip.lua
 ui.lua
 core.lua
 

@@ -5,9 +5,9 @@ local spell_cast_time                               = sc.utils.spell_cast_time;
 local effect_colors                                 = sc.utils.effect_colors;
 local format_number                                 = sc.utils.format_number;
 
-local spells                                        = sc.abilities.spells;
-local spell_flags                                   = sc.abilities.spell_flags;
-local highest_learned_rank                          = sc.abilities.highest_learned_rank;
+local spells                                        = sc.spells;
+local spell_flags                                   = sc.spell_flags;
+local highest_learned_rank                          = sc.utils.highest_learned_rank;
 
 local update_loadout_and_effects                    = sc.loadout.update_loadout_and_effects;
 local update_loadout_and_effects_diffed_from_ui     = sc.loadout.update_loadout_and_effects_diffed_from_ui;
@@ -28,13 +28,16 @@ local icon_stat_display = {
     expected                = bit.lshift(1,3),
     effect_per_sec          = bit.lshift(1,4),
     effect_per_cost         = bit.lshift(1,5),
-    avg_cost                = bit.lshift(1,6),
-    avg_cast                = bit.lshift(1,7),
-    hit                     = bit.lshift(1,8),
-    crit_chance             = bit.lshift(1,9),
-    casts_until_oom         = bit.lshift(1,10),
-    effect_until_oom        = bit.lshift(1,11),
-    time_until_oom          = bit.lshift(1,12),
+    threat                  = bit.lshift(1,6),
+    threat_per_sec          = bit.lshift(1,7),
+    threat_per_cost         = bit.lshift(1,8),
+    avg_cost                = bit.lshift(1,9),
+    avg_cast                = bit.lshift(1,10),
+    hit                     = bit.lshift(1,11),
+    crit_chance             = bit.lshift(1,12),
+    casts_until_oom         = bit.lshift(1,13),
+    effect_until_oom        = bit.lshift(1,14),
+    time_until_oom          = bit.lshift(1,15),
 };
 
 local active_overlays = {};
@@ -44,7 +47,7 @@ local spell_book_frames = {};
 local action_bar_addon_name = "Default";
 local externally_registered_spells = {};
 
-local mana_cost_overlay, cast_speed_overlay;
+local mana_cost_overlay, cast_speed_overlay, mana_restoration_overlay;
 
 sc.ext.register_spell = function(spell_id)
     if spells[spell_id] and bit.band(spell.flags, spell_flags.eval) ~= 0 then
@@ -75,7 +78,8 @@ local function check_old_rank(frame_info, spell_id, clvl)
     for i = 1, 3 do
         frame_info.overlay_frames[i]:Hide();
     end
-    if config.settings.overlay_old_rank and
+    if not config.settings.overlay_disable and
+        config.settings.overlay_old_rank and
         ((config.settings.overlay_old_rank_limit_to_known and spell_id ~= highest_learned_rank(spell.base_id))
          or
          (not config.settings.overlay_old_rank_limit_to_known and clvl > spell.lvl_outdated)) then
@@ -98,7 +102,7 @@ local function old_rank_warning_traversal(clvl)
     if config.settings.overlay_disable then
         return;
     end
-    for k, v in pairs(action_id_frames) do
+    for _, v in pairs(action_id_frames) do
         if v.frame then
             if spells[v.spell_id] then
                 check_old_rank(v, v.spell_id, clvl);
@@ -127,7 +131,7 @@ end
 
 local function clear_overlays()
 
-    for k, v in pairs(action_id_frames) do
+    for _, v in pairs(action_id_frames) do
         v.old_rank_marked = false;
         if v.frame then
             for i = 1, 3 do
@@ -136,7 +140,7 @@ local function clear_overlays()
             end
         end
     end
-    for k, v in pairs(spell_book_frames) do
+    for _, v in pairs(spell_book_frames) do
         v.old_rank_marked = false;
         if v.frame then
             for i = 1, 3 do
@@ -169,9 +173,12 @@ local function spell_id_of_action(action_id)
     elseif action_type == "spell" then
          spell_id = id;
     end
-    if not spells[spell_id] and
+    if not spells[spell_id] then
+        spell_id = 0;
+    elseif (bit.band(spells[spell_id].flags, spell_flags.eval) == 0) and
         (mana_cost_overlay and not spell_cost(spell_id)) and
-        (cast_speed_overlay and not spell_cast_time(spell_id)) then
+        (cast_speed_overlay and not spell_cast_time(spell_id)) and
+        (mana_restoration_overlay and bit.band(spells[spell_id].flags, spell_flags.resource_regen) == 0) then
         spell_id = 0;
     end
 
@@ -189,11 +196,14 @@ local function try_register_frame(action_id, frame_name)
             if spell_id == 5019 then
                 sc.core.action_id_of_wand = action_id;
             end
+        else
+            active_overlays[action_id] = nil; -- this okay?
         end
         action_id_frames[action_id].spell_id = spell_id;
         init_frame_overlay(action_id_frames[action_id]);
     end
 end
+
 
 local function scan_action_frames()
 
@@ -201,6 +211,11 @@ local function scan_action_frames()
 
         if not action_id_frames[action_id] then
             action_id_frames[action_id] = {};
+
+            local button_frame = _G[v];
+            if button_frame then
+                button_frame:HookScript("OnMouseWheel", sc.tooltip.eval_mode_scroll_fn);
+            end
         end
         try_register_frame(action_id, v);
     end
@@ -217,15 +232,16 @@ local function gather_spell_icons()
         for i = 1, 12 do
 
             if not spell_book_frames[i] then
-                spell_book_frames[i] = { 
-                    frame = getfenv()["SpellButton"..i];
+                spell_book_frames[i] = {
+                    frame = _G["SpellButton"..i];
                 };
+                if spell_book_frames[i].frame then
+                    spell_book_frames[i].frame:HookScript("OnMouseWheel", sc.tooltip.eval_mode_scroll_fn);
+                end
             end
         end
     end
     for i = 1, 12 do
-
-
         init_frame_overlay(spell_book_frames[i]);
     end
 
@@ -273,7 +289,7 @@ local function gather_spell_icons()
         action_bar_addon_name = "Dominos";
 
     else -- default action bars
-        
+
         local bars = {
             "ActionButton", "BonusActionButton", "MultiBarRightButton",
             "MultiBarLeftButton", "MultiBarBottomRightButton", "MultiBarBottomLeftButton"
@@ -312,11 +328,14 @@ end
 
 local function reassign_overlay_icon(action_id)
 
-
-    if action_id > 120 or action_id <= 0 or not action_bar_frame_names[action_id] then
+    --action_id might not have a named frame (e.g. blizzard bars) at high IDs
+    --but still be mirrored to named frames 1-12
+    if action_id > 120 or action_id <= 0 then
         return;
     end
-    try_register_frame(action_id, action_bar_frame_names[action_id]);
+    if action_bar_frame_names[action_id] then
+        try_register_frame(action_id, action_bar_frame_names[action_id]);
+    end
 
     local spell_id = spell_id_of_action(action_id);
 
@@ -325,17 +344,21 @@ local function reassign_overlay_icon(action_id)
     -- so check if the action slot in bar 1 is the same
     if action_id > 12 then
         local mirrored_bar_id = (action_id-1)%12 + 1;
-        local mirrored_action_button_frame = action_id_frames[mirrored_bar_id].frame;
-        local mirrored_action_id = action_id_of_button(mirrored_action_button_frame);
-        if mirrored_action_id == action_id then
-            -- was mirrored, update that as well
-            reassign_overlay_icon_spell(mirrored_bar_id, spell_id)
+        local mirrored_action = action_id_frames[mirrored_bar_id];
+        if mirrored_action then
+            local mirrored_action_id = action_id_of_button(mirrored_action.frame);
+            if mirrored_action_id and mirrored_action_id == action_id then
+                -- was mirrored, update that as well
+                reassign_overlay_icon_spell(mirrored_bar_id, spell_id)
+            end
         end
     end
-    local button_frame = action_id_frames[action_id].frame;
 
-    if button_frame then
-        reassign_overlay_icon_spell(action_id, spell_id)
+    if action_bar_frame_names[action_id] then
+        local button_frame = action_id_frames[action_id].frame;
+        if button_frame then
+            reassign_overlay_icon_spell(action_id, spell_id)
+        end
     end
 end
 
@@ -353,10 +376,12 @@ local function on_special_action_bar_changed()
             if action_id then
                 spell_id = spell_id_of_action(action_id);
             end
-            if spell_id ~= 0 then
-                active_overlays[i] = spell_id;
-                check_old_rank(action_id_frames[action_id], spell_id, active_loadout().lvl);
-            end
+            --if spell_id ~= 0 then
+            --    active_overlays[i] = spell_id;
+            --    --check_old_rank(action_id_frames[action_id], spell_id, active_loadout().lvl);
+            --else
+            --    active_overlays[i] = nil;
+            --end
             reassign_overlay_icon_spell(i, spell_id);
         end
     end
@@ -366,6 +391,7 @@ local function update_icon_overlay_settings()
 
     mana_cost_overlay = config.settings.overlay_display_avg_cost or config.settings.overlay_display_casts_until_oom or config.settings.overlay_display_time_until_oom;
     cast_speed_overlay = config.settings.overlay_display_avg_cast;
+    mana_restoration_overlay = config.settings.overlay_mana_abilities;
 
     __sc_frame.overlay_frame.icon_overlay = {};
 
@@ -413,12 +439,12 @@ local function update_icon_overlay_settings()
     for i = 1, 3 do
 
         if not __sc_frame.overlay_frame.icon_overlay[i] then
-            for k, v in pairs(spell_book_frames) do
+            for _, v in pairs(spell_book_frames) do
                 if v.overlay_frames[i] then
                     v.overlay_frames[i]:Hide();
                 end
             end
-            for k, v in pairs(action_id_frames) do
+            for _, v in pairs(action_id_frames) do
                 if v.frame then
                     v.overlay_frames[i]:Hide();
                 end
@@ -470,7 +496,7 @@ local overlay_label_handler = {
         end
     end,
     overlay_display_expected = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_number(spell_effect.expectation, 1));
+        frame_overlay:SetText(format_number(spell_effect.expected, 1));
     end,
     overlay_display_effect_per_sec = function(frame_overlay, spell, spell_effect, stats)
         if spell_effect.effect_per_sec == math.huge then
@@ -481,6 +507,19 @@ local overlay_label_handler = {
     end,
     overlay_display_effect_per_cost = function(frame_overlay, spell, spell_effect, stats)
         frame_overlay:SetText(format_number(spell_effect.effect_per_cost, 2));
+    end,
+    overlay_display_threat = function(frame_overlay, spell, spell_effect, stats)
+        frame_overlay:SetText(format_number(spell_effect.threat, 1));
+    end,
+    overlay_display_threat_per_sec = function(frame_overlay, spell, spell_effect, stats)
+        if spell_effect.threat_per_sec == math.huge then
+            frame_overlay:SetText("inf");
+        else
+            frame_overlay:SetText(format_number(spell_effect.threat_per_sec, 1));
+        end
+    end,
+    overlay_display_threat_per_cost = function(frame_overlay, spell, spell_effect, stats)
+        frame_overlay:SetText(format_number(spell_effect.threat_per_cost, 2));
     end,
     overlay_display_avg_cost = function(frame_overlay, spell, spell_effect, stats)
         if stats.cost >= 0 then
@@ -567,9 +606,9 @@ local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
 
-    if spell_variant.seq ~= sc.core.sequence_counter then
+    if spell_variant.seq ~= sc.sequence_counter then
 
-        spell_variant.seq = sc.core.sequence_counter;
+        spell_variant.seq = sc.sequence_counter;
         stats_for_spell(stats, spell, loadout, effects, eval_flags);
         spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
         cast_until_oom(spell_effect, stats, loadout, effects);
@@ -638,14 +677,14 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
     local spell_effect = spell_variant.spell_effect;
     local stats = spell_variant.stats;
 
-    if spell_variant.seq ~= sc.core.sequence_counter then
-        spell_variant.seq = sc.core.sequence_counter;
+    if spell_variant.seq ~= sc.sequence_counter then
+        spell_variant.seq = sc.sequence_counter;
         -- fill dummy stats
         stats.cost = cost;
         stats.cast_time = cast_time;
         stats.regen_while_casting = effects.raw.regen_while_casting;
         spell_effect.cost_per_sec = cost/cast_time;
-        spell_effect.expectation = 0
+        spell_effect.expected = 0
         cast_until_oom(spell_effect, stats, loadout, effects);
         -- hack to display non mana cost as mana but don't show "until oom" if rage/energy etc
         if resource_name ~= "MANA" then
@@ -676,9 +715,6 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
     if frame.old_rank_marked then
         return;
     end
-        --config.settings.overlay_old_rank and loadout.lvl > spells[id].lvl_outdated then
-        --check_old_rank(frame, spells[id], loadout.lvl);
-        ---- don't touch this, already written
     if bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
         -- TODO: icon overlay not working for healing version checkbox
         if spells[id].healing_version and config.settings.overlay_prioritize_heal then
@@ -687,7 +723,6 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
             update_spell_icon_frame(frame, spells[id], id, loadout, effects, eval_flags);
         end
     end
-    -- else?
     --for i = 1, 3 do
     --    frame.overlay_frames[i]:Hide();
     --end
@@ -754,12 +789,15 @@ local function update_spell_icons(loadout, effects, eval_flags)
     end
 
     -- update action bar icons
+    local num_evals = 0;
     for k, _ in pairs(active_overlays) do
         local v = action_id_frames[k];
-        if v.frame and spells[v.spell_id] then
+        if v.frame and v.frame:IsShown() and spells[v.spell_id] then
+            num_evals = num_evals + 1;
             update_overlay_frame(v, loadout, effects, v.spell_id, eval_flags);
         end
     end
+    --print("Num overlay evals", num_evals);
 
     if mana_cost_overlay or cast_speed_overlay then
         for _, v in pairs(action_id_frames) do
@@ -780,7 +818,7 @@ end
 
 local function update_overlay()
 
-    local loadout, effects = nil;
+    local loadout, effects;
     if not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown() then
         loadout, effects = update_loadout_and_effects();
     else
@@ -791,7 +829,7 @@ local function update_overlay()
 
     for k, count in pairs(externally_registered_spells) do
         if count > 0 then
-            cache_spell(spells[k], k, loadout, effects, assume_single_target);
+            cache_spell(spells[k], k, loadout, effects, eval_flags);
             if spells[k].healing_version then
                 cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
             end
@@ -801,7 +839,7 @@ local function update_overlay()
     local k = sc.core.currently_casting_spell_id;
 
     if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
-        cache_spell(spells[k], k, loadout, effects, assume_single_target);
+        cache_spell(spells[k], k, loadout, effects, eval_flags);
         if spells[k].healing_version then
             cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
         end

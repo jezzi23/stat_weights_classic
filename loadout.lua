@@ -1,7 +1,23 @@
 local _, sc = ...;
 
-local stat                              = sc.utils.stat;
+local attr                              = sc.attr;
+local classes                           = sc.classes;
+local class                             = sc.class;
 local deep_table_copy                   = sc.utils.deep_table_copy;
+
+local category_idx                      = sc.aura_idx_category;
+local effect_idx                        = sc.aura_idx_effect;
+local value_idx                         = sc.aura_idx_value;
+local subject_idx                       = sc.aura_idx_subject;
+local flags_idx                         = sc.aura_idx_flags;
+local iid_idx                           = sc.aura_idx_iid; -- internal index within this spell id
+
+local mana_per_int                      = sc.scaling.mana_per_int;
+local int_to_spell_crit                 = sc.scaling.int_to_spell_crit;
+local agi_to_physical_crit              = sc.scaling.agi_to_physical_crit;
+local ap_per_str                        = sc.scaling.ap_per_str;
+local ap_per_agi                        = sc.scaling.ap_per_agi;
+local rap_per_agi                       = sc.scaling.rap_per_agi;
 
 local config                            = sc.config;
 
@@ -60,7 +76,7 @@ local function empty_effects(effects)
     effects.by_school.crit = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res_flat = {0, 0, 0, 0, 0, 0, 0};
-    effects.by_school.threat = {};
+    effects.by_school.threat = {0, 0, 0, 0, 0, 0, 0};
     effects.mul.by_school = {};
     effects.mul.by_school.vuln_mod = {1, 1, 1, 1, 1, 1, 1};
     effects.mul.by_school.dmg_mod = {1, 1, 1, 1, 1, 1, 1};
@@ -98,14 +114,15 @@ local function empty_effects(effects)
     effects.mul.raw.vuln_heal = 1.0;
     effects.mul.raw.vuln_phys = 1.0;
 
-    effects.mul.raw.ranged_haste = 1;
     effects.mul.raw.melee_haste = 1;
+    effects.mul.raw.melee_haste_forced = 1;
+    effects.mul.raw.ranged_haste = 1;
+    effects.mul.raw.ranged_haste_forced = 1;
     effects.mul.raw.cast_haste = 1;
 
     effects.raw.haste_mod = 0.0;
     effects.raw.cost_mod = 0;
     effects.raw.resource_refund = 0;
-    effects.raw.added_physical_spell_crit = 0;
 
     effects.raw.phys_hit = 0;
     effects.raw.phys_crit = 0;
@@ -125,6 +142,7 @@ local function empty_effects(effects)
     -- indexable by ability base id
     effects.ability = {};
     effects.ability.threat = {};
+    effects.ability.threat_flat = {};
     effects.ability.crit = {};
     effects.ability.ignore_cant_crit = {};
     effects.ability.effect_mod = {};
@@ -135,13 +153,13 @@ local function empty_effects(effects)
     effects.ability.base_mod_flat = {};
     effects.ability.base_mod_ot = {};
     effects.ability.base_mod_ot_flat = {};
-    effects.ability.cast_mod_flat = {}; -- flat before mul
+    effects.ability.cast_mod_flat = {};
     effects.ability.cast_mod = {};
     effects.ability.extra_dur_flat = {};
     effects.ability.extra_dur = {};
     effects.ability.extra_tick_time_flat = {};
-    effects.ability.cost_mod = {}; -- last, multiplied
-    effects.ability.cost_mod_flat = {}; -- second, additive
+    effects.ability.cost_mod = {};
+    effects.ability.cost_mod_flat = {};
     effects.ability.crit_mod = {};
     effects.ability.hit = {};
     effects.ability.sp = {};
@@ -152,7 +170,7 @@ local function empty_effects(effects)
     effects.ability.coef_mod = {};
     effects.ability.coef_mod_flat = {};
     effects.ability.effect_mod_only_heal = {};
-    effects.ability.jumps = {};
+    effects.ability.jumps_flat = {};
     effects.ability.jump_amp = {};
     effects.mul.ability = {};
     effects.mul.ability.vuln_mod = {};
@@ -353,10 +371,13 @@ local function effects_zero_diff()
         sp = 0,
         sd = 0,
         hp = 0,
+        ap = 0,
         hit_rating = 0,
         haste_rating = 0,
         crit_rating = 0,
         spell_pen = 0,
+
+        weapon_skill = 0,
     };
 end
 
@@ -393,8 +414,8 @@ local function effects_from_ui_diff(frame)
         end
     end
 
-    diff.stats[stat.int] = stats.int.editbox_val;
-    diff.stats[stat.spirit] = stats.spirit.editbox_val;
+    diff.stats[attr.intellect] = stats.int.editbox_val;
+    diff.stats[attr.spirit] = stats.spirit.editbox_val;
     diff.mp5 = stats.mp5.editbox_val;
 
     diff.crit_rating = stats.spell_crit.editbox_val;
@@ -403,7 +424,7 @@ local function effects_from_ui_diff(frame)
 
     diff.sp = stats.sp.editbox_val;
 
-    if sc.core.expansion_loaded == sc.core.expansions.vanilla then
+    if sc.expansion == sc.expansions.vanilla then
         diff.sd = stats.sd.editbox_val;
         diff.hp = stats.hp.editbox_val;
         diff.spell_pen = stats.spell_pen.editbox_val;
@@ -412,6 +433,75 @@ local function effects_from_ui_diff(frame)
     frame.is_valid = true;
 
     return diff;
+end
+
+local diff_stats_gained = {};
+local function effects_diff(loadout, effects, diff)
+
+    --for i = 1, 5 do
+    --    effects.stats[i] = loadout.stats[i] + diff.stats[i] * (1 + effects.by_attr.stat_mod[i]);
+    --end
+
+    --loadout.mana = loadout.mana + 
+    --             (mana_per_int*diff.stats[attr.intellect]*(1 + effects.by_attr.stat_mod[attr.intellect]*effects.raw.mana_mod));
+
+    for i = 1, 5 do
+        diff_stats_gained[i] = diff.stats[i] * (1 + effects.by_attr.stat_mod[attr.spirit]);
+    end
+    local sp_gained_from_spirit = diff_stats_gained[attr.spirit] * effects.by_attr.sp_from_stat_mod[attr.spirit];
+    local sp_gained_from_int = diff_stats_gained[attr.intellect] * effects.by_attr.sp_from_stat_mod[attr.intellect];
+    local sp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
+
+    local hp_gained_from_spirit = diff_stats_gained[attr.spirit] * effects.by_attr.hp_from_stat_mod[attr.spirit];
+    local hp_gained_from_int = diff_stats_gained[attr.intellect] * effects.by_attr.hp_from_stat_mod[attr.intellect];
+    local hp_gained_from_stat = hp_gained_from_spirit + hp_gained_from_int;
+
+    effects.raw.spell_power = effects.raw.spell_power + diff.sp;
+    effects.raw.spell_dmg = effects.raw.spell_dmg + diff.sd + sp_gained_from_stat;
+    effects.raw.healing_power_flat = effects.raw.healing_power_flat + diff.hp + hp_gained_from_stat;
+
+    effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
+    effects.raw.mp5 = effects.raw.mp5 + diff_stats_gained[attr.intellect] * effects.raw.mp5_from_int_mod;
+
+    local crit_from_int = int_to_spell_crit(diff_stats_gained[attr.intellect], loadout.lvl);
+    local crit_from_spirit = diff_stats_gained[attr.spirit]*effects.by_attr.crit_from_stat_mod[attr.spirit];
+    local spell_crit = crit_from_spirit + crit_from_int;
+    for i = 1, 7 do
+        effects.by_school.crit[i] = effects.by_school.crit[i] + spell_crit;
+    end
+
+    effects.raw.mana = effects.raw.mana + (diff_stats_gained[attr.intellect] * mana_per_int)*(1.0 + effects.raw.mana_mod);
+
+    effects.raw.haste_rating = effects.raw.haste_rating + diff.haste_rating;
+    effects.raw.crit_rating = effects.raw.crit_rating + diff.crit_rating;
+    effects.raw.hit_rating = effects.raw.hit_rating + diff.hit_rating;
+
+    for i = 1, 5 do
+        effects.by_attr.stats[i] = effects.by_attr.stats[i] + diff.stats[i];
+    end
+    for i = 2, 7 do
+        effects.by_school.target_res[i] = effects.by_school.target_res[i] + diff.spell_pen;
+    end
+
+    -- physical stuff
+
+    local agi_ap_class = class;
+    if class == classes.druid and loadout.shapeshift == 3 then
+        -- cat form
+        agi_ap_class = classes.rogue;
+    end
+    local added_ap = diff.ap +
+        diff_stats_gained[attr.strength] * ap_per_str[class] +
+        diff_stats_gained[attr.agility] * ap_per_agi[agi_ap_class];
+    local added_rap = diff.ap + diff_stats_gained[attr.agility] * rap_per_agi[class];
+    effects.raw.phys_crit = effects.raw.phys_crit +
+        agi_to_physical_crit(diff_stats_gained[attr.agility], loadout.lvl);
+
+    effects.raw.ap_flat = effects.raw.ap_flat + added_ap;
+    effects.raw.rap_flat = effects.raw.rap_flat + added_rap;
+
+
+    effects.raw.skill = effects.raw.skill + diff.weapon_skill;
 end
 
 local function dynamic_loadout(loadout)
@@ -450,7 +540,7 @@ local function dynamic_loadout(loadout)
         loadout.phys_hit = 0.01*phys_hit;
     end
 
-    if sc.core.expansion_loaded == sc.core.expansions.vanilla then
+    if sc.expansion == sc.expansions.vanilla then
         loadout.healing_power = GetSpellBonusHealing();
         for i = 1, 7 do
             loadout.spell_dmg_by_school[i] = GetSpellBonusDamage(i);
@@ -506,7 +596,8 @@ local function dynamic_loadout(loadout)
 
     loadout.m1_speed, loadout.m2_speed = UnitAttackSpeed("player");
 
-    loadout.shapeshift_no_weapon = sc.class == "DRUID" and GetShapeshiftForm() ~= 5;
+    loadout.shapeshift = GetShapeshiftForm();
+    loadout.shapeshift_no_weapon = sc.class == "DRUID" and shapeshift ~= 5;
 
     loadout.player_name = UnitName("player");
     loadout.target_name = UnitName("target");
@@ -594,53 +685,65 @@ local function apply_effect(loadout, effects, spid, auras, forced, stacks, undo)
     if effects.aura_pts[-1][spid] then
         mul_all = mul_all + effects.aura_pts[-1][spid];
     end
+
     for _, aura in pairs(auras) do
+
+        if bit.band(aura[flags_idx], sc.aura_flags.apply_aura) ~= 0 then
+            for _, k in pairs(aura[subject_idx]) do
+                apply_effect(loadout, effects, k, sc[aura[effect_idx]][k], forced, stacks, undo);
+            end
+            return;
+        end
         local add = add_all;
         local mul = mul_all;
         -- affects specific iids
-        if effects.aura_pts_flat[aura[6]] and effects.aura_pts_flat[aura[6]][spid] then
-            add = add + effects.aura_pts_flat[aura[6]][spid];
+        if effects.aura_pts_flat[aura[iid_idx]] and effects.aura_pts_flat[aura[iid_idx]][spid] then
+            add = add + effects.aura_pts_flat[aura[iid_idx]][spid];
         end
-        if effects.aura_pts[aura[6]] and effects.aura_pts[aura[6]][spid] then
-            mul = mul + effects.aura_pts[aura[6]][spid];
+        if effects.aura_pts[aura[iid_idx]] and effects.aura_pts[aura[iid_idx]][spid] then
+            mul = mul + effects.aura_pts[aura[iid_idx]][spid];
         end
         local val;
         if stacks > 1 then
-            val = (aura[3] + add) * mul * stacks;
+            val = (aura[value_idx] + add) * mul * stacks;
         else
-            val = (aura[3] + add) * mul;
+            val = (aura[value_idx] + add) * mul;
         end
 
-        if bit.band(aura[5], sc.aura_flags.inactive_forced) == 0 or forced then
-            if bit.band(aura[5], sc.aura_flags.mul) ~= 0 then
-                if not effects["mul"][aura[1]][aura[2]] then
-                    print("Missing effects.mul."..aura[1].."."..aura[2]);
+        if bit.band(aura[flags_idx], sc.aura_flags.inactive_forced) == 0 or forced then
+            local aura_effect = aura[effect_idx];
+            if forced and bit.band(aura[flags_idx], sc.aura_flags.forced_separated) ~= 0 then
+                aura_effect = aura_effect.."_forced";
+            end
+            if bit.band(aura[flags_idx], sc.aura_flags.mul) ~= 0 then
+                if not effects["mul"][aura[category_idx]][aura_effect] then
+                    print("Missing effects.mul."..aura[category_idx].."."..aura_effect);
                 end
                 if undo then
                     val = 1/val;
                 end
-                if aura[1] == "raw" then
-                    effects["mul"][aura[1]][aura[2]] = effects["mul"][aura[1]][aura[2]] * (1.0 + val);
+                if aura[category_idx] == "raw" then
+                    effects["mul"][aura[category_idx]][aura_effect] = effects["mul"][aura[category_idx]][aura_effect] * (1.0 + val);
                 else
-                    for _, i in pairs(aura[4]) do
-                        effects["mul"][aura[1]][aura[2]][i] = (effects["mul"][aura[1]][aura[2]][i] or 1.0) * (1.0 + val);
+                    for _, i in pairs(aura[subject_idx]) do
+                        effects["mul"][aura[category_idx]][aura_effect][i] = (effects["mul"][aura[category_idx]][aura_effect][i] or 1.0) * (1.0 + val);
                     end
                 end
             else
-                if not effects[aura[1]] then
-                    print("Missing effects."..aura[1]);
+                if not effects[aura[category_idx]] then
+                    print("Missing effects."..aura[category_idx]);
                 end
-                if not effects[aura[1]][aura[2]] then
-                    print("Missing effects."..aura[1].."."..aura[2]);
+                if not effects[aura[category_idx]][aura_effect] then
+                    print("Missing effects."..aura[category_idx].."."..aura_effect);
                 end
                 if undo then
                     val = -val;
                 end
-                if aura[1] == "raw" then
-                    effects[aura[1]][aura[2]] = effects[aura[1]][aura[2]] + val;
+                if aura[category_idx] == "raw" then
+                    effects[aura[category_idx]][aura_effect] = effects[aura[category_idx]][aura_effect] + val;
                 else
-                    for _, i in pairs(aura[4]) do
-                        effects[aura[1]][aura[2]][i] = (effects[aura[1]][aura[2]][i] or 0.0) + val;
+                    for _, i in pairs(aura[subject_idx]) do
+                        effects[aura[category_idx]][aura_effect][i] = (effects[aura[category_idx]][aura_effect][i] or 0.0) + val;
                     end
                 end
             end
@@ -693,8 +796,6 @@ local function update_loadout_and_effects()
 
         sc.talents.apply_talents(base_loadout, talented);
 
-
-
         sc.core.talents_update_needed = false;
     end
 
@@ -715,7 +816,7 @@ local function update_loadout_and_effects_diffed_from_ui()
     local diff = effects_from_ui_diff(__sc_frame.calculator_frame);
 
     local effects_diffed = deep_table_copy(effects);
-    sc.loadout.effects_diff(loadout, effects_diffed, diff);
+    effects_diff(loadout, effects_diffed, diff);
 
     return loadout, effects, effects_diffed;
 end
@@ -726,6 +827,7 @@ loadout_export.final_effects                                = final_effects;
 loadout_export.empty_loadout                                = empty_loadout;
 loadout_export.empty_effects                                = empty_effects;
 loadout_export.effects_add                                  = effects_add;
+loadout_export.effects_diff                                 = effects_diff;
 loadout_export.effects_zero_diff                            = effects_zero_diff;
 loadout_export.active_loadout                               = active_loadout;
 loadout_export.update_loadout_and_effects                   = update_loadout_and_effects;

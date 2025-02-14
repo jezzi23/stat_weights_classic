@@ -4,6 +4,26 @@ sc.client_name_src = "wow_classic_era";
 sc.client_version_src = "1.15.6.58912";
 _, sc.class = UnitClass("player");
 _, _, sc.race = UnitRace("player");
+sc.faction = UnitFactionGroup("player");
+local build, version, date = GetBuildInfo();
+sc.client_version_loaded = build.."."..version;
+sc.client_date_loaded = date;
+sc.max_lvl = 60;
+sc.expansions = {
+	vanilla = 0,
+};
+sc.expansion = sc.expansions.vanilla;
+sc.game_modes = {
+    hardcore = bit.lshift(1, 0),
+    season_of_discovery = bit.lshift(1, 2),
+};
+sc.game_mode = 0;
+if C_GameRules and C_GameRules.IsHardcoreActive and C_GameRules.IsHardcoreActive() then
+    sc.game_mode = bit.bor(sc.game_mode, sc.game_modes.hardcore);
+end
+if C_Engraving and C_Engraving.IsEngravingEnabled() then
+    sc.game_mode = bit.bor(sc.game_mode, sc.game_modes.season_of_discovery);
+end
 sc.classes = {
 	warrior = "WARRIOR",
 	paladin = "PALADIN",
@@ -16,6 +36,12 @@ sc.classes = {
 	druid = "DRUID",
 	fake = "FAKE",
 };
+sc.aura_idx_category = 1;
+sc.aura_idx_effect = 2;
+sc.aura_idx_value = 3;
+sc.aura_idx_subject = 4;
+sc.aura_idx_flags = 5;
+sc.aura_idx_iid = 6;
 sc.races = {
 	human = 1,
 	orc = 2,
@@ -36,7 +62,7 @@ sc.schools = {
 	shadow = 6,
 	arcane = 7,
 };
-sc.stats = {
+sc.attr = {
 	strength = 1,
 	agility = 2,
 	stamina = 3,
@@ -63,16 +89,19 @@ sc.spell_flags = {
 	resource_regen = bit.lshift(1, 8),
 	regen_pct = bit.lshift(1, 9),
 	regen_max_pct = bit.lshift(1, 10),
-	entire_channel_missable = bit.lshift(1, 11),
-	weapon_enchant = bit.lshift(1, 12),
-	resi_pen = bit.lshift(1, 13),
-	alias = bit.lshift(1, 14),
-	on_next_attack = bit.lshift(1, 15),
-	uses_attack_speed = bit.lshift(1, 16),
-	finishing_move_dmg = bit.lshift(1, 17),
-	finishing_move_dur = bit.lshift(1, 18),
-	pet = bit.lshift(1, 19),
-	refund_on_miss = bit.lshift(1, 20),
+	weapon_enchant = bit.lshift(1, 11),
+	resi_pen = bit.lshift(1, 12),
+	alias = bit.lshift(1, 13),
+	on_next_attack = bit.lshift(1, 14),
+	uses_attack_speed = bit.lshift(1, 15),
+	finishing_move_dmg = bit.lshift(1, 16),
+	finishing_move_dur = bit.lshift(1, 17),
+	pet = bit.lshift(1, 18),
+	refund_on_miss = bit.lshift(1, 19),
+	only_threat = bit.lshift(1, 20),
+	no_threat = bit.lshift(1, 21),
+	behind_target = bit.lshift(1, 22),
+	entire_channel_missable = bit.lshift(1, 23),
 };
 sc.comp_flags = {
 	cant_crit = bit.lshift(1, 0),
@@ -85,10 +114,31 @@ sc.comp_flags = {
 	applies_ranged = bit.lshift(1, 7),
 	bleed = bit.lshift(1, 8),
 	white = bit.lshift(1, 9),
+	normalized_weapon = bit.lshift(1, 10),
 };
 sc.aura_flags = {
 	mul = bit.lshift(1, 0),
 	inactive_forced = bit.lshift(1, 1),
 	player_owned = bit.lshift(1, 2),
 	weapon_subclass = bit.lshift(1, 3),
+	apply_aura = bit.lshift(1, 4),
+	forced_separated = bit.lshift(1, 5),
+};
+sc.wep_subclass_to_normalized_speed = {
+	[1] = 3.3,
+	[6] = 3.3,
+	[16] = 2.8,
+	[-1] = 2.4,
+	[2] = 2.8,
+	[3] = 2.8,
+	[4] = 2.4,
+	[13] = 2.4,
+	[18] = 2.8,
+	[19] = 2.8,
+	[15] = 1.7,
+	[10] = 3.3,
+	[5] = 3.3,
+	[0] = 2.4,
+	[8] = 3.3,
+	[7] = 2.4,
 };

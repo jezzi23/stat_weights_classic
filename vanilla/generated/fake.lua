@@ -51,3 +51,5 @@ for k, v in pairs(enchants) do sc.enchants[k] = v; end
 local special_passives = {
 };
 for k, v in pairs(special_passives) do sc.special_passives[k] = v; end
+sc.shapeshift_passives = {
+};

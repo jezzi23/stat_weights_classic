@@ -1,8 +1,8 @@
 local utils = {};
 
-local _, class = UnitClass("player");
-local _, race = UnitRace("player");
-local faction, _ = UnitFactionGroup("player");
+local _, sc = ...;
+
+local spells = sc.spells;
 
 local function spell_mod_add(table, key, add)
     if not table then
@@ -31,14 +31,6 @@ local function deep_table_copy(obj, seen)
   return res
 end
 
-local stat = {
-    str = 1,
-    agi = 2,
-    stam = 3,
-    int = 4,
-    spirit = 5
-};
-
 local function spell_cost(spell_id)
 
     local costs = GetSpellPowerCost(spell_id);
@@ -58,28 +50,50 @@ local function spell_cast_time(spell_id)
 
     local cast_time = select(4, GetSpellInfo(spell_id));
     if cast_time  then
-        if cast_time == 0 then
-            --cast_time = nil;
-            cast_time = 1.5;
-        else
-            cast_time = cast_time/1000;
-        end
+        cast_time = cast_time/1000;
     end
+    if spells[spell_id] then
+        cast_time = cast_time or 0.0;
+        cast_time = math.max(spells[spell_id].gcd, cast_time);
+    end
+
     return cast_time;
 end
 
-local function add_all_spell_crit(effects, amount, inactive)
-    if inactive then
-        for i = 1, 7 do
-            effects.by_school.spell_crit[i] = effects.by_school.spell_crit[i] + amount;
+local function best_rank_by_lvl(spell, lvl)
+    local n = #sc.rank_seqs[spell.base_id];
+    local i = n;
+    while i ~= 0 do
+        if spells[sc.rank_seqs[spell.base_id][i]].lvl_req <= lvl then
+            return spells[sc.rank_seqs[spell.base_id][i]];
         end
-    else
-        effects.raw.added_physical_spell_crit = effects.raw.added_physical_spell_crit + amount;
+        i = i - 1;
     end
+    return nil;
 end
 
+local function highest_learned_rank(base_id)
+    local n = #sc.rank_seqs[base_id];
+    local i = n;
+    while i ~= 0 do
+        if IsSpellKnownOrOverridesKnown(sc.rank_seqs[base_id][i]) or
+            IsSpellKnownOrOverridesKnown(sc.rank_seqs[base_id][i], true) then
+            return sc.rank_seqs[base_id][i];
+        end
+        i = i - 1;
+    end
+    return nil;
+end
+
+local function next_rank(spell_data)
+    return spells[sc.rank_seqs[spell_data.base_id][spell_data.rank + 1]];
+end
+
+
 local effect_colors = {
-    hit                     = { 232 / 255, 225 / 255,  32 / 255 },
+    hit_chance              = { 232 / 255, 225 / 255,  32 / 255 },
+    target_info             = { 138 / 255, 134 / 255, 125 / 255 },
+    avoidance_info          = { 138 / 255, 134 / 255, 125 / 255 },
     normal                  = { 232 / 255, 225 / 255,  32 / 255 },
     crit                    = { 252 / 255,  69 / 255,   3 / 255 },
     expectation             = { 255 / 255, 128 / 255,   0 / 255 },
@@ -94,8 +108,7 @@ local effect_colors = {
     sp_effect               = { 138 / 255, 134 / 255, 125 / 255 },
     stat_weights            = {   0 / 255, 255 / 255,   0 / 255 },
     spell_rank              = { 138 / 255, 134 / 255, 125 / 255 },
-    loadout_info            = { 138 / 255, 134 / 255, 125 / 255 },
-    miss_info               = { 138 / 255, 134 / 255, 125 / 255 },
+    threat                  = { 150 / 255, 105 / 255,  25 / 255 },
 };
 
 local function format_number(val, max_accuracy_digits)
@@ -116,24 +129,21 @@ local function format_number(val, max_accuracy_digits)
     end
 end
 
+utils.spell_mod_mul                 = spell_mod_mul;
+utils.spell_mod_add                 = spell_mod_add;
+utils.beacon_snapshot_time          = beacon_snapshot_time;
+utils.addon_running_time            = addon_running_time;
+utils.deep_table_copy               = deep_table_copy;
+utils.spell_cost                    = spell_cost;
+utils.spell_cast_time               = spell_cast_time;
+utils.add_all_spell_crit            = add_all_spell_crit;
+utils.effect_colors                 = effect_colors;
+utils.format_number                 = format_number;
+utils.best_rank_by_lvl              = best_rank_by_lvl;
+utils.highest_learned_rank          = highest_learned_rank
+utils.next_rank                     = next_rank;
 
-utils.spell_mod_mul = spell_mod_mul;
-utils.spell_mod_add = spell_mod_add;
-utils.beacon_snapshot_time = beacon_snapshot_time;
-utils.addon_running_time = addon_running_time;
-utils.class = class;
-utils.race = race;
-utils.faction = faction;
-utils.deep_table_copy = deep_table_copy;
-utils.stat = stat;
-utils.stat_ids_in_ui = stat_ids_in_ui;
-utils.spell_cost = spell_cost;
-utils.spell_cast_time = spell_cast_time;
-utils.add_all_spell_crit = add_all_spell_crit;
-utils.effect_colors = effect_colors;
-utils.format_number = format_number;
 
-local _, sc = ...;
 sc.utils = utils;
 sc.ext = {};
 
