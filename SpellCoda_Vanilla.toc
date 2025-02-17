@@ -40,8 +40,9 @@ locale/enTW.lua
 
 utils.lua
 
-vanilla/data_override.lua
+vanilla/override.lua
 vanilla/scaling.lua
+vanilla/mechanics.lua
 
 config.lua
 loadout.lua

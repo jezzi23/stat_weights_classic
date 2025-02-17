@@ -26,13 +26,13 @@ local reassign_overlay_icon     = sc.overlay.reassign_overlay_icon;
 local update_overlay            = sc.overlay.update_overlay;
 
 local update_tooltip            = sc.tooltip.update_tooltip;
-local tooltip_spell_info        = sc.tooltip.tooltip_spell_info;
+local write_tooltip             = sc.tooltip.write_tooltip;
 
 -------------------------------------------------------------------------
 local core                      = {};
 sc.core                         = core;
 
-core.sw_addon_name              = "SpellCoda";
+core.addon_name                 = "SpellCoda";
 
 local version_major             = 0;
 local version_minor             = 9;
@@ -179,18 +179,26 @@ local event_dispatch = {
             end
         end
         sc.ui.add_spell_book_button();
+        sc.ui.add_to_options();
         C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_sc_id)
         if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
+            print("WARNING: SC DEBUG TOOLS ARE ON!!!");
             for _ = 1, 10 do
                 print("WARNING: SC DEBUG TOOLS ARE ON!!!");
             end
+            local num_spells = 0;
+            for _, _ in pairs(sc.spells) do
+                num_spells = num_spells + 1;
+            end
+            print("Spells in data:", num_spells);
         end
         -- don't warn about updates when build is relatively fresh
         local version_warning_build_threshold_days = 3;
         if core.__sw__debug__ then
             version_warning_build_threshold_days = 0;
         end
-        if generated_data_is_outdated(sc.client_version_loaded, sc.client_version_src) and
+        if config.settings.general_version_mismatch_notify and
+            generated_data_is_outdated(sc.client_version_loaded, sc.client_version_src) and
             client_age_days() > version_warning_build_threshold_days then
             print("SpellCoda: detected client and spell data version mismatch. Consider checking for an update");
         end
@@ -357,6 +365,12 @@ sc.tooltip_mod_flags = {
 local tooltip_time = 1.0/2.0;
 
 local function refresh_tooltip()
+    local dt = 0.1;
+    if config.settings.tooltip_disable then
+
+        C_Timer.After(dt, refresh_tooltip);
+        return;
+    end
     local mod = 0;
     if IsAltKeyDown() then
         mod = bit.bor(mod, sc.tooltip_mod_flags.ALT);
@@ -369,7 +383,6 @@ local function refresh_tooltip()
     end
     mod = bit.bor(mod, bit.lshift(sc.tooltip.eval_mode, 3));
 
-    local dt = 0.1;
     if core.__sw__test_all_spells then
         dt = 0.01;
         sc.tooltip_mod = mod;
@@ -393,7 +406,9 @@ C_Timer.After(1.0, main_update);
 C_Timer.After(1.0, refresh_tooltip);
 
 GameTooltip:HookScript("OnTooltipSetSpell", function()
-    tooltip_spell_info();
+    if not config.settings.tooltip_disable then
+        write_tooltip();
+    end
 end)
 
 -- add addon to Addons list under Interface
@@ -489,7 +504,7 @@ local function command(arg)
 
     if arg == "spell" or arg == "spells" then
         sw_activate_tab(__sc_frame.tabs[1]);
-    elseif arg == "settings" or arg == "opt" or arg == "options" or arg == "conf" or arg == "configure"  or "tooltip" then
+    elseif arg == "tooltip" then
         sw_activate_tab(__sc_frame.tabs[2]);
     elseif arg == "overlay" then
         sw_activate_tab(__sc_frame.tabs[3]);
@@ -501,6 +516,8 @@ local function command(arg)
         sw_activate_tab(__sc_frame.tabs[6]);
     elseif arg == "buffs" or arg == "auras" then
         sw_activate_tab(__sc_frame.tabs[7]);
+    elseif arg == "settings" or arg == "opt" or arg == "options" or arg == "conf" or arg == "configure" then
+        sw_activate_tab(__sc_frame.tabs[8]);
     elseif arg == "reset" then
         core.use_char_defaults = 1;
         core.use_acc_defaults = 1;

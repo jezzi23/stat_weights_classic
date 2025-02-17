@@ -2,8 +2,8 @@ local _, sc                = ...;
 
 local class                 = sc.class;
 local config                = sc.config;
-
--------------------------------------------------------------------------------
+local apply_effect          = sc.loadout.apply_effect;
+---------------------------------------------------------------------------------------------------
 local talents_export        = {};
 
 local function wowhead_talent_link(code)
@@ -111,13 +111,13 @@ local function apply_talents(loadout, effects)
         if pts > 0 and sc.talent_ranks[id] then
             local effect_id = sc.talent_ranks[id][pts];
             if effect_id then
-                sc.loadout.apply_effect(loadout,
-                                         effects,
-                                         effect_id,
-                                         sc.talent_effects[effect_id],
-                                         config.loadout.use_custom_talents,
-                                         1,
-                                         false);
+                apply_effect(loadout,
+                             effects,
+                             effect_id,
+                             sc.talent_effects[effect_id],
+                             config.loadout.use_custom_talents,
+                             1,
+                             false);
             end
         end
     end
@@ -127,13 +127,13 @@ local function apply_talents(loadout, effects)
     --        if pts > 0 and sc.talent_ranks[id] then
     --            local effect_id = sc.talent_ranks[id][pts];
     --            if effect_id then
-    --                sc.loadout.apply_effect(loadout,
-    --                                         effects,
-    --                                         effect_id,
-    --                                         sc.talent_effects[effect_id],
-    --                                         false,
-    --                                         1,
-    --                                         true);
+    --                apply_effect(loadout,
+    --                             effects,
+    --                             effect_id,
+    --                             sc.talent_effects[effect_id],
+    --                             false,
+    --                             1,
+    --                             true);
     --            end
     --        end
     --    end
@@ -165,7 +165,7 @@ local function apply_talents(loadout, effects)
         -- Testing all special passives
         local passives_applied = 0;
         for id, e in pairs(sc.special_passives) do
-            sc.loadout.apply_effect(loadout, effects, id, e, true, 1);
+            apply_effect(loadout, effects, id, e, true, 1);
             passives_applied = passives_applied + 1;
         end
 
@@ -175,7 +175,7 @@ local function apply_talents(loadout, effects)
         local applied = 0;
         for _, v in pairs(sc.talent_ranks) do
             for _, i in pairs(v) do
-                sc.loadout.apply_effect(loadout, effects, i, sc.talent_effects[i], true, 1);
+                apply_effect(loadout, effects, i, sc.talent_effects[i], true, 1);
                 applied = applied + 1;
             end
         end

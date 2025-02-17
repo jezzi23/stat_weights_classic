@@ -2,7 +2,7 @@ local _, sc = ...;
 
 local classes   = sc.classes;
 local class     = sc.class;
-
+---------------------------------------------------------------------------------------------------
 local scaling = {};
 
 local dps_per_ap = 1/14;
@@ -164,8 +164,8 @@ end
 --    effects.raw.mana_mod = effects.raw.mana_mod + mod_value-inactive_value;
 --    effects.raw.mana_mod_active = effects.raw.mana_mod_active + mod_value-inactive_value;
 --
---    local mana_gained = inactive_value * loadout.mana/(1.0 + effects.raw.mana_mod);
---    loadout.mana = loadout.mana + mana_gained;
+--    local mana_gained = inactive_value * loadout.resource[powers.mana]/(1.0 + effects.raw.mana_mod);
+--    loadout.resource[powers.mana] = loadout.resource[powers.mana] + mana_gained;
 --
 --    effects.raw.mana_mod = effects.raw.mana_mod + inactive_value;
 --end
@@ -178,8 +178,8 @@ end
 --    local mana_gained = int_gained * 15 * (1.0 + effects.raw.mana_mod);
 --
 --    effects.raw.crit_rating = effects.raw.crit_rating +  crit_rating_gained;
---    loadout.mana = loadout.mana + mana_gained;
---    loadout.max_mana = loadout.max_mana + mana_gained;
+--    loadout.resource[powers.mana] = loadout.resource[powers.mana] + mana_gained;
+--    loadout.resource_max[powers.mana] = loadout.resource_max[powers.mana] + mana_gained;
 --    loadout.stats[attr.intellect] = loadout.stats[attr.intellect] + int_gained;
 --
 --    effects.by_attr.stat_mod[attr.intellect] = effects.by_attr.stat_mod[attr.intellect] + inactive_value;

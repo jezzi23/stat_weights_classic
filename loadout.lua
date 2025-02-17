@@ -2,6 +2,7 @@ local _, sc = ...;
 
 local attr                              = sc.attr;
 local classes                           = sc.classes;
+local powers                            = sc.powers;
 local class                             = sc.class;
 local deep_table_copy                   = sc.utils.deep_table_copy;
 
@@ -43,11 +44,24 @@ local function empty_loadout()
 
         mana = 0,
         stats = {0, 0, 0, 0, 0},
+        resources = {
+            [sc.powers.mana] = 0,
+            [sc.powers.rage] = 0,
+            [sc.powers.energy] = 0,
+            [sc.powers.combopoints] = 0,
+        },
+        resources_max = {
+            [sc.powers.mana] = 0,
+            [sc.powers.rage] = 0,
+            [sc.powers.energy] = 0,
+            [sc.powers.combopoints] = 0,
+        },
 
         haste_rating = 0.0,
         crit_rating = 0.0,
         hit_rating = 0.0,
         target_creature_type = "",
+        extra_mana = 0.0,
 
         spell_dmg_by_school = {0, 0, 0, 0, 0, 0, 0},
         spell_dmg_hit_by_school = {0, 0, 0, 0, 0, 0, 0},
@@ -65,11 +79,25 @@ local function empty_loadout()
     };
 end
 
+local effect_categories = {
+    "by_school",
+    "by_attr",
+    "raw",
+    "ability",
+    "aura_pts",
+    "aura_pts_flat",
+    "wpn_subclass",
+    "creature",
+
+};
 local function empty_effects(effects)
 
     effects.mul = {};
+    for _, v in ipairs(effect_categories) do
+        effects[v] = {};
+        effects.mul[v] = {};
+    end
 
-    effects.by_school = {};
     effects.by_school.spell_hit = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.crit_mod = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.sp_dmg_flat = {0, 0, 0, 0, 0, 0, 0};
@@ -77,18 +105,15 @@ local function empty_effects(effects)
     effects.by_school.target_res = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.target_res_flat = {0, 0, 0, 0, 0, 0, 0};
     effects.by_school.threat = {0, 0, 0, 0, 0, 0, 0};
-    effects.mul.by_school = {};
     effects.mul.by_school.vuln_mod = {1, 1, 1, 1, 1, 1, 1};
     effects.mul.by_school.dmg_mod = {1, 1, 1, 1, 1, 1, 1};
 
-    effects.by_attr =  {};
     effects.by_attr.stats = {0, 0, 0, 0, 0};
     effects.by_attr.stat_mod = {0, 0, 0, 0, 0};
     effects.by_attr.sp_from_stat_mod = {0, 0, 0, 0, 0};
     effects.by_attr.hp_from_stat_mod = {0, 0, 0, 0, 0};
     effects.by_attr.crit_from_stat_mod = {0, 0, 0, 0, 0};
 
-    effects.raw = {};
     --effects.raw.heal_mod = 0;
     effects.raw.mana_mod = 0;
     effects.raw.mana_mod_active = 0;
@@ -106,23 +131,20 @@ local function empty_effects(effects)
     effects.raw.ap_flat = 0;
     effects.raw.rap_flat = 0;
 
-    effects.raw.cast_haste = 0;
-
-    effects.mul.raw = {};
     effects.mul.raw.phys_mod = 1.0;
     effects.mul.raw.heal_mod = 1.0;
     effects.mul.raw.vuln_heal = 1.0;
     effects.mul.raw.vuln_phys = 1.0;
 
+    effects.raw.cast_haste = 1; -- vanilla style cast haste
+
     effects.mul.raw.melee_haste = 1;
     effects.mul.raw.melee_haste_forced = 1;
     effects.mul.raw.ranged_haste = 1;
     effects.mul.raw.ranged_haste_forced = 1;
-    effects.mul.raw.cast_haste = 1;
+    effects.mul.raw.cast_haste = 1; -- non vanilla style haste
 
-    effects.raw.haste_mod = 0.0;
     effects.raw.cost_mod = 0;
-    effects.raw.resource_refund = 0;
 
     effects.raw.phys_hit = 0;
     effects.raw.phys_crit = 0;
@@ -140,7 +162,6 @@ local function empty_effects(effects)
     effects.raw.target_num_shadow_afflictions = 0;
 
     -- indexable by ability base id
-    effects.ability = {};
     effects.ability.threat = {};
     effects.ability.threat_flat = {};
     effects.ability.crit = {};
@@ -172,7 +193,6 @@ local function empty_effects(effects)
     effects.ability.effect_mod_only_heal = {};
     effects.ability.jumps_flat = {};
     effects.ability.jump_amp = {};
-    effects.mul.ability = {};
     effects.mul.ability.vuln_mod = {};
 
     -- effects that affects the base value (points) of other subauras
@@ -180,18 +200,15 @@ local function empty_effects(effects)
     effects.aura_pts = { [-1] = {}, [0] = {}, [1] = {}, [2] = {}, [3] = {}, [4] = {},};
     effects.aura_pts_flat = { [-1] = {}, [0] = {}, [1] = {}, [2] = {}, [3] = {}, [4] = {},};
 
-    effects.wpn_subclass = {};
     effects.wpn_subclass.phys_crit = {};
     effects.wpn_subclass.phys_hit = {};
     effects.wpn_subclass.phys_hit = {};
     effects.wpn_subclass.phys_dmg = {};
     effects.wpn_subclass.phys_dmg_flat = {};
-    effects.mul.wpn_subclass = {};
+
     effects.mul.wpn_subclass.phys_mod = {};
 
-    effects.creature = {};
     effects.creature.crit_mod = {};
-    effects.mul.creature = {};
     effects.mul.creature.dmg_mod = {};
 
 
@@ -199,169 +216,114 @@ local function empty_effects(effects)
     effects.by_school.cost_mod = {0, 0, 0, 0, 0, 0, 0};
 end
 
+local function cpy_effects(dst, src)
+
+    for _, cat in ipairs(effect_categories) do
+        local dst_cat = dst[cat];
+        local src_cat = src[cat];
+        for i, src_e in pairs(src_cat) do
+            if type(src_e) == "table" then
+                local dst_e = dst_cat[i];
+                for j, _ in pairs(dst_e) do
+                    if not src_e[j] then
+                        -- prevent values in src that are not in dst
+                        dst_e[j] = 0.0;
+                    end
+                end
+
+                for j, _ in pairs(src_e) do
+                    dst_e[j] = src_e[j];
+                end
+            else
+                dst_cat[i] = src_cat[i];
+            end
+        end
+    end
+
+    for _, cat in ipairs(effect_categories) do
+        local dst_cat = dst.mul[cat];
+        local src_cat = src.mul[cat];
+        for i, src_e in pairs(src_cat) do
+            if type(src_e) == "table" then
+                local dst_e = dst_cat[i];
+                for j, _ in pairs(dst_e) do
+                    if not src_e[j] then
+                        -- prevent values in src that are not in dst
+                        dst_e[j] = 1.0;
+                    end
+                end
+
+                for j, _ in pairs(src_e) do
+                    dst_e[j] = src_e[j];
+                end
+            else
+                dst_cat[i] = src_cat[i];
+            end
+        end
+    end
+end
+
 local function zero_effects(effects)
-    -- addable effects
-    for k, _ in pairs(effects.raw) do
-        effects.raw[k] = 0.0;
-    end
 
-    for _, e in pairs(effects.ability) do
-        for k, _ in pairs(e) do
-            e[k] = 0.0;
-        end
-    end
-    for _, e in pairs(effects.by_school) do
-        for i = 1,7 do
-            e[i] = 0.0;
-        end
-    end
-    for _, e in pairs(effects.by_attr) do
-        for i = 1,5 do
-            e[i] = 0.0;
+    for _, cat in ipairs(effect_categories) do
+        local effect_cat = effects[cat];
+        for i, e in pairs(effect_cat) do
+            if type(e) == "table" then
+                for j, _ in pairs(e) do
+                    e[j] = 0.0;
+                end
+            else
+                effect_cat[i] = 0.0;
+            end
         end
     end
 
-    for _, e in pairs(effects.by_school) do
-        for i = 1,7 do
-            e[i] = 0.0;
-        end
-    end
-    for _, e in pairs(effects.aura_pts) do
-        for k, _ in pairs(e) do
-            e[k] = 0.0;
-        end
-    end
-    for _, e in pairs(effects.aura_pts_flat) do
-        for k, _ in pairs(e) do
-            e[k] = 0.0;
-        end
-    end
-    for _, e in pairs(effects.wpn_subclass) do
-        for k, _ in pairs(e) do
-            e[k] = 0.0;
-        end
-    end
-    for _, e in pairs(effects.creature) do
-        for k, _ in pairs(e) do
-            e[k] = 0.0;
-        end
-    end
-    -- multiplicative effects
-    for k, _ in pairs(effects.mul.raw) do
-        effects.mul.raw[k] = 1.0;
-    end
-
-    for _, e in pairs(effects.mul.by_school) do
-        for i = 1,7 do
-            e[i] = 1.0;
-        end
-    end
-    for _, e in pairs(effects.mul.ability) do
-        for k, _ in pairs(e) do
-            e[k] = 1.0;
-        end
-    end
-    for _, e in pairs(effects.mul.wpn_subclass) do
-        for k, _ in pairs(e) do
-            e[k] = 1.0;
-        end
-    end
-    for _, e in pairs(effects.mul.creature) do
-        for k, _ in pairs(e) do
-            e[k] = 1.0;
+    for _, cat in ipairs(effect_categories) do
+        local effect_cat = effects.mul[cat]
+        for i, e in pairs(effect_cat) do
+            if type(e) == "table" then
+                for j, _ in pairs(e) do
+                    e[j] = 1.0;
+                end
+            else
+                effect_cat[i] = 1.0;
+            end
         end
     end
 end
 
 local function effects_add(dst, src)
-    for k, v in pairs(src.raw) do
-        if dst.raw[k] then
-            dst.raw[k] = dst.raw[k] + v;
-        end
-    end
-    for k, v in pairs(src.ability) do
-        if dst.ability[k] then
-            for kk, vv in pairs(v) do
-                dst.ability[k][kk] = (dst.ability[k][kk] or 0.0) + vv;
+
+
+    for _, cat in ipairs(effect_categories) do
+        local dst_cat = dst[cat];
+        local src_cat = src[cat];
+        for i, src_e in pairs(src_cat) do
+            if type(src_e) == "table" then
+                local dst_e = dst_cat[i];
+                for j, v in pairs(src_e) do
+                    dst_e[j] = (dst_e[j] or 0.0) + v;
+                end
+            else
+                dst_cat[i] = dst_cat[i] + src_cat[i];
             end
         end
     end
-    for k, v in pairs(src.by_school) do
-        if dst.by_school[k] then
-            for i = 1,7 do
-                dst.by_school[k][i] = dst.by_school[k][i] + v[i];
+    for _, cat in ipairs(effect_categories) do
+        local dst_cat = dst.mul[cat];
+        local src_cat = src.mul[cat];
+        for i, src_e in pairs(src_cat) do
+            if type(src_e) == "table" then
+                local dst_e = dst_cat[i];
+                for j, v in pairs(src_e) do
+                    dst_e[j] = (dst_e[j] or 1.0) * v;
+                end
+            else
+                dst_cat[i] = dst_cat[i] * src_cat[i];
             end
         end
     end
-    for k, v in pairs(src.by_attr) do
-        if dst.by_attr[k] then
-            for i = 1,5 do
-                dst.by_attr[k][i] = dst.by_attr[k][i] + v[i];
-            end
-        end
-    end
-    for k, v in pairs(src.aura_pts) do
-        if dst.aura_pts[k] then
-            for kk, vv in pairs(v) do
-                dst.aura_pts[k][kk] = (dst.aura_pts[k][kk] or 0.0) + vv;
-            end
-        end
-    end
-    for k, v in pairs(src.aura_pts_flat) do
-        if dst.aura_pts_flat[k] then
-            for kk, vv in pairs(v) do
-                dst.aura_pts_flat[k][kk] = (dst.aura_pts_flat[k][kk] or 0.0) + vv;
-            end
-        end
-    end
-    for k, v in pairs(src.wpn_subclass) do
-        if dst.wpn_subclass[k] then
-            for kk, vv in pairs(v) do
-                dst.wpn_subclass[k][kk] = (dst.wpn_subclass[k][kk] or 0.0) + vv;
-            end
-        end
-    end
-    for k, v in pairs(src.creature) do
-        if dst.creature[k] then
-            for kk, vv in pairs(v) do
-                dst.creature[k][kk] = (dst.creature[k][kk] or 0.0) + vv;
-            end
-        end
-    end
-    -- multiplicative
-    for k, v in pairs(src.mul.raw) do
-        if dst.mul.raw[k] then
-            dst.mul.raw[k] = dst.mul.raw[k] * v;
-        end
-    end
-    for k, v in pairs(src.mul.by_school) do
-        if dst.mul.by_school[k] then
-            for i = 1,7 do
-                dst.mul.by_school[k][i] = dst.mul.by_school[k][i] * v[i];
-            end
-        end
-    end
-    for k, v in pairs(src.mul.ability) do
-        if dst.mul.ability[k] then
-            for kk, vv in pairs(v) do
-                dst.mul.ability[k][kk] = (dst.mul.ability[k][kk] or 1.0) * vv;
-            end
-        end
-    end
-    for k, v in pairs(src.mul.wpn_subclass) do
-        if dst.mul.wpn_subclass[k] then
-            for kk, vv in pairs(v) do
-                dst.mul.wpn_subclass[k][kk] = (dst.mul.wpn_subclass[k][kk] or 1.0) * vv;
-            end
-        end
-    end
-    for k, v in pairs(src.mul.creature) do
-        if dst.mul.creature[k] then
-            for kk, vv in pairs(v) do
-                dst.mul.creature[k][kk] = (dst.mul.creature[k][kk] or 1.0) * vv;
-            end
-        end
-    end
+
 end
 
 local function effects_zero_diff()
@@ -372,6 +334,7 @@ local function effects_zero_diff()
         sd = 0,
         hp = 0,
         ap = 0,
+        rap = 0,
         hit_rating = 0,
         haste_rating = 0,
         crit_rating = 0,
@@ -387,13 +350,11 @@ local function effects_from_ui_diff(frame)
     local diff = effects_zero_diff();
 
     -- verify validity and run input expr 
-    for k, v in pairs(stats) do
-
+    for _, v in pairs(stats) do
 
         local expr_str = v.editbox:GetText();
 
         local is_whitespace_expr = expr_str and string.match(expr_str, "%S") == nil;
-        --local is_whitespace_expr = string.format(expr_str, "[^ \t\n]") == nil;
         local is_valid_expr = string.match(expr_str, "[^-+0123456789. ()]") == nil
 
         local expr = nil;
@@ -416,19 +377,21 @@ local function effects_from_ui_diff(frame)
 
     diff.stats[attr.intellect] = stats.int.editbox_val;
     diff.stats[attr.spirit] = stats.spirit.editbox_val;
+    diff.stats[attr.strength] = stats.str.editbox_val;
+    diff.stats[attr.agility] = stats.agi.editbox_val;
     diff.mp5 = stats.mp5.editbox_val;
 
-    diff.crit_rating = stats.spell_crit.editbox_val;
-    diff.hit_rating = stats.spell_hit.editbox_val;
-    diff.haste_rating = stats.spell_haste.editbox_val;
+    diff.crit_rating = stats.crit_rating.editbox_val;
+    diff.hit_rating = stats.hit_rating.editbox_val;
+    diff.haste_rating = stats.haste_rating.editbox_val;
 
     diff.sp = stats.sp.editbox_val;
-
-    if sc.expansion == sc.expansions.vanilla then
-        diff.sd = stats.sd.editbox_val;
-        diff.hp = stats.hp.editbox_val;
-        diff.spell_pen = stats.spell_pen.editbox_val;
-    end
+    diff.sd = stats.sd.editbox_val;
+    diff.hp = stats.hp.editbox_val;
+    diff.ap = stats.ap.editbox_val;
+    diff.rap = stats.rap.editbox_val;
+    diff.weapon_skill = stats.wep.editbox_val;
+    diff.spell_pen = stats.spell_pen.editbox_val;
 
     frame.is_valid = true;
 
@@ -437,13 +400,6 @@ end
 
 local diff_stats_gained = {};
 local function effects_diff(loadout, effects, diff)
-
-    --for i = 1, 5 do
-    --    effects.stats[i] = loadout.stats[i] + diff.stats[i] * (1 + effects.by_attr.stat_mod[i]);
-    --end
-
-    --loadout.mana = loadout.mana + 
-    --             (mana_per_int*diff.stats[attr.intellect]*(1 + effects.by_attr.stat_mod[attr.intellect]*effects.raw.mana_mod));
 
     for i = 1, 5 do
         diff_stats_gained[i] = diff.stats[i] * (1 + effects.by_attr.stat_mod[attr.spirit]);
@@ -480,7 +436,7 @@ local function effects_diff(loadout, effects, diff)
         effects.by_attr.stats[i] = effects.by_attr.stats[i] + diff.stats[i];
     end
     for i = 2, 7 do
-        effects.by_school.target_res[i] = effects.by_school.target_res[i] + diff.spell_pen;
+        effects.by_school.target_res_flat[i] = effects.by_school.target_res_flat[i] - diff.spell_pen;
     end
 
     -- physical stuff
@@ -490,16 +446,17 @@ local function effects_diff(loadout, effects, diff)
         -- cat form
         agi_ap_class = classes.rogue;
     end
+
     local added_ap = diff.ap +
         diff_stats_gained[attr.strength] * ap_per_str[class] +
         diff_stats_gained[attr.agility] * ap_per_agi[agi_ap_class];
-    local added_rap = diff.ap + diff_stats_gained[attr.agility] * rap_per_agi[class];
-    effects.raw.phys_crit = effects.raw.phys_crit +
-        agi_to_physical_crit(diff_stats_gained[attr.agility], loadout.lvl);
-
     effects.raw.ap_flat = effects.raw.ap_flat + added_ap;
+
+    local added_rap = diff.rap + diff_stats_gained[attr.agility] * rap_per_agi[class];
     effects.raw.rap_flat = effects.raw.rap_flat + added_rap;
 
+    effects.raw.phys_crit = effects.raw.phys_crit +
+        agi_to_physical_crit(diff_stats_gained[attr.agility], loadout.lvl);
 
     effects.raw.skill = effects.raw.skill + diff.weapon_skill;
 end
@@ -514,23 +471,24 @@ local function dynamic_loadout(loadout)
 
     for i = 1, 5 do
         local _, s, _, _ = UnitStat("player", i);
-
         loadout.stats[i] = s;
     end
 
-    loadout.max_mana = UnitPowerMax("player", 0);
-    loadout.mana = loadout.max_mana;
-    loadout.rage = UnitPowerMax("player", 1);
-    loadout.energy = UnitPowerMax("player", 3);
-    loadout.cpts = 5;
-
-    if not config.loadout.always_max_resource then
-        loadout.mana = UnitPower("player", 0);
-        loadout.rage = UnitPower("player", 1);
-        loadout.energy = UnitPower("player", 3);
-        loadout.cpts = UnitPower("player", 4);
-        loadout.cpts = math.max(1, GetComboPoints("player", "target"));
+    for pwr, _ in pairs(loadout.resources_max) do
+        loadout.resources_max[pwr] = math.max(1, UnitPowerMax("player", pwr));
     end
+    if config.loadout.always_max_resource then
+        for pwr, _ in pairs(loadout.resources) do
+            loadout.resources[pwr] = loadout.resources_max[pwr];
+        end
+    else
+        for pwr, _ in pairs(loadout.resources) do
+            loadout.resources[pwr] = UnitPower("player", pwr);
+        end
+    end
+    loadout.extra_mana = 0;
+    -- always put at least 1 combo point to at least resemble spell descriptions
+    loadout.resources[powers.combopoints] = math.max(1, loadout.resources[powers.combopoints]);
 
     loadout.haste_rating = 0;
     loadout.hit_rating = 0;
@@ -612,8 +570,10 @@ local function dynamic_loadout(loadout)
                                          bit.bnot(loadout_flags.target_frozen),
                                          bit.bnot(loadout_flags.target_friendly),
                                          bit.bnot(loadout_flags.target_pvp)));
+
+    loadout.player_hp_perc = UnitHealth("player")/math.max(UnitHealthMax("player"), 1);
+
     loadout.enemy_hp_perc = config.loadout.default_target_hp_perc*0.01;
-    loadout.friendly_hp_perc = config.loadout.default_target_hp_perc*0.01;
 
     loadout.target_creature_mask = 0;
 
@@ -623,10 +583,10 @@ local function dynamic_loadout(loadout)
 
         loadout.flags = bit.bor(loadout.flags, loadout_flags.has_target);
         loadout.hostile_towards = "target";
-        loadout.friendly_towards = "target";
 
         if UnitIsFriend("player", "target") then
             loadout.flags = bit.bor(loadout.flags, loadout_flags.target_friendly);
+            loadout.friendly_towards = "target";
         elseif UnitIsPlayer("target") then
             loadout.flags = bit.bor(loadout.flags, loadout_flags.target_pvp);
         end
@@ -647,17 +607,17 @@ local function dynamic_loadout(loadout)
                 loadout.target_lvl = target_lvl;
             end
         end
-        loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     end
 
     if UnitExists("mouseover") and UnitIsFriend("player", "mouseover") then
         loadout.friendly_towards = "mouseover";
-        loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/UnitHealthMax(loadout.friendly_towards);
     end
-    loadout.player_hp_perc = UnitHealth("player")/math.max(UnitHealthMax("player"), 1);
     if loadout.hostile_towards == "target" and bit.band(loadout.flags, loadout_flags.target_friendly) == 0 then
         loadout.enemy_hp_perc = UnitHealth("target")/math.max(UnitHealthMax("target"), 1);
     end
+
+    loadout.friendly_hp_max = math.max(UnitHealthMax(loadout.friendly_towards), 1);
+    loadout.friendly_hp_perc = UnitHealth(loadout.friendly_towards)/loadout.friendly_hp_max;
 
     loadout.target_defense = 5*loadout.target_lvl;
 
@@ -828,6 +788,7 @@ loadout_export.empty_loadout                                = empty_loadout;
 loadout_export.empty_effects                                = empty_effects;
 loadout_export.effects_add                                  = effects_add;
 loadout_export.effects_diff                                 = effects_diff;
+loadout_export.cpy_effects                                  = cpy_effects;
 loadout_export.effects_zero_diff                            = effects_zero_diff;
 loadout_export.active_loadout                               = active_loadout;
 loadout_export.update_loadout_and_effects                   = update_loadout_and_effects;

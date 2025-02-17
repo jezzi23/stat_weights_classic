@@ -17,28 +17,11 @@ local active_loadout                                = sc.loadout.active_loadout;
 local stats_for_spell                               = sc.calc.stats_for_spell;
 local spell_info                                    = sc.calc.spell_info;
 local cast_until_oom                                = sc.calc.cast_until_oom;
+local resource_regen_info                           = sc.calc.resource_regen_info;
 
 local config                                        = sc.config;
 --------------------------------------------------------------------------------
 local overlay = {};
-
-local icon_stat_display = {
-    normal                  = bit.lshift(1,1),
-    crit                    = bit.lshift(1,2),
-    expected                = bit.lshift(1,3),
-    effect_per_sec          = bit.lshift(1,4),
-    effect_per_cost         = bit.lshift(1,5),
-    threat                  = bit.lshift(1,6),
-    threat_per_sec          = bit.lshift(1,7),
-    threat_per_cost         = bit.lshift(1,8),
-    avg_cost                = bit.lshift(1,9),
-    avg_cast                = bit.lshift(1,10),
-    hit                     = bit.lshift(1,11),
-    crit_chance             = bit.lshift(1,12),
-    casts_until_oom         = bit.lshift(1,13),
-    effect_until_oom        = bit.lshift(1,14),
-    time_until_oom          = bit.lshift(1,15),
-};
 
 local active_overlays = {};
 local action_bar_frame_names = {};
@@ -391,7 +374,7 @@ local function update_icon_overlay_settings()
 
     mana_cost_overlay = config.settings.overlay_display_avg_cost or config.settings.overlay_display_casts_until_oom or config.settings.overlay_display_time_until_oom;
     cast_speed_overlay = config.settings.overlay_display_avg_cast;
-    mana_restoration_overlay = config.settings.overlay_mana_abilities;
+    mana_restoration_overlay = config.settings.overlay_resource_regen;
 
     __sc_frame.overlay_frame.icon_overlay = {};
 
@@ -418,14 +401,14 @@ local function update_icon_overlay_settings()
         __sc_frame.overlay_frame.icon_overlay[2] = nil;
     end
 
-    if config.settings.overlay_bottom_clearance then
+    if config.settings.overlay_icon_bottom_clearance then
         __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[1];
         __sc_frame.overlay_frame.icon_overlay[1] = __sc_frame.overlay_frame.icon_overlay[3];
         __sc_frame.overlay_frame.icon_overlay[3] = nil;
     end
 
-    if config.settings.overlay_top_clearance then
-        if config.settings.overlay_bottom_clearance then
+    if config.settings.overlay_icon_top_clearance then
+        if config.settings.overlay_icon_bottom_clearance then
             __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[1];
         else
             __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[1] or __sc_frame.overlay_frame.icon_overlay[3];
@@ -468,117 +451,116 @@ end
 local spell_cache = {};
 
 local overlay_label_handler = {
-    overlay_display_normal = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_normal = function(frame_overlay, info)
         local val = 0.0;
-        if spell_effect.num_direct_effects > 0 then
-            val = val + 0.5*(spell_effect.total_min_noncrit_if_hit + spell_effect.total_max_noncrit_if_hit) +
-                spell_effect.absorb
+        if info.num_direct_effects > 0 then
+            val = val + 0.5*(info.total_min_noncrit_if_hit + info.total_max_noncrit_if_hit);
         end
-        if spell_effect.num_periodic_effects > 0 then
-            val = val + 0.5*(spell_effect.total_ot_min_noncrit_if_hit + spell_effect.total_ot_max_noncrit_if_hit);
+        if info.num_periodic_effects > 0 then
+            val = val + 0.5*(info.total_ot_min_noncrit_if_hit + info.total_ot_max_noncrit_if_hit);
         end
+        val = val + info.absorb;
         frame_overlay:SetText(format_number(val, 1));
     end,
-    overlay_display_crit = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_crit = function(frame_overlay, info, _, stats)
         local crit_sum = 0;
 
-        if spell_effect.num_direct_effects > 0 then
-            val = val + 0.5*(0.5*(spell_effect.total_ot_min_crit_if_hit + spell_effect.total_ot_max_crit_if_hit)) +
-                spell_effect.absorb
+        if info.num_direct_effects > 0 then
+            crit_sum = crit_sum + 0.5*(info.total_min_crit_if_hit + info.total_max_crit_if_hit);
         end
-        if spell_effect.num_periodic_effects > 0 then
-            val = val + 0.5*(spell_effect.total_min_crit_if_hit + spell_effect.total_max_crit_if_hit);
+        if info.num_periodic_effects > 0 then
+            crit_sum = crit_sum + 0.5*(info.total_ot_min_crit_if_hit + info.total_ot_max_crit_if_hit);
         end
         if stats.crit > 0 and crit_sum > 0 then
-            frame_overlay:SetText(format_number(crit_sum + spell_effect.absorb, 1));
+            frame_overlay:SetText(format_number(crit_sum + info.absorb, 1));
         else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_expected = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_number(spell_effect.expected, 1));
+    overlay_display_expected = function(frame_overlay, info)
+        frame_overlay:SetText(format_number(info.expected, 1));
     end,
-    overlay_display_effect_per_sec = function(frame_overlay, spell, spell_effect, stats)
-        if spell_effect.effect_per_sec == math.huge then
+    overlay_display_effect_per_sec = function(frame_overlay, info)
+        if info.effect_per_sec == math.huge then
             frame_overlay:SetText("inf");
         else
-            frame_overlay:SetText(format_number(spell_effect.effect_per_sec, 1));
+            frame_overlay:SetText(format_number(info.effect_per_sec, 1));
         end
     end,
-    overlay_display_effect_per_cost = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_number(spell_effect.effect_per_cost, 2));
+    overlay_display_effect_per_cost = function(frame_overlay, info)
+        frame_overlay:SetText(format_number(info.effect_per_cost, 2));
     end,
-    overlay_display_threat = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_number(spell_effect.threat, 1));
+    overlay_display_threat = function(frame_overlay, info)
+        frame_overlay:SetText(format_number(info.threat, 1));
     end,
-    overlay_display_threat_per_sec = function(frame_overlay, spell, spell_effect, stats)
-        if spell_effect.threat_per_sec == math.huge then
+    overlay_display_threat_per_sec = function(frame_overlay, info)
+        if info.threat_per_sec == math.huge then
             frame_overlay:SetText("inf");
         else
-            frame_overlay:SetText(format_number(spell_effect.threat_per_sec, 1));
+            frame_overlay:SetText(format_number(info.threat_per_sec, 1));
         end
     end,
-    overlay_display_threat_per_cost = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_number(spell_effect.threat_per_cost, 2));
+    overlay_display_threat_per_cost = function(frame_overlay, info)
+        frame_overlay:SetText(format_number(info.threat_per_cost, 2));
     end,
-    overlay_display_avg_cost = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_avg_cost = function(frame_overlay, _, _, stats)
         if stats.cost >= 0 then
             frame_overlay:SetText(string.format("%d", stats.cost));
         else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_actual_cost = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_actual_cost = function(frame_overlay, _, _, stats)
         if stats.cost >= 0 then
             frame_overlay:SetText(string.format("%d", stats.cost));
         else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_avg_cast = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_avg_cast = function(frame_overlay, _, _, stats)
         if stats.cast_time > 0 then
             frame_overlay:SetText(format_number(stats.cast_time, 2));
         else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_actual_cast = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_actual_cast = function(frame_overlay, _, _, stats)
         if stats.cast_time > 0 then
             frame_overlay:SetText(format_number(stats.cast_time, 2));
         else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_hit = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_hit_chance = function(frame_overlay, _, spell, stats)
          if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
             frame_overlay:SetText(string.format("%d%%", 100*stats.hit));
         else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_crit_chance = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_crit_chance = function(frame_overlay, info, _, stats)
 
-        if stats.crit ~= 0 and spell_effect.total_ot_if_crit + spell_effect.total_min_crit_if_hit > 0 then
+        if stats.crit ~= 0 and info.total_ot_min_crit_if_hit + info.total_min_crit_if_hit > 0 then
             frame_overlay:SetText(string.format("%.1f%%", 100*max(0, min(1, stats.crit))));
-        else 
+        else
             frame_overlay:SetText("");
         end
     end,
-    overlay_display_casts_until_oom = function(frame_overlay, spell, spell_effect, stats)
+    overlay_display_casts_until_oom = function(frame_overlay, info)
 
-        if spell_effect.num_casts_until_oom >= 0 then
-            frame_overlay:SetText(format_number(spell_effect.num_casts_until_oom, 1));
+        if info.num_casts_until_oom >= 0 then
+            frame_overlay:SetText(format_number(info.num_casts_until_oom, 1));
         else
             frame_overlay:SetText("");
         end
 
     end,
-    overlay_display_effect_until_oom = function(frame_overlay, spell, spell_effect, stats)
-        frame_overlay:SetText(format_number(spell_effect.effect_until_oom, 0));
+    overlay_display_effect_until_oom = function(frame_overlay, info)
+        frame_overlay:SetText(format_number(info.effect_until_oom, 0));
     end,
-    overlay_display_time_until_oom = function(frame_overlay, spell, spell_effect, stats)
-        if spell_effect.time_until_oom >= 0 then
-            frame_overlay:SetText(format_number(spell_effect.time_until_oom, 2));
+    overlay_display_time_until_oom = function(frame_overlay, info)
+        if info.time_until_oom >= 0 then
+            frame_overlay:SetText(format_number(info.time_until_oom, 2));
         else
             frame_overlay:SetText("");
         end
@@ -608,10 +590,14 @@ local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
 
     if spell_variant.seq ~= sc.sequence_counter then
 
-        spell_variant.seq = sc.sequence_counter;
-        stats_for_spell(stats, spell, loadout, effects, eval_flags);
-        spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
-        cast_until_oom(spell_effect, stats, loadout, effects);
+        if bit.band(spell.flags, spell_flags.eval) ~= 0 then
+            spell_variant.seq = sc.sequence_counter;
+            stats_for_spell(stats, spell, loadout, effects, eval_flags);
+            spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
+            cast_until_oom(spell_effect, stats, loadout, effects);
+        elseif bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
+            resource_regen_info(spell_effect, spell, spell_id, loadout, effects);
+        end
     end
 
     return spell_effect, stats;
@@ -623,14 +609,14 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
     if bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
 
-        if config.settings.overlay_mana_abilities then
+        if config.settings.overlay_resource_regen then
             local idx = 3;
-            if config.settings.overlay_bottom_clearance and config.settings.overlay_top_clearance then
+            if config.settings.overlay_icon_bottom_clearance and config.settings.overlay_icon_top_clearance then
                 idx = 2;
-            elseif config.settings.overlay_bottom_clearance then
+            elseif config.settings.overlay_icon_bottom_clearance then
                 idx = 1;
             end
-            frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.mana_restored)));
+            frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.total_restored)));
             frame_info.overlay_frames[idx]:SetTextColor(effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
             frame_info.overlay_frames[idx]:Show();
         end
@@ -640,7 +626,12 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
             if __sc_frame.overlay_frame.icon_overlay[i] then
 
-                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](
+                    frame_info.overlay_frames[i],
+                    spell_effect,
+                    spell,
+                    stats
+                 );
 
                 frame_info.overlay_frames[i]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[i].color[1],
                                                           __sc_frame.overlay_frame.icon_overlay[i].color[2],
@@ -698,7 +689,12 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
         for i = 1, 3 do
             if __sc_frame.overlay_frame.icon_overlay[i] and __sc_frame.overlay_frame.icon_overlay[i].optional_evaluation then
 
-                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](frame_info.overlay_frames[i], spell, spell_effect, stats);
+                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](
+                    frame_info.overlay_frames[i],
+                    spell_effect,
+                    spell,
+                    stats
+                );
 
                 frame_info.overlay_frames[i]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[i].color[1],
                                                           __sc_frame.overlay_frame.icon_overlay[i].color[2],
@@ -715,9 +711,9 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
     if frame.old_rank_marked then
         return;
     end
-    if bit.band(spells[id].flags, spell_flags.eval) ~= 0 then
+    if bit.band(spells[id].flags, bit.bor(spell_flags.eval, spell_flags.resource_regen)) ~= 0 then
         -- TODO: icon overlay not working for healing version checkbox
-        if spells[id].healing_version and config.settings.overlay_prioritize_heal then
+        if spells[id].healing_version and config.settings.general_prioritize_heal then
             update_spell_icon_frame(frame, spells[id].healing_version, id, loadout, effects, eval_flags);
         else
             update_spell_icon_frame(frame, spells[id], id, loadout, effects, eval_flags);
@@ -855,7 +851,6 @@ overlay.spell_book_frames            = spell_book_frames;
 overlay.action_id_frames             = action_id_frames;
 overlay.setup_action_bars            = setup_action_bars;
 overlay.update_overlay               = update_overlay;
-overlay.icon_stat_display            = icon_stat_display;
 overlay.update_icon_overlay_settings = update_icon_overlay_settings;
 overlay.reassign_overlay_icon        = reassign_overlay_icon;
 overlay.clear_overlays               = clear_overlays;

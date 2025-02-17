@@ -1,5 +1,7 @@
 local _, sc = ...;
 
+local apply_effect                     = sc.loadout.apply_effect;
+---------------------------------------------------------------------------------------------------
 local equipment = {};
 
 -- TODO: retire this, maybe keep some of the old behaviour using new data format
@@ -33,7 +35,7 @@ local function detect_sets(loadout)
     for k, v in pairs(set_tiers) do
         loadout.num_set_pieces[v] = 0;
     end
-    -- Real ting
+
     for k, _ in pairs(sc.set_bonuses) do
         loadout.num_set_pieces[k] = 0;
     end
@@ -66,7 +68,7 @@ local function apply_equipment(loadout, effects)
                     if num < threshold then
                         break;
                     end
-                    sc.loadout.apply_effect(loadout, effects, effect_id, sc.set_effects[effect_id], false, 1.0);
+                    apply_effect(loadout, effects, effect_id, sc.set_effects[effect_id], false, 1.0);
                 end
             end
         end
@@ -75,14 +77,13 @@ local function apply_equipment(loadout, effects)
     -- NOTE: shortly after logging in, the equipment querying API won't work
     --       (but does for /reload). Track if we get nothing so we can signal
     --       that equipment scanning needs to be done again on next update
-    loadout.crit_rating = 0;
 
     for item = 1, 18 do
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
             local id = GetInventoryItemID("player", i);
             if id and sc.items[id] then
-                sc.loadout.apply_effect(loadout, effects, id, sc.item_effects[id], false, 1.0);
+                apply_effect(loadout, effects, id, sc.item_effects[id], false, 1.0);
             end
             found_anything = true;
             local item_stats = GetItemStats(item_link);
@@ -94,8 +95,8 @@ local function apply_equipment(loadout, effects)
 
                 if item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] then
                     for i = 2,7 do
-                        effects.by_school.target_res_flat[i] = 
-                            effects.by_school.target_res_flat[i] + (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
+                        effects.by_school.target_res_flat[i] =
+                            effects.by_school.target_res_flat[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
                     end
                 end
             end
@@ -115,19 +116,19 @@ local function apply_equipment(loadout, effects)
     local _, _, _, enchant_id = GetWeaponEnchantInfo();
     if sc.enchants[enchant_id] then
         for _, spid in pairs(sc.enchants[enchant_id]) do
-            sc.loadout.apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
+            apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
             loadout.enchant_effects_applied[spid] = 1;
         end
     end
 
-    if C_Engraving and C_Engraving.IsEngravingEnabled then
+    if bit.band(sc.game_mode, sc.game_modes.season_of_discovery) ~= 0 then
         for i = 1, 18 do
             local rune_slot = C_Engraving.GetRuneForEquipmentSlot(i);
             if rune_slot then
                 if rune_slot.itemEnchantmentID then
                     if sc.enchants[rune_slot.itemEnchantmentID] then
                         for _, spid in pairs(sc.enchants[rune_slot.itemEnchantmentID]) do
-                            sc.loadout.apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
+                            apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
                             loadout.enchant_effects_applied[spid] = 1;
                         end
                     end
@@ -143,7 +144,7 @@ local function apply_equipment(loadout, effects)
         local items_applied = 0;
         for _, v in pairs(sc.items) do
             for _, id in pairs(v) do
-                sc.loadout.apply_effect(loadout, effects, id, sc.item_effects[id], true, 1.0);
+                apply_effect(loadout, effects, id, sc.item_effects[id], true, 1.0);
                 items_applied = items_applied + 1;
             end
         end
@@ -153,7 +154,7 @@ local function apply_equipment(loadout, effects)
             for _, bonus in pairs(v) do
                 local id = bonus[2];
 
-                sc.loadout.apply_effect(loadout, effects, id, sc.set_effects[id], true, 1.0);
+                apply_effect(loadout, effects, id, sc.set_effects[id], true, 1.0);
                 sets_applied = sets_applied + 1;
             end
         end
@@ -163,7 +164,7 @@ local function apply_equipment(loadout, effects)
         for _, v in pairs(sc.enchants) do
             for _, id in pairs(v) do
 
-                sc.loadout.apply_effect(loadout, effects, id, sc.enchant_effects[id], true, 1.0);
+                apply_effect(loadout, effects, id, sc.enchant_effects[id], true, 1.0);
                 enchants_applied = enchants_applied + 1;
             end
         end

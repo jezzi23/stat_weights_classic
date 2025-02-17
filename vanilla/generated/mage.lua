@@ -1894,8 +1894,8 @@ sc.spells = {
 	},
 	[12051] = {
 		periodic = {
-			min = 1500,
-			max = 1500,
+			min = 15,
+			max = 15,
 			tick_time = 1,
 			dur = 8,
 			school1 = schools.arcane,
@@ -3108,7 +3108,7 @@ sc.spells = {
 			per_lvl = 0.018012,
 			per_lvl_sq = 0.044141,
 			jumps = 4,
-			jump_red = 0,
+			jump_red = 1,
 			flags = bit.bor(0, comp_flags.cant_crit),
 		},
 		cast_time = 0,
@@ -4526,7 +4526,7 @@ sc.spells = {
 			per_lvl = 0.904195,
 			per_lvl_sq = 0.161311,
 			jumps = 4,
-			jump_red = 0,
+			jump_red = 1,
 			threat_mod = -0.75,
 			flags = bit.bor(0, comp_flags.cant_crit, comp_flags.periodic),
 		},

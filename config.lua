@@ -19,8 +19,8 @@ local default_settings     = {
     tooltip_display_target_info                     = true,
     tooltip_display_spell_rank                      = false,
     tooltip_display_avoidance_info                  = true,
-    tooltip_display_normal                          = false,
-    tooltip_display_crit                            = false,
+    tooltip_display_normal                          = true,
+    tooltip_display_crit                            = true,
     tooltip_display_expected                        = true,
     tooltip_display_effect_per_sec                  = true,
     tooltip_display_effect_per_cost                 = true,
@@ -31,15 +31,16 @@ local default_settings     = {
     tooltip_display_stat_weights_effect             = false,
     tooltip_display_stat_weights_effect_per_sec     = false,
     tooltip_display_stat_weights_effect_until_oom   = false,
-    tooltip_display_avg_cost                        = false,
-    tooltip_display_avg_cast                        = false,
+    tooltip_display_avg_cost                        = true,
+    tooltip_display_avg_cast                        = true,
     tooltip_display_cast_until_oom                  = false,
     tooltip_display_cast_and_tap                    = false,
     tooltip_display_sp_effect_calc                  = false,
     tooltip_display_sp_effect_ratio                 = false,
     tooltip_display_base_mod                        = false,
     tooltip_display_spell_id                        = false,
-    tooltip_display_dynamic_tip                     = true,
+    tooltip_display_eval_options                    = true,
+    tooltip_display_resource_regen                  = true,
 
     tooltip_disable                                 = false,
     tooltip_shift_to_show                           = false,
@@ -66,13 +67,12 @@ local default_settings     = {
     overlay_display_time_until_oom                  = false,
 
     overlay_disable                                 = false,
-    overlay_mana_abilities                          = true,
+    overlay_resource_regen                          = true,
     overlay_old_rank                                = false,
     overlay_old_rank_limit_to_known                 = false,
     overlay_single_effect_only                      = false,
-    overlay_top_clearance                           = false,
-    overlay_bottom_clearance                        = false,
-    overlay_prioritize_heal                         = true,
+    overlay_icon_top_clearance                      = false,
+    overlay_icon_bottom_clearance                   = false,
 
     overlay_update_freq                             = 3,
     overlay_font_size                               = 8,
@@ -104,8 +104,14 @@ local default_settings     = {
     },
     calc_list_use_highest_rank                      = true,
 
-    -- general
-    libstub_minimap_icon                            = { hide = false },
+    -- general settings
+    general_libstub_minimap_icon                   = true,
+    general_prioritize_heal                        = true,
+    general_average_proc_effects                   = true,
+    general_spellbook_button                       = true,
+    general_version_mismatch_notify                = true,
+
+    libstub_icon_conf                              = { hide = false },
 };
 
 for k, v in pairs(spell_filter_options) do
@@ -153,24 +159,17 @@ local default_loadout_config = {
     use_custom_talents = false,
     talents_code = "",
     custom_talents_code = "",
-
     force_apply_buffs = false,
-
     use_custom_lvl = false,
     lvl = 1,
-
     default_target_lvl_diff = 3,
-
     default_target_hp_perc = 100.0,
-
     target_res = 0,
     target_automatic_armor = true,
     target_automatic_armor_pct = 100,
     target_armor = 0,
     target_facing = false,
-
     unbounded_aoe_targets = 1,
-
     always_max_resource = false,
     behind_target = false,
     extra_mana = 0,
@@ -260,9 +259,9 @@ local function activate_settings()
         end
     end
 
-    if __sc_frame.libstub_icon_checkbox:GetChecked() == config.settings.libstub_minimap_icon.hide then
-        __sc_frame.libstub_icon_checkbox:Click();
-    end
+    --if __sc_frame.libstub_icon_checkbox:GetChecked() == config.settings.general_libstub_minimap_icon.hide then
+    --    __sc_frame.libstub_icon_checkbox:Click();
+    --end
 end
 
 local function set_active_loadout(idx)
@@ -380,5 +379,6 @@ config.new_loadout_from_default = new_loadout_from_default;
 config.active_profile_name = active_profile_name;
 config.spec_keys = spec_keys;
 config.spell_filter_options = spell_filter_options;
+config.default_settings = default_settings;
 
 sc.config = config;

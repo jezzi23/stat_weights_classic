@@ -1,6 +1,6 @@
 -- All manual overrides, additions or removals to generated data goes in here
 -- Things that:
--- 1) is not available in parsed client data
+-- 1) are not available in parsed client data
 -- 2) fixes problematic generated data
 -- 3) removes unwanted behaviour 
 local _, sc = ...;
@@ -9,6 +9,7 @@ local spells                        = sc.spells;
 local spids                         = sc.spids;
 local spell_flags                   = sc.spell_flags;
 local rank_seqs                     = sc.rank_seqs;
+local talent_ranks                  = sc.talent_ranks;
 
 -- Helper functions
 local function spell_coef_lvl_adjusted(coef, lvl_req)
@@ -48,12 +49,17 @@ end
 --          added to many spells like Sunder armor, Heroic Strike, Mind Blast etc
 --          For what it's worth, some threat info is added in this file according to
 --          https://www.wowhead.com/classic/guide/threat-overview-classic-wow
+--          Treat flat threat values from threat guide as extra threat regardless of
+--          damage done by ability (may be a faulty assumption)
 
 -- Class data modification
 if sc.class == sc.classes.mage then
     for _, v in pairs(rank_seqs[spids.ice_lance]) do
-        spells[v].direct.coef = spell_coef_lvl_adjusted(0.42899999022, spells[v].lvl_req);
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.429, spells[v].lvl_req);
     end
+
+    spells[spids.arcane_surge].direct.per_resource = 0.03;
+    spells[spids.arcane_surge].flags = bit.bor(spells[spids.arcane_surge].flags, spell_flags.uses_all_power);
 
     -- THREAT
     add_threat_flat_by_rank({
@@ -123,8 +129,12 @@ elseif sc.class == sc.classes.priest then
 
 elseif sc.class == sc.classes.shaman then
     for _, v in pairs(rank_seqs[spids.earth_shield]) do
-        spells[v].direct.coef = spell_coef_lvl_adjusted(0.27099999785, spells[v].lvl_req);
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.271, spells[v].lvl_req);
     end
+
+    spells[spids.shamanistic_rage].flags =
+        bit.bor(spells[spids.shamanistic_rage].flags, spell_flags.regen_max_pct);
+    spells[spids.shamanistic_rage].periodic.min = spells[spids.shamanistic_rage].periodic.min * 0.01;
 
     -- THREAT
     add_threat_mod_all_ranks({
@@ -133,10 +143,20 @@ elseif sc.class == sc.classes.shaman then
 
 elseif sc.class == sc.classes.warlock then
 
+    -- Lifetap ranks 1 and 2 unusual in client data
+    spells[rank_seqs[spids.life_tap][1]].direct.min = 30;
+    spells[rank_seqs[spids.life_tap][2]].direct.min = 75;
+
     -- THREAT
     add_threat_mod_all_ranks({
         {spids.searing_pain, 1.0}
     });
+    for rank, talent_id in pairs(talent_ranks[105]) do
+        -- Life tap talent effect is a dummy, needs manual adding
+        sc.talent_effects[talent_id] = {
+            {"ability", "base_mod", rank*0.1, {spids.life_tap}, 0, 0},
+        };
+    end
 elseif sc.class == sc.classes.rogue then
     -- rogue has a few spells with AP coef not found in game client
     for _, v in pairs(rank_seqs[spids.rupture]) do
@@ -152,6 +172,33 @@ elseif sc.class == sc.classes.rogue then
 elseif sc.class == sc.classes.paladin then
     sc.friendly_buffs[407613] = {}; -- beacon of light, dummy value - handled manually
 
+    -- Blessing of light needs special handling. Added here and 
+    -- adjusted later for downranked holy lights
+    sc.friendly_buffs[rank_seqs[spids.blessing_of_light][1]] = {
+		{"ability", "effect_mod_flat", 210, {spids.holy_light}, 0, 0},
+		{"ability", "effect_mod_flat", 60, {spids.flash_of_light}, 0, 1},
+    };
+    sc.friendly_buffs[rank_seqs[spids.blessing_of_light][2]] = {
+		{"ability", "effect_mod_flat", 300, {spids.holy_light}, 0, 0},
+		{"ability", "effect_mod_flat", 85, {spids.flash_of_light}, 0, 1},
+    };
+    sc.friendly_buffs[rank_seqs[spids.blessing_of_light][3]] = {
+		{"ability", "effect_mod_flat", 400, {spids.holy_light}, 0, 0},
+		{"ability", "effect_mod_flat", 115, {spids.flash_of_light}, 0, 1},
+    };
+    sc.friendly_buffs[spids.greater_blessing_of_light] = {
+		{"ability", "effect_mod_flat", 400, {spids.holy_light}, 0, 0},
+		{"ability", "effect_mod_flat", 115, {spids.flash_of_light}, 0, 1},
+    };
+    -- Holy light and flash of light are treated as dummies in vanilla client data, coef missing
+    for _, v in pairs(rank_seqs[spids.holy_light]) do
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.429, spells[v].lvl_req);
+    end
+    for _, v in pairs(rank_seqs[spids.flash_of_light]) do
+        spells[v].direct.coef = spell_coef_lvl_adjusted(0.714, spells[v].lvl_req);
+    end
+
+    -- THREAT
     add_threat_flat_by_rank({
         { spids.holy_shield, {20, 30, 40} },
         { spids.cleanse, {40} },
@@ -169,6 +216,9 @@ elseif sc.class == sc.classes.warrior then
         spells[v].direct.coef_ap = 0.01*spells[v].direct.min;
         spells[v].direct.min = 0;
         spells[v].direct.max = 0;
+    end
+    for _, v in pairs(rank_seqs[spids.shield_slam]) do
+        spells[v].direct.per_resource = 0.05; -- hacked in as per strength
     end
     -- THREAT
     add_threat_mod_all_ranks({

@@ -92,13 +92,13 @@ end
 
 local effect_colors = {
     hit_chance              = { 232 / 255, 225 / 255,  32 / 255 },
-    target_info             = { 138 / 255, 134 / 255, 125 / 255 },
-    avoidance_info          = { 138 / 255, 134 / 255, 125 / 255 },
+    target_info             = {  70 / 255, 130 / 255, 180 / 255 },
+    avoidance_info          = {  70 / 255, 130 / 255, 180 / 255 },
     normal                  = { 232 / 255, 225 / 255,  32 / 255 },
     crit                    = { 252 / 255,  69 / 255,   3 / 255 },
     expectation             = { 255 / 255, 128 / 255,   0 / 255 },
     effect_per_sec          = { 255 / 255, 128 / 255,   0 / 255 },
-    avg_cast                = { 215 / 255,  83 / 255, 234 / 255 },
+    avg_cast                = { 149 / 255,  53 / 255,  83 / 255 },
     avg_cost                = {   0 / 255, 255 / 255, 255 / 255 },
     effect_per_cost         = {   0 / 255, 255 / 255, 255 / 255 },
     cost_per_sec            = {   0 / 255, 255 / 255, 255 / 255 },
@@ -110,6 +110,10 @@ local effect_colors = {
     spell_rank              = { 138 / 255, 134 / 255, 125 / 255 },
     threat                  = { 150 / 255, 105 / 255,  25 / 255 },
 };
+
+local function effect_color(effect)
+    return effect_colors[effect][1], effect_colors[effect][2], effect_colors[effect][3];
+end
 
 local function format_number(val, max_accuracy_digits)
 
@@ -137,11 +141,12 @@ utils.deep_table_copy               = deep_table_copy;
 utils.spell_cost                    = spell_cost;
 utils.spell_cast_time               = spell_cast_time;
 utils.add_all_spell_crit            = add_all_spell_crit;
-utils.effect_colors                 = effect_colors;
 utils.format_number                 = format_number;
 utils.best_rank_by_lvl              = best_rank_by_lvl;
 utils.highest_learned_rank          = highest_learned_rank
 utils.next_rank                     = next_rank;
+utils.effect_color                  = effect_color;
+utils.effect_colors                 = effect_colors;
 
 
 sc.utils = utils;
