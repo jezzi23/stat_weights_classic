@@ -1,56 +1,54 @@
--- All manual overrides, additions or removals to generated data goes in here
+-- Manual overrides, additions or removals to generated data goes in here
 -- Things that:
--- 1) are not available in parsed client data
--- 2) fixes problematic generated data
--- 3) removes unwanted behaviour 
+--     * are not available in parsed client data
+--     * fixes problematic generated data
+--     * removes unwanted behaviour 
+--     * introduces new dummy behaviour
 local _, sc = ...;
 
 local spells                        = sc.spells;
 local spids                         = sc.spids;
 local spell_flags                   = sc.spell_flags;
+local comp_flags                    = sc.comp_flags;
 local rank_seqs                     = sc.rank_seqs;
 local talent_ranks                  = sc.talent_ranks;
+local lookups                       = sc.lookups;
 
--- Helper functions
-local function spell_coef_lvl_adjusted(coef, lvl_req)
-    local coef_mod = 1.0;
-    if (lvl_req ~= 0) then
-        coef_mod = math.min(1, 1 - (20 - lvl_req) * 0.0375);
-    end
-    return coef * coef_mod;
-end
-local function add_threat_flat_by_rank(list)
-    for _, v in ipairs(list) do
-        local spell_base_id = v[1];
-        local threat_by_rank = v[2];
-        for rank, threat in ipairs(threat_by_rank) do
-            local spell = spells[rank_seqs[spell_base_id][rank]];
-            if spell.direct then
-                spell.direct.threat_mod_flat = threat;
-            end
-        end
-    end
-end
-local function add_threat_mod_all_ranks(list)
-    for _, v in ipairs(list) do
-        local spell_base_id = v[1];
-        local threat_mod = v[2];
-        for _, spid in ipairs(rank_seqs[spell_base_id]) do
-            local spell = spells[spid];
-            if spell.direct then
-                spell.direct.threat_mod = threat_mod;
-            end
-        end
-    end
-end
+local spell_coef_lvl_adjusted       = sc.utils.spell_coef_lvl_adjusted;
+local add_threat_flat_by_rank       = sc.utils.add_threat_flat_by_rank;
+local add_threat_mod_all_ranks      = sc.utils.add_threat_mod_all_ranks;
 ---------------------------------------------------------------------------------------------------
+
+-- Lookups for things that need special handling
+--
+-- Rune enchant IDs
+lookups.rune_fanaticism             = 7088;
+lookups.rune_wrath                  = 7089;
+lookups.rune_infusion_of_light      = 7051;
+lookups.rune_infusion_of_light      = 7051;
+lookups.rune_overload               = 6878;
+lookups.rune_divine_aegis           = 7109;
+lookups.rune_ancestral_awakening    = 7048;
+lookups.rune_dance_of_the_wicked    = 6957;
+lookups.rune_soul_siphon            = 7590;
+lookups.rune_living_seed            = 6975;
+lookups.rune_advanced_warding       = 6726;
+
+lookups.exorcist                    = 415076;
+lookups.sacred_shield               = 412019;
+lookups.rapid_healing               = 468531;
+lookups.water_shield                = 408510;
+lookups.fingers_of_frost            = 400669;
+
 -- NOTE:
 --  THREAT: Client data does not contain special threat information
 --          added to many spells like Sunder armor, Heroic Strike, Mind Blast etc
 --          For what it's worth, some threat info is added in this file according to
 --          https://www.wowhead.com/classic/guide/threat-overview-classic-wow
 --          Treat flat threat values from threat guide as extra threat regardless of
---          damage done by ability (may be a faulty assumption)
+--          threat % modifiers and damage done by ability
+--          (may be a faulty assumption since presumably threat data from
+--          spell like Revenge was gathered in defensive stance with threat modifier)
 
 -- Class data modification
 if sc.class == sc.classes.mage then
@@ -60,6 +58,31 @@ if sc.class == sc.classes.mage then
 
     spells[spids.arcane_surge].direct.per_resource = 0.03;
     spells[spids.arcane_surge].flags = bit.bor(spells[spids.arcane_surge].flags, spell_flags.uses_all_power);
+
+    lookups.averaged_procs = {
+        12536, -- clearcast
+    };
+
+    do
+        -- Shatter and ice lance effect
+        -- Having generator generate all frozen effects would be a lot of bloat
+        -- instead just track it through common mage spells through class_misc value
+        local freeze_detection_aura = {"raw", "class_misc", 1, nil, 0, -1};
+        local affecters = {"deep_freeze", "frost_nova"};
+        for _, v in ipairs(affecters) do
+            for _, id in ipairs(rank_seqs[spids[v]]) do
+                if not sc.hostile_buffs[id] then
+                    sc.hostile_buffs[id] = {};
+                end
+                table.insert(sc.hostile_buffs[id], freeze_detection_aura);
+            end
+        end
+        -- add fingers of frost as well
+        if not sc.class_buffs[lookups.fingers_of_frost] then
+            sc.class_buffs[lookups.fingers_of_frost] = {};
+        end
+        table.insert(sc.class_buffs[lookups.fingers_of_frost], freeze_detection_aura);
+    end
 
     -- THREAT
     add_threat_flat_by_rank({
@@ -83,15 +106,35 @@ elseif sc.class == sc.classes.druid then
     end
     for _, v in pairs(rank_seqs[spids.rake]) do
         --TODO: Did SOD turbo charge some of these ap scalings?
-        spells[v].periodic.coef_ap = 0.02;
+        spells[v].periodic.coef_ap_min = 0.02;
         --spells[v].periodic.coef_ap = 0.11215;
     end
     for _, v in pairs(rank_seqs[spids.rip]) do
-        spells[v].periodic.coef_ap = 0.04;
+        spells[v].periodic.coef_ap_min = 0.04;
     end
     if bit.band(sc.game_mode, sc.game_modes.season_of_discovery) == 0 then
         -- new moonkin passive id in SOD, no way to detect if this is active or not at runtime
         sc.shapeshift_passives[443359] = nil;
+    end
+
+    lookups.averaged_procs = {
+        16870, -- clearcast
+    };
+
+    do
+        -- Nourish affecting hots detection using class_misc value
+        if bit.band(sc.game_mode, sc.game_modes.season_of_discovery) ~= 0 then
+            local hot_detection_aura = {"raw", "class_misc", 1, nil, sc.aura_flags.requires_ownership, -1};
+            local nourish_affecters = {"rejuvenation", "rejuvenation_2", "regrowth", "regrowth_2", "lifebloom", "wild_growth"};
+            for _, v in ipairs(nourish_affecters) do
+                for _, id in ipairs(rank_seqs[spids[v]]) do
+                    if not sc.friendly_buffs[id] then
+                        sc.friendly_buffs[id] = {};
+                    end
+                    table.insert(sc.friendly_buffs[id], hot_detection_aura);
+                end
+            end
+        end
     end
 
     -- THREAT
@@ -136,6 +179,10 @@ elseif sc.class == sc.classes.shaman then
         bit.bor(spells[spids.shamanistic_rage].flags, spell_flags.regen_max_pct);
     spells[spids.shamanistic_rage].periodic.min = spells[spids.shamanistic_rage].periodic.min * 0.01;
 
+    lookups.averaged_procs = {
+        16246, -- clearcast
+    };
+
     -- THREAT
     add_threat_mod_all_ranks({
         {spids.earth_shock, 1.0}
@@ -146,6 +193,23 @@ elseif sc.class == sc.classes.warlock then
     -- Lifetap ranks 1 and 2 unusual in client data
     spells[rank_seqs[spids.life_tap][1]].direct.min = 30;
     spells[rank_seqs[spids.life_tap][2]].direct.min = 75;
+
+
+    do
+        if bit.band(sc.game_mode, sc.game_modes.season_of_discovery) ~= 0 then
+            -- Soul siphon rune shadow debuffs detection using class_misc value
+            local shadow_detection_aura = {"raw", "class_misc", 1, nil, sc.aura_flags.requires_ownership, -1};
+            local affecters = {"corruption", "curse_of_agony", "curse_of_doom", "curse_of_recklessness", "curse_of_shadow", "curse_of_the_elements", "curse_of_weakness", "curse_of_tongues", "fear", "haunt", "howl_of_terror" };
+            for _, v in ipairs(affecters) do
+                for _, id in ipairs(rank_seqs[spids[v]]) do
+                    if not sc.hostile_buffs[id] then
+                        sc.hostile_buffs[id] = {};
+                    end
+                    table.insert(sc.hostile_buffs[id], shadow_detection_aura);
+                end
+            end
+        end
+    end
 
     -- THREAT
     add_threat_mod_all_ranks({
@@ -167,8 +231,27 @@ elseif sc.class == sc.classes.rogue then
         spells[v].direct.per_cp_coef_ap = 0.03;
     end
     for _, v in pairs(rank_seqs[spids.garrote]) do
-        spells[v].periodic.coef_ap = 0.03;
+        spells[v].periodic.coef_ap_min = 0.03;
     end
+    for _, v in pairs(rank_seqs[spids.garrote_2]) do
+        spells[v].periodic.coef_ap_min = 0.03;
+    end
+
+    spells[spids.fan_of_knives].direct.flags =
+        bit.bor(spells[spids.fan_of_knives].direct.flags, comp_flags.applies_oh, comp_flags.full_oh);
+    spells[spids.mutilate].direct.flags =
+        bit.bor(spells[spids.mutilate].direct.flags, comp_flags.applies_oh, comp_flags.full_oh);
+    spells[spids.main_gauche].direct.flags =
+        bit.bor(spells[spids.main_gauche].direct.flags, comp_flags.applies_oh, comp_flags.full_oh);
+    spells[spids.main_gauche].direct.flags =
+        bit.band(spells[spids.main_gauche].direct.flags, bit.bnot(comp_flags.applies_mh));
+
+    -- Disable broken spells
+    spells[spids.envenom].flags =
+        bit.band(spells[spids.envenom].flags, bit.bnot(spell_flags.eval));
+    spells[spids.between_the_eyes].flags =
+        bit.band(spells[spids.between_the_eyes].flags, bit.bnot(spell_flags.eval));
+
 elseif sc.class == sc.classes.paladin then
     sc.friendly_buffs[407613] = {}; -- beacon of light, dummy value - handled manually
 
@@ -198,6 +281,10 @@ elseif sc.class == sc.classes.paladin then
         spells[v].direct.coef = spell_coef_lvl_adjusted(0.714, spells[v].lvl_req);
     end
 
+    sc.passives[lookups.exorcist] = {
+		{"ability", "crit", 1.0, {spids.exorcism, spids.exorcism_2}, 0, 0},
+    };
+
     -- THREAT
     add_threat_flat_by_rank({
         { spids.holy_shield, {20, 30, 40} },
@@ -212,11 +299,7 @@ elseif sc.class == sc.classes.warrior then
         [3] = {7381}, -- berserker
         [4] = {413479}, -- gladiator
     }
-    for _, v in pairs(rank_seqs[spids.bloodthirst]) do
-        spells[v].direct.coef_ap = 0.01*spells[v].direct.min;
-        spells[v].direct.min = 0;
-        spells[v].direct.max = 0;
-    end
+
     for _, v in pairs(rank_seqs[spids.shield_slam]) do
         spells[v].direct.per_resource = 0.05; -- hacked in as per strength
     end

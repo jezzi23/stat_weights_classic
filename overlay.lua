@@ -459,7 +459,6 @@ local overlay_label_handler = {
         if info.num_periodic_effects > 0 then
             val = val + 0.5*(info.total_ot_min_noncrit_if_hit + info.total_ot_max_noncrit_if_hit);
         end
-        val = val + info.absorb;
         frame_overlay:SetText(format_number(val, 1));
     end,
     overlay_display_crit = function(frame_overlay, info, _, stats)
@@ -472,7 +471,7 @@ local overlay_label_handler = {
             crit_sum = crit_sum + 0.5*(info.total_ot_min_crit_if_hit + info.total_ot_max_crit_if_hit);
         end
         if stats.crit > 0 and crit_sum > 0 then
-            frame_overlay:SetText(format_number(crit_sum + info.absorb, 1));
+            frame_overlay:SetText(format_number(crit_sum, 1));
         else
             frame_overlay:SetText("");
         end
@@ -814,9 +813,13 @@ end
 
 local function update_overlay()
 
-    local loadout, effects;
+    local loadout, effects, loadout_changed;
     if not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown() then
-        loadout, effects = update_loadout_and_effects();
+        loadout, effects, loadout_changed = update_loadout_and_effects();
+        if not loadout_changed then
+
+            return;
+        end
     else
         loadout, _, effects = update_loadout_and_effects_diffed_from_ui();
     end

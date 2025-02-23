@@ -97,22 +97,21 @@ local function apply_talents(loadout, effects)
         end
     end
 
-    local dynamic_talents, _ = talent_table(config.loadout.talents_code);
+    local dynamic_talents, _ = talent_table(loadout.talents.code);
+
     local custom_talents, _ = nil, nil;
 
     if not config.loadout.use_custom_talents then
-        loadout.talents_table = dynamic_talents;
+        loadout.talents.pts = dynamic_talents;
     else
         custom_talents, _ = talent_table(config.loadout.custom_talents_code);
-        loadout.talents_table = custom_talents;
+        loadout.talents.pts = custom_talents;
     end
-
-    for id, pts in pairs(loadout.talents_table) do
+    for id, pts in pairs(loadout.talents.pts) do
         if pts > 0 and sc.talent_ranks[id] then
             local effect_id = sc.talent_ranks[id][pts];
             if effect_id then
-                apply_effect(loadout,
-                             effects,
+                apply_effect(effects,
                              effect_id,
                              sc.talent_effects[effect_id],
                              config.loadout.use_custom_talents,
@@ -127,8 +126,7 @@ local function apply_talents(loadout, effects)
     --        if pts > 0 and sc.talent_ranks[id] then
     --            local effect_id = sc.talent_ranks[id][pts];
     --            if effect_id then
-    --                apply_effect(loadout,
-    --                             effects,
+    --                apply_effect(effects,
     --                             effect_id,
     --                             sc.talent_effects[effect_id],
     --                             false,
@@ -164,18 +162,18 @@ local function apply_talents(loadout, effects)
         --end
         -- Testing all special passives
         local passives_applied = 0;
-        for id, e in pairs(sc.special_passives) do
-            apply_effect(loadout, effects, id, e, true, 1);
+        for id, e in pairs(sc.passives) do
+            apply_effect( effects, id, e, true, 1);
             passives_applied = passives_applied + 1;
         end
 
-        print(passives_applied, "gen special passives applied");
+        print(passives_applied, "gen passives applied");
 
         -- Testing all talents
         local applied = 0;
         for _, v in pairs(sc.talent_ranks) do
             for _, i in pairs(v) do
-                apply_effect(loadout, effects, i, sc.talent_effects[i], true, 1);
+                apply_effect(effects, i, sc.talent_effects[i], true, 1);
                 applied = applied + 1;
             end
         end

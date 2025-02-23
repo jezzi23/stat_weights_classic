@@ -23,6 +23,7 @@ local stats_for_spell                           = sc.calc.stats_for_spell;
 local stat_weights                              = sc.calc.stat_weights;
 local cast_until_oom                            = sc.calc.cast_until_oom;
 local resource_regen_info                       = sc.calc.resource_regen_info;
+local only_threat_info                          = sc.calc.only_threat_info;
 local evaluation_flags                          = sc.calc.evaluation_flags;
 
 local config                                    = sc.config;
@@ -107,6 +108,16 @@ local function append_tooltip_spell_rank(tooltip, spell, lvl)
     end
 end
 
+local function append_tooltip_addon_name(tooltip)
+    if config.settings.tooltip_display_addon_name then
+        local loadout_extra_info = "";
+        if config.loadout.use_custom_lvl then
+            loadout_extra_info = string.format(" (clvl %d)", config.loadout.lvl);
+        end
+        tooltip:AddLine(sc.core.addon_name.." v"..sc.core.version.." | "..config.loadout.name..loadout_extra_info, 1, 1, 1);
+    end
+end
+
 local spell_jump_itr = pairs(spells);
 local spell_jump_key = spell_jump_itr(spells);
 
@@ -126,11 +137,9 @@ sc_stat_calc_tooltip:AddFontStrings(header_txt, text, text_small);
 -- they have same fonts and size. Downscale instead
 sc_stat_calc_tooltip:SetScale(0.75);
 
-
 GameTooltip:HookScript("OnHide", function()
     sc_stat_calc_tooltip:Hide();
 end);
-
 
 local spell_id_of_cleared_tooltip = 0;
 local clear_tooltip_refresh_id = 463;
@@ -174,7 +183,7 @@ local function update_tooltip(tooltip)
             elseif config.settings.tooltip_clear_original then
                 if (not config.settings.tooltip_shift_to_show or bit.band(sc.tooltip_mod, sc.tooltip_mod_flags.SHIFT) ~= 0) and
                     bit.band(spells[spell_id_of_cleared_tooltip].flags,
-                             bit.bor(spell_flags.eval, spell_flags.resource_regen)) ~= 0 then
+                             bit.bor(spell_flags.eval, spell_flags.resource_regen, spell_flags.no_threat)) ~= 0 then
                     tooltip:SetSpellByID(clear_tooltip_refresh_id);
                 else
                     tooltip:SetSpellByID(spell_id_of_cleared_tooltip);
@@ -248,7 +257,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         num_eval_mode_comps = num_eval_mode_comps + 1;
     end
 
-    if spell_id ~= sc.auto_attack_spell_id and bit.band(spell.flags, spell_flags.uses_attack_speed) ~= 0 then
+    if bit.band(spell.flags, spell_flags.on_next_attack) ~= 0 then
         eval_mode_to_flag.expectation_of_self = num_eval_mode_comps;
         num_eval_mode_comps = num_eval_mode_comps + 1;
     end
@@ -304,9 +313,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     if bit.band(spell.flags, spell_flags.on_next_attack) ~= 0 then
         if bit.band(eval_mode_mod, bit.lshift(1, eval_mode_to_flag.expectation_of_self)) ~= 0 then
             eval_flags = bit.bor(eval_flags, evaluation_flags.expectation_of_self);
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation includes auto attack");
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation of whole attack");
         else
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation over normal auto attack");
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation beyond auto attack");
         end
     end
 
@@ -332,7 +341,6 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         eval_dual_components = true;
     end
 
-
     local effect = "";
     local effect_per_sec = "";
     local effect_per_cost = "";
@@ -351,11 +359,17 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     end
 
     local pwr;
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 or bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
         effect = "Heal";
         pwr = "HP";
         effect_per_sec = "HPS";
         effect_per_cost = "Heal per "..cost_str;
+        cost_per_sec = cost_str_cap.." per sec";
+    elseif bit.band(spell.flags, spell_flags.absorb) ~= 0 then
+        effect = "Absorb";
+        pwr = "HP";
+        effect_per_sec = "HPS";
+        effect_per_cost = "Absorb per "..cost_str;
         cost_per_sec = cost_str_cap.." per sec";
     else
         effect = "Damage";
@@ -374,6 +388,33 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
     end
 
+    if config.settings.tooltip_display_eval_options then
+        if num_eval_mode_comps ~= 0 then
+            tooltip:AddLine(string.format("Eval mode %d/%d: %s",
+                                          eval_mode_mod+1,
+                                          eval_mode_combinations,
+                                          scrollable_eval_mode_txt),
+
+                1.0, 1.0, 1.0);
+
+            evaluation_options = append_to_txt_delimitered(evaluation_options, "scroll wheel to change mode");
+        end
+        if hybrid_spell and not ctrl then
+            if spell.healing_version then
+                evaluation_options = append_to_txt_delimitered(evaluation_options, "CTRL for healing");
+            else
+                evaluation_options = append_to_txt_delimitered(evaluation_options, "CTRL for damage");
+            end
+        end
+
+        if info.expected ~= info.expected_st then
+            evaluation_options = append_to_txt_delimitered(evaluation_options, "ALT for 1.00x effect");
+        end
+
+        if evaluation_options ~= "" then
+            tooltip:AddLine("Use " .. evaluation_options, 1.0, 1.0, 1.0);
+        end
+    end
 
     if config.settings.tooltip_display_target_info then
 
@@ -383,14 +424,14 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
         if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal)) ~= 0 then
             if loadout.friendly_hp_perc ~= 1 then
-                tooltip:AddLine(string.format("Target: %.0f%% HP",
+                tooltip:AddLine(string.format("Target: %.0f%% Health",
                         loadout.friendly_hp_perc * 100
                     ),
                     effect_color("target_info")
                 );
              end
         else
-            tooltip:AddLine(string.format("Target: %sLevel %d | %.0f%% HP | %d Armor | %d Res",
+            tooltip:AddLine(string.format("Target: %s Level %d | %.0f%% Health | %d Armor | %d Res",
                     specified,
                     loadout.target_lvl,
                     loadout.enemy_hp_perc * 100,
@@ -411,43 +452,56 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0;
 
     if config.settings.tooltip_display_avoidance_info and
-        display_direct_avoidance
-         then
+        display_direct_avoidance then
 
         if spell.direct.school1 == sc.schools.physical then
-            tooltip:AddLine(
-                string.format("Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
-                    stats.attack_skill,
-                    stats.extra_hit * 100,
-                    100 - (stats.hit * 100),
-                    100*stats.armor_dr
-                    ),
-                effect_color("avoidance_info")
-            );
-            tooltip:AddLine(
-                string.format("   | Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d",
-                    100*stats.dodge,
-                    100*stats.parry,
-                    100*stats.block,
-                    stats.block_amount
-                    ),
-                effect_color("avoidance_info")
-            );
+            if bit.band(spell.direct.flags, comp_flags.no_attack) ~= 0 then
+                tooltip:AddLine(
+                    string.format("| Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
+                        100*stats.extra_hit,
+                        100*(1.0 - stats.miss),
+                        100*stats.armor_dr
+                        ),
+                    effect_color("avoidance_info")
+                );
+            else
+                tooltip:AddLine(
+                    string.format("| Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
+                        stats.attack_skill,
+                        100*stats.extra_hit,
+                        100*(1.0 - stats.miss),
+                        100*stats.armor_dr
+                        ),
+                    effect_color("avoidance_info")
+                );
+                tooltip:AddLine(
+                    string.format("| Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d |",
+                        100*stats.dodge,
+                        100*stats.parry,
+                        100*stats.block,
+                        stats.block_amount
+                        ),
+                    effect_color("avoidance_info")
+                );
+            end
         else
             tooltip:AddLine(
-                string.format("Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
-                    stats.extra_hit * 100,
-                    100 - (stats.hit * 100),
-                    stats.target_avg_resi*100),
+                string.format("| Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
+                    100*stats.extra_hit,
+                    100*(1.0 - stats.miss),
+                    100*stats.target_avg_resi),
                 effect_color("avoidance_info")
             );
         end
     end
 
-    if config.settings.tooltip_display_normal and bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 and info.num_direct_effects > 0 then
+    if config.settings.tooltip_display_normal and
+        bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 and
+        info.num_direct_effects > 0 then
+
         if spell.direct then
 
-            local hit_str = string.format(" (%.1f%% hit)", stats.hit * 100);
+            local hit_str = string.format(" (%.1f%%)", info.hit_normal1 * 100);
             if info.min_noncrit_if_hit1 ~= info.max_noncrit_if_hit1 then
                 -- dmg spells with real direct range
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -476,52 +530,15 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         effect_color("normal")
                     );
                 end
-                if bit.band(eval_flags, evaluation_flags.assume_single_effect) == 0 then
-                    if spell.base_id == spids.chain_heal then
-                        local bounces = 2;
-                        local falloff = 0.5;
-                        --if loadout.runes[rune_ids.coherence] then
-                        --    bounces = 3;
-                        --    falloff = falloff + 0.15;
-                        --end
-                        if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-                            falloff = 0.5 * 1.3;
-                        end
-
-                        tooltip:AddLine(format_bounce_spell(info.min_noncrit_if_hit1,
+                if bit.band(eval_flags, evaluation_flags.assume_single_effect) == 0 and
+                    stats.direct_jumps ~= 0 and stats.direct_jump_amp ~= 1 then
+                        tooltip:AddLine(format_bounce_spell(
+                                info.min_noncrit_if_hit1,
                                 info.max_noncrit_if_hit1,
-                                bounces,
-                                falloff),
+                                stats.direct_jumps,
+                                stats.direct_jump_amp),
                             effect_color("normal")
                         );
-                    elseif spell.base_id == spids.chain_lightning then
-                        local bounces = 2;
-                        local falloff = 0.7;
-                        --if loadout.runes[rune_ids.coherence] then
-                        --    bounces = 3;
-                        --    falloff = falloff + 0.1;
-                        --end
-                        if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
-                            falloff = falloff + 0.05;
-                        end
-                        tooltip:AddLine(format_bounce_spell(info.min_noncrit_if_hit1,
-                                info.max_noncrit_if_hit1,
-                                bounces,
-                                falloff),
-                             effect_color("normal")
-                        );
-                    elseif spell.base_id == spids.healing_wave and
-                        (loadout.num_set_pieces[set_tiers.pve_1] >= 8 or
-                            loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6) then
-                        local bounces = 2;
-                        local falloff = 0.4;
-                        tooltip:AddLine(format_bounce_spell(info.min_noncrit_if_hit1,
-                                info.max_noncrit_if_hit1,
-                                bounces,
-                                falloff),
-                            effect_color("normal")
-                        );
-                    end
                 end
             else
                 if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
@@ -538,19 +555,11 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         effect_color("normal")
                         );
                 else
-                    if info.absorb ~= 0 then
-                        tooltip:AddLine(string.format("Absorb: %.1f",
-                                info.absorb),
-                            effect_color("normal")
-                        );
-                    end
-                    if info.min_noncrit_if_hit1 ~= 0 then
-                        tooltip:AddLine(string.format("%s: %.1f",
-                                effect,
-                                info.min_noncrit_if_hit1),
-                            effect_color("normal")
-                        );
-                    end
+                    tooltip:AddLine(string.format("%s: %.1f",
+                            effect,
+                            info.min_noncrit_if_hit1),
+                        effect_color("normal")
+                    );
                 end
             end
         end
@@ -576,15 +585,19 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     local special_crit_mod_str = "";
 
     if info.min_crit_if_hit1 ~= 0 and stats.special_crit_mod_tracked ~= 0 and
-        (not stats["extra_effect_is_periodic" .. stats.special_crit_mod_tracked] or bit.band(eval_flags, evaluation_flags.isolate_direct) == 0) then
+        (not stats["extra_effect_is_periodic" .. stats.special_crit_mod_tracked] or
+        bit.band(eval_flags, evaluation_flags.isolate_direct) == 0) then
+
         special_crit_mod_str = " + "..stats["extra_effect_desc" .. stats.special_crit_mod_tracked];
         crit_mod = stats.crit_mod * (1.0 + stats["extra_effect_val" .. stats.special_crit_mod_tracked]);
     end
 
-    if config.settings.tooltip_display_crit and bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 and info.num_direct_effects > 0 then
+    if config.settings.tooltip_display_crit and
+        bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 and
+        info.num_direct_effects > 0 then
 
-        local crit_chance_info_str = string.format(" (%.2f%%||%.2fx)", stats.crit*100, crit_mod);
-        if stats.crit ~= 0 and spell.direct then
+        local crit_chance_info_str = string.format(" (%.2f%%||%.2fx)", info.crit1*100, crit_mod);
+        if info.crit1 ~= 0 and spell.direct then
             local oh = "";
             if info.min_crit_if_hit1 ~= info.max_crit_if_hit1 then
                 if info.oh_info then
@@ -614,71 +627,36 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
             end
 
-            if bit.band(eval_flags, evaluation_flags.assume_single_effect) == 0 then
-                if spell.base_id == spids.chain_heal then
-                    local bounces = 2;
-                    local falloff = 0.5;
-                    --if loadout.runes[rune_ids.coherence] then
-                    --    bounces = 3;
-                    --    falloff = falloff + 0.15;
-                    --end
-                    if loadout.num_set_pieces[set_tiers.pve_2] >= 3 then
-                        falloff = 0.5 * 1.3;
-                    end
-
-                    tooltip:AddLine(format_bounce_spell(info.min_crit_if_hit1,
+            if bit.band(eval_flags, evaluation_flags.assume_single_effect) == 0 and
+                stats.direct_jumps ~= 0 and stats.direct_jump_amp ~= 1 then
+                    tooltip:AddLine(format_bounce_spell(
+                            info.min_crit_if_hit1,
                             info.max_crit_if_hit1,
-                            bounces,
-                            falloff),
+                            stats.direct_jumps,
+                            stats.direct_jump_amp),
                         effect_color("crit")
                     );
-                elseif spell.base_id == spids.chain_lightning then
-                    local bounces = 2;
-                    local falloff = 0.7;
-                    --if loadout.runes[rune_ids.coherence] then
-                    --    bounces = 3;
-                    --    falloff = falloff + 0.1;
-                    --end
-                    if loadout.num_set_pieces[set_tiers.pve_2_5_1] >= 3 then
-                        falloff = falloff + 0.05;
-                    end
-                    tooltip:AddLine(format_bounce_spell(info.min_crit_if_hit1,
-                            info.max_crit_if_hit1,
-                            bounces,
-                            falloff),
-                        effect_color("crit")
-                    );
-                elseif spell.base_id == spids.healing_wave and
-                    (loadout.num_set_pieces[set_tiers.pve_1] >= 8 or
-                        loadout.num_set_pieces[set_tiers.sod_final_pve_1_heal] >= 6) then
-                    local bounces = 2;
-                    local falloff = 0.4;
-                    tooltip:AddLine(format_bounce_spell(info.min_crit_if_hit1,
-                            info.max_crit_if_hit1,
-                            bounces,
-                            falloff),
-                        effect_color("crit")
-                    );
-                end
             end
         end
 
         for i = 2, info.num_direct_effects do
-            if info["min_crit_if_hit" .. i] ~= info["max_crit_if_hit" .. i] then
-                tooltip:AddLine(string.format("%s (%.2f%%): %d-%d",
-                        info["direct_description" .. i],
-                        info["crit" .. i] * 100,
-                        math.floor(info["min_crit_if_hit" .. i]),
-                        math.ceil(info["max_crit_if_hit" .. i])),
-                    effect_color("crit")
-                );
-            else
-                tooltip:AddLine(string.format("%s (%.2f%%): %.1f",
-                        info["direct_description" .. i],
-                        info["crit" .. i] * 100,
-                        info["min_crit_if_hit" .. i]),
-                    effect_color("crit")
-                );
+            if info["crit" .. i] ~= 0 then
+                if info["min_crit_if_hit" .. i] ~= info["max_crit_if_hit" .. i] then
+                    tooltip:AddLine(string.format("%s (%.2f%%): %d-%d",
+                            info["direct_description" .. i],
+                            info["crit" .. i] * 100,
+                            math.floor(info["min_crit_if_hit" .. i]),
+                            math.ceil(info["max_crit_if_hit" .. i])),
+                        effect_color("crit")
+                    );
+                else
+                    tooltip:AddLine(string.format("%s (%.2f%%): %.1f",
+                            info["direct_description" .. i],
+                            info["crit" .. i] * 100,
+                            info["min_crit_if_hit" .. i]),
+                        effect_color("crit")
+                    );
+                end
             end
         end
     end
@@ -694,16 +672,16 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if spell.periodic.school1 == sc.schools.physical then
             if bit.band(spell.periodic.flags, comp_flags.periodic) ~= 0 then
                 tooltip:AddLine(
-                    string.format("Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
+                    string.format("| Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                         stats.attack_skill_ot,
-                        stats.extra_hit_ot * 100,
-                        100 - (stats.hit_ot * 100),
+                        100*stats.extra_hit_ot,
+                        100*(1 - stats.miss_ot),
                         0
                         ),
                     effect_color("avoidance_info")
                 );
                 tooltip:AddLine(
-                    string.format("   | Dodge %.1f%% | Parry %.1f%%",
+                    string.format("| Dodge %.1f%% | Parry %.1f%% |",
                         100*stats.dodge_ot,
                         100*stats.parry_ot
                         ),
@@ -711,16 +689,16 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
             else
                 tooltip:AddLine(
-                    string.format("Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
+                    string.format("| Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                         stats.attack_skill_ot,
                         stats.extra_hit_ot * 100,
-                        100 - (stats.hit_ot * 100),
+                        100*(1 - stats.miss_ot),
                         100*stats.armor_dr_ot
                         ),
                     effect_color("avoidance_info")
                 );
                 tooltip:AddLine(
-                    string.format("   | Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d",
+                    string.format("| Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d |",
                         100*stats.dodge_ot,
                         100*stats.parry_ot,
                         100*stats.block_ot,
@@ -731,10 +709,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             end
         else
             tooltip:AddLine(
-                string.format("Hit +%d%%->%.1f%% Miss | Mitigated %.1f%%",
-                    stats.extra_hit_ot * 100,
-                    100 - (stats.hit_ot * 100),
-                    stats.target_avg_resi_ot*100),
+                string.format("| Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
+                    100*stats.extra_hit_ot,
+                    100*(1 - stats.miss_ot),
+                    100*stats.target_avg_resi_ot),
                 effect_color("avoidance_info")
             );
         end
@@ -742,7 +720,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
     if config.settings.tooltip_display_normal and bit.band(eval_flags, evaluation_flags.isolate_direct) == 0 and info.num_periodic_effects > 0 then
         if spell.periodic then
-            local hit_str = string.format(" (%.1f%%hit)", stats.hit_ot * 100);
+            local hit_str = string.format(" (%.1f%%hit)", info.ot_hit_normal1* 100);
             if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) == 0 then
                 if spell.base_id == spids.curse_of_agony then
                     local dmg_from_sp = info.ot_min_noncrit_if_hit1 - info.ot_min_noncrit_if_hit_base1;
@@ -955,7 +933,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             extra_info_st = extra_info_st ..
                 string.format("%.1f%% direct | %.1f%% periodic", direct_ratio * 100, (1.0 - direct_ratio) * 100);
         end
-        --if spell.base_id == spids.shadow_bolt and loadout.talents_table[301] ~= 0 then
+        --if spell.base_id == spids.shadow_bolt and loadout.talents.pts[301] ~= 0 then
         --    local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
 
         --    extra_info_st = extra_info_st .. string.format("ISB debuff uptime %.1f%%", 100 * isb_uptime);
@@ -1062,8 +1040,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     end
     if config.settings.tooltip_display_cost_per_sec and
        stats.cost ~= 0 and
-       spell.power_type == sc.powers.mana and
-       (not tooltip_cost or tooltip_cost ~= stats.cost) then
+       spell.power_type == sc.powers.mana then
 
         tooltip:AddLine(
             cost_per_sec .. ": " .. string.format("- %.1f out | + %.1f in", info.cost_per_sec, info.mp1),
@@ -1090,6 +1067,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
     if config.settings.tooltip_display_base_mod then
         if spell.direct and spell.direct.min ~= info.min_noncrit_if_hit_base1 then
+            local armor_dr_adjusted = 1/(1 - stats.armor_dr);
             if info.min_noncrit_if_hit_base1 ~= info.max_noncrit_if_hit_base1 then
                 tooltip:AddLine(string.format("Direct base: %.1f to %.1f (+%d x %.3f mod) + %d = %.1f to %.1f",
                         info.base_min,
@@ -1097,8 +1075,8 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         stats.base_mod_flat,
                         stats.base_mod,
                         stats.effect_mod_flat,
-                        info.min_noncrit_if_hit_base1,
-                        info.max_noncrit_if_hit_base1
+                        info.min_noncrit_if_hit_base1*armor_dr_adjusted,
+                        info.max_noncrit_if_hit_base1*armor_dr_adjusted
                     ),
                     effect_color("sp_effect")
                 );
@@ -1109,7 +1087,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         stats.base_mod_flat,
                         stats.base_mod,
                         stats.effect_mod_flat,
-                        info.min_noncrit_if_hit_base1
+                        info.min_noncrit_if_hit_base1*armor_dr_adjusted
                     ),
                     effect_color("sp_effect")
                 );
@@ -1117,6 +1095,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             end
         end
         if spell.periodic and spell.periodic.min ~= info.ot_min_noncrit_if_hit_base1 then
+            local armor_dr_adjusted = 1/(1 - stats.armor_dr_ot);
             if info.ot_min_noncrit_if_hit_base1 ~= info.ot_max_noncrit_if_hit_base1 then
                 tooltip:AddLine(string.format("Periodic base = %.1f to %.1f (+%d * %.3f mod) + %d = %.1f to %.1f",
                         info.ot_base_min,
@@ -1124,8 +1103,8 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         stats.base_mod_ot_flat,
                         stats.base_mod_ot,
                         stats.effect_mod_ot_flat,
-                        info.ot_min_noncrit_if_hit_base1,
-                        info.ot_max_noncrit_if_hit_base1
+                        info.ot_min_noncrit_if_hit_base1*armor_dr_adjusted,
+                        info.ot_max_noncrit_if_hit_base1*armor_dr_adjusted
                     ),
                     effect_color("sp_effect")
                 );
@@ -1136,7 +1115,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         stats.base_mod_ot_flat,
                         stats.base_mod_ot,
                         stats.effect_mod_ot_flat,
-                        info.ot_min_noncrit_if_hit_base1
+                        info.ot_min_noncrit_if_hit_base1*armor_dr_adjusted
                     ),
                     effect_color("sp_effect")
                 );
@@ -1148,21 +1127,23 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     if config.settings.tooltip_display_sp_effect_calc then
 
         if spell.direct and stats.coef > 0 and bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 then
+            local armor_dr_adjusted = 1/(1 - stats.armor_dr);
             tooltip:AddLine(string.format("Direct:    %.3f coef * %.3f mod * %d %s = %.1f",
                     stats.coef,
-                    stats.spell_mod,
+                    stats.spell_mod*armor_dr_adjusted,
                     stats.spell_power,
                     pwr,
-                    stats.coef * stats.spell_mod * stats.spell_power
+                    stats.coef * stats.spell_mod * stats.spell_power * armor_dr_adjusted
                 ),
                 effect_color("sp_effect")
             );
         end
         if spell.periodic and stats.coef_ot > 0 and bit.band(eval_flags, evaluation_flags.isolate_direct) == 0 then
+            local armor_dr_adjusted = 1/(1 - stats.armor_dr_ot);
             tooltip:AddLine(string.format("Periodic: %d ticks * %.3f coef * %.3f mod * %d %s",
                     info.ot_ticks1,
                     stats.coef_ot,
-                    stats.spell_mod_ot,
+                    stats.spell_mod_ot*armor_dr_adjusted,
                     stats.spell_power_ot,
                     pwr
                 ),
@@ -1170,8 +1151,8 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             );
             tooltip:AddLine(string.format("            = %d ticks * %.1f = %.1f",
                     info.ot_ticks1,
-                    stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot,
-                    stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * info.ot_ticks1),
+                    stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * armor_dr_adjusted,
+                    stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * info.ot_ticks1 * armor_dr_adjusted),
                 effect_color("sp_effect")
             );
         end
@@ -1227,37 +1208,6 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
     end
 
-    if config.settings.tooltip_display_eval_options then
-        if num_eval_mode_comps ~= 0 then
-            tooltip:AddLine(string.format("Eval mode %d/%d: %s",
-                                          eval_mode_mod+1,
-                                          eval_mode_combinations,
-                                          scrollable_eval_mode_txt),
-
-                1.0, 1.0, 1.0);
-
-
-            evaluation_options = append_to_txt_delimitered(evaluation_options, "scroll wheel to change mode");
-        end
-        if hybrid_spell and not ctrl then
-            if spell.healing_version then
-                evaluation_options = append_to_txt_delimitered(evaluation_options, "CTRL for healing");
-            else
-                evaluation_options = append_to_txt_delimitered(evaluation_options, "CTRL for damage");
-            end
-        end
-
-        if info.expected ~= info.expected_st then
-            evaluation_options = append_to_txt_delimitered(evaluation_options, "ALT for 1.00x effect");
-        end
-
-        if evaluation_options ~= "" then
-            tooltip:AddLine("Use " .. evaluation_options, 1.0, 1.0, 1.0);
-        end
-        --if bit.band(spell.flags, spell_flags.weapon_enchant) ~= 0 and bit.band(eval_flags, evaluation_flags.isolate_offhand) == 0 then
-        --    tooltip:AddLine("Hold ALT key to show for offhand", 1.0, 1.0, 1.0);
-        --end
-    end
 end
 
 local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effects)
@@ -1290,15 +1240,21 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
         end
     end
 
+    local eval_flags = 0;
+    if config.settings.tooltip_display_stat_weights_effect or
+        config.settings.tooltip_display_stat_weights_effect_per_sec or
+        config.settings.tooltip_display_stat_weights_effect_until_oom then
+
+        eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.stat_weights);
+    end
+
+    if bit.band(sc.tooltip_mod, sc.tooltip_mod_flags.ALT) ~= 0 then
+        eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.assume_single_effect);
+    end
+
     if (bit.band(spell.flags, spell_flags.eval) ~= 0) then
         if tooltip == GameTooltip then
-            if config.settings.tooltip_display_addon_name then
-                local loadout_extra_info = "";
-                if config.loadout.use_custom_lvl then
-                    loadout_extra_info = string.format(" (clvl %d)", config.loadout.lvl);
-                end
-                tooltip:AddLine(sc.core.addon_name.." v"..sc.core.version.." | "..config.loadout.name..loadout_extra_info, 1, 1, 1);
-            end
+            append_tooltip_addon_name(tooltip);
             if __sc_frame.calculator_frame:IsShown() and __sc_frame:IsShown() then
                 tooltip:AddLine("AFTER STAT CHANGES", 1.0, 0.0, 0.0);
             end
@@ -1306,23 +1262,12 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
             tooltip:AddLine("BEFORE STAT CHANGES", 1.0, 0.0, 0.0);
         end
 
-        local eval_flags = 0;
-        if config.settings.tooltip_display_stat_weights_effect or
-            config.settings.tooltip_display_stat_weights_effect_per_sec or
-            config.settings.tooltip_display_stat_weights_effect_until_oom then
-
-            eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.stat_weights);
-        end
-
-        if bit.band(sc.tooltip_mod, sc.tooltip_mod_flags.ALT) ~= 0 then
-            eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.assume_single_effect);
-        end
-
         append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effects, eval_flags);
     else
         if (bit.band(spell.flags, spell_flags.resource_regen) ~= 0) and
             config.settings.tooltip_display_resource_regen then
 
+            append_tooltip_addon_name(tooltip);
             resource_regen_info(info, spell, spell_id, loadout, effects);
             tooltip:AddLine(string.format("Restored for player: %d", math.floor(info.total_restored)),
                 effect_color("avg_cost")
@@ -1334,6 +1279,90 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                     math.floor(info.ticks)
                     ),
                     effect_color("avg_cost")
+                );
+            end
+        elseif bit.band(spell.flags, spell_flags.only_threat) ~= 0 and
+               (config.settings.tooltip_display_threat or
+               config.settings.tooltip_display_threat_per_sec or
+               config.settings.tooltip_display_threat_per_cost) then
+
+            only_threat_info(info, stats, spell, loadout, effects, eval_flags);
+
+            append_tooltip_addon_name(tooltip);
+            if config.settings.tooltip_display_avoidance_info and spell.direct then
+
+                if spell.direct.school1 == sc.schools.physical and
+                    bit.band(spell.direct.flags, bit.bor(comp_flags.always_hit, comp_flags.no_attack)) == 0 then
+
+                    tooltip:AddLine(
+                        string.format("| Skill %s | Hit +%d%%->%.1f%% Miss |",
+                            stats.attack_skill,
+                            100*stats.extra_hit,
+                            100 * (1.0 - stats.miss)
+                            ),
+                        effect_color("avoidance_info")
+                    );
+                    tooltip:AddLine(
+                        string.format("| Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d |",
+                            100*stats.dodge,
+                            100*stats.parry,
+                            100*stats.block,
+                            stats.block_amount
+                            ),
+                        effect_color("avoidance_info")
+                    );
+                else
+                    tooltip:AddLine(
+                        string.format("| Hit +%d%%->%.1f%% Miss |",
+                            100*stats.extra_hit,
+                            100 * (1.0 - stats.miss)
+                            ),
+                        effect_color("avoidance_info")
+                    );
+                end
+            end
+
+            if config.settings.tooltip_display_threat then
+                tooltip:AddLine(string.format("Expected threat: %.1f", info.threat),
+                    effect_color("threat")
+                );
+            end
+            if config.settings.tooltip_display_threat_per_sec and
+                stats.cast_time ~= 0 then
+
+                tooltip:AddLine(string.format("Threat per sec: %.1f", info.threat_per_sec),
+                    effect_color("threat")
+                );
+            end
+            if config.settings.tooltip_display_avg_cast then
+                local tooltip_cast = spell_cast_time(spell_id);
+                if bit.band(spell.flags, bit.bor(spell_flags.uses_attack_speed, spell_flags.instant)) ~= 0 or
+                    (not tooltip_cast or math.abs(tooltip_cast-stats.cast_time_nogcd) > 0.00001) then
+
+                    if stats.cast_time_nogcd ~= stats.cast_time then
+                        tooltip:AddLine(
+                            string.format("Expected execution time: %.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
+                            effect_color("avg_cast")
+                        );
+                    else
+                        tooltip:AddLine(string.format("Expected execution time: %.3f sec", stats.cast_time),
+                            effect_color("avg_cast")
+                        );
+                    end
+                end
+            end
+
+            if config.settings.tooltip_display_threat_per_cost and info.threat_per_cost ~= 0 then
+                local cost_str = "";
+                if spell.power_type == sc.powers.mana then
+                    cost_str = "mana";
+                elseif spell.power_type == sc.powers.rage then
+                    cost_str = "rage";
+                elseif spell.power_type == sc.powers.energy then
+                    cost_str = "energy";
+                end
+                tooltip:AddLine(string.format("Threat per %s: %.2f", cost_str, info.threat_per_cost),
+                    effect_color("effect_per_cost")
                 );
             end
         end

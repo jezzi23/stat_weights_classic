@@ -2,33 +2,25 @@ local utils = {};
 
 local _, sc = ...;
 
-local spells = sc.spells;
-
-local function spell_mod_add(table, key, add)
-    if not table then
-        print(table, key, add, debugstack())
-    end
-    if not table[key] then
-        table[key] = 0.0;
-    end
-    table[key] = table[key] + add;
-end
-
-local function spell_mod_mul(table, key, mul)
-    if not table[key] then
-        table[key] = 1.0
-    end
-    table[key] = table[key] * mul;
-end
+local spells                        = sc.spells;
+local spell_flags                   = sc.spell_flags;
+local rank_seqs                     = sc.rank_seqs;
+---------------------------------------------------------------------------------------------------
 
 local function deep_table_copy(obj, seen)
-  if type(obj) ~= 'table' then return obj end
-  if seen and seen[obj] then return seen[obj] end
-  local s = seen or {}
-  local res = setmetatable({}, getmetatable(obj))
-  s[obj] = res
-  for k, v in pairs(obj) do res[deep_table_copy(k, s)] = deep_table_copy(v, s) end
-  return res
+  if type(obj) ~= 'table' then
+      return obj;
+  end
+  if seen and seen[obj] then
+      return seen[obj];
+  end
+  local s = seen or {};
+  local res = setmetatable({}, getmetatable(obj));
+  s[obj] = res;
+  for k, v in pairs(obj) do
+      res[deep_table_copy(k, s)] = deep_table_copy(v, s);
+  end
+  return res;
 end
 
 local function spell_cost(spell_id)
@@ -133,6 +125,54 @@ local function format_number(val, max_accuracy_digits)
     end
 end
 
+-- Helper functions
+local function spell_coef_lvl_adjusted(coef, lvl_req)
+    local coef_mod = 1.0;
+    if (lvl_req ~= 0) then
+        coef_mod = math.min(1, 1 - (20 - lvl_req) * 0.0375);
+    end
+    return coef * coef_mod;
+end
+local function add_threat_flat_by_rank(list)
+    for _, v in ipairs(list) do
+        local spell_base_id = v[1];
+        local threat_by_rank = v[2];
+        for rank, threat in ipairs(threat_by_rank) do
+            local spell = spells[rank_seqs[spell_base_id][rank]];
+            local anycomp = spell.direct or spell.periodic;
+            if bit.band(spell.flags, spell_flags.eval) ~= 0 then
+                anycomp.threat_mod_flat = (anycomp.threat_mod_flat or 0.0) + threat;
+            else
+                -- spell is without any components
+                spell.periodic = nil;
+                if not spell.direct then
+                    spell.direct = {};
+                    spell.direct.flags = 0;
+                end
+                spell.direct.threat_mod_flat = (spell.direct.threat_mod_flat or 0.0) + threat;
+                -- spells with no eval will have anyschool defined
+                spell.direct.school1 = spell.anyschool;
+                spell.flags = bit.bor(spell.flags, spell_flags.only_threat);
+            end
+        end
+    end
+end
+local function add_threat_mod_all_ranks(list)
+    for _, v in ipairs(list) do
+        local spell_base_id = v[1];
+        local threat_mod = v[2];
+        for _, spid in ipairs(rank_seqs[spell_base_id]) do
+            local spell = spells[spid];
+            if spell.direct then
+                spell.direct.threat_mod = threat_mod;
+            end
+            if spell.periodic then
+                spell.periodic.threat_mod = threat_mod;
+            end
+        end
+    end
+end
+
 utils.spell_mod_mul                 = spell_mod_mul;
 utils.spell_mod_add                 = spell_mod_add;
 utils.beacon_snapshot_time          = beacon_snapshot_time;
@@ -147,6 +187,9 @@ utils.highest_learned_rank          = highest_learned_rank
 utils.next_rank                     = next_rank;
 utils.effect_color                  = effect_color;
 utils.effect_colors                 = effect_colors;
+utils.spell_coef_lvl_adjusted       = spell_coef_lvl_adjusted;
+utils.add_threat_flat_by_rank       = add_threat_flat_by_rank;
+utils.add_threat_mod_all_ranks      = add_threat_mod_all_ranks;
 
 
 sc.utils = utils;

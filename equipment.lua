@@ -42,8 +42,8 @@ local function detect_sets(loadout)
 
     for item = 1, 18 do
         local id = GetInventoryItemID("player", item);
-        if sc.set_items[id] then
-            local set_id = sc.set_items[id];
+        local set_id = sc.set_items[id];
+        if set_id then
             if not loadout.num_set_pieces[set_id] then
                 loadout.num_set_pieces[set_id] = 0;
             end
@@ -52,7 +52,13 @@ local function detect_sets(loadout)
     end
 end
 
+
 local wpn_strs = { [16] = "mh", [17] = "oh", [18] = "ranged"};
+
+-- set through /sc force set [Set ID] [Number of pieces]
+local force_item_sets = {};
+-- set through /sc force item [Item ID]
+local force_items = {};
 
 local function apply_equipment(loadout, effects)
 
@@ -61,14 +67,33 @@ local function apply_equipment(loadout, effects)
     local found_anything = false;
 
     for set_id, num in pairs(loadout.num_set_pieces) do
-        if num < 2 then
-
-            if sc.set_bonuses[set_id] then -- remove this check when old sets handling is gone
-                for threshold, effect_id in pairs(sc.set_bonuses[set_id]) do
+        if num > 1 then
+            local bonuses = sc.set_bonuses[set_id];
+            if bonuses then -- remove this check when old sets handling is gone
+                for _, v in pairs(bonuses) do
+                    local threshold = v[1];
+                    local effect_id = v[2];
                     if num < threshold then
                         break;
                     end
-                    apply_effect(loadout, effects, effect_id, sc.set_effects[effect_id], false, 1.0);
+                    apply_effect(effects, effect_id, sc.set_effects[effect_id], false, 1.0);
+                end
+            end
+        end
+    end
+
+    for force_set_id, force_threshold in pairs(force_item_sets) do
+        local bonuses = sc.set_bonuses[force_set_id];
+        local equipped_num_pieces = loadout.num_set_pieces[force_set_id];
+        if bonuses then -- remove this check when old sets handling is gone
+            for _, v in pairs(bonuses) do
+                local threshold = v[1];
+                local effect_id = v[2];
+                if force_threshold < threshold then
+                    break;
+                end
+                if not equipped_num_pieces or equipped_num_pieces < threshold then
+                    apply_effect(effects, effect_id, sc.set_effects[effect_id], true, 1.0);
                 end
             end
         end
@@ -81,9 +106,11 @@ local function apply_equipment(loadout, effects)
     for item = 1, 18 do
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
-            local id = GetInventoryItemID("player", i);
+            local id = GetInventoryItemID("player", item);
             if id and sc.items[id] then
-                apply_effect(loadout, effects, id, sc.item_effects[id], false, 1.0);
+                for _, effect_id in pairs(sc.items[id]) do
+                    apply_effect(effects, effect_id, sc.item_effects[effect_id], false, 1.0);
+                end
             end
             found_anything = true;
             local item_stats = GetItemStats(item_link);
@@ -104,20 +131,29 @@ local function apply_equipment(loadout, effects)
         if wpn_strs[item] then
             if item_link then
                 local subclass_id = select(13, GetItemInfo(item_link));
-                loadout[wpn_strs[item].."_subclass"] = subclass_id;
+                loadout.wpn_subclasses[wpn_strs[item]] = subclass_id;
             else
-                loadout[wpn_strs[item].."_subclass"] = -1;
+                loadout.wpn_subclasses[wpn_strs[item]] = -1;
             end
         end
     end
 
-    loadout.enchant_effects_applied = {};
+    for id, _ in pairs(force_items) do
+        if sc.items[id] then
+            for _, effect_id in pairs(sc.items[id]) do
+                apply_effect(effects, effect_id, sc.item_effects[effect_id], true, 1.0);
+            end
+        end
+    end
+
+    -- NOTE: Enchant changes might not force an equipment update
+    loadout.enchants = {};
     -- just do weapon enchants for now, are others even needed?
     local _, _, _, enchant_id = GetWeaponEnchantInfo();
     if sc.enchants[enchant_id] then
         for _, spid in pairs(sc.enchants[enchant_id]) do
-            apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
-            loadout.enchant_effects_applied[spid] = 1;
+            apply_effect(effects, spid, sc.enchant_effects[spid], false, 1.0, false);
+            loadout.enchants[spid] = 1;
         end
     end
 
@@ -126,10 +162,10 @@ local function apply_equipment(loadout, effects)
             local rune_slot = C_Engraving.GetRuneForEquipmentSlot(i);
             if rune_slot then
                 if rune_slot.itemEnchantmentID then
+                    loadout.enchants[rune_slot.itemEnchantmentID] = 1;
                     if sc.enchants[rune_slot.itemEnchantmentID] then
                         for _, spid in pairs(sc.enchants[rune_slot.itemEnchantmentID]) do
-                            apply_effect(loadout, effects, spid, sc.enchant_effects[spid], false, 1.0, false);
-                            loadout.enchant_effects_applied[spid] = 1;
+                            apply_effect(effects, spid, sc.enchant_effects[spid], false, 1.0, false);
                         end
                     end
 
@@ -144,7 +180,7 @@ local function apply_equipment(loadout, effects)
         local items_applied = 0;
         for _, v in pairs(sc.items) do
             for _, id in pairs(v) do
-                apply_effect(loadout, effects, id, sc.item_effects[id], true, 1.0);
+                apply_effect(effects, id, sc.item_effects[id], true, 1.0);
                 items_applied = items_applied + 1;
             end
         end
@@ -154,7 +190,7 @@ local function apply_equipment(loadout, effects)
             for _, bonus in pairs(v) do
                 local id = bonus[2];
 
-                apply_effect(loadout, effects, id, sc.set_effects[id], true, 1.0);
+                apply_effect(effects, id, sc.set_effects[id], true, 1.0);
                 sets_applied = sets_applied + 1;
             end
         end
@@ -164,7 +200,7 @@ local function apply_equipment(loadout, effects)
         for _, v in pairs(sc.enchants) do
             for _, id in pairs(v) do
 
-                apply_effect(loadout, effects, id, sc.enchant_effects[id], true, 1.0);
+                apply_effect(effects, id, sc.enchant_effects[id], true, 1.0);
                 enchants_applied = enchants_applied + 1;
             end
         end
@@ -176,5 +212,7 @@ end
 
 equipment.set_tiers = set_tiers;
 equipment.apply_equipment = apply_equipment;
+equipment.force_item_sets = force_item_sets;
+equipment.force_items = force_items;
 
 sc.equipment = equipment;

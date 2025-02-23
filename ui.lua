@@ -221,11 +221,7 @@ local buffs_views = {
 
 local function update_buffs_frame()
 
-    if config.loadout.force_apply_buffs then
-        __sc_frame.buffs_frame.always_apply_buffs_button:SetChecked(true);
-    else
-        __sc_frame.buffs_frame.always_apply_buffs_button:SetChecked(false);
-    end
+    sc.loadout.force_update = true;
 
     local buffs_list_alpha = 1.0;
 
@@ -293,14 +289,16 @@ local function update_buffs_frame()
             v.checkbutton.__stacks_str:Show();
             v.icon:Show();
 
-            __sc_frame.buffs_frame[view.side].frame:SetAlpha(buffs_list_alpha);
             buff_frame_idx = buff_frame_idx + 1;
         end
+        __sc_frame.buffs_frame[view.side].frame:SetAlpha(buffs_list_alpha);
     end
 
 end
 
 local function update_loadout_frame()
+
+    sc.loadout.force_update = true;
 
     sc.config.activate_loadout_config();
 
@@ -330,6 +328,8 @@ local function update_loadout_frame()
             v:Click();
         end
     end
+
+    __sc_frame.loadout_frame.talent_editbox:SetText(""); -- forces editbox to update
 
     update_buffs_frame();
 
@@ -364,7 +364,11 @@ local spell_filter_listing = {
     {
         id = "spells_filter_other_spells",
         disp = "Other spells",
-        tooltip = "Uncategorized spells. Contains seasonal spells and junk"
+        tooltip = "Uncategorized spells. Contains seasonal spells and junk."
+    },
+    {
+        id = "spells_filter_only_highest_learned_ranks",
+        disp = "Only highest, learned spell ranks",
     },
 };
 local spell_filters = {};
@@ -448,6 +452,12 @@ local function filtered_spell_view(spell_ids, name_filter)
         if not config.settings.spells_filter_other_spells and
             spells[id].train == 0 then
             filtered[i] = nil;
+        end
+        if config.settings.spells_filter_only_highest_learned_ranks then
+            local highest_learned = highest_learned_rank(spells[id].base_id);
+            if not highest_learned or highest_learned ~= id then
+                filtered[i] = nil;
+            end
         end
         if spells[id].race_flags and bit.band(spells[id].race_flags, bit.lshift(1, sc.race-1)) == 0 then
             filtered[i] = nil;
@@ -846,6 +856,7 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
         end
         f:SetScript("OnClick", function(self)
             config.settings[self._settings_id] = self:GetChecked();
+            sc.loadout.force_update = true;
             if v.func then
                 v.func(self);
             end
@@ -1266,7 +1277,15 @@ local function create_sw_ui_tooltip_frame()
 
     __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
     multi_row_checkbutton(tooltip_setting_checks, __sc_frame.tooltip_frame, 2);
-    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 30;
+
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
+
+    local div = __sc_frame.tooltip_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.tooltip_frame, "TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.tooltip_frame, "TOPRIGHT", 0, __sc_frame.tooltip_frame.y_offset);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
 
     f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
@@ -1286,6 +1305,11 @@ local function create_sw_ui_tooltip_frame()
         {
             id = "tooltip_display_addon_name",
             txt = "Addon & loadout name"
+        },
+        {
+            id = "tooltip_display_eval_options",
+            txt = "Evaluation modes",
+            tooltip = "Shows evaluation options for many types of spells which can be switched between dynamically. Example: Switch between healing and damage component of Holy shock.";
         },
         {
             id = "tooltip_display_target_info",
@@ -1349,13 +1373,13 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_display_avg_cost",
             txt = "Expected cost",
             color = effect_colors.avg_cost,
-            tooltip = "Shown when different from tooltip's cost",
+            tooltip = "Shown when different from tooltip's cost.",
         },
         {
             id = "tooltip_display_avg_cast",
             txt = "Expected execution time",
             color = effect_colors.avg_cast,
-            tooltip = "Shown when different from tooltip's cast time",
+            tooltip = "Shown when different from tooltip's cast time.",
         },
         {
             id = "tooltip_display_cast_until_oom",
@@ -1367,6 +1391,7 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_display_base_mod",
             txt = "Base effect mod",
             color = effect_colors.sp_effect,
+            tooltip = "Intended for debugging."
         },
         {
             id = "tooltip_display_sp_effect_calc",
@@ -1402,11 +1427,6 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_display_stat_weights_effect_until_oom",
             txt = "Stat weights: Effect until OOM",
             color = effect_colors.stat_weights
-        },
-        {
-            id = "tooltip_display_eval_options",
-            txt = "Evaluation modes",
-            tooltip = "Shows evaluation options for some spells which can be switched between dynamically. Example: Switch between healing and damage component of Holy shock or Heroic strike";
         },
         {
             id = "tooltip_display_resource_regen",
@@ -1543,7 +1563,7 @@ local function create_sw_ui_overlay_frame()
         },
         {
             id = "overlay_resource_regen",
-            txt = "Show mana restorative spells ",
+            txt = "Resource restoration spells ",
             color = effect_colors.avg_cost,
             tooltip = "Puts mana restoration amount on overlay for spells like Evocation.",
             func = function()
@@ -1696,6 +1716,12 @@ local function create_sw_ui_overlay_frame()
     end);
 
     __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 20;
+    local div = __sc_frame.overlay_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.overlay_frame, "TOPLEFT", 0, __sc_frame.overlay_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.overlay_frame, "TOPRIGHT", 0, __sc_frame.overlay_frame.y_offset);
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 5;
 
     f_txt = __sc_frame.overlay_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
@@ -2030,7 +2056,13 @@ local function create_sw_ui_calculator_frame()
         end
     end
 
-    __sc_frame.calculator_frame.y_offset = __sc_frame.calculator_frame.y_offset - 20;
+    local div = __sc_frame.calculator_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.calculator_frame, "TOPLEFT", 0, __sc_frame.calculator_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.calculator_frame, "TOPRIGHT", 0, __sc_frame.calculator_frame.y_offset);
+
+    __sc_frame.calculator_frame.y_offset = __sc_frame.calculator_frame.y_offset - 5;
 
     multi_row_checkbutton(
         {{id = "calc_list_use_highest_rank", txt = "Use highest learned rank of spell"}},
@@ -2129,7 +2161,7 @@ local function create_sw_ui_loadout_frame()
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Loadouts consist of all the parameters going into spell calculations");
+    f_txt:SetText("Loadouts are character specific, consisting of spell calculation parameters");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
@@ -2137,11 +2169,11 @@ local function create_sw_ui_loadout_frame()
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", x_pad, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Active loadout:");
+    f_txt:SetText("Active loadout");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
     f = CreateFrame("Button", nil, __sc_frame.loadout_frame, "UIDropDownMenuTemplate");
-    f:SetPoint("TOPLEFT", x_pad + 80, __sc_frame.loadout_frame.y_offset+6);
+    f:SetPoint("TOPLEFT", x_pad + 80, __sc_frame.loadout_frame.y_offset+7);
     f.init_func = function()
         UIDropDownMenu_SetText(__sc_frame.loadout_frame.loadout_dropdown, config.loadout.name);
         UIDropDownMenu_Initialize(__sc_frame.loadout_frame.loadout_dropdown, function()
@@ -2166,16 +2198,31 @@ local function create_sw_ui_loadout_frame()
     end;
     __sc_frame.loadout_frame.loadout_dropdown = f;
 
+    f = CreateFrame("Button", nil, __sc_frame.loadout_frame, "UIPanelButtonTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 300, __sc_frame.loadout_frame.y_offset+6);
+    f:SetText("Reset to defaults");
+    f:SetSize(140, 25);
+    f:SetScript("OnClick", function(self)
+
+
+        config.reset_loadout();
+        sc.core.talents_update_needed = true;
+        sc.core.equipment_update_needed = true;
+
+        update_loadout_frame();
+    end);
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
     f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 240, __sc_frame.loadout_frame.y_offset);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     f:SetText("Rename");
     f:SetTextColor(1.0, 1.0, 1.0);
 
     f = CreateFrame("EditBox", "__sc_frame_loadout_name", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 315, __sc_frame.loadout_frame.y_offset+2);
-    f:SetSize(70, 15);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 105, __sc_frame.loadout_frame.y_offset+2);
+    f:SetSize(90, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
 
@@ -2195,25 +2242,12 @@ local function create_sw_ui_loadout_frame()
     __sc_frame.loadout_frame.name_editbox = f;
 
     f = CreateFrame("Button", "__sc_frame_loadouts_delete_button", __sc_frame.loadout_frame, "UIPanelButtonTemplate");
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 390, __sc_frame.loadout_frame.y_offset+6);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 300, __sc_frame.loadout_frame.y_offset+6);
     f:SetText("Delete");
-    f:SetSize(80, 25);
+    f:SetSize(140, 25);
     f:SetScript("OnClick", function(self)
 
-        local n = #__sc_p_char.loadouts;
-        if n == 1 then
-            return;
-        end
-
-        if n ~= active_loadout then
-            for i = __sc_p_char.active_loadout, n-1 do
-                __sc_p_char.loadouts[i] = __sc_p_char.loadouts[i+1]
-            end
-        end
-        __sc_p_char.loadouts[n] = nil;
-
-        config.set_active_loadout(1);
-
+        config.delete_loadout();
         sc.core.talents_update_needed = true;
         sc.core.equipment_update_needed = true;
 
@@ -2221,17 +2255,17 @@ local function create_sw_ui_loadout_frame()
     end);
     __sc_frame.loadout_frame.delete_button = f;
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 30;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
     f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    f:SetText("New loadout:");
+    f:SetText("New loadout");
     f:SetTextColor(1.0, 1.0, 1.0);
 
     f = CreateFrame("EditBox", nil, __sc_frame.loadout_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 90, __sc_frame.loadout_frame.y_offset+3);
-    f:SetSize(80, 15);
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 105, __sc_frame.loadout_frame.y_offset+3);
+    f:SetSize(90, 15);
     f:SetAutoFocus(false);
     local editbox_save = function(self)
 
@@ -2252,7 +2286,7 @@ local function create_sw_ui_loadout_frame()
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", x_pad + 175, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", x_pad + 200, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("from");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
     __sc_frame.loadout_frame.new_loadout_txt1 = f_txt;
@@ -2266,9 +2300,9 @@ local function create_sw_ui_loadout_frame()
             update_loadout_frame();
         end
     end);
-    f:SetPoint("TOPLEFT", x_pad + 220, __sc_frame.loadout_frame.y_offset+6);
-    f:SetText("Default preset");
-    f:SetWidth(130);
+    f:SetPoint("TOPLEFT", x_pad + 250, __sc_frame.loadout_frame.y_offset+6);
+    f:SetText("Default");
+    f:SetWidth(100);
     __sc_frame.loadout_frame.new_loadout_button1 = f;
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
@@ -2286,7 +2320,7 @@ local function create_sw_ui_loadout_frame()
             update_loadout_frame();
         end
     end);
-    f:SetPoint("TOPLEFT", x_pad + 390, __sc_frame.loadout_frame.y_offset+6);
+    f:SetPoint("TOPLEFT", x_pad + 380, __sc_frame.loadout_frame.y_offset+6);
     f:SetText("Copy");
     f:SetWidth(80);
     __sc_frame.loadout_frame.new_loadout_button2 = f;
@@ -2299,63 +2333,22 @@ local function create_sw_ui_loadout_frame()
     };
 
     __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+    local div = __sc_frame.loadout_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.loadout_frame, "TOPLEFT", 0, __sc_frame.loadout_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.loadout_frame, "TOPRIGHT", 0, __sc_frame.loadout_frame.y_offset);
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 5;
 
-    f = CreateFrame("CheckButton", "__sc_frame_loadout_use_custom_talents", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
-    f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
+    f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f:SetFontObject(GameFontNormal);
+    local fp, _, flags = f:GetFont();
+    f:SetFont(fp, 17, flags);
+    f:SetText("Player");
+    f:SetPoint("TOPLEFT", 5, __sc_frame.loadout_frame.y_offset);
 
-    getglobal(f:GetName()..'Text'):SetText("Custom talents");
-    getglobal(f:GetName()).tooltip =
-        "Accepts a valid wowhead talents link, your loadout will use its talents & glyphs instead of your active ones.";
-    f:SetScript("OnClick", function(self)
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
 
-        sc.core.talents_update_needed = true;
-        sc.core.equipment_update_needed = true;
-
-        config.loadout.use_custom_talents = self:GetChecked();
-        if config.loadout.use_custom_talents then
-            __sc_frame.loadout_frame.talent_editbox:SetText(
-                wowhead_talent_link(config.loadout.custom_talents_code)
-            );
-        else
-            __sc_frame.loadout_frame.talent_editbox:SetText("");
-        end
-        update_buffs_frame();
-    end);
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
-
-    f = CreateFrame("EditBox", "__sc_frame_loadout_talent_editbox", __sc_frame.loadout_frame, "InputBoxTemplate");
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    f:SetSize(460, 15);
-    f:SetAutoFocus(false);
-    editbox_config(f, function(self)
-
-        local txt = self:GetText();
-        sc.core.talents_update_needed = true;
-
-        if config.loadout.use_custom_talents then
-            config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
-
-            __sc_frame.loadout_frame.talent_editbox:SetText(
-                wowhead_talent_link(config.loadout.custom_talents_code)
-            );
-            __sc_frame.loadout_frame.talent_editbox:SetAlpha(1.0);
-        else
-
-            __sc_frame.loadout_frame.talent_editbox:SetText(
-                wowhead_talent_link(config.loadout.talents_code)
-            );
-            __sc_frame.loadout_frame.talent_editbox:SetAlpha(0.2);
-            __sc_frame.loadout_frame.talent_editbox:SetCursorPosition(0);
-        end
-
-        update_loadout_frame();
-        self:ClearFocus();
-    end);
-
-    __sc_frame.loadout_frame.talent_editbox = f;
-
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f = CreateFrame("CheckButton", "__sc_frame_loadout_use_custom_lvl", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
@@ -2363,7 +2356,7 @@ local function create_sw_ui_loadout_frame()
     f:SetHitRectInsets(0, 0, 0, 0);
     getglobal(f:GetName()..'Text'):SetText("Custom player level");
     getglobal(f:GetName()).tooltip =
-        "Displays ability information as if character is a custom level (attributes from levels are not accounted for)";
+        "Displays ability information as if character is a custom level (attributes from levels are not accounted for).";
 
     f:SetScript("OnClick", function(self)
 
@@ -2405,122 +2398,118 @@ local function create_sw_ui_loadout_frame()
     editbox_config(f, clvl_editbox_update, clvl_editbox_close);
     __sc_frame.loadout_frame.loadout_clvl_editbox = f;
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_always_max_resource", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
+    getglobal(f:GetName()..'Text'):SetText("Always at maximum resource");
+    getglobal(f:GetName()).tooltip = 
+        "Assumes you are casting from maximum mana, energy, rage or combo points.";
+    f:SetScript("OnClick", function(self)
+        config.loadout.always_max_resource = self:GetChecked();
+    end)
+    __sc_frame.loadout_frame.max_mana_checkbutton = f;
+
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+
+
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_use_custom_talents", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
+
+    getglobal(f:GetName()..'Text'):SetText("Custom talents");
+    getglobal(f:GetName()).tooltip =
+        "Accepts a valid wowhead talents link, your loadout will use its talents & glyphs instead of your active ones.";
+    f:SetScript("OnClick", function(self)
+
+        config.loadout.use_custom_talents = self:GetChecked();
+        sc.core.talents_update_needed = true;
+        sc.core.equipment_update_needed = true;
+
+        update_loadout_frame();
+    end);
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+
+    f = CreateFrame("EditBox", "__sc_frame_loadout_talent_editbox", __sc_frame.loadout_frame, "InputBoxTemplate");
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+25, __sc_frame.loadout_frame.y_offset);
+    f:SetSize(437, 15);
+    f:SetAutoFocus(false);
+    editbox_config(f, function(self)
+
+        local txt = self:GetText();
+        sc.core.talents_update_needed = true;
+
+        if config.loadout.use_custom_talents then
+            config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
+
+            __sc_frame.loadout_frame.talent_editbox:SetText(
+                wowhead_talent_link(config.loadout.custom_talents_code)
+            );
+            __sc_frame.loadout_frame.talent_editbox:SetAlpha(1.0);
+        else
+
+            __sc_frame.loadout_frame.talent_editbox:SetText(
+                wowhead_talent_link(active_loadout().talents.code)
+            );
+            __sc_frame.loadout_frame.talent_editbox:SetAlpha(0.2);
+            __sc_frame.loadout_frame.talent_editbox:SetCursorPosition(0);
+        end
+        self:ClearFocus();
+    end);
+
+    __sc_frame.loadout_frame.talent_editbox = f;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Target level difference");
+    f_txt:SetText("Extra mana for casts until OOM");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_lvl_diff", __sc_frame.loadout_frame, "InputBoxTemplate");
+    f = CreateFrame("EditBox", "__sc_frame_loadout_extra_mana", __sc_frame.loadout_frame, "InputBoxTemplate");
     f._type = "EditBox";
     f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
-    f:SetText("");
     f:SetSize(40, 15);
     f:SetAutoFocus(false);
     f.number_editbox = true;
-    local editbox_update = function(self)
-        -- silently try to apply valid changes but don't panic while focus is on
-        local lvl_diff = tonumber(self:GetText());
-        local valid = lvl_diff and lvl_diff == math.floor(lvl_diff) and config.loadout.lvl + lvl_diff >= 1 and config.loadout.lvl + lvl_diff <= 83;
-        if valid then
+    local mana_editbox_update = function(self)
 
-            config.loadout.default_target_lvl_diff = lvl_diff;
+        local mana = tonumber(self:GetText());
+        local valid = mana ~= nil;
+        if vald then
+            config.loadout.extra_mana = mana;
         end
         return valid;
-    end;
-    local editbox_close = function(self)
-
-        if not editbox_update(self) then
-            self:SetText(""..config.loadout.default_target_lvl_diff);
+    end
+    local mana_editbox_close = function(self)
+        if not mana_editbox_update(self) then
+            self:SetText("0");
+            loadout.extra_mana = 0;
         end
-        self:ClearFocus();
+    	self:ClearFocus();
         self:HighlightText(0,0);
     end
-    editbox_config(f, editbox_update, editbox_close);
-    __sc_frame.loadout_frame.level_editbox = f;
 
+    editbox_config(f, mana_editbox_update, mana_editbox_close);
+    __sc_frame.loadout_frame.loadout_extra_mana_editbox = f;
+
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+    local div = __sc_frame.loadout_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.loadout_frame, "TOPLEFT", 0, __sc_frame.loadout_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.loadout_frame, "TOPRIGHT", 0, __sc_frame.loadout_frame.y_offset);
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 5;
     f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(GameFontNormal);
-    f:SetPoint("LEFT", __sc_frame.loadout_frame.level_editbox, "RIGHT", 10, 0);
-    f:SetText("(when no hostile target available)");
-    f:SetTextColor(1.0,  1.0,  1.0);
-
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
-
-    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Default target HP");
-    f_txt:SetTextColor(1.0,  1.0,  1.0);
-
-    f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_hp_perc", __sc_frame.loadout_frame, "InputBoxTemplate");
-    f._type = "EditBox";
-    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
-    f:SetText("");
-    f:SetSize(40, 15);
-    f:SetAutoFocus(false);
-    f.number_editbox = true;
-    local editbox_hp_perc_update = function(self)
-        local hp_perc = tonumber(self:GetText());
-        local valid = hp_perc and hp_perc >= 0;
-        if valid then
-            config.loadout.default_target_hp_perc = hp_perc;
-        end
-        return valid;
-    end
-    local editbox_hp_perc_close = function(self)
-
-        if not editbox_hp_perc_update(self) then
-            self:SetText(""..loadout.default_target_hp_perc);
-        end
-        self:ClearFocus();
-        self:HighlightText(0,0);
-    end
-    editbox_config(f, editbox_hp_perc_update, editbox_hp_perc_close);
-    __sc_frame.loadout_frame.hp_perc_label_editbox = f;
-    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("LEFT", f, "RIGHT", 5, 0);
-    f_txt:SetText("%");
-    f_txt:SetTextColor(1.0,  1.0,  1.0);
-
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 30;
-
-    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Target resistance");
-    f_txt:SetTextColor(1.0,  1.0,  1.0);
-
-    f = CreateFrame("EditBox", "__sc_frame_loadout_target_res", __sc_frame.loadout_frame, "InputBoxTemplate");
-    f._type = "EditBox";
-    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
-    f:SetText("");
-    f:SetSize(40, 15);
-    f:SetAutoFocus(false);
-    f.number_editbox = true;
-    local editbox_target_res_update = function(self)
-        local target_res = tonumber(self:GetText());
-        local valid = target_res and target_res >= 0;
-        if valid then
-            config.loadout.target_res = target_res;
-        end
-        return valid;
-    end
-    local editbox_target_res_close = function(self)
-
-        if not editbox_target_res_update(self) then
-            self:SetText("0");
-            config.loadout.target_res = 0;
-        end
-        self:ClearFocus();
-        self:HighlightText(0,0);
-    end
-
-    editbox_config(f, editbox_target_res_update, editbox_target_res_close);
-
+    local fp, _, flags = f:GetFont();
+    f:SetFont(fp, 17, flags);
+    f:SetText("Target");
+    f:SetPoint("TOPLEFT", 5, __sc_frame.loadout_frame.y_offset);
     __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     __sc_frame.loadout_frame.auto_armor_frames = {};
@@ -2531,7 +2520,7 @@ local function create_sw_ui_loadout_frame()
     f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
     getglobal(f:GetName()..'Text'):SetText("Estimate armor");
     getglobal(f:GetName()).tooltip = 
-        "Estimates armor from target level";
+        "Estimates armor from target level.";
     f:SetScript("OnClick", function(self)
         local checked = self:GetChecked();
         config.loadout.target_automatic_armor = checked;
@@ -2579,7 +2568,7 @@ local function create_sw_ui_loadout_frame()
     end
     local editbox_target_armor_close = function(self)
 
-        if not editbox_target_res_update(self) then
+        if not editbox_target_armor_update(self) then
             self:SetText("0");
             config.loadout.target_armor = 0;
         end
@@ -2632,7 +2621,134 @@ local function create_sw_ui_loadout_frame()
         v:Show();
     end
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+
+    f = CreateFrame("CheckButton", "__sc_frame_loadout_behind_target", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
+    f._type = "CheckButton";
+    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
+    getglobal(f:GetName()..'Text'):SetText("Attacked from behind, eliminating parry and blocks");
+    f:SetScript("OnClick", function(self)
+        config.loadout.behind_target = self:GetChecked();
+    end)
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+
+
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetText("Level difference");
+    f_txt:SetTextColor(1.0,  1.0,  1.0);
+
+    f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_lvl_diff", __sc_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
+    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
+    f:SetText("");
+    f:SetSize(40, 15);
+    f:SetAutoFocus(false);
+    f.number_editbox = true;
+    local editbox_update = function(self)
+        -- silently try to apply valid changes but don't panic while focus is on
+        local lvl_diff = tonumber(self:GetText());
+        local valid = lvl_diff and lvl_diff == math.floor(lvl_diff) and config.loadout.lvl + lvl_diff >= 1 and config.loadout.lvl + lvl_diff <= 83;
+        if valid then
+
+            config.loadout.default_target_lvl_diff = lvl_diff;
+        end
+        return valid;
+    end;
+    local editbox_close = function(self)
+
+        if not editbox_update(self) then
+            self:SetText(""..config.loadout.default_target_lvl_diff);
+        end
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+    editbox_config(f, editbox_update, editbox_close);
+    __sc_frame.loadout_frame.level_editbox = f;
+
+    f = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f:SetFontObject(GameFontNormal);
+    f:SetPoint("LEFT", __sc_frame.loadout_frame.level_editbox, "RIGHT", 10, 0);
+    f:SetText("(when no hostile target available)");
+    f:SetTextColor(1.0,  1.0,  1.0);
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetText("Resistance");
+    f_txt:SetTextColor(1.0,  1.0,  1.0);
+
+    f = CreateFrame("EditBox", "__sc_frame_loadout_target_res", __sc_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
+    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
+    f:SetText("");
+    f:SetSize(40, 15);
+    f:SetAutoFocus(false);
+    f.number_editbox = true;
+    local editbox_target_res_update = function(self)
+        local target_res = tonumber(self:GetText());
+        local valid = target_res and target_res >= 0;
+        if valid then
+            config.loadout.target_res = target_res;
+        end
+        return valid;
+    end
+    local editbox_target_res_close = function(self)
+
+        if not editbox_target_res_update(self) then
+            self:SetText("0");
+            config.loadout.target_res = 0;
+        end
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+
+    editbox_config(f, editbox_target_res_update, editbox_target_res_close);
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetText("Default health %");
+    f_txt:SetTextColor(1.0,  1.0,  1.0);
+
+    f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_hp_perc", __sc_frame.loadout_frame, "InputBoxTemplate");
+    f._type = "EditBox";
+    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
+    f:SetText("");
+    f:SetSize(40, 15);
+    f:SetAutoFocus(false);
+    f.number_editbox = true;
+    local editbox_hp_perc_update = function(self)
+        local hp_perc = tonumber(self:GetText());
+        local valid = hp_perc and hp_perc >= 0;
+        if valid then
+            config.loadout.default_target_hp_perc = hp_perc;
+        end
+        return valid;
+    end
+    local editbox_hp_perc_close = function(self)
+
+        if not editbox_hp_perc_update(self) then
+            self:SetText(""..loadout.default_target_hp_perc);
+        end
+        self:ClearFocus();
+        self:HighlightText(0,0);
+    end
+    editbox_config(f, editbox_hp_perc_update, editbox_hp_perc_close);
+    __sc_frame.loadout_frame.hp_perc_label_editbox = f;
+    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("LEFT", f, "RIGHT", 5, 0);
+    f_txt:SetText("%");
+    f_txt:SetTextColor(1.0,  1.0,  1.0);
+
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
@@ -2666,64 +2782,6 @@ local function create_sw_ui_loadout_frame()
     editbox_config(f, aoe_targets_editbox_update, aoe_targets_editbox_close);
     __sc_frame.loadout_frame.loadout_unbounded_aoe_targets_editbox = f;
 
-
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
-
-    f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
-    f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Extra mana for casts until OOM");
-    f_txt:SetTextColor(1.0,  1.0,  1.0);
-
-    f = CreateFrame("EditBox", "__sc_frame_loadout_extra_mana", __sc_frame.loadout_frame, "InputBoxTemplate");
-    f._type = "EditBox";
-    f:SetPoint("LEFT", f_txt, "RIGHT", 10, 0);
-    f:SetSize(40, 15);
-    f:SetAutoFocus(false);
-    f.number_editbox = true;
-    local mana_editbox_update = function(self)
-
-        local mana = tonumber(self:GetText());
-        local valid = mana ~= nil;
-        if vald then
-            config.loadout.extra_mana = mana;
-        end
-        return valid;
-    end
-    local mana_editbox_close = function(self)
-        if not mana_editbox_update(self) then
-            self:SetText("0");
-            loadout.extra_mana = 0;
-        end
-    	self:ClearFocus();
-        self:HighlightText(0,0);
-    end
-
-    editbox_config(f, mana_editbox_update, mana_editbox_close);
-    __sc_frame.loadout_frame.loadout_extra_mana_editbox = f;
-
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
-
-    f = CreateFrame("CheckButton", "__sc_frame_loadout_always_max_resource", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
-    f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    getglobal(f:GetName()..'Text'):SetText("Always at maximum resource");
-    getglobal(f:GetName()).tooltip = 
-        "Assumes you are casting from maximum mana, energy, rage or combo points";
-    f:SetScript("OnClick", function(self)
-        config.loadout.always_max_resource = self:GetChecked();
-    end)
-    __sc_frame.loadout_frame.max_mana_checkbutton = f;
-
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
-
-    f = CreateFrame("CheckButton", "__sc_frame_loadout_behind_target", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
-    f._type = "CheckButton";
-    f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    getglobal(f:GetName()..'Text'):SetText("Always behind target, eliminating parried and blocked attacks");
-    f:SetScript("OnClick", function(self)
-        config.loadout.behind_target = self:GetChecked();
-    end)
 end
 
 local function create_sw_ui_buffs_frame()
@@ -2735,13 +2793,10 @@ local function create_sw_ui_buffs_frame()
     f:SetPoint("TOPLEFT", __sc_frame.buffs_frame, 0, __sc_frame.buffs_frame.y_offset);
     getglobal(f:GetName() .. 'Text'):SetText("Enable selected auras even when inactive");
     getglobal(f:GetName()).tooltip = 
-        "The selected buffs will be applied behind the scenes to the spell calculations";
+        "The selected buffs will be applied behind the scenes to the spell calculations.";
     f:SetScript("OnClick", function(self)
-        if self:GetChecked() then
-            config.loadout.force_apply_buffs = true;
-        else
-            config.loadout.force_apply_buffs = false;
-        end
+        sc.loadout.force_update = true;
+        config.loadout.force_apply_buffs = self:GetChecked();
         update_buffs_frame();
     end);
     __sc_frame.buffs_frame.always_apply_buffs_button = f;
@@ -2783,7 +2838,7 @@ local function create_sw_ui_buffs_frame()
 
     f = __sc_frame.buffs_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
-    f:SetText("Search");
+    f:SetText("Search name or ID");
     f:SetPoint("LEFT", __sc_frame.buffs_frame.search, 5, 0);
     __sc_frame.buffs_frame.search_empty_label = f;
 
@@ -2835,6 +2890,7 @@ local function create_sw_ui_buffs_frame()
         getglobal(f:GetName() .. 'Text'):SetTextColor(1, 0, 0);
 
         f:SetScript("OnClick", function(self)
+            sc.loadout.force_update = true;
 
             if self:GetChecked() then
                 if view.side == "lhs" then
@@ -2895,6 +2951,7 @@ local function create_sw_ui_buffs_frame()
             checkbtn.side = view.side;
             checkbtn:SetScript("OnMouseDown", function(self, btn)
 
+                sc.loadout.force_update = true;
                 local config_buffs;
                 if view.side == "lhs" then
                     config_buffs = config.loadout.buffs;
@@ -2999,7 +3056,7 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("Profiles retain all settings except for loadout/buffs config");
+    f_txt:SetText("Profiles retain all settings except for Loadout & Buffs config");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
 
@@ -3008,7 +3065,7 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("Main spec profile: ");
+    f_txt:SetText("Main spec profile");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
     __sc_frame.profile_frame.primary_spec = 
@@ -3047,7 +3104,7 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("Secondary spec profile: ");
+    f_txt:SetText("Secondary spec profile");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
     __sc_frame.profile_frame.second_spec = 
@@ -3087,7 +3144,7 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("Rename active profile: ");
+    f_txt:SetText("Rename active profile");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
     f = CreateFrame("EditBox", "__sc_frame_profile_name_editbox", __sc_frame.profile_frame, "InputBoxTemplate");
@@ -3124,36 +3181,42 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
+    f_txt:SetText("Reset active profile");
+    f_txt:SetTextColor(1.0, 1.0, 1.0);
+
+    f = CreateFrame("Button", nil, __sc_frame.profile_frame, "UIPanelButtonTemplate");
+    f:SetScript("OnClick", function(self)
+
+        config.reset_profile();
+    end);
+    f:SetPoint("TOPLEFT", 190, __sc_frame.profile_frame.y_offset+4);
+    f:SetText("Reset to defaults");
+    f:SetWidth(145);
+
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
+
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
     f_txt:SetText("Delete active profile");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
     __sc_frame.profile_frame.delete_profile_label = f_txt;
 
     f = CreateFrame("Button", nil, __sc_frame.profile_frame, "UIPanelButtonTemplate");
     f:SetScript("OnClick", function(self)
-
-
-        local cnt = 0; 
-        for _, _ in pairs(__sc_p_acc.profiles) do
-            cnt = cnt + 1;
-            if cnt > 1 then
-                break;
-            end
-        end
-        if cnt > 1 then
-            __sc_p_acc.profiles[__sc_p_char[sc.config.spec_keys[sc.core.active_spec]]] = nil;
-            update_profile_frame();
-        end
+        config.delete_profile();
+        update_profile_frame();
     end);
     f:SetPoint("TOPLEFT", 190, __sc_frame.profile_frame.y_offset+4);
     f:SetText("Delete");
-    f:SetWidth(200);
+    f:SetWidth(145);
     __sc_frame.profile_frame.delete_profile_button = f;
 
     __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 30, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("New profile name: ");
+    f_txt:SetText("New profile name");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
 
     f = CreateFrame("EditBox", nil, __sc_frame.profile_frame, "InputBoxTemplate");
@@ -3230,6 +3293,11 @@ local function create_sw_ui_profile_frame()
     __sc_frame.profile_frame.new_profile_section.button2 = f;
 end
 
+--local average_proc_sidebuffer = {
+average_proc_sidebuffer = {
+};
+
+
 local function create_sw_ui_settings_frame()
 
     local f, f_txt;
@@ -3296,8 +3364,33 @@ local function create_sw_ui_settings_frame()
         },
         {
             id = "general_average_proc_effects",
-            txt = "Average out proc effects (requires /reload)",
+            txt = "Average out proc effects",
             tooltip = "Removes many proc effects and instead averages out its effect, giving more meaning to the spell evaluation. Example: Nature's grace modifies expected cast time to scale with crit, giving crit higher stat weight. Clearcasts and such.",
+            func = function(self)
+
+                if self:GetChecked() then
+
+                    if sc.lookups.averaged_procs then
+                        -- move average procs into sidebuffer
+                        for _, v in ipairs(sc.lookups.averaged_procs) do
+                            if sc.class_buffs[v] then
+                                average_proc_sidebuffer[v] = sc.class_buffs[v];
+                                sc.class_buffs[v] = nil;
+                            end
+                        end
+                    end
+                else
+                    if sc.lookups.averaged_procs then
+                        -- move average procs from side buffer into applicable buffs
+                        for _, v in ipairs(sc.lookups.averaged_procs) do
+                            if average_proc_sidebuffer[v] then
+                                sc.class_buffs[v] = average_proc_sidebuffer[v];
+                                average_proc_sidebuffer[v] = nil;
+                            end
+                        end
+                    end
+                end
+            end
         },
     };
 
@@ -3325,7 +3418,7 @@ local function create_sw_base_ui()
     __sc_frame.title = __sc_frame:CreateFontString(nil, "OVERLAY");
     __sc_frame.title:SetFontObject(font)
     __sc_frame.title:SetText(sc.core.addon_name.." v"..sc.core.version);
-    __sc_frame.title:SetPoint("LEFT", __sc_frame.TitleBg, "LEFT", 270, 0);
+    __sc_frame.title:SetPoint("CENTER", __sc_frame.TitleBg, "CENTER", 0, 0);
 
     __sc_frame:Hide();
 
@@ -3454,8 +3547,7 @@ local function load_sw_ui()
             icon = "Interface\\Icons\\spell_fire_elementaldevastation",
             OnClick = function(self, button)
                 if button == "MiddleButton" then
-
-                    __sc_frame.libstub_icon_checkbox:Click();
+                    __sc_frame_setting_general_libstub_minimap_icon:Click();
                 elseif button == "RightButton" then
 
                     __sc_frame_setting_overlay_old_rank:Click();
@@ -3479,10 +3571,12 @@ local function load_sw_ui()
                 else
                     tooltip:AddLine("|cFF9CD6DERight click:|r |cFFFF0000(IS OFF)|r Toggle old rank warning overlay");
                 end
-                tooltip:AddLine("Current client build: "..sc.client_version_loaded);
-                tooltip:AddLine("Addon data generated from: "..sc.client_name_src.." v"..sc.client_version_src);
+                tooltip:AddLine(" ");
+                tooltip:AddLine("|cFF9CD6DEAddon data generated from:|r");
+                tooltip:AddLine("    "..sc.client_name_src.." "..sc.client_version_src);
+                tooltip:AddLine("|cFF9CD6DECurrent client build:|r "..sc.client_version_loaded);
+                tooltip:AddLine("|cFF9CD6DEFactory reset (reloads UI):|r /sc reset");
                 tooltip:AddLine("https://www.curseforge.com/wow/addons/spellcoda");
-                tooltip:AddLine("|cFF9CD6DEFactory reset:|r /sc reset");
             end
 
         });

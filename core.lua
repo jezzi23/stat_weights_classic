@@ -21,7 +21,6 @@ local set_active_loadout        = sc.config.set_active_loadout;
 local activate_settings         = sc.config.activate_settings;
 local activate_loadout_config   = sc.config.activate_loadout_config;
 
-
 local reassign_overlay_icon     = sc.overlay.reassign_overlay_icon;
 local update_overlay            = sc.overlay.update_overlay;
 
@@ -209,6 +208,7 @@ local event_dispatch = {
             return;
         end
 
+        sc.loadout.force_update = true;
         reassign_overlay_icon(arg)
     end,
     ["UPDATE_STEALTH"] = function()
@@ -216,6 +216,7 @@ local event_dispatch = {
             return;
         end
         core.special_action_bar_changed = true;
+        sc.loadout.force_update = true;
     end,
     ["UPDATE_BONUS_ACTIONBAR"] = function()
         if not core.sw_addon_loaded then
@@ -223,6 +224,7 @@ local event_dispatch = {
         end
 
         core.special_action_bar_changed = true;
+        sc.loadout.force_update = true;
     end,
     ["ACTIONBAR_PAGE_CHANGED"] = function()
         if not core.sw_addon_loaded then
@@ -230,6 +232,7 @@ local event_dispatch = {
         end
 
         core.special_action_bar_changed = true;
+        sc.loadout.force_update = true;
     end,
     ["UNIT_EXITED_VEHICLE"] = function(_, arg)
         if not core.sw_addon_loaded or config.settings.overlay_disable then
@@ -238,6 +241,7 @@ local event_dispatch = {
 
         if arg == "player" then
             core.special_action_bar_changed = true;
+            sc.loadout.force_update = true;
         end
     end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function()
@@ -251,12 +255,12 @@ local event_dispatch = {
     end,
     ["CHARACTER_POINTS_CHANGED"] = function()
 
+        sc.loadout.force_update = true;
         set_active_settings();
         activate_settings();
         if not config.loadout.use_custom_talents then
-            config.loadout.talents_code = wowhead_talent_code();
             core.talents_update_needed = true;
-            update_buffs_frame();
+            update_loadout_frame();
         end
     end,
     ["PLAYER_EQUIPMENT_CHANGED"] = function()
@@ -264,12 +268,15 @@ local event_dispatch = {
     end,
     ["PLAYER_LEVEL_UP"] = function()
         core.old_ranks_checks_needed = true;
+        sc.loadout.force_update = true;
     end,
     ["LEARNED_SPELL_IN_TAB"] = function()
         core.old_ranks_checks_needed = true;
+        sc.loadout.force_update = true;
     end,
     ["SOCKET_INFO_UPDATE"] = function()
         core.equipment_update_needed = true;
+        sc.loadout.force_update = true;
     end,
     ["GLYPH_ADDED"] = function()
         if not config.loadout.use_custom_talents then
@@ -518,6 +525,29 @@ local function command(arg)
         sw_activate_tab(__sc_frame.tabs[7]);
     elseif arg == "settings" or arg == "opt" or arg == "options" or arg == "conf" or arg == "configure" then
         sw_activate_tab(__sc_frame.tabs[8]);
+    elseif string.find(arg, "force set") then
+        local substrs = {};
+        for s in arg:gmatch("%S+") do
+            table.insert(substrs, s);
+        end
+        local set_id = tonumber(substrs[3]);
+        local num_pieces = tonumber(substrs[4]);
+        if set_id and num_pieces then
+            core.equipment_update_needed = true;
+            sc.equipment.force_item_sets[set_id] = num_pieces;
+        end
+        print(string.format("Forcing item set %d to have %d pieces", set_id, num_pieces));
+    elseif string.find(arg, "force item") then
+        local substrs = {};
+        for s in arg:gmatch("%S+") do
+            table.insert(substrs, s);
+        end
+        local item_id = tonumber(substrs[3]);
+        if item_id then
+            core.equipment_update_needed = true;
+            sc.equipment.force_items[item_id] = item_id;
+        end
+        print(string.format("Forcing item %d", item_id));
     elseif arg == "reset" then
         core.use_char_defaults = 1;
         core.use_acc_defaults = 1;

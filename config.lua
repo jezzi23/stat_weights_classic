@@ -32,7 +32,7 @@ local default_settings     = {
     tooltip_display_stat_weights_effect_per_sec     = false,
     tooltip_display_stat_weights_effect_until_oom   = false,
     tooltip_display_avg_cost                        = true,
-    tooltip_display_avg_cast                        = true,
+    tooltip_display_avg_cast                        = false,
     tooltip_display_cast_until_oom                  = false,
     tooltip_display_cast_and_tap                    = false,
     tooltip_display_sp_effect_calc                  = false,
@@ -147,17 +147,16 @@ end
 local function default_p_acc()
     return {
         profiles = {
-            ["Default"] = default_profile()
+            ["Primary"] = default_profile()
         }
     };
 end
 
 local default_loadout_config = {
 
-    name = "Default",
+    name = "Main",
 
     use_custom_talents = false,
-    talents_code = "",
     custom_talents_code = "",
     force_apply_buffs = false,
     use_custom_lvl = false,
@@ -180,8 +179,8 @@ local default_loadout_config = {
 
 local function default_p_char()
     local data = {
-        main_spec_profile = "Default",
-        second_spec_profile = "Default",
+        main_spec_profile = "Primary",
+        second_spec_profile = "Primary",
         active_loadout = 1,
         loadouts = {
             sc.utils.deep_table_copy(default_loadout_config),
@@ -258,10 +257,6 @@ local function activate_settings()
             end
         end
     end
-
-    --if __sc_frame.libstub_icon_checkbox:GetChecked() == config.settings.general_libstub_minimap_icon.hide then
-    --    __sc_frame.libstub_icon_checkbox:Click();
-    --end
 end
 
 local function set_active_loadout(idx)
@@ -316,15 +311,33 @@ local function new_profile(profile_name, profile_to_copy)
     __sc_p_acc.profiles[profile_name] = {};
     load_persistent_data(__sc_p_acc.profiles[profile_name], profile_to_copy);
     __sc_p_acc.profiles[profile_name].settings = sc.utils.deep_table_copy(profile_to_copy.settings);
-    print(__sc_p_acc.profiles[profile_name].settings);
     -- switch to new profile
     __sc_p_char[spec_keys[sc.core.active_spec]] = profile_name;
-    print(config.settings);
     set_active_settings()
-    print(config.settings);
     activate_settings();
-    print(config.settings);
     return true;
+end
+
+local function delete_profile()
+
+        local cnt = 0;
+        for _, _ in pairs(__sc_p_acc.profiles) do
+            cnt = cnt + 1;
+            if cnt > 1 then
+                break;
+            end
+        end
+        if cnt > 1 then
+            __sc_p_acc.profiles[__sc_p_char[sc.config.spec_keys[sc.core.active_spec]]] = nil;
+        end
+end
+local function reset_profile()
+
+    local profile_name = __sc_p_char[sc.config.spec_keys[sc.core.active_spec]];
+    __sc_p_acc.profiles[profile_name].settings = {};
+    load_persistent_data(__sc_p_acc.profiles[profile_name].settings, default_settings);
+    set_active_settings()
+    activate_settings();
 end
 
 local function new_profile_from_default(profile_name)
@@ -333,6 +346,32 @@ end
 
 local function new_profile_from_active_copy(profile_name)
     return new_profile(profile_name, __sc_p_acc.profiles[config.active_profile_name]);
+end
+
+local function delete_loadout()
+        local n = #__sc_p_char.loadouts;
+        if n == 1 then
+            return;
+        end
+
+        if n ~= active_loadout then
+            for i = __sc_p_char.active_loadout, n-1 do
+                __sc_p_char.loadouts[i] = __sc_p_char.loadouts[i+1];
+            end
+        end
+        __sc_p_char.loadouts[n] = nil;
+
+        config.set_active_loadout(1);
+end
+
+local function reset_loadout()
+
+    local idx = __sc_p_char.active_loadout;
+    local name = __sc_p_char.loadouts[idx].name;
+    __sc_p_char.loadouts[idx] = {name = name};
+    load_persistent_data(__sc_p_char.loadouts[idx], default_loadout_config);
+
+    config.set_active_loadout(idx);
 end
 
 local function new_loadout(name, loadout_to_copy)
@@ -365,6 +404,10 @@ local function new_loadout_from_default(name)
 end
 
 
+config.delete_profile = delete_profile;
+config.reset_profile = reset_profile;
+config.reset_loadout = reset_loadout;
+config.delete_loadout = delete_loadout;
 config.new_profile_from_default = new_profile_from_default;
 config.new_profile_from_active_copy = new_profile_from_active_copy;
 config.load_settings = load_settings;
