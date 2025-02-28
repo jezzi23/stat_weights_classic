@@ -9,7 +9,6 @@ local font                      = sc.ui.font;
 local load_sw_ui                = sc.ui.load_sw_ui;
 local create_sw_base_ui         = sc.ui.create_sw_base_ui;
 local sw_activate_tab           = sc.ui.sw_activate_tab;
-local update_buffs_frame        = sc.ui.update_buffs_frame;
 local update_profile_frame      = sc.ui.update_profile_frame;
 local update_loadout_frame      = sc.ui.update_loadout_frame;
 
@@ -25,7 +24,8 @@ local reassign_overlay_icon     = sc.overlay.reassign_overlay_icon;
 local update_overlay            = sc.overlay.update_overlay;
 
 local update_tooltip            = sc.tooltip.update_tooltip;
-local write_tooltip             = sc.tooltip.write_tooltip;
+local write_spell_tooltip       = sc.tooltip.write_spell_tooltip;
+local write_item_tooltip        = sc.tooltip.write_item_tooltip;
 
 -------------------------------------------------------------------------
 local core                      = {};
@@ -34,13 +34,13 @@ sc.core                         = core;
 core.addon_name                 = "SpellCoda";
 
 local version_major             = 0;
-local version_minor             = 9;
-local version_patch             = 0;
+local version_minor             = 1;
+local version_build             = sc.addon_build_id;
 
-core.version_id                 = version_patch + version_minor*1000 + version_major*1000000;
+core.version_id                 = version_build + version_minor*1000 + version_major*1000000;
 core.version                    = tostring(version_major) .. "." ..
                                   tostring(version_minor) .. "." ..
-                                  tostring(version_patch);
+                                  tostring(version_build);
 
 core.sw_addon_loaded            = false;
 
@@ -208,7 +208,7 @@ local event_dispatch = {
             return;
         end
 
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
         reassign_overlay_icon(arg)
     end,
     ["UPDATE_STEALTH"] = function()
@@ -216,7 +216,7 @@ local event_dispatch = {
             return;
         end
         core.special_action_bar_changed = true;
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
     end,
     ["UPDATE_BONUS_ACTIONBAR"] = function()
         if not core.sw_addon_loaded then
@@ -224,7 +224,7 @@ local event_dispatch = {
         end
 
         core.special_action_bar_changed = true;
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
     end,
     ["ACTIONBAR_PAGE_CHANGED"] = function()
         if not core.sw_addon_loaded then
@@ -232,7 +232,7 @@ local event_dispatch = {
         end
 
         core.special_action_bar_changed = true;
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
     end,
     ["UNIT_EXITED_VEHICLE"] = function(_, arg)
         if not core.sw_addon_loaded or config.settings.overlay_disable then
@@ -241,7 +241,7 @@ local event_dispatch = {
 
         if arg == "player" then
             core.special_action_bar_changed = true;
-            sc.loadout.force_update = true;
+            sc.loadouts.force_update = true;
         end
     end,
     ["ACTIVE_TALENT_GROUP_CHANGED"] = function()
@@ -255,7 +255,7 @@ local event_dispatch = {
     end,
     ["CHARACTER_POINTS_CHANGED"] = function()
 
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
         set_active_settings();
         activate_settings();
         if not config.loadout.use_custom_talents then
@@ -268,15 +268,15 @@ local event_dispatch = {
     end,
     ["PLAYER_LEVEL_UP"] = function()
         core.old_ranks_checks_needed = true;
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
     end,
     ["LEARNED_SPELL_IN_TAB"] = function()
         core.old_ranks_checks_needed = true;
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
     end,
     ["SOCKET_INFO_UPDATE"] = function()
         core.equipment_update_needed = true;
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
     end,
     ["GLYPH_ADDED"] = function()
         if not config.loadout.use_custom_talents then
@@ -414,7 +414,12 @@ C_Timer.After(1.0, refresh_tooltip);
 
 GameTooltip:HookScript("OnTooltipSetSpell", function()
     if not config.settings.tooltip_disable then
-        write_tooltip();
+        write_spell_tooltip();
+    end
+end)
+GameTooltip:HookScript("OnTooltipSetItem", function(self)
+    if not config.settings.tooltip_disable_item then
+        write_item_tooltip(self);
     end
 end)
 

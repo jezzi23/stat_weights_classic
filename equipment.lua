@@ -1,6 +1,8 @@
 local _, sc = ...;
 
-local apply_effect                     = sc.loadout.apply_effect;
+local attr                             = sc.attr;
+local apply_effect                     = sc.loadouts.apply_effect;
+local special_item_properties          = sc.loadouts.special_item_properties;
 ---------------------------------------------------------------------------------------------------
 local equipment = {};
 
@@ -40,8 +42,7 @@ local function detect_sets(loadout)
         loadout.num_set_pieces[k] = 0;
     end
 
-    for item = 1, 18 do
-        local id = GetInventoryItemID("player", item);
+    for _, id in pairs(loadout.items) do
         local set_id = sc.set_items[id];
         if set_id then
             if not loadout.num_set_pieces[set_id] then
@@ -52,6 +53,148 @@ local function detect_sets(loadout)
     end
 end
 
+local GetItemStats = GetItemStats or C_Item.GetItemStats
+-- NOTE: ItemStat mods are quite useless, e.g. Nature spell damage comes up as spell power to all
+--       Instead rely on generator to all effects except for stat attributes and 
+--
+
+local function check_item_properties(lname)
+    for k, v in pairs(lname_item_property_to_id) do
+        if string.find(lname, k) then
+            return v;
+        end
+    end
+    return nil;
+end
+
+-- Generated spell effects handle most item effects but some require special handling
+local item_stats_handler = {
+    ITEM_MOD_POWER_REGEN0_SHORT = function(effects, val, special_property, forced, undo)
+        if special_property == special_item_properties.concentration then
+            if undo then
+                val = -(val + 1);
+            else
+                val = val + 1;
+            end
+            effects.raw.mp5 = effects.raw.mp5 + val;
+        end
+    end,
+    ITEM_MOD_SPELL_POWER = function(effects, val, special_property, forced, undo)
+        if not forced then
+            return;
+        end
+        if special_property >= special_item_properties.holy_wrath and
+            special_property <= special_item_properties.arcane_wrath then
+            -- special_property is now the school id
+            if undo then
+                val = -(val + 1);
+            else
+                val = val + 1;
+            end
+            effects.by_school.sp_dmg_flat[special_property] = effects.by_school.sp_dmg_flat[special_property] + val;
+        end
+    end,
+    ITEM_MOD_SPELL_HEALING_DONE = function(effects, val, special_property, forced, undo)
+        if not forced then
+            return;
+        end
+        if special_property == special_item_properties.healing then
+            if undo then
+                val = -(val + 1);
+            else
+                val = val + 1;
+            end
+            effects.raw.healing_power_flat = effects.raw.healing_power_flat + val;
+        end
+    end,
+    ITEM_MOD_ATTACK_POWER_SHORT = function(effects, val, special_property, forced, undo)
+        if not forced then
+            return;
+        end
+        if special_property == special_item_properties.power then
+            if undo then
+                val = -(val + 1);
+            else
+                val = val + 1;
+            end
+            effects.raw.ap = effects.raw.ap + val;
+            effects.raw.rap = effects.raw.rap + val;
+        end
+    end,
+    ITEM_MOD_INTELLECT_SHORT = function(effects, val, _, forced, undo)
+        if not forced then
+            return;
+        end
+        if undo then
+            val = -val;
+        end
+        effects.by_attr.stats[attr.intellect] = effects.by_attr.stats[attr.intellect] + val;
+    end,
+    ITEM_MOD_SPIRIT_SHORT = function(effects, val, _, forced, undo)
+        if not forced then
+            return;
+        end
+        if undo then
+            val = -val;
+        end
+        effects.by_attr.stats[attr.spirit] = effects.by_attr.stats[attr.spirit] + val;
+    end,
+    ITEM_MOD_STRENGTH_SHORT = function(effects, val, _, forced, undo)
+        if not forced then
+            return;
+        end
+        if undo then
+            val = -val;
+        end
+        effects.by_attr.stats[attr.strength] = effects.by_attr.stats[attr.strength] + val;
+    end,
+    ITEM_MOD_AGILITY_SHORT = function(effects, val, _, forced, undo)
+        if not forced then
+            return;
+        end
+        if undo then
+            val = -val;
+        end
+        effects.by_attr.stats[attr.agility] = effects.by_attr.stats[attr.agility] + val;
+    end,
+};
+
+local function apply_item_stats(effects, link, forced, undo)
+
+    local property = check_item_properties(lname);
+    local item_stats = GetItemStats(link);
+
+    if item_stats[1] then
+        for k, v in pairs(item_stats[1]) do
+            item_stats_handler[k](effects, v, property, forced, undo);
+        end
+    end
+end
+
+local function apply_item_cmp(effects, effects_diffed, new, old)
+
+    cpy_effects(effects_diffed, effects);
+    -- force undo old item
+    if sc.items[old.id] then
+        for _, id in pairs(sc.items[old.id]) do
+            if sc.item_effects[id] then
+                apply_effect(effects_diffed, id, sc.item_effects[id], true, 1, true, false)
+            end
+        end
+    end
+    apply_item_stats(effects_diffed, new.link, true, true);
+    -- force add new item
+    if sc.items[new.id] then
+        for _, id in pairs(sc.items[new.id]) do
+            if sc.item_effects[id] then
+                apply_effect(effects_diffed, id, sc.item_effects[id], true, 1, false, false)
+            end
+        end
+    end
+    apply_item_stats(effects_diffed, old.link, true, false);
+
+    return effects, effects_diffed, true;
+end
 
 local wpn_strs = { [16] = "mh", [17] = "oh", [18] = "ranged"};
 
@@ -62,6 +205,9 @@ local force_items = {};
 
 local function apply_equipment(loadout, effects)
 
+    for slot = 1, 18 do
+        loadout.items[slot] = GetInventoryItemID("player", slot);
+    end
     detect_sets(loadout);
 
     local found_anything = false;
@@ -99,6 +245,11 @@ local function apply_equipment(loadout, effects)
         end
     end
 
+    -- NOTE: Enchant changes might not force an equipment update
+    for k, v in pairs(loadout.enchants) do
+        loadout.enchants[k] = nil;
+    end
+
     -- NOTE: shortly after logging in, the equipment querying API won't work
     --       (but does for /reload). Track if we get nothing so we can signal
     --       that equipment scanning needs to be done again on next update
@@ -106,26 +257,24 @@ local function apply_equipment(loadout, effects)
     for item = 1, 18 do
         local item_link = GetInventoryItemLink("player", item);
         if item_link then
-            local id = GetInventoryItemID("player", item);
+            local id = loadout.items[item];
             if id and sc.items[id] then
                 for _, effect_id in pairs(sc.items[id]) do
                     apply_effect(effects, effect_id, sc.item_effects[effect_id], false, 1.0);
                 end
             end
             found_anything = true;
+            local _, enchant_id, gem1, gem2, gem3, gem4 =
+                strsplit(":", item_link:match("|Hitem:(.+)|h"));
+                print(item_link:match("|Hitem:(.+)|h"));
+            enchant_id = tonumber(enchant_id);
+            if enchant_id then
+                loadout.enchants[enchant_id] = 1;
+            end
             local item_stats = GetItemStats(item_link);
-            if item_stats then
-
-                if item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] then
-                    effects.raw.mp5 = effects.raw.mp5 + item_stats["ITEM_MOD_POWER_REGEN0_SHORT"] + 1;
-                end
-
-                if item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] then
-                    for i = 2,7 do
-                        effects.by_school.target_res_flat[i] =
-                            effects.by_school.target_res_flat[i] - (item_stats["ITEM_MOD_SPELL_PENETRATION_SHORT"] - 1);
-                    end
-                end
+            print(GetItemInfo(id));
+            for k, v in pairs(item_stats) do
+                print(k,v);
             end
         end
         if wpn_strs[item] then
@@ -146,15 +295,10 @@ local function apply_equipment(loadout, effects)
         end
     end
 
-    -- NOTE: Enchant changes might not force an equipment update
-    loadout.enchants = {};
     -- just do weapon enchants for now, are others even needed?
     local _, _, _, enchant_id = GetWeaponEnchantInfo();
     if sc.enchants[enchant_id] then
-        for _, spid in pairs(sc.enchants[enchant_id]) do
-            apply_effect(effects, spid, sc.enchant_effects[spid], false, 1.0, false);
-            loadout.enchants[spid] = 1;
-        end
+        loadout.enchants[enchant_id] = 1;
     end
 
     if bit.band(sc.game_mode, sc.game_modes.season_of_discovery) ~= 0 then
@@ -163,15 +307,18 @@ local function apply_equipment(loadout, effects)
             if rune_slot then
                 if rune_slot.itemEnchantmentID then
                     loadout.enchants[rune_slot.itemEnchantmentID] = 1;
-                    if sc.enchants[rune_slot.itemEnchantmentID] then
-                        for _, spid in pairs(sc.enchants[rune_slot.itemEnchantmentID]) do
-                            apply_effect(effects, spid, sc.enchant_effects[spid], false, 1.0, false);
-                        end
-                    end
-
                 end
             end
         end
+    end
+
+    for id, _ in pairs(loadout.enchants) do
+        if sc.enchants[id] then
+            for _, effect_id in pairs(sc.enchants[id]) do
+                apply_effect(effects, effect_id, sc.enchant_effects[effect_id], false, 1.0, false);
+            end
+        end
+
     end
 
     if sc.core.__sw__test_all_codepaths then
@@ -214,5 +361,6 @@ equipment.set_tiers = set_tiers;
 equipment.apply_equipment = apply_equipment;
 equipment.force_item_sets = force_item_sets;
 equipment.force_items = force_items;
+equipment.apply_item_cmp = apply_item_cmp;
 
 sc.equipment = equipment;

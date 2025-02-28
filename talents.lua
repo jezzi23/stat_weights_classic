@@ -2,7 +2,7 @@ local _, sc                = ...;
 
 local class                 = sc.class;
 local config                = sc.config;
-local apply_effect          = sc.loadout.apply_effect;
+local apply_effect          = sc.loadouts.apply_effect;
 ---------------------------------------------------------------------------------------------------
 local talents_export        = {};
 

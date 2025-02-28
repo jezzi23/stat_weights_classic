@@ -43,6 +43,7 @@ local default_settings     = {
     tooltip_display_resource_regen                  = true,
 
     tooltip_disable                                 = false,
+    tooltip_disable_item                            = false,
     tooltip_shift_to_show                           = false,
     tooltip_clear_original                          = false,
     tooltip_hide_cd_coom                            = false,
@@ -69,8 +70,7 @@ local default_settings     = {
     overlay_disable                                 = false,
     overlay_resource_regen                          = true,
     overlay_old_rank                                = false,
-    overlay_old_rank_limit_to_known                 = false,
-    overlay_single_effect_only                      = false,
+    overlay_old_rank_limit_to_known                 = true,
     overlay_icon_top_clearance                      = false,
     overlay_icon_bottom_clearance                   = false,
 
@@ -88,6 +88,7 @@ local default_settings     = {
     spell_calc_list                                 = {
         [6603] = 6603,
         [78] = 78,
+        [23881] = 23881,
         [75] = 75,
         [2973] = 2973,
         [133] = 133,
@@ -102,14 +103,18 @@ local default_settings     = {
         [2098] = 2098,
         [686] = 686,
     },
-    calc_list_use_highest_rank                      = true,
+    calc_list_use_highest_rank                     = true,
+    calc_fight_type                                = 1,
 
     -- general settings
     general_libstub_minimap_icon                   = true,
-    general_prioritize_heal                        = true,
-    general_average_proc_effects                   = true,
     general_spellbook_button                       = true,
     general_version_mismatch_notify                = true,
+
+    -- general spell settings
+    general_prio_heal                              = true,
+    general_prio_multiplied_effect                 = true,
+    general_average_proc_effects                   = true,
 
     libstub_icon_conf                              = { hide = false },
 };
@@ -254,6 +259,8 @@ local function activate_settings()
                         f:SetText(v);
                     end
                 end
+            elseif ft == "DropDownMenu" then
+                f:init_func();
             end
         end
     end

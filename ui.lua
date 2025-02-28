@@ -8,19 +8,19 @@ local highest_learned_rank                      = sc.utils.highest_learned_rank;
 local wowhead_talent_link                       = sc.talents.wowhead_talent_link;
 local wowhead_talent_code_from_url              = sc.talents.wowhead_talent_code_from_url;
 
-local simulation_type                           = sc.calc.simulation_type;
+local fight_types                                = sc.calc.fight_types;
 
 local effect_colors                             = sc.utils.effect_colors;
-local format_number                             = sc.utils.format_number
+local format_number                             = sc.utils.format_number;
+local color_by_lvl_diff                         = sc.utils.color_by_lvl_diff;
 
-local update_loadout_and_effects_diffed_from_ui = sc.loadout.update_loadout_and_effects_diffed_from_ui;
-local update_loadout_and_effects                = sc.loadout.update_loadout_and_effects;
-local active_loadout                            = sc.loadout.active_loadout
 
+local update_loadout_and_effects_diffed_from_ui = sc.loadouts.update_loadout_and_effects_diffed_from_ui;
+local update_loadout_and_effects                = sc.loadouts.update_loadout_and_effects;
+local active_loadout                            = sc.loadouts.active_loadout
 
 local stats_for_spell                           = sc.calc.stats_for_spell;
 local spell_info                                = sc.calc.spell_info;
-local cast_until_oom                            = sc.calc.cast_until_oom;
 local spell_diff                                = sc.calc.spell_diff;
 
 local buff_category                             = sc.buffs.buff_category;
@@ -35,12 +35,13 @@ local ui = {};
 local __sc_frame = {};
 
 local icon_overlay_font = "Interface\\AddOns\\SpellCoda\\font\\Oswald-Bold.ttf";
+local role_icons = "Interface\\LFGFrame\\UI-LFG-ICON-ROLES";
 local font = "GameFontHighlightSmall";
 local libstub_data_broker = LibStub("LibDataBroker-1.1", true)
 local libstub_icon = libstub_data_broker and LibStub("LibDBIcon-1.0", true)
 local libstub_launcher;
 
-local function display_spell_diff(i, spell_id_eval, spell_id_src, calc_list, spell_info_normal, spell_info_diff, frame, dual_spell, sim_type)
+local function display_spell_diff(i, calc_list, diff, frame)
     if not calc_list[i] then
         calc_list[i] = {};
 
@@ -51,19 +52,19 @@ local function display_spell_diff(i, spell_id_eval, spell_id_src, calc_list, spe
 
         calc_list[i].role_icon = CreateFrame("Frame", nil, frame);
         calc_list[i].role_icon:SetSize(15, 15);
-        calc_list[i].role_icon:SetPoint("TOPRIGHT", -230, frame.y_offset+2);
+        calc_list[i].role_icon:SetPoint("TOPLEFT", 225, frame.y_offset+2);
         calc_list[i].role_icon.tex = calc_list[i].role_icon:CreateTexture(nil, "ARTWORK");
-        calc_list[i].role_icon.tex:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
+        calc_list[i].role_icon.tex:SetTexture(role_icons);
 
         calc_list[i].change = frame:CreateFontString(nil, "OVERLAY");
         calc_list[i].change:SetFontObject(font);
-        calc_list[i].change:SetPoint("TOPRIGHT", -180, frame.y_offset);
+        calc_list[i].change:SetPoint("TOPLEFT", 255, frame.y_offset);
         calc_list[i].first = frame:CreateFontString(nil, "OVERLAY");
         calc_list[i].first:SetFontObject(font);
-        calc_list[i].first:SetPoint("TOPRIGHT", -115, frame.y_offset);
+        calc_list[i].first:SetPoint("TOPLEFT", 325, frame.y_offset);
         calc_list[i].second = frame:CreateFontString(nil, "OVERLAY");
         calc_list[i].second:SetFontObject(font);
-        calc_list[i].second:SetPoint("TOPRIGHT", -45, frame.y_offset);
+        calc_list[i].second:SetPoint("TOPLEFT", 390, frame.y_offset);
 
 
         calc_list[i].cancel_button = CreateFrame("Button", "nil", frame, "UIPanelButtonTemplate");
@@ -83,64 +84,68 @@ local function display_spell_diff(i, spell_id_eval, spell_id_src, calc_list, spe
             fontstr:ClearAllPoints();
             fontstr:SetPoint("CENTER", calc_list[i].cancel_button, "CENTER");
         end
+        frame.spells_add_tip:SetPoint("TOPLEFT", 5, frame.y_offset-25);
     end
-    local spell = spells[spell_id_eval];
-
     local v = calc_list[i];
 
-    v.cancel_button.__id_src = spell_id_src;
+    v.cancel_button.__id_src = diff.id;
 
-    local diff = spell_diff(spell_info_normal, spell_info_diff, sim_type);
-    local rank_str = "(Rank "..spell.rank..")";
-    if spell.rank == 0 then
-        rank_str = "";
-    end
-    local lname = GetSpellInfo(spell_id_eval);
-    v.name_str:SetText(lname.." "..rank_str);
+    v.name_str:SetText(diff.disp);
 
     v.name_str:SetTextColor(222/255, 192/255, 40/255);
 
-    if dual_spell or bit.band(spells[spell_id_eval].flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
+    if diff.heal_like then
         v.role_icon.tex:SetTexCoord(0.25, 0.5, 0.0, 0.25);
     else
         v.role_icon.tex:SetTexCoord(0.25, 0.5, 0.25, 0.5);
     end
     v.role_icon.tex:SetAllPoints(v.role_icon);
 
-    v.change:SetText(format_number(diff.diff_ratio, 2).."%");
+    local change = format_number(diff.diff_ratio, 2).."%";
     if diff.diff_ratio < 0 then
         v.change:SetTextColor(195/255, 44/255, 11/255);
+        change = change;
     elseif diff.diff_ratio > 0 then
         v.change:SetTextColor(33/255, 185/255, 21/255);
+        change = "+"..change;
     else
         v.change:SetTextColor(1, 1, 1);
     end
+    v.change:SetText(change);
 
-    v.first:SetText(format_number(diff.first, 2));
+    local first = format_number(diff.first, 2);
     if diff.first < 0 then
         v.first:SetTextColor(195/255, 44/255, 11/255);
+        first = "-"..first;
     elseif diff.first > 0 then
         v.first:SetTextColor(33/255, 185/255, 21/255);
+        first = "+"..first;
     else
         v.first:SetTextColor(1, 1, 1);
     end
+    v.first:SetText(first);
 
-    v.second:SetText(format_number(diff.second, 2));
+    local second = format_number(diff.second, 2);
     if diff.second < 0 then
         v.second:SetTextColor(195/255, 44/255, 11/255);
+        second = "-"..second;
     elseif diff.second > 0 then
         v.second:SetTextColor(33/255, 185/255, 21/255);
+        second = "+"..second;
     else
         v.second:SetTextColor(1, 1, 1);
     end
+    v.second:SetText(second);
 
     for _, f in pairs(v) do
         f:Show();
     end
-    if dual_spell then
+    if diff.heal_like then
         calc_list[i].cancel_button:Hide();
     end
 end
+
+local cached_spells_cmp_diffs = {};
 
 local function update_calc_list()
 
@@ -152,46 +157,49 @@ local function update_calc_list()
     end
     local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui()
 
-    local spell_stats_normal = {};
-    local spell_stats_diffed = {};
-    local spell_info_normal = {};
-    local spell_info_diffed = {};
-
+    local eval_flags = sc.overlay.overlay_eval_flags();
     local i = 0;
     for k, _ in pairs(config.settings.spell_calc_list) do
 
-        local spell_id_src = k;
         if config.settings.calc_list_use_highest_rank and spells[k] then
             k = highest_learned_rank(spells[k].base_id);
         end
         if k and spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
 
             i = i + 1;
+            cached_spells_cmp_diffs[i] = cached_spells_cmp_diffs[i] or {};
 
-            stats_for_spell(spell_stats_normal, spells[k], loadout, effects);
-            stats_for_spell(spell_stats_diffed, spells[k], loadout, effects_diffed);
-            spell_info(spell_info_normal, spells[k], spell_stats_normal, loadout, effects);
-            cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
-            spell_info(spell_info_diffed, spells[k], spell_stats_diffed, loadout, effects_diffed);
-            cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
-
-            display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, false, __sc_frame.calculator_frame.sim_type);
+            spell_diff(cached_spells_cmp_diffs[i],
+                       config.settings.calc_fight_type,
+                       spells[k],
+                       k,
+                       loadout,
+                       effects,
+                       effects_diffed,
+                       eval_flags);
 
             -- for spells with both heal and dmg
             if spells[k].healing_version then
 
                 i = i + 1;
-                stats_for_spell(spell_stats_normal, spells[k].healing_version, loadout, effects);
-                stats_for_spell(spell_stats_diffed, spells[k].healing_version, loadout, effects_diffed);
-                spell_info(spell_info_normal, spells[k].healing_version, spell_stats_normal, loadout, effects);
-                cast_until_oom(spell_info_normal, spell_stats_normal, loadout, effects, true);
-                spell_info(spell_info_diffed, spells[k].healing_version, spell_stats_diffed, loadout, effects_diffed);
-                cast_until_oom(spell_info_diffed, spell_stats_diffed, loadout, effects_diffed, true);
+                cached_spells_cmp_diffs[i] = cached_spells_cmp_diffs[i] or {};
 
-                ui.display_spell_diff(i, k, spell_id_src, frame.calc_list, spell_info_normal, spell_info_diffed, frame, true, __sc_frame.calculator_frame.sim_type);
+                spell_diff(cached_spells_cmp_diffs[i],
+                           config.settings.calc_fight_type,
+                           spells[k].healing_version,
+                           k,
+                           loadout,
+                           effects,
+                           effects_diffed,
+                           eval_flags);
             end
         end
     end
+
+    for j = 1, i do
+        ui.display_spell_diff(j, frame.calc_list, cached_spells_cmp_diffs[j], frame);
+    end
+
     __sc_frame.calculator_frame.num_spells = i;
 end
 
@@ -221,7 +229,7 @@ local buffs_views = {
 
 local function update_buffs_frame()
 
-    sc.loadout.force_update = true;
+    sc.loadouts.force_update = true;
 
     local buffs_list_alpha = 1.0;
 
@@ -298,7 +306,7 @@ end
 
 local function update_loadout_frame()
 
-    sc.loadout.force_update = true;
+    sc.loadouts.force_update = true;
 
     sc.config.activate_loadout_config();
 
@@ -558,20 +566,6 @@ local function filtered_spell_view(spell_ids, name_filter)
     return filtered;
 end
 
-local function color_by_lvl_diff(clvl, other_lvl)
-    if other_lvl + 6 <= clvl then
-        return "|cFFA9A9A9";
-    elseif other_lvl + 3 <= clvl then
-        return "|cFF00FF00";
-    elseif other_lvl - 2 <= clvl then
-        return "|cFFFFFF00";
-    elseif other_lvl - 3 <= clvl then
-        return "|cFFFF8C00";
-
-    else
-        return "|cFFFF0000";
-    end
-end
 
 local function populate_scrollable_spell_view(view, starting_idx)
     local cnt = 1;
@@ -856,7 +850,7 @@ local function multi_row_checkbutton(buttons_info, parent_frame, num_columns, fu
         end
         f:SetScript("OnClick", function(self)
             config.settings[self._settings_id] = self:GetChecked();
-            sc.loadout.force_update = true;
+            sc.loadouts.force_update = true;
             if v.func then
                 v.func(self);
             end
@@ -1118,7 +1112,7 @@ local function create_sw_ui_spells_frame()
         role_icon:SetSize(15, 15);
         role_icon:SetPoint("TOPLEFT", effect_x_offset, __sc_frame.spells_frame.y_offset+2);
         local role_icon_texture = role_icon:CreateTexture(nil, "ARTWORK");
-        role_icon_texture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
+        role_icon_texture:SetTexture(role_icons);
 
 
         local effect_per_sec_str = __sc_frame.spells_frame:CreateFontString(nil, "OVERLAY");
@@ -1601,11 +1595,6 @@ local function create_sw_ui_overlay_frame()
                 sc.core.uresource_regen = true;
             end,
         },
-        {
-            id = "overlay_single_effect_only",
-            txt = "Show for 1x effect",
-            tooltip = "Numbers derived from expected effect is displayed as 1.0x effect instead of optimistic 5.0x for Prayer of Healing as an example.";
-        },
     };
 
     multi_row_checkbutton(overlay_settings_checks, __sc_frame.overlay_frame, 2);
@@ -1838,7 +1827,8 @@ local function create_sw_ui_overlay_frame()
         {
             id = "overlay_display_hit_chance",
             txt = "Hit chance",
-            color = effect_colors.hit_chance
+            color = effect_colors.hit_chance,
+            tooltip = "Probability of not missing, parrying or dodging."
         },
         {
             id = "overlay_display_crit_chance",
@@ -1947,7 +1937,7 @@ local function create_sw_ui_calculator_frame()
              label_str = "Ranged Attack Power"
          },
          wep = {
-             label_str = "Weapon Skill"
+             label_str = "All Weapon Skill"
          },
          crit_rating = {
              label_str = "Critical"
@@ -2075,27 +2065,34 @@ local function create_sw_ui_calculator_frame()
 
     -- sim type button
     __sc_frame.calculator_frame.sim_type_button = 
-        CreateFrame("Button", "sw_sim_type_button", __sc_frame.calculator_frame, "UIDropDownMenuTemplate"); 
+        CreateFrame("Button", "__sc_frame_setting_calc_fight_type", __sc_frame.calculator_frame, "UIDropDownMenuTemplate");
+
+    __sc_frame.calculator_frame.sim_type_button._type = "DropDownMenu";
     __sc_frame.calculator_frame.sim_type_button:SetPoint("TOPRIGHT", 10, __sc_frame.calculator_frame.y_offset);
     __sc_frame.calculator_frame.sim_type_button.init_func = function()
         UIDropDownMenu_Initialize(__sc_frame.calculator_frame.sim_type_button, function()
             
-            if __sc_frame.calculator_frame.sim_type == simulation_type.spam_cast then 
+            if config.settings.calc_fight_type == fight_types.repeated_casts then
                 UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Repeated casts");
-            elseif __sc_frame.calculator_frame.sim_type == simulation_type.cast_until_oom then 
+                __sc_frame.calculator_frame.spell_diff_header_center:SetText("Per sec");
+                __sc_frame.calculator_frame.spell_diff_header_right:SetText("Effect");
+            elseif config.settings.calc_fight_type == fight_types.cast_until_oom then
                 UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Cast until OOM");
+                __sc_frame.calculator_frame.spell_diff_header_center:SetText("Effect");
+                __sc_frame.calculator_frame.spell_diff_header_right:SetText("Duration (sec)");
             end
             UIDropDownMenu_SetWidth(__sc_frame.calculator_frame.sim_type_button, 130);
 
             UIDropDownMenu_AddButton(
                 {
                     text = "Repeated cast",
-                    checked = __sc_frame.calculator_frame.sim_type == simulation_type.spam_cast;
+                    checked = config.settings.calc_fight_type == fight_types.repeated_casts,
                     func = function()
 
-                        __sc_frame.calculator_frame.sim_type = simulation_type.spam_cast;
+                        config.settings.calc_fight_type = fight_types.repeated_casts;
                         UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Repeated casts");
-                        __sc_frame.calculator_frame.spell_diff_header_center:SetText("Effet per sec");
+                        __sc_frame.calculator_frame.spell_diff_header_center:SetText("Per sec");
+                        __sc_frame.calculator_frame.spell_diff_header_right:SetText("Effect");
                         update_calc_list();
                     end
                 }
@@ -2103,12 +2100,13 @@ local function create_sw_ui_calculator_frame()
             UIDropDownMenu_AddButton(
                 {
                     text = "Cast until OOM",
-                    checked = __sc_frame.calculator_frame.sim_type == simulation_type.cast_until_oom;
+                    checked = config.settings.calc_fight_type == fight_types.cast_until_oom,
                     func = function()
 
-                        __sc_frame.calculator_frame.sim_type = simulation_type.cast_until_oom;
+                        config.settings.calc_fight_type = fight_types.cast_until_oom;
                         UIDropDownMenu_SetText(__sc_frame.calculator_frame.sim_type_button, "Cast until OOM");
-                        __sc_frame.calculator_frame.spell_diff_header_center:SetText("Duration (s)");
+                        __sc_frame.calculator_frame.spell_diff_header_center:SetText("Effect");
+                        __sc_frame.calculator_frame.spell_diff_header_right:SetText("Duration (sec)");
                         update_calc_list();
                     end
                 }
@@ -2121,6 +2119,7 @@ local function create_sw_ui_calculator_frame()
     f:SetPoint("BOTTOMLEFT", x_pad, 5);
     f:SetText("Abilities can be added from Spells tab");
     f:SetTextColor(1.0,  1.0,  1.0);
+    __sc_frame.calculator_frame.spells_add_tip = f;
 
     __sc_frame.calculator_frame.sim_type_button:SetText("Simulation type");
 
@@ -2134,22 +2133,21 @@ local function create_sw_ui_calculator_frame()
 
     __sc_frame.calculator_frame.spell_diff_header_left = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     __sc_frame.calculator_frame.spell_diff_header_left:SetFontObject(font);
-    __sc_frame.calculator_frame.spell_diff_header_left:SetPoint("TOPRIGHT", -180, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_left:SetPoint("TOPLEFT", x_pad + 245, __sc_frame.calculator_frame.y_offset);
     __sc_frame.calculator_frame.spell_diff_header_left:SetText("Change");
 
     __sc_frame.calculator_frame.spell_diff_header_center = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     __sc_frame.calculator_frame.spell_diff_header_center:SetFontObject(font);
-    __sc_frame.calculator_frame.spell_diff_header_center:SetPoint("TOPRIGHT", -110, __sc_frame.calculator_frame.y_offset);
-    __sc_frame.calculator_frame.spell_diff_header_center:SetText("Per sec");
+    __sc_frame.calculator_frame.spell_diff_header_center:SetPoint("TOPLEFT", x_pad + 320, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_center:SetText("");
 
     __sc_frame.calculator_frame.spell_diff_header_right = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     __sc_frame.calculator_frame.spell_diff_header_right:SetFontObject(font);
-    __sc_frame.calculator_frame.spell_diff_header_right:SetPoint("TOPRIGHT", -45, __sc_frame.calculator_frame.y_offset);
-    __sc_frame.calculator_frame.spell_diff_header_right:SetText("Effect");
+    __sc_frame.calculator_frame.spell_diff_header_right:SetPoint("TOPLEFT", x_pad + 380, __sc_frame.calculator_frame.y_offset);
+    __sc_frame.calculator_frame.spell_diff_header_right:SetText("");
 
 
     __sc_frame.calculator_frame.calc_list = {};
-    __sc_frame.calculator_frame.sim_type = simulation_type.spam_cast;
 end
 
 local function create_sw_ui_loadout_frame()
@@ -2714,7 +2712,7 @@ local function create_sw_ui_loadout_frame()
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
-    f_txt:SetText("Default health %");
+    f_txt:SetText("Default health");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
     f = CreateFrame("EditBox", "__sc_frame_loadout_default_target_hp_perc", __sc_frame.loadout_frame, "InputBoxTemplate");
@@ -2784,6 +2782,8 @@ local function create_sw_ui_loadout_frame()
 
 end
 
+local forced_buffs_lname_to_id = {};
+
 local function create_sw_ui_buffs_frame()
 
     local f, f_txt;
@@ -2795,7 +2795,7 @@ local function create_sw_ui_buffs_frame()
     getglobal(f:GetName()).tooltip = 
         "The selected buffs will be applied behind the scenes to the spell calculations.";
     f:SetScript("OnClick", function(self)
-        sc.loadout.force_update = true;
+        sc.loadouts.force_update = true;
         config.loadout.force_apply_buffs = self:GetChecked();
         update_buffs_frame();
     end);
@@ -2890,16 +2890,18 @@ local function create_sw_ui_buffs_frame()
         getglobal(f:GetName() .. 'Text'):SetTextColor(1, 0, 0);
 
         f:SetScript("OnClick", function(self)
-            sc.loadout.force_update = true;
+            sc.loadouts.force_update = true;
 
             if self:GetChecked() then
                 if view.side == "lhs" then
                     for _, v in ipairs(view.buffs) do
                         config.loadout.buffs[v.id] = 1;
+                        forced_buffs_lname_to_id[GetSpellInfo(v.id)] = v.id;
                     end
                 else
                     for _, v in ipairs(view.buffs) do
                         config.loadout.target_buffs[v.id] = 1;
+                        forced_buffs_lname_to_id[GetSpellInfo(v.id)] = v.id;
                     end
                 end
             else
@@ -2951,7 +2953,7 @@ local function create_sw_ui_buffs_frame()
             checkbtn.side = view.side;
             checkbtn:SetScript("OnMouseDown", function(self, btn)
 
-                sc.loadout.force_update = true;
+                sc.loadouts.force_update = true;
                 local config_buffs;
                 if view.side == "lhs" then
                     config_buffs = config.loadout.buffs;
@@ -2961,9 +2963,12 @@ local function create_sw_ui_buffs_frame()
                 if btn == "LeftButton" then
                     if not config_buffs[self.buff_id] then
                         config_buffs[self.buff_id] = 1;
+
+                        forced_buffs_lname_to_id[GetSpellInfo(self.buff_id)] = self.buff_id;
                         __sc_frame.buffs_frame[view.side].num_checked = __sc_frame.buffs_frame[view.side].num_checked + 1;
                     else
                         config_buffs[self.buff_id] = nil;
+                        forced_buffs_lname_to_id[GetSpellInfo(self.buff_id)] = nil;
                         __sc_frame.buffs_frame[view.side].num_checked = __sc_frame.buffs_frame[view.side].num_checked - 1;
                     end
 
@@ -3293,10 +3298,7 @@ local function create_sw_ui_profile_frame()
     __sc_frame.profile_frame.new_profile_section.button2 = f;
 end
 
---local average_proc_sidebuffer = {
-average_proc_sidebuffer = {
-};
-
+local average_proc_sidebuffer = {};
 
 local function create_sw_ui_settings_frame()
 
@@ -3359,8 +3361,12 @@ local function create_sw_ui_settings_frame()
 
     local spell_settings = {
         {
-            id = "general_prioritize_heal",
-            txt = "Prioritize heal for hybrid spells in overlay and tooltip",
+            id = "general_prio_heal",
+            txt = "Prioritize healing for hybrid spells with both damage and healing",
+        },
+        {
+            id = "general_prio_multiplied_effect",
+            txt = "Prioritize optimistic effect over single effect",
         },
         {
             id = "general_average_proc_effects",
@@ -3594,8 +3600,8 @@ local function load_sw_ui()
     create_sw_ui_profile_frame();
     create_sw_ui_settings_frame();
 
-    __sc_frame.calculator_frame.sim_type = simulation_type.spam_cast;
-    __sc_frame.calculator_frame.sim_type_button.init_func();
+    --__sc_frame.calculator_frame.sim_type = fight_types.repeated_casts;
+    --__sc_frame.calculator_frame.sim_type_button.init_func();
 
     sw_activate_tab(__sc_frame.tabs[1]);
     __sc_frame:Hide();
@@ -3701,6 +3707,7 @@ ui.update_profile_frame                 = update_profile_frame;
 ui.update_loadout_frame                 = update_loadout_frame;
 ui.add_spell_book_button                = add_spell_book_button;
 ui.add_to_options                       = add_to_options;
+ui.forced_buffs_lname_to_id             = forced_buffs_lname_to_id;
 
 sc.ui = ui;
 

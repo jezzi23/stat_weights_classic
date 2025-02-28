@@ -9,36 +9,35 @@ local classes                                       = sc.classes;
 local powers                                        = sc.powers;
 local spell_flags                                   = sc.spell_flags;
 local comp_flags                                    = sc.comp_flags;
-local lookups = sc.lookups;
+local lookups                                       = sc.lookups;
 
 local best_rank_by_lvl                              = sc.utils.best_rank_by_lvl;
 
 local config                                        = sc.config;
 
-local effects_zero_diff                             = sc.loadout.effects_zero_diff;
-local effects_diff                                  = sc.loadout.effects_diff;
-local empty_effects                                 = sc.loadout.empty_effects;
-local cpy_effects                                   = sc.loadout.cpy_effects;
-local loadout_flags                                 = sc.loadout.loadout_flags;
+local effects_zero_diff                             = sc.loadouts.effects_zero_diff;
+local effects_diff                                  = sc.loadouts.effects_diff;
+local empty_effects                                 = sc.loadouts.empty_effects;
+local cpy_effects                                   = sc.loadouts.cpy_effects;
+local loadout_flags                                 = sc.loadouts.loadout_flags;
 
 -- l_talents will always point to the same table, avoiding further dereferencing
-local l_talents                                     = sc.loadout.active_loadout().talents;
+local l_talents                                     = sc.loadouts.active_loadout().talents;
 
 local set_tiers                                     = sc.equipment.set_tiers;
 
-local is_buff_up                                    = sc.buffs.is_buff_up;
+local get_buff                                      = sc.buffs.get_buff;
+local get_buff_by_lname                             = sc.buffs.get_buff_by_lname;
 
 local dps_per_ap                                    = sc.scaling.dps_per_ap;
 local get_combat_rating_effect                      = sc.scaling.get_combat_rating_effect;
 local spirit_mana_regen                             = sc.scaling.spirit_mana_regen;
 
-local client_class_stats_spell                      = sc.mechanics.client_class_stats_spell;
-
 --------------------------------------------------------------------------------
 local calc              = {};
 
-local simulation_type   = {
-    spam_cast      = 1,
+local fight_types   = {
+    repeated_casts = 1,
     cast_until_oom = 2
 };
 
@@ -53,8 +52,6 @@ local evaluation_flags = {
     -- To ignore when e.g. heroic strike normally uses expectation as gains over normal attack
     expectation_of_self                     = bit.lshift(1, 7),
 };
-
-
 
 local function spell_hit(lvl, lvl_target, hit, pvp)
     local base_hit = 0;
@@ -127,12 +124,13 @@ local effect_flags = {
     is_periodic             = bit.lshift(1, 0),
     triggers_on_crit        = bit.lshift(1, 1),
     use_flat                = bit.lshift(1, 2),
-    base_on_periodic_effect = bit.lshift(1, 3),
-    should_track_crit_mod   = bit.lshift(1, 4),
-    glance                  = bit.lshift(1, 5),
-    no_crit                 = bit.lshift(1, 6),
-    can_be_blocked          = bit.lshift(1, 7),
-    block_competes_with_hit = bit.lshift(1, 8), -- white melee auto attacks
+    add_flat                = bit.lshift(1, 3),
+    base_on_periodic_effect = bit.lshift(1, 4),
+    should_track_crit_mod   = bit.lshift(1, 5),
+    glance                  = bit.lshift(1, 6),
+    no_crit                 = bit.lshift(1, 7),
+    can_be_blocked          = bit.lshift(1, 8),
+    always_hits             = bit.lshift(1, 9),
 };
 
 -- flexible way to add custom effects that behave according to flags
@@ -152,13 +150,6 @@ local function add_extra_effect(stats, flags,  utilization, description, value, 
     if bit.band(flags, effect_flags.should_track_crit_mod) ~= 0 then
         stats.special_crit_mod_tracked = i;
     end
-
-    --stats["extra_effect_is_glance" .. i] = bit.band(flags, effect_flags.glance) ~= 0;
-    --stats["extra_effect_no_crit" .. i] = bit.band(flags, effect_flags.no_crit) ~= 0;
-    --stats["extra_effect_is_periodic" .. i] = true;
-    --stats["extra_effect_on_crit" .. i] = bit.band(flags, effect_flags.triggers_on_crit) ~= 0;
-    --stats["extra_effect_use_flat" .. i] = bit.band(flags, effect_flags.use_flat) ~= 0;
-    --stats["extra_effect_base_on_periodic" .. i] = bit.band(flags, effect_flags.base_on_periodic_effect) ~= 0;
 end
 
 -- For physical mechanics, formulas are based on this
@@ -170,7 +161,7 @@ local function stats_attack_skill(comp, loadout, effects, eval_flags)
         return loadout.lvl * 5, nil
     end
 
-    local skill = effects.raw.skill;
+    local skill = 0;
 
     local subclass = nil;
     if bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 and
@@ -188,6 +179,13 @@ local function stats_attack_skill(comp, loadout, effects, eval_flags)
     else
         skill = skill +  loadout.lvl * 5;
     end
+
+    for mask, v in pairs(effects.wpn_subclass.skill_flat) do
+        if bit.band(mask, bit.lshift(1, subclass)) ~= 0 then
+            skill = skill + v;
+        end
+    end
+
     return skill, subclass;
 end
 
@@ -230,8 +228,7 @@ local function stats_crit(extra, attack_skill, attack_subclass, bid, comp, loado
             local base_skill = math.min(attack_skill, loadout.lvl*5);
             local diff = base_skill - loadout.target_defense;
             if diff < 0 then
-                -- this clamping allows crit to still be shown to avoid confusion
-                crit = math.max(0.0000000001, crit + diff * 0.002);
+                crit = crit + diff * 0.002;
             else
                 crit = crit + diff * 0.0004;
             end
@@ -307,7 +304,7 @@ local function stats_res(comp, spell, loadout, effects)
         res_pen_flat = math.max(res_pen_flat, effects.by_school.target_res_flat[comp["school"..i]]);
         i = i + 1;
     end
-    local resi = (1.0 + effects.by_school.target_res[comp.school1]) * (config.loadout.target_res + res_pen_flat);
+    local resi = (1.0 + effects.by_school.target_res[comp.school1]) * (loadout.target_res + res_pen_flat);
     -- mod res by school currently used to snapshot equipment and set bonuses
 
     if bit.band(spell.flags, spell_flags.binary) ~= 0 then
@@ -600,12 +597,12 @@ local function stats_glance(stats, bid, loadout)
         return 0.0, 0.0, 0.0;
     end
     local glance_p = 0.1 + (loadout.target_lvl*5 - math.min(loadout.lvl*5, stats.attack_skill)) * 0.02;
-    local glance_red_min = 
+    local glance_min =
         math.max(0.01, math.min(0.91, 1.3 - 0.05*(loadout.target_defense-stats.attack_skill)))
-    local glance_red_max = 
+    local glance_max = 
         math.max(0.2, math.min(0.99, 1.3 - 0.03*(loadout.target_defense-stats.attack_skill)))
 
-    return math.max(0.0, math.min(1.0, glance_p)), glance_red_min, glance_red_max;
+    return math.max(0.0, math.min(1.0, glance_p)), glance_min, glance_max;
 end
 
 -- Execution time of spell
@@ -662,8 +659,17 @@ local function stats_cast_time(stats, bid, comp, spell, loadout, effects, eval_f
     elseif bit.band(spell.flags, spell_flags.binary) ~= 0 then
         -- channeled, binary spells will either miss on the entire cast or fully hit
         -- thus expected cast time changes with hit chance with misses only taking up one gcd
-        local cast_time_avoided_by_miss = cast_time - gcd;
-        cast_time = cast_time - cast_time_avoided_by_miss * (1.0 - stats.hit_ot);
+        cast_time = cast_time * (1.0 - stats.miss_ot) + gcd * stats.miss_ot;
+    end
+    if class == classes.druid and config.settings.general_average_proc_effects then
+         --nature's grace
+        if l_talents.pts[113] ~= 0 and spell.direct and bit.band(spell.flags, bit.bor(spell_flags.instant, spell_flags.channel)) == 0 then
+            if bid == spids.wrath then
+                gcd = gcd - 0.5;
+            end
+
+            cast_time = (1.0 - stats.crit) * cast_time + stats.crit * (math.max(gcd, cast_time-0.5));
+        end
     end
 
 
@@ -699,7 +705,7 @@ end
 local function stats_avg_cost(cost, stats, bid, spell, loadout, effects)
 
     if config.settings.general_average_proc_effects then
-        cost = cost * (1.0 - stats.clearcast_p);
+        cost = cost * (1.0 - (stats.clearcast_p or 0.0));
     end
 
     if bit.band(spell.flags, spell_flags.uses_all_power) ~= 0 then
@@ -750,21 +756,11 @@ local function write_attack_table(stats, is_direct)
     end
     local p_sum = 0.0;
     local crit = stats["crit"..comp_substr];
-    --print("Attack table before");
-    --for k,v in pairs(attack_table) do
-    --    local key = v..comp_substr;
-    --    print(key, stats[key]);
-    --end
     for _, v in ipairs(attack_table) do
         local key = v..comp_substr;
         stats[key] = math.min(stats[key], 1.0 - p_sum);
         p_sum = p_sum + stats[key];
     end
-    --print("Attack table after");
-    --for k,v in pairs(attack_table) do
-    --    local key = v..comp_substr;
-    --    print(key, stats[key]);
-    --end
     -- normal hit becomes remainder
     stats["hit_normal"..comp_substr] = 1.0 - p_sum;
     stats["crit_excess"..comp_substr] = crit - stats["crit"..comp_substr];
@@ -801,24 +797,12 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
                                                                     effects);
 
     stats.threat_mod_flat, stats.threat_mod = stats_threat_mod(bid, direct, spell, effects);
-    stats.glance, stats.glance_red_min, stats.glance_red_max = stats_glance(stats, bid, loadout);
+    stats.glance, stats.glance_min, stats.glance_max = stats_glance(stats, bid, loadout);
     stats.dodge, stats.parry, stats.block, stats.block_amount = stats_avoidances(stats.attack_skill, direct, spell, loadout);
     stats.spell_power = stats_sp(benefit_id, direct, spell, loadout, effects);
     stats.coef, stats.coef_max = stats_coef(benefit_id, direct, spell, loadout, effects, eval_flags);
     stats.armor_dr = stats_armor_dr(stats.armor, direct, loadout);
     stats.spell_mod = stats_spell_mod(stats.armor_dr, direct, spell, effects, stats);
-
-    if glance ~= 0 then
-        --add_extra_effect(stats,
-        --                 bit.bor(effect_flags.no_crit, effect_flags.glance),
-        --                 stats.glance,
-        --                 string.format("Glance (%.2f%%|%.2fx-%.2fx)",
-        --                               100*stats.glance,
-        --                               1.0 - stats.glance_red_min,
-        --                               1.0 - stats.glance_red_max),
-        --                 0.5*(stats.glance_red_min+stats.glance_red_max)
-        --                 );
-    end
 
     write_attack_table(stats, true);
     -- hit used as probability to do any kind of damage, allowing procs of attack
@@ -828,7 +812,27 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
         local crit = stats.crit + stats.crit_excess;
         stats.crit = stats.hit * crit;
         stats.hit_normal = stats.hit * (1.0 - crit);
+        stats.crit_excess = 0;
+    else
+        if stats.glance ~= 0 then
+            add_extra_effect(stats,
+                             bit.bor(effect_flags.no_crit, effect_flags.glance, effect_flags.always_hits),
+                             stats.glance,
+                             "Glance",
+                             0.5*(stats.glance_min+stats.glance_max)
+                             );
+        end
+        if stats.block ~= 0 then
+            add_extra_effect(stats,
+                             bit.bor(effect_flags.no_crit, effect_flags.always_hits, effect_flags.add_flat),
+                             stats.block,
+                             "Block",
+                             -stats.block_amount
+                             );
+        end
+
     end
+
 
     local extra_jumps;
     if effects.ability.jumps_flat[bid] then
@@ -875,7 +879,7 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
                                                                             effects);
 
     stats.threat_mod_flat_ot, stats.threat_mod_ot = stats_threat_mod(bid, periodic, spell, effects);
-    stats.glance_ot, stats.glance_red_min_ot, stats.glance_red_max_ot = stats_glance(stats, bid, loadout);
+    stats.glance_ot, stats.glance_min_ot, stats.glance_max_ot = stats_glance(stats, bid, loadout);
 
     stats.dodge_ot, stats.parry_ot, stats.block_ot, stats.block_amount_ot = stats_avoidances(stats.attack_skill_ot, periodic, spell, loadout);
     stats.spell_power_ot = stats_sp(benefit_id, periodic, spell, loadout, effects);
@@ -891,6 +895,7 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
         local crit = stats.crit_ot + stats.crit_excess_ot;
         stats.crit_ot = stats.hit_ot * crit;
         stats.hit_normal_ot = stats.hit_ot * (1.0 - crit);
+        stats.crit_excess_ot = 0;
     end
 
     local extra_jumps;
@@ -900,7 +905,7 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
             extra_jumps ~= 0 then
             extra_jumps = extra_jumps - 1;
         end
-    else 
+    else
         extra_jumps = 0;
     end
     stats.periodic_jumps = (periodic.jumps or 0) + extra_jumps
@@ -918,6 +923,8 @@ end
 
 
 local stats_needing_both_components = {
+    "hit",
+    "hit_normal",
     "crit_mod",
     "crit",
     "miss",
@@ -954,13 +961,11 @@ local class_stats_spell = (function()
                 if bid == spids.holy_light and spell.rank < 4 then
                     -- Subtract healing to account for blessing of light coef for low rank holy light
                     local bol_hl_val = nil;
-                    for _, id in pairs(lookups.bol_ids) do
-                        local bol = is_buff_up(loadout, loadout.friendly_towards, id, false);
-                        if bol then
-                            -- manually configured to be at index 1
-                            bol_hl_val = sc.friendly_buffs[id][1][sc.aura_idx_value];
-                            break;
-                        end
+                    local bol = get_buff_by_lname(loadout, loadout.friendly_towards, lookups.bol_lname, false) or
+                                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.greater_bol_lname, false);
+                    if bol then
+                        -- manually configured to be at index 1
+                        bol_hl_val = sc.friendly_buffs[bol][1][sc.aura_idx_value];
                     end
 
                     if bol_hl_val then
@@ -1090,32 +1095,6 @@ local class_stats_spell = (function()
     elseif class == classes.warlock then
         return function(anycomp, bid, stats, spell, loadout, effects)
 
-            if bid == spids.shadow_bolt then
-                -- Averages out ISB effect uptime based on crit
-                if config.settings.general_average_proc_effects then
-                    --local isb_buff_val = nil;
-                    --for k, _ in pairs(lookups.isb_ids) do
-                    --    local isb = is_buff_up(loadout, loadout.hostile_towards, k, false);
-                    --    if isb then
-                    --        isb_buff_val = sc.hostile_buffs[id][1][sc.aura_idx_value];
-                    --        break;
-                    --    end
-                    --end
-
-                    --local isb_pts = l_talents.pts[301];
-                    --local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
-
-                    --if isb_buff_val and isb_pts ~= 0 then
-
-                    --    stats.spell_dmg_mod_mul = stats.spell_dmg_mod_mul / (1.0 + isb_buff_val);
-
-                    --    stats.hit_inflation = stats.hit_inflation + (1.0 + isb_buff_val)/(1.0 + isb_pts*0.04*isb_uptime) - 1;
-                    --else
-                    --    stats.hit_inflation = stats.hit_inflation / (1.0 + isb_pts*0.04*isb_uptime);
-                    --end
-                    --stats.spell_dmg_mod_mul = stats.spell_dmg_mod_mul * (1.0 + isb_pts*0.04*isb_uptime);
-                end
-            end
         end
     elseif class == classes.druid then
         return function(anycomp, bid, stats, spell, loadout, effects)
@@ -1144,23 +1123,60 @@ local class_stats_spell = (function()
                 stats.resource_refund_mul_hit = stats.resource_refund + 0.5 * stats.cost_actual;
             end
 
-            -- nature's grace
-            --local pts = l_talents.pts[113];
-            ----if pts ~= 0 and spell.cast_time ~= spell.periodic.dur and bit.band(spell_flags.instant, spell.flags) == 0 and cast_reduction < 1.0 then
-            ---- channel check?
-            --if pts ~= 0 and spell.direct and bit.band(spell_flags.instant, spell.flags) == 0 then
-            --    --stats.crit_reduces_cast_flat = 
-
-            --    --local crit_cast_reduction = 0.5 * stats.crit;
-
-            --    --stats.cast_time = spell.cast_time - crit_cast_reduction;
-            --    --stats.cast_time = stats.cast_time * (1.0 - stats.cast_mod);
-
-            --    stats.crit_reduces_cast_flat = stats.crit_reduces_cast_flat + 0.5*pts/3;
-            --end
         end
     end
 end)();
+
+local function post_process_stats(comp, spell, stats, loadout)
+
+    if bit.band(comp.flags, comp_flags.heal_to_full) ~= 0 then
+        anycomp.spell_mod = 1.0;
+        anycomp.spell_mod_ot = 1.0;
+        stats.effect_mod = 1.0;
+        stats.effect_mod_ot = 1.0;
+        stats.effect_mod_flat = 0.0;
+        stats.effect_mod_ot_flat = 0.0;
+        stats.base_mod = 1.0;
+        stats.base_mod_ot = 1.0;
+        stats.crit = 0.0;
+
+        local amount = (1.0 - loadout.friendly_hp_perc) * loadout.friendly_hp_max;
+        stats.base_mod_flat = amount;
+        stats.base_mod_ot_flat = amount;
+    end
+
+    if spell.base_id == spids.shadow_bolt and config.settings.general_average_proc_effects then
+        -- Averages out ISB effect uptime based on crit for expectation
+        -- but hit values displayed use the full buff if present
+        local isb_pts = l_talents.pts[301];
+        if isb_pts ~= 0 then
+            local isb_buff_val = nil;
+
+            local isb = get_buff_by_lname(loadout, loadout.hostile_towards, lookups.isb_lname, false, false);
+            if isb then
+                isb_buff_val = sc.hostile_buffs[isb][1][sc.aura_idx_value];
+                print("found isb", isb, isb_buff_val);
+            end
+
+            local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
+
+            print("Okay")
+            print("Spell mod before", stats.spell_mod);
+            if isb_buff_val then
+
+                stats.spell_mod = stats.spell_mod / (1.0 + isb_buff_val);
+
+                stats.hit_inflation = stats.hit_inflation + (1.0 + isb_buff_val)/(1.0 + isb_pts*0.04*isb_uptime) - 1;
+            else
+                stats.hit_inflation = stats.hit_inflation / (1.0 + isb_pts*0.04*isb_uptime);
+            end
+            stats.spell_mod = stats.spell_mod * (1.0 + isb_pts*0.04*isb_uptime);
+            print("Spell mod after", stats.spell_mod);
+        end
+        --print(stats.spell_dmg_mod_mul);
+        --print("dd");
+    end
+end
 
 local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
 
@@ -1221,7 +1237,7 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     -- shared behavior
     class_stats_spell(anycomp, bid, stats, spell, loadout, effects);
     -- client specific behaviour injected
-    client_class_stats_spell(anycomp, bid, stats, spell, loadout, effects);
+    sc.mechanics.client_class_stats_spell(anycomp, bid, stats, spell, loadout, effects);
 
     if spell.direct then
         spell_stats_direct(stats, spell, loadout, effects, eval_flags);
@@ -1229,22 +1245,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     if spell.periodic then
         spell_stats_periodic(stats, spell, loadout, effects, eval_flags);
     end
-    if bit.band(anycomp.flags, comp_flags.heal_to_full) ~= 0 then
-        anycomp.spell_mod = 1.0;
-        anycomp.spell_mod_ot = 1.0;
-        stats.effect_mod = 1.0;
-        stats.effect_mod_ot = 1.0;
-        stats.effect_mod_flat = 0.0;
-        stats.effect_mod_ot_flat = 0.0;
-        stats.base_mod = 1.0;
-        stats.base_mod_ot = 1.0;
-        stats.crit = 0.0;
 
-        local amount = (1.0 - loadout.friendly_hp_perc) * loadout.friendly_hp_max;
-        stats.base_mod_flat = amount;
-        stats.base_mod_ot_flat = amount;
-    end
-
+    -- special things may need to be added at this final stage
+    post_process_stats(anycomp, spell, stats, loadout)
 
     -- Temporary workaround:
     -- Direct or OT counterpart my need to be defined for tooltips
@@ -1269,30 +1272,37 @@ local function resolve_extra_spell_effects(info, stats)
 
         local flags = stats["extra_effect_flags" .. k];
 
-        if bit.band(flags, effect_flags.glance) ~= 0 then
-            info.glance_index = k;
-        end
         local crit_cap = 1.0;
         if bit.band(flags, effect_flags.no_crit) ~= 0 then
             crit_cap = 0.0;
         end
-        if bit.band(flags, effect_flags.no_crit) ~= 0 then
-            crit_cap = 0.0;
+        local hit_min = 0.0;
+        if bit.band(flags, effect_flags.always_hits) ~= 0 then
+            hit_min = 1.0;
+        end
+
+        local val = stats["extra_effect_val" .. k];
+        local flat = 0;
+        if bit.band(flags, bit.bor(effect_flags.use_flat, effect_flags.add_flat)) ~= 0 then
+            -- currently only done for direct effects until we need more
+            flat = val;
+            val = 1.0;
         end
         if bit.band(flags, effect_flags.is_periodic) ~= 0 then
             info.num_periodic_effects = info.num_periodic_effects + 1;
             local i = info.num_periodic_effects;
 
             info["ot_flags" .. i] = flags;
+            info["ot_hit_normal" .. i] = math.max(hit_min, stats.hit_normal_ot);
             if bit.band(flags, effect_flags.triggers_on_crit) ~= 0 then
                 info["ot_min_noncrit_if_hit" .. i] = 0;
                 info["ot_max_noncrit_if_hit" .. i] = 0;
                 if bit.band(flags, effect_flags.base_on_periodic_effect) ~= 0 then
-                    info["ot_min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_min_crit_if_hit1;
-                    info["ot_max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_max_crit_if_hit1;
+                    info["ot_min_crit_if_hit" .. i] = val * info.ot_min_crit_if_hit1;
+                    info["ot_max_crit_if_hit" .. i] = val * info.ot_max_crit_if_hit1;
                 else
-                    info["ot_min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit1;
-                    info["ot_max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit1;
+                    info["ot_min_crit_if_hit" .. i] = val * info.min_crit_if_hit1;
+                    info["ot_max_crit_if_hit" .. i] = val * info.max_crit_if_hit1;
                 end
                 info["ot_ticks" .. i] = stats["extra_effect_ticks" .. k];
                 info["ot_tick_time" .. i] = stats["extra_effect_tick_time" .. k];
@@ -1302,16 +1312,16 @@ local function resolve_extra_spell_effects(info, stats)
                 info["ot_utilization" .. i] = stats["extra_effect_util" .. k];
             else
                 if bit.band(flags, effect_flags.base_on_periodic_effect) ~= 0 then
-                    info["ot_min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_min_noncrit_if_hit1;
-                    info["ot_max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_max_noncrit_if_hit1;
-                    info["ot_min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_min_crit_if_hit1;
-                    info["ot_max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_max_crit_if_hit1;
+                    info["ot_min_noncrit_if_hit" .. i] = val * info.ot_min_noncrit_if_hit1;
+                    info["ot_max_noncrit_if_hit" .. i] = val * info.ot_max_noncrit_if_hit1;
+                    info["ot_min_crit_if_hit" .. i] = val * info.ot_min_crit_if_hit1;
+                    info["ot_max_crit_if_hit" .. i] = val * info.ot_max_crit_if_hit1;
 
                 else
-                    info["ot_min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_noncrit_if_hit1;
-                    info["ot_max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_noncrit_if_hit1;
-                    info["ot_min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit1;
-                    info["ot_max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit1;
+                    info["ot_min_noncrit_if_hit" .. i] = val * info.min_noncrit_if_hit1;
+                    info["ot_max_noncrit_if_hit" .. i] = val * info.max_noncrit_if_hit1;
+                    info["ot_min_crit_if_hit" .. i] = val * info.min_crit_if_hit1;
+                    info["ot_max_crit_if_hit" .. i] = val * info.max_crit_if_hit1;
                 end
                 info["ot_ticks" .. i] = stats["extra_effect_ticks" .. k];
                 info["ot_tick_time" .. i] = stats["extra_effect_tick_time" .. k];
@@ -1324,28 +1334,32 @@ local function resolve_extra_spell_effects(info, stats)
             info.num_direct_effects = info.num_direct_effects + 1;
             local i = info.num_direct_effects;
 
+            if bit.band(flags, effect_flags.glance) ~= 0 then
+                info.glance_index = i;
+            end
             info["direct_flags" .. i] = flags;
+            info["hit_normal" .. i] = math.max(hit_min, stats.hit_normal);
             info["direct_description" .. i] = stats["extra_effect_desc" .. k];
             info["direct_utilization" .. i] = stats["extra_effect_util" .. k];
 
             info["crit" .. i] = math.min(stats.crit, crit_cap);
 
-            if (stats["extra_effect_use_flat" .. k]) then
-                info["min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k];
-                info["max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k];
-                info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k];
-                info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k];
+            if bit.band(flags, effect_flags.use_flat) ~= 0 then
+                info["min_noncrit_if_hit" .. i] = flat;
+                info["max_noncrit_if_hit" .. i] = flat;
+                info["min_crit_if_hit" .. i] = flat;
+                info["max_crit_if_hit" .. i] = flat;
             else
                 if bit.band(flags, effect_flags.base_on_periodic_effect) ~= 0 then
-                    info["min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_min_noncrit_if_hit1;
-                    info["max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_max_noncrit_if_hit1;
-                    info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_min_crit_if_hit1;
-                    info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.ot_max_crit_if_hit1;
+                    info["min_noncrit_if_hit" .. i] = val * info.ot_min_noncrit_if_hit1;
+                    info["max_noncrit_if_hit" .. i] = val * info.ot_max_noncrit_if_hit1;
+                    info["min_crit_if_hit" .. i] = val * info.ot_min_crit_if_hit1;
+                    info["max_crit_if_hit" .. i] = val * info.ot_max_crit_if_hit1;
                 else
-                    info["min_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_noncrit_if_hit1;
-                    info["max_noncrit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_noncrit_if_hit1;
-                    info["min_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.min_crit_if_hit1;
-                    info["max_crit_if_hit" .. i] = stats["extra_effect_val" .. k] * info.max_crit_if_hit1;
+                    info["min_noncrit_if_hit" .. i] = math.max(0, val * info.min_noncrit_if_hit1 + flat);
+                    info["max_noncrit_if_hit" .. i] = math.max(0, val * info.max_noncrit_if_hit1 + flat);
+                    info["min_crit_if_hit" .. i] = math.max(0, val * info.min_crit_if_hit1 + flat);
+                    info["max_crit_if_hit" .. i] = math.max(0, val * info.max_crit_if_hit1 + flat);
                 end
             end
             if bit.band(flags, effect_flags.triggers_on_crit) ~= 0 then
@@ -1355,7 +1369,7 @@ local function resolve_extra_spell_effects(info, stats)
         end
     end
 
-    -- accumulate periodics
+    -- accumulate periodics 
     info.total_ot_min_noncrit_if_hit = 0;
     info.total_ot_max_noncrit_if_hit = 0;
     info.total_ot_min_crit_if_hit = 0;
@@ -1411,9 +1425,6 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
     -- direct
     local expected_direct_sum = 0;
     for i = 1, info.num_direct_effects do
-        --expected_direct_if_hit = expected_direct_if_hit + 0.5 * info["direct_utilization" .. i] *
-        --    ((1.0 - info["crit" .. i]) * (info["min_noncrit_if_hit" .. i] + info["max_noncrit_if_hit" .. i]) +
-        --        info["crit" .. i] * (info["min_crit_if_hit" .. i] + info["max_crit_if_hit" .. i]));
 
         local effect_expected = 0.5 * info["direct_utilization"..i] *
             (info["hit_normal"..i] *
@@ -1422,16 +1433,10 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
             info["crit"..i] *
                 (info["min_crit_if_hit"..i] + info["max_crit_if_hit"..i])
             );
+            -- for two roll table where normal hits and crits can be blocked
             if bit.band(info["direct_flags"..i], effect_flags.can_be_blocked) ~= 0 then
-                effect_expected = effect_expected - stats.block * stats.block_amount;
+                effect_expected = math.max(0, effect_expected - stats.block * stats.block_amount);
             end
-
-            if bit.band(info["direct_flags"..i], effect_flags.block_competes_with_hit) ~= 0 then
-                -- white auto attack, block probability lies outside of hit or miss, add to expectation
-                effect_expected = effect_expected +
-                    stats.block * 0.5 * (info["min_noncrit_if_hit" .. i] + info["max_noncrit_if_hit"..i]);
-            end
-            -- otherwise for yellow hits, blocked are already embedded into hit_normal or crit probabilities
         expected_direct_sum = expected_direct_sum + effect_expected;
     end
 
@@ -1466,9 +1471,6 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
     -- over time
     local expected_ot_sum = 0;
     for i = 1, info.num_periodic_effects do
-        --expected_ot_if_hit = expected_ot_if_hit + info["ot_utilization" .. i] *
-        --    ((1.0 - info["ot_crit" .. i]) * 0.5 * (info["ot_min_noncrit_if_hit" .. i] + info["ot_max_noncrit_if_hit" .. i]) +
-        --        info["ot_crit" .. i] * 0.5 * (info["ot_min_crit_if_hit" .. i] + info["ot_max_crit_if_hit" .. i]));
 
         local effect_expected = 0.5 * info["ot_utilization"..i] *
             (info["ot_hit_normal"..i] *
@@ -1479,11 +1481,6 @@ local function calc_expectation(info, spell, stats, loadout, num_unbounded_targe
             );
             if bit.band(info["ot_flags"..i], effect_flags.can_be_blocked) ~= 0 then
                 effect_expected = effect_expected - stats.block_ot * stats.block_amount_ot;
-            end
-
-            if bit.band(info["ot_flags"..i], effect_flags.block_competes_with_hit) ~= 0 then
-                effect_expected = effect_expected +
-                    stats.block_ot * 0.5 * (info["ot_min_noncrit_if_hit" .. i] + info["ot_max_noncrit_if_hit"..i]);
             end
 
         expected_ot_sum = expected_ot_sum + effect_expected;
@@ -1594,9 +1591,7 @@ local function direct_info(info, spell, loadout, stats, effects, eval_flags)
     info.crit1 = stats.crit;
     info.hit_normal1 = stats.hit_normal;
     info.direct_flags1 = 0;
-    if spell.base_id == sc.auto_attack_spell_id then
-        info.direct_flags1 = bit.bor(info.direct_flags1, effect_flags.block_competes_with_hit);
-    else
+    if spell.base_id ~= sc.auto_attack_spell_id then
         info.direct_flags1 = bit.bor(info.direct_flags1, effect_flags.can_be_blocked);
     end
     info.direct_utilization1 = 1.0;
@@ -1685,10 +1680,13 @@ local expectation_variations = {
     "expected", "expected_st", "expected_ot", "expected_ot_st", "expected_direct", "expected_direct_st", "threat", "threat_st", "threat_ot", "threat_ot_st", "threat_direct", "threat_direct_st"
 };
 
+local info_buffer = {};
+local stats_buffer = {};
+
 local secondary_info = {};
 local secondary_stats = {};
 
-local spell_info_from_stats;
+local spell_stats_info;
 
 local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
@@ -1707,9 +1705,6 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
     end
 
     local num_unbounded_targets = config.loadout.unbounded_aoe_targets;
-    if bit.band(eval_flags, evaluation_flags.assume_single_effect) ~= 0 then
-        num_unbounded_targets = 1;
-    end
 
     resolve_extra_spell_effects(info, stats);
 
@@ -1773,8 +1768,10 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.threat_ot = 0;
     end
 
+    info.aoe_to_single_ratio = info.expected/info.expected_st;
     if info.expected < info.expected_st or
         bit.band(eval_flags, evaluation_flags.assume_single_effect) ~= 0 then
+
 
         info.expected = info.expected_st;
         info.expected_ot = info.expected_ot_st;
@@ -1792,12 +1789,12 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
     if bit.band(spell.flags, spell_flags.on_next_attack) ~= 0 and
         bit.band(eval_flags, evaluation_flags.expectation_of_self) == 0 then
 
-        spell_info_from_stats(secondary_info,
-                              secondary_stats,
-                              spells[sc.auto_attack_spell_id],
-                              loadout,
-                              effects,
-                              eval_flags);
+        spell_stats_info(secondary_info,
+                         secondary_stats,
+                         spells[sc.auto_attack_spell_id],
+                         loadout,
+                         effects,
+                         bit.bor(eval_flags, evaluation_flags.isolate_mh));
 
         local atk = secondary_info;
         for _, v in pairs(expectation_variations) do
@@ -1818,7 +1815,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         bit.band(eval_flags, bit.bor(evaluation_flags.isolate_mh, evaluation_flags.isolate_oh)) == 0 then
         -- evaluate dual wield combined weapons
 
-        spell_info_from_stats(secondary_info,
+        spell_stats_info(secondary_info,
                               secondary_stats,
                               spell,
                               loadout,
@@ -1874,7 +1871,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
 end
 
-spell_info_from_stats = function(info, stats, spell, loadout, effects, eval_flags)
+spell_stats_info = function(info, stats, spell, loadout, effects, eval_flags)
     stats_for_spell(stats, spell, loadout, effects, eval_flags);
     spell_info(info, spell, stats, loadout, effects, eval_flags);
 end
@@ -1892,7 +1889,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     if not calculating_weights then
         mp2_not_casting = math.ceil(mp2_not_casting);
     end
-    local mp5 = effects.raw.mp5
+    local mp5 = effects.raw.mp5_flat
         +
         loadout.resources_max[powers.mana] * effects.raw.perc_max_mana_as_mp5
         +
@@ -1906,10 +1903,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
     --  don't use dynamic mana regen lua api for now
     calculating_weights = true;
 
-    -- TODO: don't use this when stat comparison is open
     if not config.loadout.use_custom_talents and not calculating_weights then
-        -- the mana regen calculation is correct, but use GetManaRegen() to detect
-        -- niche MP5 sources dynamically
         local _, x = GetManaRegen()
         mp1_casting = x;
     end
@@ -1936,27 +1930,27 @@ if class == "SHAMAN" then
 elseif class == "PRIEST" then
     special_abilities = {
         [spids.greater_heal] = function(spell, info, loadout, stats, effects)
-            if loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
-                if not stats.secondary_ability_stats then
-                    stats.secondary_ability_stats = {};
-                    stats.secondary_ability_info = {};
-                end
-                spell_info_from_stats(stats.secondary_ability_info, stats.secondary_ability_stats, spells[6077], loadout,
-                    effects);
+            --if loadout.num_set_pieces[set_tiers.pve_2] >= 8 then
+            --    if not stats.secondary_ability_stats then
+            --        stats.secondary_ability_stats = {};
+            --        stats.secondary_ability_info = {};
+            --    end
+            --    spell_stats_info(stats.secondary_ability_info, stats.secondary_ability_stats, spells[6077], loadout,
+            --        effects);
 
-                info.ot_min_noncrit_if_hit1 = stats.secondary_ability_info.ot_min_noncrit_if_hit1;
-                info.ot_max_noncrit_if_hit1 = stats.secondary_ability_info.ot_max_noncrit_if_hit1;
-                info.ot_min_crit_if_hit1 = stats.secondary_ability_info.ot_min_crit_if_hit1;
-                info.ot_max_crit_if_hit1 = stats.secondary_ability_info.ot_max_crit_if_hit1;
-                info.ot_ticks = stats.secondary_ability_info.ot_ticks;
-                info.ot_dur = stats.secondary_ability_info.ot_dur;
-                info.ot_tick_time = stats.secondary_ability_info.ot_tick_time;
-                info.expected_ot = stats.secondary_ability_info.expected_ot;
+            --    info.ot_min_noncrit_if_hit1 = stats.secondary_ability_info.ot_min_noncrit_if_hit1;
+            --    info.ot_max_noncrit_if_hit1 = stats.secondary_ability_info.ot_max_noncrit_if_hit1;
+            --    info.ot_min_crit_if_hit1 = stats.secondary_ability_info.ot_min_crit_if_hit1;
+            --    info.ot_max_crit_if_hit1 = stats.secondary_ability_info.ot_max_crit_if_hit1;
+            --    info.ot_ticks = stats.secondary_ability_info.ot_ticks;
+            --    info.ot_dur = stats.secondary_ability_info.ot_dur;
+            --    info.ot_tick_time = stats.secondary_ability_info.ot_tick_time;
+            --    info.expected_ot = stats.secondary_ability_info.expected_ot;
 
-                stats.coef_ot = stats.secondary_ability_stats.coef_ot;
-            end
+            --    stats.coef_ot = stats.secondary_ability_stats.coef_ot;
+            --end
 
-            calc_expectation(info, spell, stats, loadout);
+            --calc_expectation(info, spell, stats, loadout);
         end,
     };
 elseif class == "DRUID" then
@@ -1991,7 +1985,7 @@ else
     special_abilities = {};
 end
 
-local function resource_regen_info(info, spell, spell_id, loadout, effects)
+local function resource_regen_info(info, spell, spell_id, loadout, effects, _)
 
     local min;
     local bid = spell.base_id;
@@ -2058,7 +2052,7 @@ local function resource_regen_info(info, spell, spell_id, loadout, effects)
         info.total_restored = 0.0;
 
         local casting_regen = effects.raw.regen_while_casting;
-        if is_buff_up(loadout, "player", spell_id, true) then
+        if get_buff(loadout, "player", spell_id, true) then
             casting_regen = casting_regen - 1.0;
         end
         casting_regen = math.max(0, math.min(1.0, casting_regen));
@@ -2090,9 +2084,6 @@ local function only_threat_info(info, stats, spell, loadout, effects, eval_flags
     local anycomp = spell.direct or spell.periodic;
 
     local num_unbounded_targets = config.loadout.unbounded_aoe_targets;
-    if bit.band(eval_flags, evaluation_flags.assume_single_effect) ~= 0 then
-        num_unbounded_targets = 1;
-    end
     local direct = spell.direct;
     if direct then
 
@@ -2100,12 +2091,12 @@ local function only_threat_info(info, stats, spell, loadout, effects, eval_flags
         stats.miss, stats.extra_hit, stats.target_avg_resi =
             stats_hit(0, stats.attack_skill, stats.attack_subclass, bid, direct, spell, loadout, effects);
         stats.threat_mod_flat, stats.threat_mod = stats_threat_mod(bid, direct, spell, effects);
-        stats.hit = 1.0 - stats.miss;
         stats.block = 0;
         stats.crit = 0;
         stats.block_amount = 0;
         stats.armor_dr = 0;
         stats.dodge, stats.parry = stats_avoidances(stats.attack_skill, direct, spell, loadout);
+        stats.hit = 1.0 - stats.miss - stats.dodge - stats.parry;
         -- TODO: avoidances
 
         local extra_jumps;
@@ -2279,23 +2270,64 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
     return weights, normalize_table;
 end
 
-local function spell_diff(spell_normal, spell_diffed, sim_type)
-    if sim_type == simulation_type.spam_cast then
-        return {
-            diff_ratio = 100 * (spell_diffed.effect_per_sec / spell_normal.effect_per_sec - 1),
-            first = spell_diffed.effect_per_sec - spell_normal.effect_per_sec,
-            second = spell_diffed.expected - spell_normal.expected
-        };
-    elseif sim_type == simulation_type.cast_until_oom then
-        return {
-            diff_ratio = 100 * (spell_diffed.effect_until_oom / spell_normal.effect_until_oom - 1),
-            first = spell_diffed.time_until_oom - spell_normal.time_until_oom,
-            second = spell_diffed.effect_until_oom - spell_normal.effect_until_oom
-        };
+local function calc_spell_eval(spell, loadout, effects, eval_flags)
+    spell_stats_info(info_buffer, stats_buffer, spell, loadout, effects, eval_flags);
+    return info_buffer, stats_buffer;
+end
+
+local function calc_spell_threat(spell, loadout, effects, eval_flags)
+    only_threat_info(info_buffer, stats_buffer, spell, loadout, effects, eval_flags);
+    return info_buffer, stats_buffer;
+end
+
+local function calc_spell_resource_regen(spell, spell_id, loadout, effects, eval_flags)
+   resource_regen_info(info_buffer, spell, spell_id, loadout, effects, eval_flags)
+   return info_buffer;
+end
+
+local function spell_diff(out, fight_type, spell, spell_id, loadout, effects, effects_d, eval_flags)
+
+    out.disp = GetSpellInfo(spell_id);
+
+    local rank_str = " (Rank "..spell.rank..")";
+    if spell.rank == 0 then
+        rank_str = "";
+    end
+    out.disp = out.disp..rank_str;
+    out.id = spell_id;
+    out.tex = GetSpellTexture(spell_id);
+
+    out.heal_like = bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0;
+
+    if fight_types.repeated_casts == fight_type then
+        local info = calc_spell_eval(spell, loadout, effects, eval_flags);
+        local normal_eps = info.effect_per_sec;
+        local normal_exp = info.expected;
+
+        info = calc_spell_eval(spell, loadout, effects_d, eval_flags);
+
+        out.diff_ratio = 100 * (info.effect_per_sec / normal_eps - 1);
+        out.first = info.effect_per_sec - normal_eps;
+        out.second = info.expected - normal_exp;
+    else
+        local info, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
+        cast_until_oom(info, stats, loadout, effects, true);
+
+        local normal_exp_until_oom = info.effect_until_oom;
+        local normal_time_until_oom = info.time_until_oom;
+
+        info = calc_spell_eval(spell, loadout, effects_d, eval_flags);
+        cast_until_oom(info, stats, loadout, effects_d, true);
+
+        out.diff_ratio = 100 * (info.effect_until_oom / normal_exp_until_oom - 1);
+        out.first = info.effect_until_oom - normal_exp_until_oom;
+        out.second = info.time_until_oom - normal_time_until_oom;
     end
 end
 
-calc.simulation_type            = simulation_type;
+
+
+calc.fight_types                = fight_types;
 calc.evaluation_flags           = evaluation_flags;
 calc.stats_for_spell            = stats_for_spell;
 calc.spell_info                 = spell_info;
@@ -2305,5 +2337,10 @@ calc.get_combat_rating_effect   = get_combat_rating_effect;
 calc.spell_diff                 = spell_diff;
 calc.resource_regen_info        = resource_regen_info;
 calc.only_threat_info           = only_threat_info;
+calc.add_extra_effect           = add_extra_effect;
+calc.effect_flags               = effect_flags;
+calc.calc_spell_eval            = calc_spell_eval;
+calc.calc_spell_threat          = calc_spell_threat;
+calc.calc_spell_resource_regen  = calc_spell_resource_regen;
 
 sc.calc                      = calc;

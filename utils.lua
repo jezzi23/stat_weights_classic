@@ -107,10 +107,26 @@ local function effect_color(effect)
     return effect_colors[effect][1], effect_colors[effect][2], effect_colors[effect][3];
 end
 
+local function color_by_lvl_diff(clvl, other_lvl)
+    if other_lvl + 6 <= clvl then
+        return "|cFFA9A9A9";
+    elseif other_lvl + 3 <= clvl then
+        return "|cFF00FF00";
+    elseif other_lvl - 2 <= clvl then
+        return "|cFFFFFF00";
+    elseif other_lvl - 3 <= clvl then
+        return "|cFFFF8C00";
+    else
+        return "|cFFFF0000";
+    end
+end
+
 local function format_number(val, max_accuracy_digits)
 
     local abs_val = math.abs(val);
-    if (abs_val < 100.0 and max_accuracy_digits >= 2) then
+    if string.find(tostring(val), "nan") then
+        return "∞";
+    elseif (abs_val < 100.0 and max_accuracy_digits >= 2) then
         return string.format("%.2f", val);
     elseif (abs_val < 1000.0 and max_accuracy_digits >= 1) then
         return string.format("%.1f", val);
@@ -122,6 +138,19 @@ local function format_number(val, max_accuracy_digits)
         return string.format("%.1fm", val/1000000);
     else
         return "∞";
+    end
+end
+
+local function format_number_signed_colored(val, max_accuracy_digits)
+
+    local normal_format = format_number(val, max_accuracy_digits);
+
+    if val < 0 then
+        return "|cFFFF0000"..normal_format.."|r";
+    elseif val > 0 then
+        return "|cFF00FF00"..normal_format.."|r";
+    else
+        return normal_format;
     end
 end
 
@@ -182,6 +211,8 @@ utils.spell_cost                    = spell_cost;
 utils.spell_cast_time               = spell_cast_time;
 utils.add_all_spell_crit            = add_all_spell_crit;
 utils.format_number                 = format_number;
+utils.color_by_lvl_diff             = color_by_lvl_diff;
+utils.format_number_signed_colored  = format_number_signed_colored;
 utils.best_rank_by_lvl              = best_rank_by_lvl;
 utils.highest_learned_rank          = highest_learned_rank
 utils.next_rank                     = next_rank;

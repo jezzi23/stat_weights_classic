@@ -2,7 +2,7 @@ local _, sc               = ...;
 
 local class               = sc.class;
 local classes             = sc.classes;
-local apply_effect        = sc.loadout.apply_effect;
+local apply_effect        = sc.loadouts.apply_effect;
 
 local config              = sc.config;
 
@@ -84,14 +84,20 @@ local function detect_buffs(loadout)
     loadout.dynamic_buffs["player"] = {};
     loadout.dynamic_buffs["target"] = {};
     loadout.dynamic_buffs["mouseover"] = {};
+    loadout.dynamic_buffs_lname["player"] = {};
+    loadout.dynamic_buffs_lname["target"] = {};
+    loadout.dynamic_buffs_lname["mouseover"] = {};
     if loadout.player_name == loadout.target_name then
         loadout.dynamic_buffs["target"] = loadout.dynamic_buffs["player"]
+        loadout.dynamic_buffs_lname["target"] = loadout.dynamic_buffs_lname["player"]
     end
     if loadout.player_name == loadout.mouseover_name then
         loadout.dynamic_buffs["mouseover"] = loadout.dynamic_buffs["player"]
+        loadout.dynamic_buffs_lname["mouseover"] = loadout.dynamic_buffs_lname["player"]
     end
     if loadout.target_name == loadout.mouseover_name then
         loadout.dynamic_buffs["mouseover"] = loadout.dynamic_buffs["target"]
+        loadout.dynamic_buffs_lname["mouseover"] = loadout.dynamic_buffs_lname["target"]
     end
 
     for k, v in pairs(loadout.dynamic_buffs) do
@@ -109,7 +115,7 @@ local function detect_buffs(loadout)
             if not v[spell_id] or player_owned then
                 local buff_info = { count = count, id = spell_id, player_owned = player_owned };
                 v[spell_id] = buff_info
-                --v[lname] = buff_info;
+                loadout.dynamic_buffs_lname[k][lname] = buff_info;
             end
             i = i + 1;
         end
@@ -126,7 +132,7 @@ local function detect_buffs(loadout)
             if not v[spell_id] or player_owned then
                 local buff_info = { count = count, id = spell_id, player_owned = player_owned };
                 v[spell_id] = buff_info;
-                --v[lname] = buff_info;
+                loadout.dynamic_buffs_lname[k][lname] = buff_info;
             end
             i = i + 1;
         end
@@ -224,14 +230,42 @@ local function apply_buffs(loadout, effects)
     end
 end
 
-local function is_buff_up(loadout, unit, buff_id, only_self_buff)
-    if only_self_buff then
-        return (unit ~= nil and loadout.dynamic_buffs[unit][buff_id] ~= nil) or
-            (config.loadout.force_apply_buffs and config.loadout.buffs[buff_id] ~= nil);
+local function get_buff_by_lname(loadout, unit, lname, only_self_buff, require_ownership)
+    if unit ~= "" then
+        local buff = loadout.dynamic_buffs_lname[unit][lname];
+        if buff and (not require_ownership or buff.player_owned) then
+            return buff.id;
+        end
     else
-        return (unit ~= nil and loadout.dynamic_buffs[unit][buff_id] ~= nil) or
-            (config.loadout.force_apply_buffs and config.loadout.target_buffs[buff_id] ~= nil);
+        if config.loadout.force_apply_buffs and sc.ui.forced_buffs_lname_to_id[lname] then
+            if only_self_buff and
+                config.loadout.buffs[sc.ui.forced_buffs_lname_to_id[lname]] then
+                return sc.ui.forced_buffs_lname_to_id[lname]
+            elseif config.loadout.target_buffs[sc.ui.forced_buffs_lname_to_id[lname]] then
+                return sc.ui.forced_buffs_lname_to_id[lname]
+            end
+        end
     end
+    return nil;
+end
+
+local function get_buff(loadout, unit, id, only_self_buff, require_ownership)
+    if unit == "" then
+        local buff = loadout.dynamic_buffs[unit][lname];
+        if buff and (not require_ownership or buff.player_owned) then
+            return buff.id;
+        end
+    else
+        if config.loadout.force_apply_buffs then
+            if only_self_buff and config.loadout.buffs[id] then
+                return id;
+            elseif config.loadout.target_buffs[id] then
+                return id;
+            end
+        end
+    end
+
+    return nil;
 end
 
 buffs_export.buff_filters = buff_filters;
@@ -242,6 +276,7 @@ buffs_export.target_buffs = target_buffs;
 buffs_export.detect_buffs = detect_buffs;
 buffs_export.apply_buffs = apply_buffs;
 buffs_export.non_stackable_effects = non_stackable_effects;
-buffs_export.is_buff_up = is_buff_up;
+buffs_export.get_buff = get_buff;
+buffs_export.get_buff_by_lname = get_buff_by_lname;
 
 sc.buffs = buffs_export;

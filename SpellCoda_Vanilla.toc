@@ -44,14 +44,14 @@ override.lua
 
 vanilla/override.lua
 vanilla/scaling.lua
-vanilla/mechanics.lua
 
 config.lua
-loadout.lua
+loadouts.lua
 equipment.lua
 buffs.lua
 talents.lua
 calc.lua
+vanilla/mechanics.lua
 overlay.lua
 tooltip.lua
 ui.lua

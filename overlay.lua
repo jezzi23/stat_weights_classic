@@ -9,15 +9,18 @@ local spells                                        = sc.spells;
 local spell_flags                                   = sc.spell_flags;
 local highest_learned_rank                          = sc.utils.highest_learned_rank;
 
-local update_loadout_and_effects                    = sc.loadout.update_loadout_and_effects;
-local update_loadout_and_effects_diffed_from_ui     = sc.loadout.update_loadout_and_effects_diffed_from_ui;
-local active_loadout                                = sc.loadout.active_loadout;
+local update_loadout_and_effects                    = sc.loadouts.update_loadout_and_effects;
+local update_loadout_and_effects_diffed_from_ui     = sc.loadouts.update_loadout_and_effects_diffed_from_ui;
+local active_loadout                                = sc.loadouts.active_loadout;
 
 
 local stats_for_spell                               = sc.calc.stats_for_spell;
 local spell_info                                    = sc.calc.spell_info;
 local cast_until_oom                                = sc.calc.cast_until_oom;
 local resource_regen_info                           = sc.calc.resource_regen_info;
+local calc_spell_eval                               = sc.calc.calc_spell_eval;
+local calc_spell_threat                             = sc.calc.calc_spell_threat;
+local calc_spell_resource_regen                     = sc.calc.calc_spell_resource_regen;
 
 local config                                        = sc.config;
 --------------------------------------------------------------------------------
@@ -604,9 +607,10 @@ end
 
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, eval_flags)
 
-    local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, eval_flags);
+    --local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, eval_flags);
 
     if bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
+        local spell_effect = calc_spell_resource_regen(spell, spell_id, loadout, effects, eval_flags);
 
         if config.settings.overlay_resource_regen then
             local idx = 3;
@@ -621,6 +625,9 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         end
 
     elseif __sc_frame.overlay_frame.num_overlay_components_toggled > 0 then
+        local spell_effect, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
+        cast_until_oom(spell_effect, stats, loadout, effects);
+
         for i = 1, 3 do
 
             if __sc_frame.overlay_frame.icon_overlay[i] then
@@ -712,7 +719,7 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
     end
     if bit.band(spells[id].flags, bit.bor(spell_flags.eval, spell_flags.resource_regen)) ~= 0 then
         -- TODO: icon overlay not working for healing version checkbox
-        if spells[id].healing_version and config.settings.general_prioritize_heal then
+        if spells[id].healing_version and config.settings.general_prio_heal then
             update_spell_icon_frame(frame, spells[id].healing_version, id, loadout, effects, eval_flags);
         else
             update_spell_icon_frame(frame, spells[id], id, loadout, effects, eval_flags);
@@ -805,7 +812,7 @@ end
 
 local function overlay_eval_flags()
     local eval_flags = 0;
-    if config.settings.overlay_single_effect_only then
+    if not config.settings.general_prio_multiplied_effect then
         eval_flags = bit.bor(eval_flags, sc.calc.evaluation_flags.assume_single_effect);
     end
     return eval_flags;

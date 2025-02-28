@@ -119,23 +119,8 @@ elseif sc.class == sc.classes.druid then
 
     lookups.averaged_procs = {
         16870, -- clearcast
+        16886, -- nature's grace
     };
-
-    do
-        -- Nourish affecting hots detection using class_misc value
-        if bit.band(sc.game_mode, sc.game_modes.season_of_discovery) ~= 0 then
-            local hot_detection_aura = {"raw", "class_misc", 1, nil, sc.aura_flags.requires_ownership, -1};
-            local nourish_affecters = {"rejuvenation", "rejuvenation_2", "regrowth", "regrowth_2", "lifebloom", "wild_growth"};
-            for _, v in ipairs(nourish_affecters) do
-                for _, id in ipairs(rank_seqs[spids[v]]) do
-                    if not sc.friendly_buffs[id] then
-                        sc.friendly_buffs[id] = {};
-                    end
-                    table.insert(sc.friendly_buffs[id], hot_detection_aura);
-                end
-            end
-        end
-    end
 
     -- THREAT
     add_threat_flat_by_rank({

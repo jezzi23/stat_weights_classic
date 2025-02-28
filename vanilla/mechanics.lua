@@ -11,6 +11,11 @@ local spell_flags                                   = sc.spell_flags;
 local comp_flags                                    = sc.comp_flags;
 local lookups                                       = sc.lookups;
 
+local effect_flags                                  = sc.calc.effect_flags;
+local add_extra_effect                              = sc.calc.add_extra_effect;
+local get_buff                                      = sc.buffs.get_buff;
+local get_buff_by_lname                             = sc.buffs.get_buff_by_lname;
+
 ---------------------------------------------------------------------------------------------------
 local mechanics = {};
 -- Vanilla specific behaviour uncompatible with other version
@@ -23,12 +28,18 @@ local class_stats_spell = (function()
         return function(anycomp, bid, stats, spell, loadout, effects)
             if bit.band(spell.flags, spell_flags.heal) ~= 0 then
                 if loadout.enchants[lookups.rune_fanaticism] and spell.direct then
-                    add_extra_periodic_effect(stats,
-                                              bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
-                                              0.6, 4, 3, 1.0, "Fanaticism");
+                    add_extra_effect(
+                        stats,
+                        bit.bor(effect_flags.is_periodic, effect_flags.triggers_on_crit, effect_flags.should_track_crit_mod),
+                        1.0,
+                        "Fanaticism",
+                        0.6,
+                        4,
+                        3
+                        );
                 end
-                if bid == spids.flash_of_light and is_buff_up(loadout, loadout.friendly_towards, lookups.sacred_shield, false) then
-                    add_extra_periodic_effect(stats, 0, 1.0, 12, 1, 1.0, "Extra");
+                if bid == spids.flash_of_light and get_buff(loadout, loadout.friendly_towards, lookups.sacred_shield, false) then
+                    add_extra_effect(stats, effect_flags.is_periodic, 1.0, "Extra", 1.0, 12, 1);
                 end
             end
         end
@@ -44,18 +55,18 @@ local class_stats_spell = (function()
                 if loadout.enchants[lookups.rune_divine_aegis] then
                     -- TODO:
                     if spell.direct or bid == spids.penance then
-                        local aegis_flags = bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod);
+                        local aegis_flags = bit.bor(effect_flags.triggers_on_crit, effect_flags.should_track_crit_mod);
                         if bid == spids.penance then
-                            aegis_flags = bit.bor(aegis_flags, extra_effect_flags.base_on_periodic_effect);
+                            aegis_flags = bit.bor(aegis_flags, effect_flags.base_on_periodic_effect);
                         end
-                        sc.calc.add_extra_direct_effect(stats, aegis_flags, 0.3, 1.0, "Divine Aegis");
+                        add_extra_effect(stats, aegis_flags, 1.0, "Divine Aegis", 0.3);
                     end
                 end
             end
         end
     elseif class == classes.shaman then
         return function(anycomp, bid, stats, spell, loadout, effects)
-            --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.direct and is_buff_up(loadout, "player", lookups.water_shield, true) then
+            --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.direct and get_buff(loadout, "player", lookups.water_shield, true) then
 
             --    stats.resource_refund_mul_crit = stats.resource_refund_mul_crit + 0.04 * loadout.resources_max[powers.mana];
             --end
@@ -65,7 +76,7 @@ local class_stats_spell = (function()
                     bid == spids.healing_wave or
                     bid == spids.lightning_bolt or
                     bid == spids.lava_burst) then
-                sc.calc.add_extra_direct_effect(stats, 0, 0.5, 0.6, "Overload 60% chance");
+                sc.calc.add_extra_effect(stats, 0, 0.6, "Overload", 0.5);
             end
 
         end
@@ -78,7 +89,7 @@ local class_stats_spell = (function()
                 end
 
                 --if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 and bid == spids.fireball then
-                --    add_extra_periodic_effect(stats, 0, 1.0, 4, 2, 1.0, "6P Set Bonus");
+                --    add_extra_effect(stats, effect_flags.periodic, 1.0, "6P Set Bonus", 1.0, 4, 2);
                 --end
 
                 --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and bid == spids.arcane_missiles then
@@ -114,15 +125,18 @@ local class_stats_spell = (function()
                 if (bit.band(spell_flags.heal, spell.flags) ~= 0 and spell.direct) or
                     bid == spids.swiftmend then
 
-                    add_extra_direct_effect(stats,
-                                            bit.bor(extra_effect_flags.triggers_on_crit, extra_effect_flags.should_track_crit_mod),
-                                            0.5, 1.0, "Living Seed");
+                    add_extra_effect(stats,
+                                     bit.bor(effect_flags.triggers_on_crit, effect_flags.should_track_crit_mod),
+                                     1.0, "Living Seed", 0.5);
                 end
             end
-            if bid == spids.nourish then
-                if effects.raw.class_misc > 0 then
-                    stats.target_vuln_mod_mul = stats.target_vuln_mod_mul * 1.2;
-                end
+            if bid == spids.nourish and
+                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.rejuvenation_lname, false, true) or
+                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.regrowth_lname, false, true) or
+                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.lifebloom_lname, false, true) or
+                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.wild_growth_lname, false, true) then
+
+                stats.target_vuln_mod_mul = stats.target_vuln_mod_mul * 1.2;
             end
 
             --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 4 and bit.band(spell_flags.heal, spell.flags) ~= 0 then
@@ -132,7 +146,6 @@ local class_stats_spell = (function()
         end
     end
 end)();
-
 
 mechanics.client_class_stats_spell = class_stats_spell;
 

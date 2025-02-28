@@ -23,7 +23,7 @@ local rap_per_agi                       = sc.scaling.rap_per_agi;
 local config                            = sc.config;
 
 --------------------------------------------------------------------------------
-local loadout = {};
+local loadouts = {};
 
 local loadout_flags = {
     has_target                          = bit.lshift(1, 1),
@@ -80,6 +80,7 @@ local loadout_numbers = {
     "shapeshift_no_weapon",
     "target_defense",
     "target_creature_mask",
+    "target_res",
 };
 
 local loadout_tables = {
@@ -113,7 +114,6 @@ local loadout_units = {
     "player", "target", "mouseover"
 };
 
-
 local function loadout_zero()
     local empty = {};
 
@@ -130,8 +130,10 @@ local function loadout_zero()
         end
     end
     empty.dynamic_buffs = {};
+    empty.dynamic_buffs_lname = {};
     for _, v in ipairs(loadout_units) do
         empty.dynamic_buffs[v] = {};
+        empty.dynamic_buffs_lname[v] = {};
     end
 
     return empty;
@@ -204,6 +206,7 @@ local effects_additive = {
     },
     by_attr = {
         "stats",
+        "stat_flat",
         "stat_mod",
         "sp_from_stat_mod",
         "hp_from_stat_mod",
@@ -257,6 +260,7 @@ local effects_additive = {
         "phys_hit",
         "phys_dmg",
         "phys_dmg_flat",
+        "skill_flat",
     },
     creature = {
         "crit_mod"
@@ -266,7 +270,7 @@ local effects_additive = {
         "mana_mod_active",
         "mana",
         "mp5_from_int_mod",
-        "mp5",
+        "mp5_flat",
         "perc_max_mana_as_mp5",
         "regen_while_casting",
         "spell_power",
@@ -568,8 +572,8 @@ local function effects_diff(loadout, effects, diff)
     effects.raw.spell_dmg = effects.raw.spell_dmg + diff.sd + sp_gained_from_stat;
     effects.raw.healing_power_flat = effects.raw.healing_power_flat + diff.hp + hp_gained_from_stat;
 
-    effects.raw.mp5 = effects.raw.mp5 + diff.mp5;
-    effects.raw.mp5 = effects.raw.mp5 + diff_stats_gained[attr.intellect] * effects.raw.mp5_from_int_mod;
+    effects.raw.mp5_flat = effects.raw.mp5_flat + diff.mp5;
+    effects.raw.mp5_flat = effects.raw.mp5_flat + diff_stats_gained[attr.intellect] * effects.raw.mp5_from_int_mod;
 
     local crit_from_int = int_to_spell_crit(diff_stats_gained[attr.intellect], loadout.lvl);
     local crit_from_spirit = diff_stats_gained[attr.spirit]*effects.by_attr.crit_from_stat_mod[attr.spirit];
@@ -610,7 +614,12 @@ local function effects_diff(loadout, effects, diff)
     effects.raw.phys_crit = effects.raw.phys_crit +
         agi_to_physical_crit(diff_stats_gained[attr.agility], loadout.lvl);
 
-    effects.raw.skill = effects.raw.skill + diff.weapon_skill;
+    local all_weps_mask = bit.bnot(0);
+    if effects.wpn_subclass.skill_flat[all_weps_mask] then
+        effects.wpn_subclass.skill_flat[all_weps_mask] = effects.wpn_subclass.skill_flat[all_weps_mask] + diff.weapon_skill;
+    else
+        effects.wpn_subclass.skill_flat[all_weps_mask] = diff.weapon_skill;
+    end
 end
 
 local function dynamic_loadout(loadout)
@@ -714,7 +723,7 @@ local function dynamic_loadout(loadout)
     loadout.m1_speed, loadout.m2_speed = UnitAttackSpeed("player");
 
     loadout.shapeshift = GetShapeshiftForm();
-    if sc.class == sc.classes and shapeshift ~= 5 then
+    if class == classes.druid and loadout.shapeshift ~= 0 and loadout.shapeshift ~= 5 then
         loadout.shapeshift_no_weapon = 1;
     else
         loadout.shapeshift_no_weapon = 0;
@@ -723,6 +732,8 @@ local function dynamic_loadout(loadout)
     loadout.player_name = UnitName("player");
     loadout.target_name = UnitName("target");
     loadout.mouseover_name = UnitName("mouseover");
+
+    loadout.target_res = config.loadout.target_res;
 
     loadout.hostile_towards = "";
     loadout.friendly_towards = "player";
@@ -836,7 +847,7 @@ local function apply_effect(effects, spid, auras, forced, stacks, undo, player_o
                 mul = mul + effects.aura_pts[aura[iid_idx]][spid];
             end
             local val;
-            if stacks > 1 then
+            if stacks > 1 and bit.band(aura[flags_idx], sc.aura_flags.stacks_as_charges) == 0 then
                 val = (aura[value_idx] + add) * mul * stacks;
             else
                 val = (aura[value_idx] + add) * mul;
@@ -897,6 +908,7 @@ local loadout_shared = {
     "num_set_pieces",
     "enchants",
     "talents",
+    "items",
 };
 for _, v in ipairs(loadout_shared) do
     loadout_base1[v] = {};
@@ -908,16 +920,18 @@ loadout_base1.talents.pts = {};
 local equipped = {};
 local talented = {};
 local final_effects = {};
+local diffed_effects = {};
 empty_effects(equipped);
 empty_effects(talented);
 empty_effects(final_effects);
+empty_effects(diffed_effects);
 
 
 local function active_loadout()
     return loadout_front;
 end
 
-loadout.force_update = true;
+loadouts.force_update = true;
 
 local function update_loadout_and_effects()
 
@@ -930,7 +944,7 @@ local function update_loadout_and_effects()
     dynamic_loadout(other);
 
     if not SpellBookFrame:IsShown() and
-        not loadout.force_update and
+        not loadouts.force_update and
         not sc.core.equipment_update_needed and
         not sc.core.talents_update_needed and
             loadout_eql(loadout_front, other) then
@@ -941,7 +955,7 @@ local function update_loadout_and_effects()
         -- will benefit from not having to update icons
         return loadout_front, final_effects, false;
     end
-    loadout.force_update = false;
+    loadouts.force_update = false;
     loadout_front = other;
 
     if sc.core.equipment_update_needed then
@@ -982,32 +996,32 @@ local function update_loadout_and_effects()
     return loadout_front, final_effects, true;
 end
 
-
 local function update_loadout_and_effects_diffed_from_ui()
 
-    local loadout_, effects = update_loadout_and_effects();
+    local loadout, effects = update_loadout_and_effects();
 
     local diff = effects_from_ui_diff(__sc_frame.calculator_frame);
 
-    local effects_diffed = deep_table_copy(effects);
-    effects_diff(loadout_, effects_diffed, diff);
+    cpy_effects(diffed_effects, effects);
+    effects_diff(loadout, diffed_effects, diff);
 
-    return loadout_, effects, effects_diffed;
+    return loadout, effects, diffed_effects;
 end
 
-loadout.equipped                                     = equipped;
-loadout.talented                                     = talented;
-loadout.final_effects                                = final_effects;
-loadout.empty_effects                                = empty_effects;
-loadout.effects_add                                  = effects_add;
-loadout.effects_diff                                 = effects_diff;
-loadout.cpy_effects                                  = cpy_effects;
-loadout.effects_zero_diff                            = effects_zero_diff;
-loadout.active_loadout                               = active_loadout;
-loadout.update_loadout_and_effects                   = update_loadout_and_effects;
-loadout.update_loadout_and_effects_diffed_from_ui    = update_loadout_and_effects_diffed_from_ui;
-loadout.loadout_flags                                = loadout_flags;
-loadout.apply_effect                                 = apply_effect;
+loadouts.equipped                                     = equipped;
+loadouts.talented                                     = talented;
+loadouts.final_effects                                = final_effects;
+loadouts.diffed_effects                               = diffed_effects;
+loadouts.empty_effects                                = empty_effects;
+loadouts.effects_add                                  = effects_add;
+loadouts.effects_diff                                 = effects_diff;
+loadouts.cpy_effects                                  = cpy_effects;
+loadouts.effects_zero_diff                            = effects_zero_diff;
+loadouts.active_loadout                               = active_loadout;
+loadouts.update_loadout_and_effects                   = update_loadout_and_effects;
+loadouts.update_loadout_and_effects_diffed_from_ui    = update_loadout_and_effects_diffed_from_ui;
+loadouts.loadout_flags                                = loadout_flags;
+loadouts.apply_effect                                 = apply_effect;
 
-sc.loadout = loadout;
+sc.loadouts = loadouts;
 
