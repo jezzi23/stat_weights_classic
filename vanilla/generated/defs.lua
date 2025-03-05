@@ -1,7 +1,8 @@
 -- THIS FILE IS GENERATED
 local _, sc = ...;
+sc.addon_build_id = 3661;
 sc.client_name_src = "wow_classic_era";
-sc.client_version_src = "1.15.6.58912";
+sc.client_version_src = "1.15.6.59415";
 _, sc.class = UnitClass("player");
 _, _, sc.race = UnitRace("player");
 sc.faction = UnitFactionGroup("player");
@@ -129,6 +130,8 @@ sc.aura_flags = {
 	weapon_subclass = bit.lshift(1, 3),
 	apply_aura = bit.lshift(1, 4),
 	forced_separated = bit.lshift(1, 5),
+	stacks_as_charges = bit.lshift(1, 6),
+	weapon_slot_dependent = bit.lshift(1, 7),
 };
 sc.wep_subclass_to_normalized_speed = {
 	[1] = 3.3,

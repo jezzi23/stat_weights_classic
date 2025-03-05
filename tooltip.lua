@@ -13,12 +13,13 @@ local effect_color                              = sc.utils.effect_color;
 local spell_cost                                = sc.utils.spell_cost;
 local spell_cast_time                           = sc.utils.spell_cast_time;
 local format_number                             = sc.utils.format_number;
-local format_number_signed_colored              = sc.utils.format_number_signed_colored;
 local color_by_lvl_diff                         = sc.utils.color_by_lvl_diff;
 
 local update_loadout_and_effects                = sc.loadouts.update_loadout_and_effects;
 local update_loadout_and_effects_diffed_from_ui = sc.loadouts.update_loadout_and_effects_diffed_from_ui;
-local update_loadout_and_effects_item_cmp       = sc.loadouts.update_loadout_and_effects_item_cmp;
+local effects_finalize_forced                   = sc.loadouts.effects_finalize_forced;
+local cpy_effects                               = sc.loadouts.cpy_effects;
+local empty_effects                             = sc.loadouts.empty_effects;
 
 local apply_item_cmp                            = sc.equipment.apply_item_cmp;
 
@@ -35,7 +36,13 @@ local calc_spell_resource_regen                 = sc.calc.calc_spell_resource_re
 local config                                    = sc.config;
 -------------------------------------------------------------------------------
 local tooltip_export = {};
+
 local eps = 0.000000001;
+local tooltip_effects_diffed_finalized = {};
+local tooltip_effects_finalized = {};
+empty_effects(tooltip_effects_diffed_finalized);
+empty_effects(tooltip_effects_finalized);
+
 
 local function sort_stat_weights(weights, sort_by_field)
 
@@ -150,10 +157,20 @@ end);
 local spell_id_of_cleared_tooltip = 0;
 local clear_tooltip_refresh_id = 463;
 
+
+local spell_tooltip_cached = {
+    loadout = nil,
+    effects = nil,
+    effects_finalized = nil,
+    needs_update = true,
+}; -- filled on update need
+
+local tooltip_spell_update_id = 0;
+
 -- Meddles with tooltip and sets its spell id accordingly,
 -- which in return is handled by "OnTooltipSetSpell" event
 -- which finally calls write_spell_tooltip() to append to tooltip
-local function update_tooltip(tooltip)
+local function update_tooltip(tooltip, mod_change)
 
     if sc.core.__sw__test_all_spells and __sc_frame.spells_frame:IsShown() then
 
@@ -164,17 +181,22 @@ local function update_tooltip(tooltip)
         end
         __sc_frame.spell_id_viewer_editbox:SetText(tostring(spell_jump_key));
     end
-
     if not (PlayerTalentFrame and MouseIsOver(PlayerTalentFrame)) and tooltip:IsShown() then
+        local _, id = tooltip:GetSpell();
 
-        local spell_name, id = tooltip:GetSpell();
-        if not spell_name then
-            -- Attack tooltip may be a dummy, so link it to its actual spell id
-            local attack_lname = GetSpellInfo(sc.auto_attack_spell_id);
-            local txt = getglobal("GameTooltipTextLeft1");
-            if txt and txt:GetText() == attack_lname then
-                spell_name = attack_lname;
-                id = sc.auto_attack_spell_id;
+        -- Try to skip periodic update if everything is normal and nothing changed
+        if (not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown()) and
+            not mod_change then
+
+            local update_id;
+            spell_tooltip_cached.loadout, spell_tooltip_cached.effects, spell_tooltip_cached.effects_finalized, update_id =
+                update_loadout_and_effects();
+            local updated = update_id > tooltip_spell_update_id;
+            tooltip_spell_update_id = update_id;
+
+            if not updated then
+                spell_tooltip_cached.needs_update = false;
+                return;
             end
         end
 
@@ -228,7 +250,7 @@ local function append_to_txt_delimitered(str, append_str)
 
 end
 
-local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effects, eval_flags)
+local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effects_base, effects_finalized, eval_flags)
 
     local anycomp = spell.direct or spell.periodic;
 
@@ -280,45 +302,19 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if bit.band(eval_mode_mod, bit.lshift(1, eval_mode_to_flag.isolate_oh)) ~= 0 then
             eval_flags = bit.bor(eval_flags, evaluation_flags.isolate_oh);
         end
-        local both = bit.bor(evaluation_flags.isolate_mh, evaluation_flags.isolate_oh);
-        local both_band = bit.band(eval_flags, both);
-        if both_band == 0 then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Combined main and offhand");
-        elseif both_band == both then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "INVALID");
-        elseif bit.band(eval_flags, evaluation_flags.isolate_mh) ~= 0 then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Main hand");
-        elseif bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Offhand");
-        end
     end
 
     if eval_dual_components then
-
         if bit.band(eval_mode_mod, bit.lshift(1, eval_mode_to_flag.isolate_direct)) ~= 0 then
             eval_flags = bit.bor(eval_flags, evaluation_flags.isolate_direct);
         end
         if bit.band(eval_mode_mod, bit.lshift(1, eval_mode_to_flag.isolate_periodic)) ~= 0 then
             eval_flags = bit.bor(eval_flags, evaluation_flags.isolate_periodic);
         end
-        local both = bit.bor(evaluation_flags.isolate_direct, evaluation_flags.isolate_periodic);
-        local both_band = bit.band(eval_flags, both);
-        if both_band == 0 then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Combined direct & periodic");
-        elseif both_band == both then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "INVALID");
-        elseif bit.band(eval_flags, evaluation_flags.isolate_direct) ~= 0 then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Direct");
-        elseif bit.band(eval_flags, evaluation_flags.isolate_periodic) ~= 0 then
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Periodic");
-        end
     end
     if bit.band(spell.flags, spell_flags.on_next_attack) ~= 0 then
         if bit.band(eval_mode_mod, bit.lshift(1, eval_mode_to_flag.expectation_of_self)) ~= 0 then
             eval_flags = bit.bor(eval_flags, evaluation_flags.expectation_of_self);
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation of whole attack");
-        else
-            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation beyond auto attack");
         end
     end
 
@@ -331,15 +327,20 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         spell = spell.healing_version;
     end
 
-    local info, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
-    cast_until_oom(info, stats, loadout, effects, true);
+    local info, stats = calc_spell_eval(spell, loadout, effects_finalized, eval_flags);
+    cast_until_oom(info, spell, stats, loadout, effects_finalized, true);
 
     local stats_eval, stat_normalize_to;
     if bit.band(eval_flags, evaluation_flags.stat_weights) ~= 0 then
-        stats_eval, stat_normalize_to = stat_weights(info, spell, loadout, effects, eval_flags);
+        stats_eval, stat_normalize_to = stat_weights(info, spell, loadout, effects_base, eval_flags);
     end
 
     if info.expected_direct ~= 0 and info.expected_ot ~= 0 then
+        if not eval_dual_components then
+            -- hack for first time view, can't know if dual components
+            -- before spell is calculated and it's too late
+            eval_mode_combinations = eval_mode_combinations*4;
+        end
         eval_dual_components = true;
     end
 
@@ -390,6 +391,44 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
     end
 
+
+    if dual_wield then
+        local both = bit.bor(evaluation_flags.isolate_mh, evaluation_flags.isolate_oh);
+        local both_band = bit.band(eval_flags, both);
+        if both_band == 0 then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Combined main and offhand");
+        elseif both_band == both then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "INVALID");
+        elseif bit.band(eval_flags, evaluation_flags.isolate_mh) ~= 0 then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Main hand");
+        elseif bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Offhand");
+        end
+    end
+
+    if eval_dual_components then
+
+        local both = bit.bor(evaluation_flags.isolate_direct, evaluation_flags.isolate_periodic);
+        local both_band = bit.band(eval_flags, both);
+        if both_band == 0 then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Combined direct & periodic");
+        elseif both_band == both then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "INVALID");
+        elseif bit.band(eval_flags, evaluation_flags.isolate_direct) ~= 0 then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Direct");
+        elseif bit.band(eval_flags, evaluation_flags.isolate_periodic) ~= 0 then
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Periodic");
+        end
+    end
+    if bit.band(spell.flags, spell_flags.on_next_attack) ~= 0 then
+        if bit.band(eval_flags, evaluation_flags.expectation_of_self) ~= 0 then
+            eval_flags = bit.bor(eval_flags, evaluation_flags.expectation_of_self);
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation of whole attack");
+        else
+            scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Expectation beyond auto attack");
+        end
+    end
+
     if info.aoe_to_single_ratio > 1 then
         if info.expected ~= info.expected_st then
             scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Optimistic effect");
@@ -399,7 +438,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     end
 
     if config.settings.tooltip_display_eval_options then
-        if num_eval_mode_comps ~= 0 then
+        if eval_mode_combinations > 1 then
             tooltip:AddLine(string.format("Eval mode %d/%d: %s",
                                           eval_mode_mod+1,
                                           eval_mode_combinations,
@@ -456,8 +495,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             if loadout.enemy_hp_perc ~= 1 then
                 en_hp = string.format(" | %.0f%% Health", 100*loadout.enemy_hp_perc);
             end
-            tooltip:AddLine(string.format("Target: %s Level %d | %d Armor | %d Res%s",
+            tooltip:AddLine(string.format("Target: %s Level %s%d|r | %d Armor | %d Res%s",
                     specified,
+                    color_by_lvl_diff(loadout.lvl, loadout.target_lvl),
                     loadout.target_lvl,
                     stats.armor,
                     stats.target_resi,
@@ -1224,7 +1264,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
 end
 
-local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effects)
+local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effects, effects_finalized)
     -- Set gray spell rank in upper-right corner again after custom SetSpellByID clears it
     if spell.rank ~= 0 then
         local txt_right = getglobal("GameTooltipTextRight1");
@@ -1279,13 +1319,14 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
             tooltip:AddLine("BEFORE STAT CHANGES", 1.0, 0.0, 0.0);
         end
 
-        append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effects, eval_flags);
+        append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effects, effects_finalized, eval_flags);
     else
+
         if (bit.band(spell.flags, spell_flags.resource_regen) ~= 0) and
             config.settings.tooltip_display_resource_regen then
 
             append_tooltip_addon_name(tooltip);
-            local info = calc_spell_resource_regen(spell, spell_id, loadout, effects);
+            local info = calc_spell_resource_regen(spell, spell_id, loadout, effects_finalized);
             tooltip:AddLine(string.format("Restored for player: %d", math.floor(info.total_restored)),
                 effect_color("avg_cost")
             );
@@ -1303,7 +1344,7 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                config.settings.tooltip_display_threat_per_sec or
                config.settings.tooltip_display_threat_per_cost) then
 
-            local info, stats = calc_spell_threat(spell, loadout, effects, eval_flags);
+            local info, stats = calc_spell_threat(spell, loadout, effects_finalized, eval_flags);
 
             append_tooltip_addon_name(tooltip);
             if config.settings.tooltip_display_avoidance_info and spell.direct then
@@ -1423,16 +1464,32 @@ local function write_spell_tooltip()
 
     if not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown() then
 
-        local loadout, effects = update_loadout_and_effects();
-        write_tooltip_spell_info(GameTooltip, spell, spell_id, loadout, effects);
+        if spell_tooltip_cached.needs_update then
+            spell_tooltip_cached.loadout, spell_tooltip_cached.effects, spell_tooltip_cached.effects_finalized = update_loadout_and_effects();
+
+        end
+        write_tooltip_spell_info(GameTooltip, spell, spell_id,
+                                 spell_tooltip_cached.loadout,
+                                 spell_tooltip_cached.effects,
+                                 spell_tooltip_cached.effects_finalized);
+
     else
 
-        local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui();
-        write_tooltip_spell_info(GameTooltip, spell, spell_id, loadout, effects_diffed);
+        spell_tooltip_cached.needs_update = true;
+
+        local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui(true);
+
+        cpy_effects(tooltip_effects_diffed_finalized, effects_diffed);
+        effects_finalize_forced(loadout, tooltip_effects_diffed_finalized);
+        write_tooltip_spell_info(GameTooltip, spell, spell_id, loadout, effects_diffed, tooltip_effects_diffed_finalized);
 
         sc_stat_calc_tooltip:ClearLines();
         sc_stat_calc_tooltip:SetOwner(GameTooltip, "ANCHOR_LEFT", 0, -select(2, sc_stat_calc_tooltip:GetSize()));
-        write_tooltip_spell_info(sc_stat_calc_tooltip, spell, spell_id, loadout, effects);
+
+        cpy_effects(tooltip_effects_finalized, effects);
+        effects_finalize_forced(loadout, tooltip_effects_finalized);
+
+        write_tooltip_spell_info(sc_stat_calc_tooltip, spell, spell_id, loadout, effects, tooltip_effects_finalized);
     end
 end
 
@@ -1456,6 +1513,7 @@ local inv_type_to_slot_ids = {
     INVTYPE_WEAPONMAINHAND = {16},
     INVTYPE_WEAPONOFFHAND = {17},
     INVTYPE_SHIELD = {17},
+    INVTYPE_HOLDABLE = {17},
     INVTYPE_TABARD = {19},
     INVTYPE_RANGED = {18},
     INVTYPE_RANGEDRIGHT = {18},
@@ -1464,42 +1522,55 @@ local inv_type_to_slot_ids = {
 
 local cached_spells_cmp_item_slots = { [1] = {len = 0, diff_list = {}}, [2] = {len = 0, diff_list = {}} };
 local tooltip_item_id_last = 0;
+local item_tooltip_frames_hidden = false;
 
-local function make_role_icon_tex()
+local function make_item_tooltip_line_frames()
+
     local role_tex = GameTooltip:CreateTexture(nil, "ARTWORK");
     role_tex:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
     role_tex:SetSize(16, 16);
-    return role_tex;
+
+    return {
+        role_tex = role_tex,
+        change_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+        first_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+        second_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+    };
 end
 
-local function num_spaces(str)
-    local cnt = 0;
-    for i = 1, #str do
-        if str:sub(i, i) == " " then
-            cnt = cnt + 1
-        end
-    end
-    return cnt
-end
-
+local empty_tex = "Interface\\Buttons\\UI-Quickslot2";
 local new_item = {};
-local old_item = {};
+local old_item1 = {};
+local old_item2 = {};
+local headers = {
+    change_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+    first_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+    second_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+};
 
-local function write_item_tooltip(tooltip)
+for _, v in pairs(headers) do
+    v:SetTextColor(effect_color("effect_per_sec"));
+end
 
-    -- make sure the textures are hidden
+local item_tooltip_effects_update_id = 0;
 
-    for _, v in pairs(cached_spells_cmp_item_slots) do
-        for _, vv in ipairs(v.diff_list) do
-            vv.role_tex:Hide();
-        end
+-- The only reliable way to get alignment on item comparison numbers to be nicely aligned
+-- is to set them as frame objects because monospaced fonts seem to be broken ingame
+local function write_item_tooltip(tooltip, mod, mod_change)
+    if config.settings.tooltip_shift_to_show and bit.band(mod, sc.tooltip_mod_flags.SHIFT) == 0 then
+        return;
     end
+
     new_item.lname, new_item.link = GameTooltip:GetItem();
     new_item.id = nil;
     if new_item.link then
-        new_item.id = tonumber(new_item.link:match("item:(%d+)"))
+--        local item_id, suffix_id = new_item.link:match("item:(%d+):%d+:%d+:%d+:%d+:%d+:(%d+):");
+        local item_id, suffix_id = new_item.link:match("item:(%d+):?:?:?:?:?:?(%d*):")
+        new_item.id = tonumber(item_id);
+        new_item.suffix_id = tonumber(suffix_id);
     end
-    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex = GetItemInfo(id);
+
+    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex = GetItemInfo(new_item.link);
 
     if not new_item.inv_type then
         return;
@@ -1509,30 +1580,50 @@ local function write_item_tooltip(tooltip)
         return;
     end
 
-    local loadout, effects, updated = update_loadout_and_effects();
+    local loadout, effects, effects_finalized, update_id = update_loadout_and_effects();
+    local updated = update_id > item_tooltip_effects_update_id;
+    item_tooltip_effects_update_id = update_id;
 
-    if id == loadout.items[cmp_slots[1]] or (cmp_slots[2] and loadout.items[cmp_slots[2]]) then
+    if new_item.id == loadout.items[cmp_slots[1]] or
+        (cmp_slots[2] and new_item.id == loadout.items[cmp_slots[2]]) then
         return;
     end
+    local fight_type = config.settings.calc_fight_type;
+    if bit.band(mod, sc.tooltip_mod_flags.ALT) ~= 0 then
+        if fight_type == fight_types.repeated_casts then
+            fight_type = fight_types.cast_until_oom;
+        else
+            fight_type = fight_types.repeated_casts;
+        end
+    end
 
-    local diffed_effects = sc.loadouts.diffed_effects;
-    if tooltip_item_id_last ~= id or updated then
+    local effects_diffed = sc.loadouts.diffed;
+    if tooltip_item_id_last ~= new_item.id or updated or mod_change then
+        -- actual evaluation update step and overwrites cache
 
         local eval_flags = sc.overlay.overlay_eval_flags();
         for item_fits_in_slot, slot in pairs(cmp_slots) do
 
-            old_item.link = GetInventoryItemLink("player", slot);
-            old_item.id = GetInventoryItemID("player", slot);
-            old_item.lname, _, old_item.quality, _, _, _, _, _, old_item.inv_type, old_item.tex = GetItemInfo(old_item.link);
-
-            apply_item_cmp(effects, diffed_effects, new_item, old_item);
-
             local slot_cmp;
+            local old_item;
             if item_fits_in_slot > 1 then
                 slot_cmp = cached_spells_cmp_item_slots[2];
+                old_item = old_item2;
             else
                 slot_cmp = cached_spells_cmp_item_slots[1];
+                old_item = old_item1;
             end
+            old_item.link = GetInventoryItemLink("player", slot);
+            old_item.id = GetInventoryItemID("player", slot);
+            if old_item.link then
+                local suffix_id = old_item.link:match("item:%d+:%d+:%d+:%d+:%d+:%d+:(%d+):");
+                old_item.lname, _, old_item.quality, _, _, _, _, _, old_item.inv_type, old_item.tex = GetItemInfo(old_item.link);
+                old_item.suffix_id = tonumber(suffix_id);
+            else
+                old_item.tex = empty_tex;
+            end
+
+            apply_item_cmp(effects, effects_diffed, new_item, old_item, slot);
 
             local i = 0;
             slot_cmp.len = 0;
@@ -1545,30 +1636,30 @@ local function write_item_tooltip(tooltip)
                 if k and spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
 
                     i = i + 1;
-                    slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {role_tex = make_role_icon_tex()};
+                    slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {frames = make_item_tooltip_line_frames()};
 
                     spell_diff(slot_cmp.diff_list[i],
-                               config.settings.calc_fight_type,
+                               fight_type,
                                spells[k],
                                k,
                                loadout,
-                               effects,
-                               diffed_effects,
+                               effects_finalized,
+                               effects_diffed,
                                eval_flags);
 
                     -- for spells with both heal and dmg
                     if spells[k].healing_version then
 
                         i = i + 1;
-                        slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {role_tex = make_role_icon_tex()};
+                        slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {frames = make_item_tooltip_line_frames()};
 
                         spell_diff(slot_cmp.diff_list[i],
-                                   config.settings.calc_fight_type,
+                                   fight_type,
                                    spells[k].healing_version,
                                    k,
                                    loadout,
-                                   effects,
-                                   diffed_effects,
+                                   effects_finalized,
+                                   effects_diffed,
                                    eval_flags);
                     end
                 end
@@ -1577,117 +1668,167 @@ local function write_item_tooltip(tooltip)
         end
     end
 
-    tooltip_item_id_last = id;
+    tooltip_item_id_last = new_item.id;
 
-    -- Append to tooltip
-    --local texture = tooltip:CreateTexture()
-    --texture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES")
-    --texture:SetTexCoord(0.25, 0.5, 0.0, 0.25)
-    --texture:SetSize(16, 16)
-    --tooltip:AddLine(" ")
-    --tooltip:AddTexture(texture)
+    -- display the cached evaluation data
 
-    tooltip:AddLine(" ");
-    local header0 = string.format("%s | Target level %d",
-                              sc.core.addon_name,
-                              color_by_lvl_diff(loadout.lvl, loadout.target_lvl)..loadout.target_lvl);
-    local header1 = "Change |";
+    local header1 = "Change";
     local header2;
     local header3;
-    if config.settings.calc_fight_type == fight_types.repeated_casts then
-        header2 = " Per sec |";
-        header3 = " Effect";
+    local fight_type_str;
+    if fight_type == fight_types.repeated_casts then
+        header2 = "Per sec";
+        header3 = "Effect";
+        fight_type_str = "Repeated casts";
     else
-        header2 = " Effect | ";
+        header2 = "Effect  ";
         header3 = "Duration (s)";
-
-        tooltip:AddLine(header0, 1, 1, 1);
-        header0 = "Cast until OOM";
+        fight_type_str = "Cast until OOM";
     end
-    local min_width = 10;
 
-    local column_width1 = math.max(min_width, string.len(header1));
-    local column_width2 = math.max(min_width, string.len(header2));
-    local column_width3 = math.max(min_width, string.len(header3));
+    headers.change_fstr:SetText(header1);
+    headers.first_fstr:SetText(header2);
+    headers.second_fstr:SetText(header3);
 
-    local header_str = string.format(
-                                 "%" .. column_width1 .. "s%" .. column_width2 .. "s%" .. column_width3 .. "s",
-                                 header1,
-                                 header2,
-                                 header3
-                             );
-    tooltip:AddDoubleLine(header0,
-                          header_str,
+    for _, v in pairs(headers) do
+        v:Show();
+    end
+
+    tooltip:AddLine(" ");
+    tooltip:AddDoubleLine(sc.core.addon_name,
+                          string.format("Target Level %s%d|r | %s",
+                              color_by_lvl_diff(loadout.lvl, loadout.target_lvl),
+                              loadout.target_lvl,
+                          fight_type_str),
+                    1, 1, 1,
                     1, 1, 1);
 
+    local header0 = string.format("|T%s:16:16:0:0|t <-> |T%s:16:16:0:0|t",
+                                  old_item1.tex,
+                                  new_item.tex);
+    tooltip:AddDoubleLine(header0,
+                          " ",
+                    1, 1, 1,
+                    effect_color("effect_per_sec"));
+
     local num_lines = tooltip:NumLines();
+    local min_width = 50;
+
+    local offset_to_first = math.max(min_width, headers.second_fstr:GetWidth());
+    local offset_to_change = offset_to_first + math.max(min_width, headers.first_fstr:GetWidth());
+    local offset_to_role_icon = offset_to_change + math.max(min_width, headers.change_fstr:GetWidth());
+
+    local rhs_txt = _G["GameTooltipTextRight"..num_lines];
+    headers.second_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", 0, 0);
+    headers.first_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_first, 0);
+    headers.change_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_change, 0);
+
     for item_fits_in_slot, _ in pairs(cmp_slots) do
         local slot_cmp;
         if item_fits_in_slot > 1 then
             slot_cmp = cached_spells_cmp_item_slots[2];
+            tooltip:AddDoubleLine(string.format("|T%s:16:16:0:0|t <-> |T%s:16:16:0:0|t",
+                                  old_item2.tex,
+                                  new_item.tex),
+                                  " ",
+                            1, 1, 1);
+            num_lines = num_lines + 1;
         else
             slot_cmp = cached_spells_cmp_item_slots[1];
         end
         for i = 1, slot_cmp.len do
+
             local diff = slot_cmp.diff_list[i];
             local spell_texture_str = "|T" .. diff.tex .. ":16:16:0:0|t "
 
-            local formatted1 = format_number(diff.diff_ratio, 2).."%    ";
-            local formatted2 = format_number(diff.first, 2).."    ";
-            local formatted3 = format_number(diff.second, 2);
-            local color_code1 = "|cFFFFFF00 ";
-            local color_code2 = "|cFFFFFF00 ";
-            local color_code3 = "|cFFFFFF00 ";
+            local change = format_number(diff.diff_ratio, 2).."%";
             if diff.diff_ratio < 0 then
-                color_code1 = "|cFFFF0000";
+                diff.frames.change_fstr:SetTextColor(195/255, 44/255, 11/255);
+                change = change;
             elseif diff.diff_ratio > 0 then
-                color_code1 = "|cFF00FF00";
-                formatted1 = "+"..formatted1;
+                diff.frames.change_fstr:SetTextColor(33/255, 185/255, 21/255);
+                change = "+"..change;
+            else
+                diff.frames.change_fstr:SetTextColor(1, 1, 1);
             end
+            diff.frames.change_fstr:SetText(change);
+
+            local first = format_number(diff.first, 2);
             if diff.first < 0 then
-                color_code2 = "|cFFFF0000";
+                diff.frames.first_fstr:SetTextColor(195/255, 44/255, 11/255);
             elseif diff.first > 0 then
-                color_code2 = "|cFF00FF00";
-                formatted2 = "+"..formatted2;
+                diff.frames.first_fstr:SetTextColor(33/255, 185/255, 21/255);
+                first = "+"..first;
+            else
+                diff.frames.first_fstr:SetTextColor(1, 1, 1);
             end
+            diff.frames.first_fstr:SetText(first);
+
+            local second = format_number(diff.second, 2);
             if diff.second < 0 then
-                color_code3 = "|cFFFF0000";
+                diff.frames.second_fstr:SetTextColor(195/255, 44/255, 11/255);
             elseif diff.second > 0 then
-                color_code3 = "|cFF00FF00";
-                formatted3 = "+"..formatted3;
+                diff.frames.second_fstr:SetTextColor(33/255, 185/255, 21/255);
+                second = "+"..second;
+            else
+                diff.frames.second_fstr:SetTextColor(1, 1, 1);
             end
+            diff.frames.second_fstr:SetText(second);
 
-            local vals_str = string.format(
-                                    "%s%" ..(column_width1 - math.floor(0.5*(string.len(formatted1) - num_spaces(formatted1))))..
-                                    "s%s%"..(column_width2 - math.floor(0.5*(string.len(formatted2) - num_spaces(formatted2))))..
-                                    "s%s%"..(column_width3 - math.floor(0.5*(string.len(formatted3) - num_spaces(formatted3))))..
-                                    "s",
-                                    color_code1, formatted1,
-                                    color_code2, formatted2,
-                                    color_code3, formatted3
-                                  );
-
-            tooltip:AddDoubleLine(string.format("%s%s%s",
-                                     spell_texture_str,
-                                     diff.disp,
-                                     ""
-                                  ),
-                                  vals_str
-                    );
+            tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");
 
             num_lines = num_lines + 1;
+
+            rhs_txt = _G["GameTooltipTextRight"..num_lines];
+            diff.frames.second_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", 0, 0);
+            diff.frames.first_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_first, 0);
+            diff.frames.change_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_change, 0);
+
+
             if diff.heal_like then
-                diff.role_tex:SetTexCoord(0.25, 0.5, 0.0, 0.25);
+                diff.frames.role_tex:SetTexCoord(0.25, 0.5, 0.0, 0.25);
             else
-                diff.role_tex:SetTexCoord(0.25, 0.5, 0.25, 0.5);
+                diff.frames.role_tex:SetTexCoord(0.25, 0.5, 0.25, 0.5);
             end
-            local rhs_txt = _G["GameTooltipTextRight"..num_lines];
-            diff.role_tex:SetPoint("LEFT", rhs_txt, "LEFT", -20, 0);
-            rhs_txt:SetFontObject(mono_font);
-            diff.role_tex:Show();
+            diff.frames.role_tex:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_role_icon-10, 0);
+            for k, v in pairs(diff.frames) do
+                v:Show();
+            end
         end
     end
+    item_tooltip_frames_hidden = false;
     tooltip:Show();
+end
+
+local function on_clear_tooltip()
+    if item_tooltip_frames_hidden then
+        return;
+    end
+    item_tooltip_frames_hidden = true;
+    for _, v in pairs(cached_spells_cmp_item_slots) do
+        for _, vv in ipairs(v.diff_list) do
+            for _, frame in pairs(vv.frames) do
+                frame:Hide();
+            end
+        end
+    end
+    for _, v in pairs(headers) do
+        v:Hide();
+    end
+end
+
+local function on_show_tooltip(tooltip)
+    local spell_name, _ = tooltip:GetSpell();
+    if not spell_name then
+        -- Attack tooltip may be a dummy, so link it to its actual spell id
+        local attack_lname = GetSpellInfo(sc.auto_attack_spell_id);
+        local txt = getglobal("GameTooltipTextLeft1");
+        if txt and txt:GetText() == attack_lname then
+            spell_name = attack_lname;
+            tooltip:SetSpellByID(sc.auto_attack_spell_id);
+        end
+    end
+    spell_tooltip_cached.needs_update = true;
 end
 
 tooltip_export.tooltip_stat_display             = tooltip_stat_display;
@@ -1699,6 +1840,8 @@ tooltip_export.update_tooltip                   = update_tooltip;
 tooltip_export.append_tooltip_spell_rank        = append_tooltip_spell_rank;
 tooltip_export.tooltip_eval_mode                = eval_mode;
 tooltip_export.eval_mode_scroll_fn              = eval_mode_scroll_fn;
+tooltip_export.on_clear_tooltip                 = on_clear_tooltip;
+tooltip_export.on_show_tooltip                  = on_show_tooltip;
 
 sc.tooltip = tooltip_export;
 

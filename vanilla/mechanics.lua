@@ -131,10 +131,10 @@ local class_stats_spell = (function()
                 end
             end
             if bid == spids.nourish and
-                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.rejuvenation_lname, false, true) or
+                (get_buff_by_lname(loadout, loadout.friendly_towards, lookups.rejuvenation_lname, false, true) or
                 get_buff_by_lname(loadout, loadout.friendly_towards, lookups.regrowth_lname, false, true) or
                 get_buff_by_lname(loadout, loadout.friendly_towards, lookups.lifebloom_lname, false, true) or
-                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.wild_growth_lname, false, true) then
+                get_buff_by_lname(loadout, loadout.friendly_towards, lookups.wild_growth_lname, false, true)) then
 
                 stats.target_vuln_mod_mul = stats.target_vuln_mod_mul * 1.2;
             end

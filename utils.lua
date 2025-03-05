@@ -115,7 +115,7 @@ local function color_by_lvl_diff(clvl, other_lvl)
     elseif other_lvl - 2 <= clvl then
         return "|cFFFFFF00";
     elseif other_lvl - 3 <= clvl then
-        return "|cFFFF8C00";
+        return "|cFFFF4500";
     else
         return "|cFFFF0000";
     end
@@ -123,6 +123,9 @@ end
 
 local function format_number(val, max_accuracy_digits)
 
+    if not val then
+        return "";
+    end
     local abs_val = math.abs(val);
     if string.find(tostring(val), "nan") then
         return "∞";

@@ -4,7 +4,6 @@ local attr                              = sc.attr;
 local classes                           = sc.classes;
 local powers                            = sc.powers;
 local class                             = sc.class;
-local deep_table_copy                   = sc.utils.deep_table_copy;
 
 local category_idx                      = sc.aura_idx_category;
 local effect_idx                        = sc.aura_idx_effect;
@@ -29,10 +28,7 @@ local loadout_flags = {
     has_target                          = bit.lshift(1, 1),
     target_friendly                     = bit.lshift(1, 2),
     target_pvp                          = bit.lshift(1, 3),
-    --target_snared                       = bit.lshift(1, 2),
-    --target_frozen                       = bit.lshift(1, 3),
 };
-
 
 -- Loadout and Effects split into sections by types to make comparing, iterating, merging
 -- not need a slower general purpose recursive implementation
@@ -181,7 +177,6 @@ local function loadout_eql(lhs, rhs)
     return true;
 end
 
-
 local effect_categories = {
     "by_school",
     "by_attr",
@@ -205,12 +200,11 @@ local effects_additive = {
         "cost_mod",
     },
     by_attr = {
-        "stats",
         "stat_flat",
         "stat_mod",
-        "sp_from_stat_mod",
-        "hp_from_stat_mod",
-        "crit_from_stat_mod",
+        "stat_mod_forced",
+        "sd_from_stat_pct",
+        "hp_from_stat_pct",
     },
     ability = {
         "threat",
@@ -257,7 +251,6 @@ local effects_additive = {
         "phys_crit",
         "phys_crit_forced",
         "phys_hit",
-        "phys_hit",
         "phys_dmg",
         "phys_dmg_flat",
         "skill_flat",
@@ -267,14 +260,12 @@ local effects_additive = {
     },
     raw = {
         "mana_mod",
-        "mana_mod_active",
+        "mana_mod_forced",
         "mana",
         "mp5_from_int_mod",
         "mp5_flat",
         "perc_max_mana_as_mp5",
         "regen_while_casting",
-        "spell_power",
-        "spell_dmg",
         "healing_power_flat",
         "phys_dmg_flat",
         "ap_flat",
@@ -291,6 +282,17 @@ local effects_additive = {
         "hit_rating",
         "skill",
         "class_misc",
+
+        "wpn_min_mh",
+        "wpn_max_mh",
+        "wpn_min_oh",
+        "wpn_max_oh",
+        "wpn_min_ranged",
+        "wpn_max_ranged",
+        "wpn_delay_mh",
+        "wpn_delay_oh",
+        "wpn_delay_ranged",
+        "wpn_school_ranged",
     },
 };
 
@@ -370,6 +372,8 @@ local function empty_effects(effects)
     for _, v in pairs(effects_multiplicative.raw) do
         effects.mul.raw[v] = 1;
     end
+
+    effects.finalized = false;
 end
 
 local function cpy_effects(dst, src)
@@ -417,6 +421,8 @@ local function cpy_effects(dst, src)
             end
         end
     end
+
+   dst.finalized = src.finalized;
 end
 
 local function zero_effects(effects)
@@ -446,6 +452,7 @@ local function zero_effects(effects)
             end
         end
     end
+    effects.finalized = false;
 end
 
 local function effects_add(dst, src)
@@ -478,6 +485,10 @@ local function effects_add(dst, src)
                 dst_cat[i] = dst_cat[i] * src_cat[i];
             end
         end
+    end
+    if sc.core.__sw__debug__ and dst.finalized or src.final then
+        print("FAILURE: Adding effects with finalized");
+        --print ("\nCall stack: \n" .. debugstack(2, 3, 2));
     end
 
 end
@@ -554,65 +565,31 @@ local function effects_from_ui_diff(frame)
     return diff;
 end
 
-local diff_stats_gained = {};
-local function effects_diff(loadout, effects, diff)
+local function effects_add_diff(effects, diff)
 
     for i = 1, 5 do
-        diff_stats_gained[i] = diff.stats[i] * (1 + effects.by_attr.stat_mod[attr.spirit]);
+        effects.by_attr.stat_flat[i] = effects.by_attr.stat_flat[i] + diff.stats[i];
     end
-    local sp_gained_from_spirit = diff_stats_gained[attr.spirit] * effects.by_attr.sp_from_stat_mod[attr.spirit];
-    local sp_gained_from_int = diff_stats_gained[attr.intellect] * effects.by_attr.sp_from_stat_mod[attr.intellect];
-    local sp_gained_from_stat = sp_gained_from_spirit + sp_gained_from_int;
 
-    local hp_gained_from_spirit = diff_stats_gained[attr.spirit] * effects.by_attr.hp_from_stat_mod[attr.spirit];
-    local hp_gained_from_int = diff_stats_gained[attr.intellect] * effects.by_attr.hp_from_stat_mod[attr.intellect];
-    local hp_gained_from_stat = hp_gained_from_spirit + hp_gained_from_int;
-
-    effects.raw.spell_power = effects.raw.spell_power + diff.sp;
-    effects.raw.spell_dmg = effects.raw.spell_dmg + diff.sd + sp_gained_from_stat;
-    effects.raw.healing_power_flat = effects.raw.healing_power_flat + diff.hp + hp_gained_from_stat;
+    for i = 1, 7 do
+        effects.by_school.sp_dmg_flat[i] = effects.by_school.sp_dmg_flat[i] + diff.sd + diff.sp;
+    end
+    effects.raw.healing_power_flat = effects.raw.healing_power_flat + diff.hp + diff.sp;
 
     effects.raw.mp5_flat = effects.raw.mp5_flat + diff.mp5;
-    effects.raw.mp5_flat = effects.raw.mp5_flat + diff_stats_gained[attr.intellect] * effects.raw.mp5_from_int_mod;
-
-    local crit_from_int = int_to_spell_crit(diff_stats_gained[attr.intellect], loadout.lvl);
-    local crit_from_spirit = diff_stats_gained[attr.spirit]*effects.by_attr.crit_from_stat_mod[attr.spirit];
-    local spell_crit = crit_from_spirit + crit_from_int;
-    for i = 1, 7 do
-        effects.by_school.crit[i] = effects.by_school.crit[i] + spell_crit;
-    end
-
-    effects.raw.mana = effects.raw.mana + (diff_stats_gained[attr.intellect] * mana_per_int)*(1.0 + effects.raw.mana_mod);
 
     effects.raw.haste_rating = effects.raw.haste_rating + diff.haste_rating;
     effects.raw.crit_rating = effects.raw.crit_rating + diff.crit_rating;
     effects.raw.hit_rating = effects.raw.hit_rating + diff.hit_rating;
 
-    for i = 1, 5 do
-        effects.by_attr.stats[i] = effects.by_attr.stats[i] + diff.stats[i];
-    end
     for i = 2, 7 do
         effects.by_school.target_res_flat[i] = effects.by_school.target_res_flat[i] - diff.spell_pen;
     end
 
     -- physical stuff
 
-    local agi_ap_class = class;
-    if class == classes.druid and loadout.shapeshift == 3 then
-        -- cat form
-        agi_ap_class = classes.rogue;
-    end
-
-    local added_ap = diff.ap +
-        diff_stats_gained[attr.strength] * ap_per_str[class] +
-        diff_stats_gained[attr.agility] * ap_per_agi[agi_ap_class];
-    effects.raw.ap_flat = effects.raw.ap_flat + added_ap;
-
-    local added_rap = diff.rap + diff_stats_gained[attr.agility] * rap_per_agi[class];
-    effects.raw.rap_flat = effects.raw.rap_flat + added_rap;
-
-    effects.raw.phys_crit = effects.raw.phys_crit +
-        agi_to_physical_crit(diff_stats_gained[attr.agility], loadout.lvl);
+    effects.raw.ap_flat = effects.raw.ap_flat + diff.ap;
+    effects.raw.rap_flat = effects.raw.rap_flat + diff.rap;
 
     local all_weps_mask = bit.bnot(0);
     if effects.wpn_subclass.skill_flat[all_weps_mask] then
@@ -620,6 +597,83 @@ local function effects_diff(loadout, effects, diff)
     else
         effects.wpn_subclass.skill_flat[all_weps_mask] = diff.weapon_skill;
     end
+    if sc.core.__sw__debug__ and effects.finalized then
+        print("FAILURE: Adding effects diff with finalized");
+
+        --print ("\nCall stack: \n" .. debugstack(2, 3, 2));
+
+    end
+end
+
+-- final step, deals with finalizing addition of many forced things like:
+--      attack power from strength,
+--      spell power from % of spirit,
+--      mp5 from % of intellect
+--
+--      while also handling % stat mod, % max mana etc
+local function effects_finalize_forced(loadout, effects)
+
+    if effects.finalized then
+        return;
+    end
+
+    for i = 1, 5 do
+        effects.by_attr.stat_flat[i] =
+            (effects.by_attr.stat_mod[i] + effects.by_attr.stat_mod_forced[i]) *
+                loadout.stats[i]/(1.0 + effects.by_attr.stat_mod[i])
+        +
+        effects.by_attr.stat_flat[i] * 
+            (1.0 + effects.by_attr.stat_mod[i] + effects.by_attr.stat_mod_forced[i]);
+    end
+
+    local sd_from_stats = 0;
+    local hp_from_stats = 0;
+
+    for i = 1, 5 do
+        sd_from_stats = sd_from_stats + effects.by_attr.sd_from_stat_pct[i];
+    end
+    for i = 1, 7 do
+        effects.by_school.sp_dmg_flat[i] = effects.by_school.sp_dmg_flat[i] + sd_from_stats;
+    end
+
+    for i = 1, 5 do
+        hp_from_stats = hp_from_stats + effects.by_attr.hp_from_stat_pct[i];
+    end
+
+    effects.raw.healing_power_flat = effects.raw.healing_power_flat + hp_from_stats;
+
+    local crit_from_int = int_to_spell_crit(effects.by_attr.stat_flat[attr.intellect], loadout.lvl);
+    for i = 1, 7 do
+        effects.by_school.crit[i] = effects.by_school.crit[i] + crit_from_int;
+    end
+
+    effects.raw.mana = 
+        (1.0 + effects.raw.mana_mod + effects.raw.mana_mod_forced)
+        *
+        (
+         (effects.by_attr.stat_flat[attr.intellect] * mana_per_int)
+         +
+         (effects.raw.mana/(1.0 + effects.raw.mana_mod_forced))
+        );
+
+    local agi_ap_class = class;
+    if class == classes.druid and loadout.shapeshift == 3 then
+        -- cat form
+        agi_ap_class = classes.rogue;
+    end
+
+    local added_ap =
+        effects.by_attr.stat_flat[attr.strength] * ap_per_str[class] +
+        effects.by_attr.stat_flat[attr.agility] * ap_per_agi[agi_ap_class];
+    effects.raw.ap_flat = effects.raw.ap_flat + added_ap;
+
+    local added_rap = effects.by_attr.stat_flat[attr.agility] * rap_per_agi[class];
+    effects.raw.rap_flat = effects.raw.rap_flat + added_rap;
+
+    effects.raw.phys_crit_forced = effects.raw.phys_crit_forced +
+        agi_to_physical_crit(effects.by_attr.stat_flat[attr.agility], loadout.lvl);
+
+    effects.finalized = true;
 end
 
 local function dynamic_loadout(loadout)
@@ -919,12 +973,14 @@ loadout_base1.talents.pts = {};
 
 local equipped = {};
 local talented = {};
-local final_effects = {};
-local diffed_effects = {};
+local buffed = {};
+local final = {};
+local diffed = {};
 empty_effects(equipped);
 empty_effects(talented);
-empty_effects(final_effects);
-empty_effects(diffed_effects);
+empty_effects(buffed);
+empty_effects(final);
+empty_effects(diffed);
 
 
 local function active_loadout()
@@ -932,6 +988,7 @@ local function active_loadout()
 end
 
 loadouts.force_update = true;
+local effects_update_id = 0;
 
 local function update_loadout_and_effects()
 
@@ -953,18 +1010,10 @@ local function update_loadout_and_effects()
 
         -- No interesting change, early exit here and Overlay
         -- will benefit from not having to update icons
-        return loadout_front, final_effects, false;
+        return loadout_front, buffed, final, effects_update_id;
     end
     loadouts.force_update = false;
     loadout_front = other;
-
-    if sc.core.equipment_update_needed then
-        zero_effects(equipped);
-        local equipment_api_worked = sc.equipment.apply_equipment(loadout_front, equipped);
-        -- need eq update again next because api failed
-        sc.core.equipment_update_needed = not equipment_api_worked;
-        sc.core.talents_update_needed = true;
-    end
 
     if sc.core.talents_update_needed or
         (loadout_front.talents.code == "_" and UnitLevel("player") >= 10) -- workaround around edge case when the talents query won't work shortly after logging in
@@ -973,7 +1022,6 @@ local function update_loadout_and_effects()
         loadout_front.talents.code = sc.talents.wowhead_talent_code();
 
         zero_effects(talented);
-        effects_add(talented, equipped);
         -- NOTE: these special passives may change aura_pts of other effects, thus applied first
         for k, v in pairs(sc.passives) do
             if IsPlayerSpell(k) then
@@ -984,37 +1032,59 @@ local function update_loadout_and_effects()
         sc.talents.apply_talents(loadout_front, talented);
 
         sc.core.talents_update_needed = false;
+        sc.core.equipment_update_needed = true;
     end
+
+    if sc.core.equipment_update_needed then
+        zero_effects(equipped);
+        effects_add(equipped, talented);
+        local equipment_api_worked = sc.equipment.apply_equipment(loadout_front, equipped);
+        -- need eq update again next because api failed
+        sc.core.equipment_update_needed = not equipment_api_worked;
+    end
+
 
     -- equipment and talents updates above are rare
 
-    zero_effects(final_effects);
-    effects_add(final_effects, talented);
+    zero_effects(buffed);
+    effects_add(buffed, equipped);
 
-    sc.buffs.apply_buffs(loadout_front, final_effects);
+    sc.buffs.apply_buffs(loadout_front, buffed);
 
-    return loadout_front, final_effects, true;
+    cpy_effects(final, buffed);
+    effects_finalize_forced(loadout_front, final);
+
+    effects_update_id = effects_update_id + 1;
+
+    return loadout_front, buffed, final, effects_update_id;
 end
 
-local function update_loadout_and_effects_diffed_from_ui()
+local function update_loadout_and_effects_diffed_from_ui(dont_finalize)
 
-    local loadout, effects = update_loadout_and_effects();
+    local loadout, effects, effects_finalized = update_loadout_and_effects();
 
     local diff = effects_from_ui_diff(__sc_frame.calculator_frame);
 
-    cpy_effects(diffed_effects, effects);
-    effects_diff(loadout, diffed_effects, diff);
+    cpy_effects(diffed, effects);
+    effects_add_diff(diffed, diff);
 
-    return loadout, effects, diffed_effects;
+    if not dont_finalize then
+        effects_finalize_forced(loadout, diffed);
+
+        return loadout, effects_finalized, diffed;
+    else
+        return loadout, effects, diffed;
+    end
+
 end
 
 loadouts.equipped                                     = equipped;
 loadouts.talented                                     = talented;
-loadouts.final_effects                                = final_effects;
-loadouts.diffed_effects                               = diffed_effects;
 loadouts.empty_effects                                = empty_effects;
+loadouts.diffed                                       = diffed;
 loadouts.effects_add                                  = effects_add;
-loadouts.effects_diff                                 = effects_diff;
+loadouts.effects_add_diff                             = effects_add_diff;
+loadouts.effects_finalize_forced                      = effects_finalize_forced;
 loadouts.cpy_effects                                  = cpy_effects;
 loadouts.effects_zero_diff                            = effects_zero_diff;
 loadouts.active_loadout                               = active_loadout;

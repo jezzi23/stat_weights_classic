@@ -155,6 +155,10 @@ elseif sc.class == sc.classes.priest then
         spells[v].healing_version.flags = bit.bor(spells[v].healing_version.flags, spell_flags.no_threat);
     end
 
+    for _, talent_id in pairs(talent_ranks[214]) do
+        sc.talent_effects[talent_id][sc.aura_idx_subject] = {attr.spirit};
+    end
+
 elseif sc.class == sc.classes.shaman then
     for _, v in pairs(rank_seqs[spids.earth_shield]) do
         spells[v].direct.coef = spell_coef_lvl_adjusted(0.271, spells[v].lvl_req);

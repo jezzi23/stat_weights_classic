@@ -67,7 +67,7 @@ local function display_spell_diff(i, calc_list, diff, frame)
         calc_list[i].second:SetPoint("TOPLEFT", 390, frame.y_offset);
 
 
-        calc_list[i].cancel_button = CreateFrame("Button", "nil", frame, "UIPanelButtonTemplate");
+        calc_list[i].cancel_button = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate");
         calc_list[i].cancel_button:SetScript("OnClick", function(self)
             config.settings.spell_calc_list[self.__id_src] = nil;
             for k, v in pairs(calc_list[frame.num_spells]) do
@@ -83,12 +83,14 @@ local function display_spell_diff(i, calc_list, diff, frame)
         if fontstr then
             fontstr:ClearAllPoints();
             fontstr:SetPoint("CENTER", calc_list[i].cancel_button, "CENTER");
+            fontstr:SetIgnoreParentAlpha(true);
+            fontstr:SetMouseClickEnabled(false);
         end
-        frame.spells_add_tip:SetPoint("TOPLEFT", 5, frame.y_offset-25);
+        calc_list[i].cancel_button:SetFrameLevel(calc_list[i].cancel_button:GetFrameLevel() + 1);
     end
     local v = calc_list[i];
 
-    v.cancel_button.__id_src = diff.id;
+    v.cancel_button.__id_src = diff.original_id;
 
     v.name_str:SetText(diff.disp);
 
@@ -116,7 +118,6 @@ local function display_spell_diff(i, calc_list, diff, frame)
     local first = format_number(diff.first, 2);
     if diff.first < 0 then
         v.first:SetTextColor(195/255, 44/255, 11/255);
-        first = "-"..first;
     elseif diff.first > 0 then
         v.first:SetTextColor(33/255, 185/255, 21/255);
         first = "+"..first;
@@ -128,7 +129,6 @@ local function display_spell_diff(i, calc_list, diff, frame)
     local second = format_number(diff.second, 2);
     if diff.second < 0 then
         v.second:SetTextColor(195/255, 44/255, 11/255);
-        second = "-"..second;
     elseif diff.second > 0 then
         v.second:SetTextColor(33/255, 185/255, 21/255);
         second = "+"..second;
@@ -140,14 +140,14 @@ local function display_spell_diff(i, calc_list, diff, frame)
     for _, f in pairs(v) do
         f:Show();
     end
-    if diff.heal_like then
+    if diff.is_dual_spell then
         calc_list[i].cancel_button:Hide();
     end
 end
 
 local cached_spells_cmp_diffs = {};
 
-local function update_calc_list()
+local function update_calc_list(loadout, effects, effects_diffed, eval_flags)
 
     local frame = __sc_frame.calculator_frame;
     for _, v in pairs(frame.calc_list) do
@@ -155,12 +155,15 @@ local function update_calc_list()
             f:Hide();
         end
     end
-    local loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui()
+    if not loadout then
+        loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui();
+        eval_flags = sc.overlay.overlay_eval_flags();
+    end
 
-    local eval_flags = sc.overlay.overlay_eval_flags();
     local i = 0;
     for k, _ in pairs(config.settings.spell_calc_list) do
 
+        local original_k = k;
         if config.settings.calc_list_use_highest_rank and spells[k] then
             k = highest_learned_rank(spells[k].base_id);
         end
@@ -178,6 +181,10 @@ local function update_calc_list()
                        effects_diffed,
                        eval_flags);
 
+            cached_spells_cmp_diffs[i].is_dual_spell = spells[k].healing_version ~= nil;
+            cached_spells_cmp_diffs[i].original_id = original_k;
+
+
             -- for spells with both heal and dmg
             if spells[k].healing_version then
 
@@ -192,15 +199,18 @@ local function update_calc_list()
                            effects,
                            effects_diffed,
                            eval_flags);
+                cached_spells_cmp_diffs[i].is_dual_spell = false;
+                cached_spells_cmp_diffs[i].original_id = original_k;
             end
         end
     end
+    __sc_frame.calculator_frame.num_spells = i;
 
     for j = 1, i do
         ui.display_spell_diff(j, frame.calc_list, cached_spells_cmp_diffs[j], frame);
     end
+    frame.spells_add_tip:SetPoint("TOPLEFT", 5, frame.y_offset-20);
 
-    __sc_frame.calculator_frame.num_spells = i;
 end
 
 -- generalize some reasonable editbox config that need to update on change
@@ -406,10 +416,7 @@ local spell_browser_scroll_to_lvl = true;
 local stats = {};
 local info = {};
 
-local function filtered_spell_view(spell_ids, name_filter)
-
-    local eval_flags = sc.overlay.overlay_eval_flags();
-    local loadout, effects = update_loadout_and_effects();
+local function filtered_spell_view(spell_ids, name_filter, loadout, effects, eval_flags)
 
     local lvl = active_loadout().lvl;
     local next_lvl = lvl + 1;
@@ -666,14 +673,30 @@ local function populate_scrollable_spell_view(view, starting_idx)
     end
 end
 
+local spell_view_update_id = 0;
 
-local function update_spells_frame()
+local function update_spells_frame(loadout, effects, eval_flags, force_refresh)
 
-    __sc_frame.spells_frame.sort_by.init_func();
+    if not loadout then
+        local update_id;
+        eval_flags = sc.overlay.overlay_eval_flags();
+        loadout, _, effects, update_id = update_loadout_and_effects();
+
+        if update_id > spell_view_update_id then
+            spell_view_update_id = update_id;
+        else
+            if not force_refresh then
+                return;
+            end
+        end
+    end
 
     local view = filtered_spell_view(
         sc.spells_lvl_ordered,
-        __sc_frame.spells_frame.search:GetText()
+        __sc_frame.spells_frame.search:GetText(),
+        loadout,
+        effects,
+        eval_flags
     );
     __sc_frame.spells_frame.filtered_list = view;
     __sc_frame.spells_frame.slider:SetMinMaxValues(
@@ -709,7 +732,7 @@ local function sw_activate_tab(tab_window)
     end
 
     if tab_window.frame_to_open == __sc_frame.spells_frame then
-        update_spells_frame();
+        update_spells_frame(nil, nil, nil, true);
     elseif tab_window.frame_to_open == __sc_frame.calculator_frame then
         update_calc_list();
     end
@@ -874,7 +897,7 @@ local function create_sw_ui_spells_frame()
     f:SetSize(100, 15);
     f:SetAutoFocus(false);
     f:SetScript("OnTextChanged", function(self)
-        update_spells_frame();
+        update_spells_frame(nil, nil, nil, true);
         local txt =self:GetText();
         if txt == "" then
             __sc_frame.spells_frame.search_empty_label:Show();
@@ -893,7 +916,7 @@ local function create_sw_ui_spells_frame()
     -- Sorted by dropdown
     __sc_frame.spells_frame.sort_by =
         CreateFrame("Button", "__sc_frame_spells_frame_sort_by", __sc_frame.spells_frame, "UIDropDownMenuTemplate");
-    __sc_frame.spells_frame.sort_by:SetPoint("TOPLEFT", 130, __sc_frame.spells_frame.y_offset+6);
+    __sc_frame.spells_frame.sort_by:SetPoint("TOPLEFT", 150, __sc_frame.spells_frame.y_offset+6);
     __sc_frame.spells_frame.sort_by.init_func = function()
 
         UIDropDownMenu_SetText(__sc_frame.spells_frame.sort_by, "Order by "..spell_browser_sort_options[spell_browser_active_sort_key]);
@@ -906,8 +929,9 @@ local function create_sw_ui_spells_frame()
                         text = v;
                         checked = k == spell_browser_active_sort_key;
                         func = function()
+                            UIDropDownMenu_SetText(__sc_frame.spells_frame.sort_by, "Order by "..spell_browser_sort_options[k]);
                             spell_browser_active_sort_key = k;
-                            update_spells_frame();
+                            update_spells_frame(nil, nil, nil, true);
                             __sc_frame.spells_frame.slider:SetValue(1);
                         end
                     }
@@ -920,7 +944,7 @@ local function create_sw_ui_spells_frame()
     -- Filter dropdown
     __sc_frame.spells_frame.filter =
         CreateFrame("Button", "__sc_frame_spells_frame_filter", __sc_frame.spells_frame, "UIDropDownMenuTemplate");
-    __sc_frame.spells_frame.filter:SetPoint("TOPLEFT", 320, __sc_frame.spells_frame.y_offset+6);
+    __sc_frame.spells_frame.filter:SetPoint("TOPLEFT", 340, __sc_frame.spells_frame.y_offset+6);
     __sc_frame.spells_frame.filter.init_func = function()
 
         UIDropDownMenu_SetText(__sc_frame.spells_frame.filter, "Includes");
@@ -948,7 +972,7 @@ local function create_sw_ui_spells_frame()
                             else
                                 config.settings[v.id] = true;
                             end
-                            update_spells_frame();
+                            update_spells_frame(nil, nil, nil, true);
                         end,
                         keepShownOnClick = true,
                         notCheckable = false,
@@ -963,24 +987,24 @@ local function create_sw_ui_spells_frame()
 
     __sc_frame.spells_frame.filter.init_func();
 
-    local f = CreateFrame("Button", nil, __sc_frame.spells_frame, "UIPanelButtonTemplate");
-    f:SetSize(25, 25);
-    f:SetPoint("TOPRIGHT", __sc_frame.spells_frame, 0, __sc_frame.spells_frame.y_offset+6);
-    local tex = f:CreateTexture(nil, "ARTWORK");
-    tex:SetTexture("Interface\\Buttons\\UI-RefreshButton");
-    tex:SetSize(12, 12);
-    tex:SetPoint("CENTER", f, "CENTER", 0, 0);
-    f:SetScript("OnClick", function()
-        update_spells_frame();
-    end);
-    f:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Refresh")
-        GameTooltip:Show()
-    end);
-    f:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end);
+    --local f = CreateFrame("Button", nil, __sc_frame.spells_frame, "UIPanelButtonTemplate");
+    --f:SetSize(25, 25);
+    --f:SetPoint("TOPRIGHT", __sc_frame.spells_frame, 0, __sc_frame.spells_frame.y_offset+6);
+    --local tex = f:CreateTexture(nil, "ARTWORK");
+    --tex:SetTexture("Interface\\Buttons\\UI-RefreshButton");
+    --tex:SetSize(12, 12);
+    --tex:SetPoint("CENTER", f, "CENTER", 0, 0);
+    --f:SetScript("OnClick", function()
+    --    update_spells_frame();
+    --end);
+    --f:SetScript("OnEnter", function(self)
+    --    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    --    GameTooltip:SetText("Refresh")
+    --    GameTooltip:Show()
+    --end);
+    --f:SetScript("OnLeave", function()
+    --    GameTooltip:Hide()
+    --end);
 
     __sc_frame.spells_frame.y_offset = __sc_frame.spells_frame.y_offset - 25;
     -- Headers
@@ -1153,7 +1177,7 @@ local function create_sw_ui_spells_frame()
                             else
                                 config.settings.spells_ignore_list[spell_options.__spid] = 1;
                             end
-                            update_spells_frame();
+                            update_spells_frame(nil, nil, nil, true);
                         end,
                     }
                 );
@@ -1243,14 +1267,34 @@ local function create_sw_ui_tooltip_frame()
 
     __sc_frame.tooltip_frame.checkboxes = {};
 
-    local tooltip_setting_checks = {
-        {
-            id = "tooltip_disable",
-            txt = "Disable tooltip",
-        },
+    local tooltip_general_checks = {
         {
             id = "tooltip_shift_to_show",
             txt = "Require SHIFT to show tooltip"
+        },
+    };
+
+    f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    f_txt:SetText("Tooltip general settings");
+    f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
+    multi_row_checkbutton(tooltip_general_checks, __sc_frame.tooltip_frame, 2);
+
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
+
+    local div = __sc_frame.tooltip_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.tooltip_frame, "TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.tooltip_frame, "TOPRIGHT", 0, __sc_frame.tooltip_frame.y_offset);
+
+    local tooltip_spell_checks = {
+        {
+            id = "tooltip_disable",
+            txt = "Disable spell tooltip",
         },
         {
             id = "tooltip_clear_original",
@@ -1263,16 +1307,18 @@ local function create_sw_ui_tooltip_frame()
         }
     };
 
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
+
     f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
-    f_txt:SetText("Tooltip settings");
+    f_txt:SetText("Tooltip spell settings");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
-    multi_row_checkbutton(tooltip_setting_checks, __sc_frame.tooltip_frame, 2);
+    multi_row_checkbutton(tooltip_spell_checks, __sc_frame.tooltip_frame, 2);
 
-    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
 
     local div = __sc_frame.tooltip_frame:CreateTexture(nil, "ARTWORK")
     div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
@@ -1284,7 +1330,7 @@ local function create_sw_ui_tooltip_frame()
     f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
-    f_txt:SetText("Tooltip display options:");
+    f_txt:SetText("Tooltip spell display options:");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
     __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 20;
@@ -1293,7 +1339,6 @@ local function create_sw_ui_tooltip_frame()
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
     f_txt:SetText("Presets:");
     f_txt:SetTextColor(1.0, 1.0, 1.0);
-
 
     local tooltip_components = {
         {
@@ -1527,9 +1572,51 @@ local function create_sw_ui_tooltip_frame()
         end
         config.settings[self._settings_id] = self:GetChecked();
     end;
-    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
-    multi_row_checkbutton(tooltip_components, __sc_frame.tooltip_frame, 2, tooltip_toggle);
 
+
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 10;
+    multi_row_checkbutton(tooltip_components, __sc_frame.tooltip_frame, 2, tooltip_toggle);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
+
+    local div = __sc_frame.tooltip_frame:CreateTexture(nil, "ARTWORK")
+    div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
+    div:SetHeight(1);
+    div:SetPoint("TOPLEFT", __sc_frame.tooltip_frame, "TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    div:SetPoint("TOPRIGHT", __sc_frame.tooltip_frame, "TOPRIGHT", 0, __sc_frame.tooltip_frame.y_offset);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
+
+
+    f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    f_txt:SetText("Tooltip item settings");
+    f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
+
+
+    local tooltip_item_checks = {
+        {
+            id = "tooltip_disable_item",
+            txt = "Disable item upgrade evaluation in tooltip"
+        },
+    };
+
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
+    multi_row_checkbutton(tooltip_item_checks, __sc_frame.tooltip_frame, 2);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
+
+    f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    f_txt:SetText("Spell list in item tooltip is configured under Calculator tab");
+    f_txt:SetTextColor(1, 1, 1);
+
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 20;
+    f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
+    f_txt:SetText("Switch between evaluation modes holding ALT key");
+    f_txt:SetTextColor(1, 1, 1);
+    f_txt:SetWordWrap(true);
 end
 
 local function create_sw_ui_overlay_frame()
@@ -1599,7 +1686,7 @@ local function create_sw_ui_overlay_frame()
 
     multi_row_checkbutton(overlay_settings_checks, __sc_frame.overlay_frame, 2);
 
-    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 30;
+    __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 20;
 
     local slider_frame_type = "Slider";
     f = CreateFrame(slider_frame_type, "__sc_frame_setting_overlay_update_freq", __sc_frame.overlay_frame, "UISliderTemplate");
@@ -2116,7 +2203,6 @@ local function create_sw_ui_calculator_frame()
 
     f = __sc_frame.calculator_frame:CreateFontString(nil, "OVERLAY");
     f:SetFontObject(font);
-    f:SetPoint("BOTTOMLEFT", x_pad, 5);
     f:SetText("Abilities can be added from Spells tab");
     f:SetTextColor(1.0,  1.0,  1.0);
     __sc_frame.calculator_frame.spells_add_tip = f;
@@ -3705,6 +3791,7 @@ ui.sw_activate_tab                      = sw_activate_tab;
 ui.update_buffs_frame                   = update_buffs_frame;
 ui.update_profile_frame                 = update_profile_frame;
 ui.update_loadout_frame                 = update_loadout_frame;
+ui.update_spells_frame                  = update_spells_frame;
 ui.add_spell_book_button                = add_spell_book_button;
 ui.add_to_options                       = add_to_options;
 ui.forced_buffs_lname_to_id             = forced_buffs_lname_to_id;

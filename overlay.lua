@@ -13,7 +13,6 @@ local update_loadout_and_effects                    = sc.loadouts.update_loadout
 local update_loadout_and_effects_diffed_from_ui     = sc.loadouts.update_loadout_and_effects_diffed_from_ui;
 local active_loadout                                = sc.loadouts.active_loadout;
 
-
 local stats_for_spell                               = sc.calc.stats_for_spell;
 local spell_info                                    = sc.calc.spell_info;
 local cast_until_oom                                = sc.calc.cast_until_oom;
@@ -549,61 +548,51 @@ local overlay_label_handler = {
         end
     end,
     overlay_display_casts_until_oom = function(frame_overlay, info)
-
-        if info.num_casts_until_oom >= 0 then
-            frame_overlay:SetText(format_number(info.num_casts_until_oom, 1));
-        else
-            frame_overlay:SetText("");
-        end
-
+        frame_overlay:SetText(format_number(info.num_casts_until_oom, 1));
     end,
     overlay_display_effect_until_oom = function(frame_overlay, info)
         frame_overlay:SetText(format_number(info.effect_until_oom, 0));
     end,
     overlay_display_time_until_oom = function(frame_overlay, info)
-        if info.time_until_oom >= 0 then
-            frame_overlay:SetText(format_number(info.time_until_oom, 2));
-        else
-            frame_overlay:SetText("");
-        end
+        frame_overlay:SetText(format_number(info.time_until_oom, 2));
     end,
 };
 
-local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
-
-    if not spell_cache[spell_id] then
-        spell_cache[spell_id] = {};
-        spell_cache[spell_id].dmg = {};
-        spell_cache[spell_id].heal = {};
-    end
-    local spell_variant = spell_cache[spell_id].dmg;
-    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
-        spell_variant = spell_cache[spell_id].heal;
-    end
-
-    if not spell_variant.seq then
-
-        spell_variant.seq = -1;
-        spell_variant.stats = {};
-        spell_variant.spell_effect = {};
-    end
-    local spell_effect = spell_variant.spell_effect;
-    local stats = spell_variant.stats;
-
-    if spell_variant.seq ~= sc.sequence_counter then
-
-        if bit.band(spell.flags, spell_flags.eval) ~= 0 then
-            spell_variant.seq = sc.sequence_counter;
-            stats_for_spell(stats, spell, loadout, effects, eval_flags);
-            spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
-            cast_until_oom(spell_effect, stats, loadout, effects);
-        elseif bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
-            resource_regen_info(spell_effect, spell, spell_id, loadout, effects);
-        end
-    end
-
-    return spell_effect, stats;
-end
+--local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
+--
+--    if not spell_cache[spell_id] then
+--        spell_cache[spell_id] = {};
+--        spell_cache[spell_id].dmg = {};
+--        spell_cache[spell_id].heal = {};
+--    end
+--    local spell_variant = spell_cache[spell_id].dmg;
+--    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
+--        spell_variant = spell_cache[spell_id].heal;
+--    end
+--
+--    if not spell_variant.seq then
+--
+--        spell_variant.seq = -1;
+--        spell_variant.stats = {};
+--        spell_variant.spell_effect = {};
+--    end
+--    local spell_effect = spell_variant.spell_effect;
+--    local stats = spell_variant.stats;
+--
+--    if spell_variant.seq ~= sc.sequence_counter then
+--
+--        if bit.band(spell.flags, spell_flags.eval) ~= 0 then
+--            spell_variant.seq = sc.sequence_counter;
+--            stats_for_spell(stats, spell, loadout, effects, eval_flags);
+--            spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
+--            cast_until_oom(spell_effect, spell, stats, loadout, effects);
+--        elseif bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
+--            resource_regen_info(spell_effect, spell, spell_id, loadout, effects);
+--        end
+--    end
+--
+--    return spell_effect, stats;
+--end
 
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, eval_flags)
 
@@ -626,7 +615,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
 
     elseif __sc_frame.overlay_frame.num_overlay_components_toggled > 0 then
         local spell_effect, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
-        cast_until_oom(spell_effect, stats, loadout, effects);
+        cast_until_oom(spell_effect, spell, stats, loadout, effects);
 
         for i = 1, 3 do
 
@@ -682,12 +671,12 @@ local function update_non_evaluated_spell(frame_info, spell_id, loadout, effects
         stats.regen_while_casting = effects.raw.regen_while_casting;
         spell_effect.cost_per_sec = cost/cast_time;
         spell_effect.expected = 0
-        cast_until_oom(spell_effect, stats, loadout, effects);
-        -- hack to display non mana cost as mana but don't show "until oom" if rage/energy etc
-        if resource_name ~= "MANA" then
+        if not spells[spell_id] or resource_name ~= "MANA" then
             stats.cast_time = 0.0;
-            spell_effect.time_until_oom = -1;
-            spell_effect.num_casts_until_oom = -1;
+            spell_effect.time_until_oom = nil;
+            spell_effect.num_casts_until_oom = nil;
+        else
+            cast_until_oom(spell_effect, spells[spell_id], stats, loadout, effects);
         end
     end
 
@@ -818,43 +807,60 @@ local function overlay_eval_flags()
     return eval_flags;
 end
 
+local overlay_effects_update_id = 0;
+
 local function update_overlay()
 
-    local loadout, effects, loadout_changed;
-    if not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown() then
-        loadout, effects, loadout_changed = update_loadout_and_effects();
-        if not loadout_changed then
-
-            return;
-        end
-    else
-        loadout, _, effects = update_loadout_and_effects_diffed_from_ui();
-    end
-
+    local loadout, effects_before, effects, update_id;
+    local updated = true;
     local eval_flags = overlay_eval_flags();
 
-    for k, count in pairs(externally_registered_spells) do
-        if count > 0 then
-            cache_spell(spells[k], k, loadout, effects, eval_flags);
-            if spells[k].healing_version then
-                cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
-            end
-        end
-    end
-
-    local k = sc.core.currently_casting_spell_id;
-
-    if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
-        cache_spell(spells[k], k, loadout, effects, eval_flags);
-        if spells[k].healing_version then
-            cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
-        end
-    end
+    local spells_frame_open = __sc_frame:IsShown() and __sc_frame.spells_frame:IsShown();
+    local calc_frame_open =  __sc_frame:IsShown() and __sc_frame.calculator_frame:IsShown();
 
     if not config.settings.overlay_disable then
+        if not calc_frame_open then
 
-        update_spell_icons(loadout, effects, eval_flags);
+            loadout, _, effects, update_id = update_loadout_and_effects();
+            updated = update_id > overlay_effects_update_id;
+            overlay_effects_update_id = update_id;
+        else
+            loadout, effects_before, effects =
+                update_loadout_and_effects_diffed_from_ui();
+        end
     end
+
+    if updated then
+        if calc_frame_open then
+            sc.ui.update_calc_list(loadout, effects_before, effects, eval_flags);
+        elseif spells_frame_open then
+            sc.ui.update_spells_frame(loadout, effects, eval_flags);
+        end
+
+        if not config.settings.overlay_disable then
+            update_spell_icons(loadout, effects, eval_flags);
+        end
+    end
+
+
+    --for k, count in pairs(externally_registered_spells) do
+    --    if count > 0 then
+    --        cache_spell(spells[k], k, loadout, effects, eval_flags);
+    --        if spells[k].healing_version then
+    --            cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
+    --        end
+    --    end
+    --end
+
+    --local k = sc.core.currently_casting_spell_id;
+
+    --if spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
+    --    cache_spell(spells[k], k, loadout, effects, eval_flags);
+    --    if spells[k].healing_version then
+    --        cache_spell(spells[k].healing_version, k, loadout, effects, eval_flags);
+    --    end
+    --end
+
 end
 
 overlay.spell_book_frames            = spell_book_frames;

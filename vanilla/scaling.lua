@@ -159,49 +159,6 @@ local function agi_to_physical_crit(agi, lvl)
     return 0.01*agi/lerp_by_lvl(class_agi_to_physical_crit[class], lvl, 1, 60);
 end
 
---local function add_mana_mod(loadout, effects, inactive_value, mod_value)
---
---    effects.raw.mana_mod = effects.raw.mana_mod + mod_value-inactive_value;
---    effects.raw.mana_mod_active = effects.raw.mana_mod_active + mod_value-inactive_value;
---
---    local mana_gained = inactive_value * loadout.resource[powers.mana]/(1.0 + effects.raw.mana_mod);
---    loadout.resource[powers.mana] = loadout.resource[powers.mana] + mana_gained;
---
---    effects.raw.mana_mod = effects.raw.mana_mod + inactive_value;
---end
---
---local function add_int_mod(loadout, effects, inactive_value, mod_value)
---    effects.by_attr.stat_mod[attr.intellect] = effects.by_attr.stat_mod[attr.intellect] + mod_value-inactive_value;
---
---    local int_gained = inactive_value * loadout.stats[attr.intellect]/(1.0 + effects.by_attr.stat_mod[attr.intellect]);
---    local crit_rating_gained = int_to_crit_rating(int_gained, loadout, effects);
---    local mana_gained = int_gained * 15 * (1.0 + effects.raw.mana_mod);
---
---    effects.raw.crit_rating = effects.raw.crit_rating +  crit_rating_gained;
---    loadout.resource[powers.mana] = loadout.resource[powers.mana] + mana_gained;
---    loadout.resource_max[powers.mana] = loadout.resource_max[powers.mana] + mana_gained;
---    loadout.stats[attr.intellect] = loadout.stats[attr.intellect] + int_gained;
---
---    effects.by_attr.stat_mod[attr.intellect] = effects.by_attr.stat_mod[attr.intellect] + inactive_value;
---end
---
---local function add_spirit_mod(loadout, effects, inactive_value, mod_value)
---    effects.by_attr.stat_mod[attr.spirit] = effects.by_attr.stat_mod[attr.spirit] + mod_value-inactive_value;
---
---    local spirit_gained = inactive_value * loadout.stats[attr.spirit]/(1.0 + effects.by_attr.stat_mod[attr.spirit]);
---    local sd_gained = spirit_gained * effects.by_attr.sp_from_stat_mod[attr.spirit];
---    local hp_gained = spirit_gained * effects.by_attr.hp_from_stat_mod[attr.spirit];
---    effects.raw.spell_dmg = effects.raw.spell_dmg + sd_gained;
---    effects.raw.healing_power = effects.raw.healing_power + hp_gained;
---    loadout.stats[attr.spirit] = loadout.stats[attr.spirit] + spirit_gained;
---
---    effects.by_attr.stat_mod[attr.spirit] = effects.by_attr.stat_mod[attr.spirit] + inactive_value;
---end
-
---scaling.add_mana_mod =  add_mana_mod;
---scaling.add_int_mod =  add_int_mod;
---scaling.add_spirit_mod =  add_spirit_mod;
-
 scaling.dps_per_ap                       = dps_per_ap;
 scaling.get_combat_rating_effect         = get_combat_rating_effect;
 scaling.spirit_mana_regen                = spirit_mana_regen;

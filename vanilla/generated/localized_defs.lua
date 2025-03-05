@@ -2,6 +2,70 @@
 local _, sc = ...;
 sc.locale = GetLocale();
 if false then
+elseif sc.locale == "enUS" then
+	sc.wpn_skill_lname_to_subclass = {
+		["Swords"] = 7,
+		["Axes"] = 0,
+		["Bows"] = 2,
+		["Guns"] = 3,
+		["Maces"] = 4,
+		["Two-Handed Swords"] = 8,
+		["Staves"] = 10,
+		["Two-Handed Maces"] = 5,
+		["Unarmed"] = -1,
+		["Two-Handed Axes"] = 1,
+		["Daggers"] = 15,
+		["Thrown"] = 16,
+		["Crossbows"] = 18,
+		["Wands"] = 19,
+		["Polearms"] = 6,
+		["Fist Weapons"] = 13,
+	};
+	sc.creature_lname_to_id = {
+		["Beast"] = 1,
+		["Dragonkin"] = 2,
+		["Demon"] = 3,
+		["Elemental"] = 4,
+		["Giant"] = 5,
+		["Undead"] = 6,
+		["Humanoid"] = 7,
+		["Critter"] = 8,
+		["Mechanical"] = 9,
+		["Not specified"] = 10,
+		["Totem"] = 11,
+	};
+elseif sc.locale == "enGB" then
+	sc.wpn_skill_lname_to_subclass = {
+		["Swords"] = 7,
+		["Axes"] = 0,
+		["Bows"] = 2,
+		["Guns"] = 3,
+		["Maces"] = 4,
+		["Two-Handed Swords"] = 8,
+		["Staves"] = 10,
+		["Two-Handed Maces"] = 5,
+		["Unarmed"] = -1,
+		["Two-Handed Axes"] = 1,
+		["Daggers"] = 15,
+		["Thrown"] = 16,
+		["Crossbows"] = 18,
+		["Wands"] = 19,
+		["Polearms"] = 6,
+		["Fist Weapons"] = 13,
+	};
+	sc.creature_lname_to_id = {
+		["Beast"] = 1,
+		["Dragonkin"] = 2,
+		["Demon"] = 3,
+		["Elemental"] = 4,
+		["Giant"] = 5,
+		["Undead"] = 6,
+		["Humanoid"] = 7,
+		["Critter"] = 8,
+		["Mechanical"] = 9,
+		["Not specified"] = 10,
+		["Totem"] = 11,
+	};
 elseif sc.locale == "frFR" then
 	sc.wpn_skill_lname_to_subclass = {
 		["Epées"] = 7,
@@ -64,70 +128,6 @@ elseif sc.locale == "deDE" then
 		["Tier"] = 8,
 		["Mechanisch"] = 9,
 		["Nicht spezifiziert"] = 10,
-		["Totem"] = 11,
-	};
-elseif sc.locale == "enGB" then
-	sc.wpn_skill_lname_to_subclass = {
-		["Swords"] = 7,
-		["Axes"] = 0,
-		["Bows"] = 2,
-		["Guns"] = 3,
-		["Maces"] = 4,
-		["Two-Handed Swords"] = 8,
-		["Staves"] = 10,
-		["Two-Handed Maces"] = 5,
-		["Unarmed"] = -1,
-		["Two-Handed Axes"] = 1,
-		["Daggers"] = 15,
-		["Thrown"] = 16,
-		["Crossbows"] = 18,
-		["Wands"] = 19,
-		["Polearms"] = 6,
-		["Fist Weapons"] = 13,
-	};
-	sc.creature_lname_to_id = {
-		["Beast"] = 1,
-		["Dragonkin"] = 2,
-		["Demon"] = 3,
-		["Elemental"] = 4,
-		["Giant"] = 5,
-		["Undead"] = 6,
-		["Humanoid"] = 7,
-		["Critter"] = 8,
-		["Mechanical"] = 9,
-		["Not specified"] = 10,
-		["Totem"] = 11,
-	};
-elseif sc.locale == "enUS" then
-	sc.wpn_skill_lname_to_subclass = {
-		["Swords"] = 7,
-		["Axes"] = 0,
-		["Bows"] = 2,
-		["Guns"] = 3,
-		["Maces"] = 4,
-		["Two-Handed Swords"] = 8,
-		["Staves"] = 10,
-		["Two-Handed Maces"] = 5,
-		["Unarmed"] = -1,
-		["Two-Handed Axes"] = 1,
-		["Daggers"] = 15,
-		["Thrown"] = 16,
-		["Crossbows"] = 18,
-		["Wands"] = 19,
-		["Polearms"] = 6,
-		["Fist Weapons"] = 13,
-	};
-	sc.creature_lname_to_id = {
-		["Beast"] = 1,
-		["Dragonkin"] = 2,
-		["Demon"] = 3,
-		["Elemental"] = 4,
-		["Giant"] = 5,
-		["Undead"] = 6,
-		["Humanoid"] = 7,
-		["Critter"] = 8,
-		["Mechanical"] = 9,
-		["Not specified"] = 10,
 		["Totem"] = 11,
 	};
 elseif sc.locale == "itIT" then

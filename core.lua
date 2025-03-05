@@ -1,7 +1,5 @@
 local _, sc                    = ...;
 
-local wowhead_talent_code       = sc.talents.wowhead_talent_code;
-
 local spells                    = sc.spells;
 local spell_flags               = sc.spell_flags;
 
@@ -26,6 +24,8 @@ local update_overlay            = sc.overlay.update_overlay;
 local update_tooltip            = sc.tooltip.update_tooltip;
 local write_spell_tooltip       = sc.tooltip.write_spell_tooltip;
 local write_item_tooltip        = sc.tooltip.write_item_tooltip;
+local on_clear_tooltip          = sc.tooltip.on_clear_tooltip;
+local on_show_tooltip           = sc.tooltip.on_show_tooltip;
 
 -------------------------------------------------------------------------
 local core                      = {};
@@ -45,6 +45,8 @@ core.version                    = tostring(version_major) .. "." ..
 core.sw_addon_loaded            = false;
 
 sc.sequence_counter             = 0;
+core.addon_running_time         = 0;
+core.active_spec                = 1;
 
 core.talents_update_needed      = true;
 core.equipment_update_needed    = true;
@@ -54,8 +56,6 @@ core.update_action_bar_needed   = false;
 core.addon_message_on_update    = false;
 core.old_ranks_checks_needed    = true;
 
-core.addon_running_time         = 0;
-core.active_spec                = 1;
 
 core.beacon_snapshot_time       = -1000;
 core.currently_casting_spell_id = 0;
@@ -179,8 +179,8 @@ local event_dispatch = {
         end
         sc.ui.add_spell_book_button();
         sc.ui.add_to_options();
-        C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_sc_id)
-        if core.__sw__debug__ or core.use_char_defaults or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
+        C_ChatInfo.RegisterAddonMessagePrefix(addon_msg_sc_id);
+        if core.__sw__debug__ or core.__sw__test_all_codepaths or core.__sw__test_all_spells then
             print("WARNING: SC DEBUG TOOLS ARE ON!!!");
             for _ = 1, 10 do
                 print("WARNING: SC DEBUG TOOLS ARE ON!!!");
@@ -361,23 +361,8 @@ local function main_update()
     C_Timer.After(dt, main_update);
 end
 
-local tooltip_timestamp = 0.0;
-sc.tooltip_mod = 0;
-sc.tooltip_mod_flags = {
-    ALT =   bit.lshift(1, 0),
-    CTRL =  bit.lshift(1, 1),
-    SHIFT = bit.lshift(1, 2),
-}
+local function key_mod_flags()
 
-local tooltip_time = 1.0/2.0;
-
-local function refresh_tooltip()
-    local dt = 0.1;
-    if config.settings.tooltip_disable then
-
-        C_Timer.After(dt, refresh_tooltip);
-        return;
-    end
     local mod = 0;
     if IsAltKeyDown() then
         mod = bit.bor(mod, sc.tooltip_mod_flags.ALT);
@@ -390,16 +375,37 @@ local function refresh_tooltip()
     end
     mod = bit.bor(mod, bit.lshift(sc.tooltip.eval_mode, 3));
 
+    return mod;
+end
+
+local tooltip_timestamp = 0.0;
+sc.tooltip_mod = 0;
+sc.tooltip_mod_flags = {
+    ALT =   bit.lshift(1, 0),
+    CTRL =  bit.lshift(1, 1),
+    SHIFT = bit.lshift(1, 2),
+};
+
+local tooltip_time = 1.0/2.0;
+
+local function refresh_tooltip()
+    local dt = 0.1;
+    if config.settings.tooltip_disable then
+
+        C_Timer.After(dt, refresh_tooltip);
+        return;
+    end
+    local mod = key_mod_flags();
     if core.__sw__test_all_spells then
         dt = 0.01;
         sc.tooltip_mod = mod;
-        update_tooltip(GameTooltip);
+        update_tooltip(GameTooltip, true);
     else
         local t = GetTime();
         local t_elapsed = t - tooltip_timestamp;
         if t_elapsed > tooltip_time or sc.tooltip_mod ~= mod then
+            update_tooltip(GameTooltip, sc.tooltip_mod ~= mod);
             sc.tooltip_mod = mod;
-            update_tooltip(GameTooltip);
             tooltip_timestamp = t;
         end
     end
@@ -414,14 +420,28 @@ C_Timer.After(1.0, refresh_tooltip);
 
 GameTooltip:HookScript("OnTooltipSetSpell", function()
     if not config.settings.tooltip_disable then
+        sc.tooltip_mod = key_mod_flags()
         write_spell_tooltip();
     end
-end)
+end);
+
+local item_tooltip_mod = 0;
 GameTooltip:HookScript("OnTooltipSetItem", function(self)
     if not config.settings.tooltip_disable_item then
-        write_item_tooltip(self);
+        local mod = key_mod_flags();
+        local mod_change = mod ~= item_tooltip_mod;
+        item_tooltip_mod = mod;
+        write_item_tooltip(self, mod, mod_change);
     end
 end)
+
+GameTooltip:HookScript("OnTooltipCleared", function(self)
+    on_clear_tooltip(self);
+end)
+GameTooltip:HookScript("OnShow", function(self)
+    on_show_tooltip(self);
+end)
+
 
 -- add addon to Addons list under Interface
 if InterfaceOptions_AddCategory then
@@ -578,7 +598,6 @@ sc.ext.version_id = core.version_id;
 
 __SC = sc.ext;
 
---core.__sw__debug__ = 1;
---core.sc.core.use_char_defaults = 1;
+core.__sw__debug__ = 1;
 --core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;

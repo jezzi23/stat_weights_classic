@@ -16,7 +16,8 @@ local best_rank_by_lvl                              = sc.utils.best_rank_by_lvl;
 local config                                        = sc.config;
 
 local effects_zero_diff                             = sc.loadouts.effects_zero_diff;
-local effects_diff                                  = sc.loadouts.effects_diff;
+local effects_add_diff                              = sc.loadouts.effects_add_diff;
+local effects_finalize_forced                       = sc.loadouts.effects_finalize_forced;
 local empty_effects                                 = sc.loadouts.empty_effects;
 local cpy_effects                                   = sc.loadouts.cpy_effects;
 local loadout_flags                                 = sc.loadouts.loadout_flags;
@@ -219,10 +220,6 @@ local function stats_crit(extra, attack_skill, attack_subclass, bid, comp, loado
         end
 
         crit = crit + effects.raw.phys_crit_forced + wpn_subclass_crit_forced;
-        if loadout.target_lvl - loadout.lvl >= 3 then
-            -- from reference guide, 1.8% crit is subtracted from active sources of phys_crit
-            crit = crit - math.min(0.018, effects.raw.phys_crit + wpn_subclass_crit_active);
-        end
 
         if bit.band(loadout.flags, loadout_flags.target_pvp) == 0 then
             local base_skill = math.min(attack_skill, loadout.lvl*5);
@@ -450,7 +447,7 @@ local function stats_sp(bid, comp, spell, loadout, effects)
     local sp;
 
     if bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0 then
-        sp = loadout.healing_power + effects.raw.healing_power_flat + effects.raw.spell_power;
+        sp = loadout.healing_power + effects.raw.healing_power_flat;
     elseif comp.school1 == schools.physical then
         if bit.band(comp.flags, comp_flags.applies_ranged) ~= 0 then
             sp = loadout.rap + effects.raw.rap_flat;
@@ -467,7 +464,7 @@ local function stats_sp(bid, comp, spell, loadout, effects)
                 (effects.by_school.sp_dmg_flat[comp.school1] - effects.by_school.sp_dmg_flat[schools.physical]);
             i = i + 1;
         end
-        sp = sp_school + effects.raw.spell_dmg + effects.raw.spell_power + (effects.ability.sp_flat[bid] or 0);
+        sp = sp_school + (effects.ability.sp_flat[bid] or 0);
     end
 
     return sp;
@@ -634,9 +631,6 @@ local function stats_cast_time(stats, bid, comp, spell, loadout, effects, eval_f
 
     if comp.school1 == schools.physical then
         return cast_time, cast_time;
-    end
-    if not cast_time then
-        print(bid);
     end
     cast_time = cast_time + (effects.ability.cast_mod_flat[bid] or 0.0);
 
@@ -941,11 +935,7 @@ local class_stats_spell = (function()
                 stats.effect_mod_flat = stats.effect_mod_flat
                     +
                     spell.direct.per_resource *
-                        (loadout.stats[attr.strength] +
-                            effects.by_attr.stats[attr.strength]
-                            *
-                            (1.0 + effects.by_attr.stat_mod[attr.strength])
-                        )
+                        (loadout.stats[attr.strength] + effects.by_attr.stat_flat[attr.strength])
                     + loadout.block_value;
             end
         end
@@ -1155,13 +1145,10 @@ local function post_process_stats(comp, spell, stats, loadout)
             local isb = get_buff_by_lname(loadout, loadout.hostile_towards, lookups.isb_lname, false, false);
             if isb then
                 isb_buff_val = sc.hostile_buffs[isb][1][sc.aura_idx_value];
-                print("found isb", isb, isb_buff_val);
             end
 
             local isb_uptime = 1.0 - math.pow(1.0 - stats.crit, 4);
 
-            print("Okay")
-            print("Spell mod before", stats.spell_mod);
             if isb_buff_val then
 
                 stats.spell_mod = stats.spell_mod / (1.0 + isb_buff_val);
@@ -1171,14 +1158,14 @@ local function post_process_stats(comp, spell, stats, loadout)
                 stats.hit_inflation = stats.hit_inflation / (1.0 + isb_pts*0.04*isb_uptime);
             end
             stats.spell_mod = stats.spell_mod * (1.0 + isb_pts*0.04*isb_uptime);
-            print("Spell mod after", stats.spell_mod);
         end
-        --print(stats.spell_dmg_mod_mul);
-        --print("dd");
     end
 end
 
 local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
+    if not effects.finalized and sc.core.__sw__debug__ then
+        print("CALLING STATS FOR SPELL WITHOUT FINALIZED EFFECTS");
+    end
 
     eval_flags = eval_flags or 0;
 
@@ -1690,6 +1677,9 @@ local spell_stats_info;
 
 local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
+    if not effects.finalized and sc.core.__sw__debug__ then
+        print("CALLING SPELL INFO FOR SPELL WITHOUT FINALIZED EFFECTS");
+    end
     eval_flags = eval_flags or 0;
 
     info.num_periodic_effects = 0;
@@ -1876,13 +1866,21 @@ spell_stats_info = function(info, stats, spell, loadout, effects, eval_flags)
     spell_info(info, spell, stats, loadout, effects, eval_flags);
 end
 
-local function cast_until_oom(spell_effect, stats, loadout, effects, calculating_weights)
+local function cast_until_oom(spell_effect, spell, stats, loadout, effects, calculating_weights)
+
+
+    if spell.power_type ~= powers.mana then
+        spell_effect.num_casts_until_oom = nil;
+        spell_effect.effect_until_oom = nil;
+        spell_effect.time_until_oom = nil;
+        spell_effect.mp1 = nil;
+    end
+
     calculating_weights = calculating_weights or false;
 
     local mana = loadout.resources[powers.mana] + config.loadout.extra_mana + effects.raw.mana;
 
-    local spirit = loadout.stats[attr.spirit] +
-        effects.by_attr.stats[attr.spirit] * (1.0 + effects.by_attr.stat_mod[attr.spirit]);
+    local spirit = loadout.stats[attr.spirit] + effects.by_attr.stat_flat[attr.spirit];
 
     local mp2_not_casting = spirit_mana_regen(spirit);
 
@@ -1894,7 +1892,7 @@ local function cast_until_oom(spell_effect, stats, loadout, effects, calculating
         loadout.resources_max[powers.mana] * effects.raw.perc_max_mana_as_mp5
         +
         effects.raw.mp5_from_int_mod * (loadout.stats[attr.intellect] +
-            effects.by_attr.stats[attr.intellect] * (1.0 + effects.by_attr.stat_mod[attr.intellect]));
+            effects.by_attr.stat_flat[attr.intellect]);
 
     local mp1_casting =
         0.2 * mp5 +
@@ -1987,6 +1985,10 @@ end
 
 local function resource_regen_info(info, spell, spell_id, loadout, effects, _)
 
+    if not effects.finalized then
+        print("CALLING SPELL INFO FOR SPELL WITHOUT FINALIZED EFFECTS");
+    end
+
     local min;
     local bid = spell.base_id;
     local direct = spell.direct;
@@ -2058,8 +2060,7 @@ local function resource_regen_info(info, spell, spell_id, loadout, effects, _)
         casting_regen = math.max(0, math.min(1.0, casting_regen));
 
         -- evocate, innervate etc
-        local spirit = loadout.stats[attr.spirit] +
-        (effects.by_attr.stats[attr.spirit] * (1.0 + effects.by_attr.stat_mod[attr.spirit]));
+        local spirit = loadout.stats[attr.spirit] + effects.by_attr.stat_flat[attr.spirit];
         -- Prevents combat casting regen % gained from this ability affecting this evaluation
         -- This becomes mana restored otherwise not gained from normal % regen while casting
         info.restored =
@@ -2080,6 +2081,10 @@ local function resource_regen_info(info, spell, spell_id, loadout, effects, _)
 end
 
 local function only_threat_info(info, stats, spell, loadout, effects, eval_flags)
+
+    if not effects.finalized then
+        print("CALLING SPELL INFO FOR SPELL WITHOUT FINALIZED EFFECTS");
+    end
     local bid = spell.base_id;
     local anycomp = spell.direct or spell.periodic;
 
@@ -2196,7 +2201,7 @@ local ranged_stat_weights = {
 local info_diff = {};
 local spell_stats_diffed = {};
 local diff = effects_zero_diff();
-local effects_diffed = {}
+local effects_diffed = {};
 empty_effects(effects_diffed);
 
 local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
@@ -2212,10 +2217,7 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
     else
         weights = melee_stat_weights;
     end
-
     local normalize_table;
-
-    cpy_effects(effects_diffed, effects);
 
     for _, v in ipairs(weights) do
         if v.normalize_to then
@@ -2226,11 +2228,14 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
         else
             diff[v.key] = 1;
         end
-        effects_diff(loadout, effects_diffed, diff);
+
+        cpy_effects(effects_diffed, effects);
+        effects_add_diff(effects_diffed, diff);
+        effects_finalize_forced(loadout, effects_diffed)
+
         stats_for_spell(spell_stats_diffed, spell, loadout, effects_diffed, eval_flags);
         spell_info(info_diff, spell, spell_stats_diffed, loadout, effects_diffed, eval_flags);
-        cast_until_oom(info_diff, spell_stats_diffed, loadout, effects_diffed, true);
-        cpy_effects(effects_diffed, effects);
+        cast_until_oom(info_diff, spell, spell_stats_diffed, loadout, effects_diffed, true);
         if v.key2 then
             diff[v.key][v.key2] = 0;
         else
@@ -2285,39 +2290,52 @@ local function calc_spell_resource_regen(spell, spell_id, loadout, effects, eval
    return info_buffer;
 end
 
-local function spell_diff(out, fight_type, spell, spell_id, loadout, effects, effects_d, eval_flags)
+local function spell_diff(out, fight_type, spell, spell_id, loadout, effects_finalized, effects_d, eval_flags)
 
-    out.disp = GetSpellInfo(spell_id);
+    out.name = GetSpellInfo(spell_id);
 
-    local rank_str = " (Rank "..spell.rank..")";
-    if spell.rank == 0 then
-        rank_str = "";
+    if bit.band(spell.flags, bit.bor(spell_flags.finishing_move_dmg, spell_flags.finishing_move_dur)) ~= 0 then
+        if spell.rank == 0 then
+            out.extra = string.format("|cFFA9A9A9 CP: %d|r", loadout.resources[powers.combopoints]);
+        else
+            out.extra = string.format("|cFFA9A9A9 R%d | CP: %d|r", spell.rank, loadout.resources[powers.combopoints]);
+        end
+    else
+        if spell.rank == 0 then
+            out.extra = "";
+        else
+            out.extra = string.format("|cFFA9A9A9 Rank %d|r", loadout.resources[powers.combopoints]);
+        end
     end
-    out.disp = out.disp..rank_str;
+
+    out.disp = out.name..out.extra;
     out.id = spell_id;
     out.tex = GetSpellTexture(spell_id);
 
     out.heal_like = bit.band(spell.flags, bit.bor(spell_flags.heal, spell_flags.absorb)) ~= 0;
 
     if fight_types.repeated_casts == fight_type then
-        local info = calc_spell_eval(spell, loadout, effects, eval_flags);
+
+        local info = calc_spell_eval(spell, loadout, effects_finalized, eval_flags);
         local normal_eps = info.effect_per_sec;
         local normal_exp = info.expected;
 
+        effects_finalize_forced(loadout, effects_d);
         info = calc_spell_eval(spell, loadout, effects_d, eval_flags);
 
         out.diff_ratio = 100 * (info.effect_per_sec / normal_eps - 1);
         out.first = info.effect_per_sec - normal_eps;
         out.second = info.expected - normal_exp;
     else
-        local info, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
-        cast_until_oom(info, stats, loadout, effects, true);
+        local info, stats = calc_spell_eval(spell, loadout, effects_finalized, eval_flags);
+        cast_until_oom(info, spell, stats, loadout, effects_finalized, true);
 
         local normal_exp_until_oom = info.effect_until_oom;
         local normal_time_until_oom = info.time_until_oom;
 
+        effects_finalize_forced(loadout, effects_d);
         info = calc_spell_eval(spell, loadout, effects_d, eval_flags);
-        cast_until_oom(info, stats, loadout, effects_d, true);
+        cast_until_oom(info, spell, stats, loadout, effects_d, true);
 
         out.diff_ratio = 100 * (info.effect_until_oom / normal_exp_until_oom - 1);
         out.first = info.effect_until_oom - normal_exp_until_oom;
