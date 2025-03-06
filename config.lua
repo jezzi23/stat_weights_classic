@@ -32,7 +32,7 @@ local default_settings     = {
     tooltip_display_stat_weights_effect_per_sec     = false,
     tooltip_display_stat_weights_effect_until_oom   = false,
     tooltip_display_avg_cost                        = true,
-    tooltip_display_avg_cast                        = false,
+    tooltip_display_avg_cast                        = true,
     tooltip_display_cast_until_oom                  = false,
     tooltip_display_cast_and_tap                    = false,
     tooltip_display_sp_effect_calc                  = false,
@@ -45,6 +45,7 @@ local default_settings     = {
     tooltip_disable                                 = false,
     tooltip_disable_item                            = false,
     tooltip_shift_to_show                           = false,
+    tooltip_double_line                             = false,
     tooltip_clear_original                          = false,
     tooltip_hide_cd_coom                            = false,
 

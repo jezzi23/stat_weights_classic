@@ -10,6 +10,7 @@ local powers                                        = sc.powers;
 local spell_flags                                   = sc.spell_flags;
 local comp_flags                                    = sc.comp_flags;
 local lookups                                       = sc.lookups;
+local auto_attack_spell_id                          = sc.auto_attack_spell_id;
 
 local best_rank_by_lvl                              = sc.utils.best_rank_by_lvl;
 
@@ -53,6 +54,17 @@ local evaluation_flags = {
     -- To ignore when e.g. heroic strike normally uses expectation as gains over normal attack
     expectation_of_self                     = bit.lshift(1, 7),
 };
+
+local function mandatory_flags_by_spell(comp)
+    local flags = 0;
+    if bit.band(comp.flags, comp_flags.applies_mh) == 0 and
+        bit.band(comp.flags, comp_flags.applies_oh) ~= 0 then
+
+        flags = bit.bor(flags, evaluation_flags.isolate_oh);
+    end
+
+    return flags;
+end
 
 local function spell_hit(lvl, lvl_target, hit, pvp)
     local base_hit = 0;
@@ -167,11 +179,11 @@ local function stats_attack_skill(comp, loadout, effects, eval_flags)
     local subclass = nil;
     if bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 and
         bit.band(comp.flags, comp_flags.applies_oh) ~= 0 then
-        subclass = loadout.wpn_subclasses.oh;
+        subclass = effects.raw.wpn_subclass_oh;
     elseif bit.band(comp.flags, comp_flags.applies_ranged) ~= 0 then
-        subclass = loadout.wpn_subclasses.ranged;
+        subclass = effects.raw.wpn_subclass_ranged;
     else
-        subclass = loadout.wpn_subclasses.mh;
+        subclass = effects.raw.wpn_subclass_mh;
     end
 
     local wpn_skill = loadout.wpn_skills[subclass];
@@ -356,7 +368,7 @@ local function stats_hit(res_mitigation, attack_skill, attack_subclass, bid, com
         elseif loadout.target_lvl < 10 then
             miss = miss * loadout.target_lvl * 0.1;
         end
-        if loadout.m2_speed and bid == sc.auto_attack_spell_id then
+        if effects.raw.wpn_delay_oh > 0 and bid == auto_attack_spell_id then
             miss = miss + 0.19;
         end
         miss = math.min(math.max(miss - hit_extra, 0.0), 1);
@@ -474,30 +486,41 @@ local function stats_coef(bid, comp, spell, loadout, effects, eval_flags)
 
     local coef, coef_max;
     if comp.school1 == schools.physical then
-        if loadout.m2_speed and
+
+        if effects.raw.wpn_delay_oh > 0 and
             bit.band(comp.flags, comp_flags.applies_oh) ~= 0 and
             bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 then
             local speed;
             if bit.band(comp.flags, comp_flags.normalized_weapon) ~= 0 then
-                speed = sc.wep_subclass_to_normalized_speed[loadout.wpn_subclasses.oh or -1];
+                speed = sc.wep_subclass_to_normalized_speed[effects.raw.wpn_subclass_oh] or 2.4;
             else
-                speed = loadout.m2_speed/effects.mul.raw.melee_haste;
+                speed = effects.raw.wpn_delay_oh;
             end
-            coef = (0.5*(1.0 + effects.raw.offhand_mod))*dps_per_ap*speed;
-        elseif bit.band(comp.flags, comp_flags.applies_mh) ~= 0 then
-            local speed;
-            if bit.band(comp.flags, comp_flags.normalized_weapon) ~= 0 then
-                speed = sc.wep_subclass_to_normalized_speed[loadout.wpn_subclasses.mh or -1];
+            if bid == auto_attack_spell_id then
+                coef = 0.5*(1.0 + effects.raw.offhand_mod)*dps_per_ap*speed;
             else
-                speed = loadout.m1_speed/effects.mul.raw.melee_haste;
+                coef = (1.0 + effects.raw.offhand_mod)*dps_per_ap*speed;
+            end
+        elseif bit.band(comp.flags, comp_flags.applies_mh) ~= 0 then
+
+            local speed;
+            if loadout.shapeshift_no_weapon ~= 0 then
+                -- shapeshifts with no weapon, base on sheet speed
+                speed = loadout.attack_delay_mh/effects.mul.raw.melee_haste;
+            else
+                if bit.band(comp.flags, comp_flags.normalized_weapon) ~= 0 then
+                    speed = sc.wep_subclass_to_normalized_speed[effects.raw.wpn_subclass_mh] or 2.4;
+                else
+                    speed = effects.raw.wpn_delay_mh;
+                end
             end
             coef = dps_per_ap*speed;
         elseif bit.band(comp.flags, comp_flags.applies_ranged) ~= 0 then
             local speed;
             if bit.band(comp.flags, comp_flags.normalized_weapon) ~= 0 then
-                speed = sc.wep_subclass_to_normalized_speed[loadout.wpn_subclasses.ranged or 2];
+                speed = sc.wep_subclass_to_normalized_speed[effects.raw.wpn_subclass_ranged] or 2.8;
             else
-                speed = loadout.r_speed/effects.mul.raw.melee_haste;
+                speed = effects.raw.wpn_delay_ranged;
             end
             coef = dps_per_ap*speed;
         elseif bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
@@ -590,7 +613,7 @@ local function stats_spell_mod(armor_dr, comp, spell, effects, stats)
 end
 
 local function stats_glance(stats, bid, loadout)
-    if bid ~= sc.auto_attack_spell_id then
+    if bid ~= auto_attack_spell_id then
         return 0.0, 0.0, 0.0;
     end
     local glance_p = 0.1 + (loadout.target_lvl*5 - math.min(loadout.lvl*5, stats.attack_skill)) * 0.02;
@@ -609,14 +632,19 @@ local function stats_cast_time(stats, bid, comp, spell, loadout, effects, eval_f
 
     local cast_time;
     if bit.band(spell.flags, spell_flags.uses_attack_speed) ~= 0 then
-        if loadout.m2_speed and
+
+        if effects.raw.wpn_delay_oh > 0 and
             bit.band(comp.flags, comp_flags.applies_oh) ~= 0 and
             bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 then
-            cast_time = loadout.m2_speed / effects.mul.raw.melee_haste_forced;
+            cast_time = effects.raw.wpn_delay_oh / (effects.mul.raw.melee_haste*effects.mul.raw.melee_haste_forced);
         elseif bit.band(comp.flags, comp_flags.applies_mh) ~= 0 then
-            cast_time = loadout.m1_speed / effects.mul.raw.melee_haste_forced;
+            if loadout.shapeshift_no_weapon ~= 0 then
+                cast_time = loadout.attack_delay_mh / effects.mul.raw.melee_haste_forced;
+            else
+                cast_time = effects.raw.wpn_delay_mh / (effects.mul.raw.melee_haste*effects.mul.raw.melee_haste_forced);
+            end
         elseif bit.band(comp.flags, comp_flags.applies_ranged) ~= 0 then
-            cast_time = loadout.r_speed / effects.mul.raw.ranged_haste_forced;
+            cast_time = effects.raw.wpn_delay_ranged / (effects.mul.raw.ranged_haste*effects.mul.raw.ranged_haste_forced);
         end
         return cast_time, cast_time;
     end
@@ -801,7 +829,7 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
     write_attack_table(stats, true);
     -- hit used as probability to do any kind of damage, allowing procs of attack
     stats.hit = 1.0 - stats.miss - stats.dodge - stats.parry;
-    if bid ~= sc.auto_attack_spell_id then
+    if bid ~= auto_attack_spell_id then
         -- adjust to become a two roll table: if we roll a "hit",
         local crit = stats.crit + stats.crit_excess;
         stats.crit = stats.hit * crit;
@@ -884,7 +912,7 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
     write_attack_table(stats, false);
     -- hit used as probability to do any kind of damage, allowing procs of attack
     stats.hit_ot = 1.0 - stats.miss_ot - stats.dodge_ot - stats.parry_ot;
-    if bid ~= sc.auto_attack_spell_id then
+    if bid ~= auto_attack_spell_id then
         -- adjust to become a two roll table: if we roll a "hit",
         local crit = stats.crit_ot + stats.crit_excess_ot;
         stats.crit_ot = stats.hit_ot * crit;
@@ -1167,9 +1195,9 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
         print("CALLING STATS FOR SPELL WITHOUT FINALIZED EFFECTS");
     end
 
-    eval_flags = eval_flags or 0;
-
     local anycomp = spell.direct or spell.periodic;
+    eval_flags = eval_flags or 0;
+    eval_flags = bit.bor(eval_flags, mandatory_flags_by_spell(anycomp));
 
     local bid = spell.base_id;
     -- benefit id may be different than base id in rare cases
@@ -1530,28 +1558,36 @@ local function direct_info(info, spell, loadout, stats, effects, eval_flags)
         base_max = direct.max * (direct.base_max + added_effect);
     end
 
-    -- TODO: For weapons, need to figure out where m_pos and m_neg comes from
-    --       and whether it is detectable through auras
-    if loadout.m2_speed and
+    if effects.raw.wpn_delay_oh > 0 and
         bit.band(direct.flags, comp_flags.applies_oh) ~= 0 and
         bit.band(eval_flags, evaluation_flags.isolate_oh) ~= 0 then
-        local ap_reduce = loadout.ap*stats.coef;
-        local m2_min_base = (loadout.m2_min/loadout.m_mod) - ap_reduce;--loadout.m_pos + loadout.m_neg;
-        local m2_max_base = (loadout.m2_max/loadout.m_mod) - ap_reduce;--loadout.m_pos + loadout.m_neg;
-        base_min = (direct.base_min + m2_min_base) * base_min;
-        base_max = (direct.base_max + m2_max_base) * base_max;
+
+        local mod_oh;
+        if spell.base_id == auto_attack_spell_id then
+            mod_oh = 0.5*(1.0 + effects.raw.offhand_mod);
+        else
+            mod_oh = 1.0 + effects.raw.offhand_mod;
+        end
+
+        base_min = (direct.base_min + effects.raw.wpn_min_oh*mod_oh) * base_min;
+        base_max = (direct.base_max + effects.raw.wpn_max_oh*mod_oh) * base_max;
     elseif bit.band(direct.flags, comp_flags.applies_mh) ~= 0 then
-        local ap_reduce = loadout.ap*stats.coef;
-        local m1_min_base = (loadout.m1_min/loadout.m_mod) - ap_reduce;--loadout.m_pos + loadout.m_neg;
-        local m1_max_base = (loadout.m1_max/loadout.m_mod) - ap_reduce;--loadout.m_pos + loadout.m_neg;
-        base_min = (direct.base_min + m1_min_base) * base_min;
-        base_max = (direct.base_max + m1_max_base) * base_max;
+        -- Not sure about cat/bear form base damage, reverse engineer from sheet dmg
+        if loadout.shapeshift_no_weapon ~= 0 then
+            local ap_reduce = loadout.ap*stats.coef;
+            local m1_min_base = (loadout.attack_min_mh/loadout.attack_mod) - ap_reduce;--loadout.m_pos + loadout.m_neg;
+            local m1_max_base = (loadout.attack_max_mh/loadout.attack_mod) - ap_reduce;--loadout.m_pos + loadout.m_neg;
+            base_min = (direct.base_min + m1_min_base) * base_min;
+            base_max = (direct.base_max + m1_max_base) * base_max;
+        else
+            base_min = (direct.base_min + effects.raw.wpn_min_mh) * base_min;
+            base_max = (direct.base_max + effects.raw.wpn_max_mh) * base_max;
+        end
     elseif bit.band(direct.flags, comp_flags.applies_ranged) ~= 0 then
-        local ap_reduce = loadout.rap*stats.coef;
-        local r_min_base = (loadout.r_min/loadout.r_mod) - ap_reduce;-- loadout.r_pos + loadout.r_neg;
-        local r_max_base = (loadout.r_max/loadout.r_mod) - ap_reduce;-- loadout.r_pos + loadout.r_neg;
-        base_min = (direct.base_min + r_min_base) * base_min;
-        base_max = (direct.base_max + r_max_base) * base_max;
+        local ammo_flat = effects.raw.ammo_dps * effects.raw.wpn_delay_ranged;
+
+        base_min = (direct.base_min + effects.raw.wpn_min_ranged + ammo_flat) * base_min;
+        base_max = (direct.base_max + effects.raw.wpn_max_ranged + ammo_flat) * base_max;
 
     elseif bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
         -- seems like finishing moves are never weapon based
@@ -1578,7 +1614,7 @@ local function direct_info(info, spell, loadout, stats, effects, eval_flags)
     info.crit1 = stats.crit;
     info.hit_normal1 = stats.hit_normal;
     info.direct_flags1 = 0;
-    if spell.base_id ~= sc.auto_attack_spell_id then
+    if spell.base_id ~= auto_attack_spell_id then
         info.direct_flags1 = bit.bor(info.direct_flags1, effect_flags.can_be_blocked);
     end
     info.direct_utilization1 = 1.0;
@@ -1608,18 +1644,9 @@ local function periodic_info(info, spell, loadout, stats, effects, eval_flags)
     info.ot_dur1 = stats.dur_ot;
     info.ot_tick_time1 = stats.tick_time_ot;
 
-    -- No periodic weapon based spells so far
-    --if bit.band(periodic.flags, comp_flags.applies_mh) ~= 0 then
-    --    base_tick_min = (periodic.base + loadout.m1_min) * base_tick_min;
-    --    base_tick_max = (periodic.base + loadout.m1_max) * base_tick_max;
-    --elseif bit.band(periodic.flags, comp_flags.applies_ranged) ~= 0 then
-    --    base_tick_min = (periodic.base + loadout.r_min) * base_tick_min;
-    --    base_tick_max = (periodic.base + loadout.r_max) * base_tick_max;
-    --elseif bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
-    --    -- seems like finishing moves are never weapon based
-    --    base_tick_min = base_tick_min + periodic.per_cp_dmg * loadout.resources[powers.combopoints];
-    --    base_tick_max = base_tick_max + periodic.per_cp_dmg * loadout.resources[powers.combopoints];
-    --end
+    -- Might want to deal with some weapon based spells as periodic
+
+
     if bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
         base_tick_min = base_tick_min + periodic.per_resource * loadout.resources[powers.combopoints];
         base_tick_max = base_tick_max + periodic.per_resource * loadout.resources[powers.combopoints];
@@ -1655,7 +1682,7 @@ local function periodic_info(info, spell, loadout, stats, effects, eval_flags)
     info.ot_hit_normal1 = stats.hit_normal_ot;
     info.ot_flags1 = 0;
     info.ot_utilization1 = 1.0;
-    --if spell.base_id == sc.auto_attack_spell_id then
+    --if spell.base_id == auto_attack_spell_id then
     --    info.ot_flags1 = bit.bor(info.ot_flags1, effect_flags.block_competes_with_hit);
     --end
     info.ot_flags1 = bit.bor(info.ot_flags1, effect_flags.can_be_blocked);
@@ -1680,12 +1707,15 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
     if not effects.finalized and sc.core.__sw__debug__ then
         print("CALLING SPELL INFO FOR SPELL WITHOUT FINALIZED EFFECTS");
     end
+    local anycomp = spell.direct or spell.periodic;
+
     eval_flags = eval_flags or 0;
+
+    eval_flags = bit.bor(eval_flags, mandatory_flags_by_spell(anycomp));
 
     info.num_periodic_effects = 0;
     info.num_direct_effects = 0;
 
-    local anycomp = spell.direct or spell.periodic;
 
     if spell.direct then
         direct_info(info, spell, loadout, stats, effects, eval_flags);
@@ -1781,7 +1811,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
         spell_stats_info(secondary_info,
                          secondary_stats,
-                         spells[sc.auto_attack_spell_id],
+                         spells[auto_attack_spell_id],
                          loadout,
                          effects,
                          bit.bor(eval_flags, evaluation_flags.isolate_mh));
@@ -1800,7 +1830,7 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
 
     local dual_wield_flags = bit.bor(comp_flags.applies_mh, comp_flags.applies_oh);
 
-    if loadout.m2_speed ~= nil and
+    if effects.raw.wpn_delay_oh > 0 and
         bit.band(anycomp.flags, dual_wield_flags) == dual_wield_flags and
         bit.band(eval_flags, bit.bor(evaluation_flags.isolate_mh, evaluation_flags.isolate_oh)) == 0 then
         -- evaluate dual wield combined weapons
@@ -1874,6 +1904,7 @@ local function cast_until_oom(spell_effect, spell, stats, loadout, effects, calc
         spell_effect.effect_until_oom = nil;
         spell_effect.time_until_oom = nil;
         spell_effect.mp1 = nil;
+        return;
     end
 
     calculating_weights = calculating_weights or false;
@@ -2244,7 +2275,11 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
 
         v.effect_per_sec_delta = info_diff.effect_per_sec - normal_info.effect_per_sec;
         v.effect_delta = info_diff.expected - normal_info.expected;
-        v.effect_until_oom_delta = info_diff.effect_until_oom - normal_info.effect_until_oom;
+        if not normal_info.effect_until_oom then
+            v.effect_until_oom_delta = nil;
+        else
+            v.effect_until_oom_delta = info_diff.effect_until_oom - normal_info.effect_until_oom;
+        end
     end
 
     local eps = 0.000000001;
@@ -2265,8 +2300,8 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
             v.effect_per_sec_weight = v.effect_per_sec_delta/normalize_table.effect_per_sec_delta;
             v.effect_weight = v.effect_delta/normalize_table.effect_delta;
         end
-        if spell.power_type == sc.powers.mana then
-            for _, v in ipairs(weights) do
+        for _, v in ipairs(weights) do
+            if v.effect_until_oom_delta then
                 v.effect_until_oom_weight = v.effect_until_oom_delta/normalize_table.effect_until_oom_delta;
             end
         end
@@ -2337,9 +2372,15 @@ local function spell_diff(out, fight_type, spell, spell_id, loadout, effects_fin
         info = calc_spell_eval(spell, loadout, effects_d, eval_flags);
         cast_until_oom(info, spell, stats, loadout, effects_d, true);
 
-        out.diff_ratio = 100 * (info.effect_until_oom / normal_exp_until_oom - 1);
-        out.first = info.effect_until_oom - normal_exp_until_oom;
-        out.second = info.time_until_oom - normal_time_until_oom;
+        if not info.effect_until_oom then
+            out.diff_ratio = nil;
+            out.first = nil;
+            out.second = nil;
+        else
+            out.diff_ratio = 100 * (info.effect_until_oom / normal_exp_until_oom - 1);
+            out.first = info.effect_until_oom - normal_exp_until_oom;
+            out.second = info.time_until_oom - normal_time_until_oom;
+        end
     end
 end
 

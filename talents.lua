@@ -88,6 +88,7 @@ end
 
 local function apply_talents(loadout, effects)
 
+    print("talents update");
     -- weapon skills 
     for i = 1, GetNumSkillLines() do
         local skill_lname, _, _, skill = GetSkillLineInfo(i);

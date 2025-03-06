@@ -1301,6 +1301,10 @@ local function create_sw_ui_tooltip_frame()
             txt = "Clear original tooltip",
         },
         {
+            id = "tooltip_double_line",
+            txt = "Field values on right-hand side",
+        },
+        {
             id = "tooltip_hide_cd_coom",
             txt = "Disable casts until OOM for CDs",
             tooltip = "Hides casts until OOM for spells with cooldowns."
@@ -2560,9 +2564,10 @@ local function create_sw_ui_loadout_frame()
     f.number_editbox = true;
     local mana_editbox_update = function(self)
 
+        sc.loadouts.force_update = true;
         local mana = tonumber(self:GetText());
         local valid = mana ~= nil;
-        if vald then
+        if valid then
             config.loadout.extra_mana = mana;
         end
         return valid;
@@ -2570,7 +2575,7 @@ local function create_sw_ui_loadout_frame()
     local mana_editbox_close = function(self)
         if not mana_editbox_update(self) then
             self:SetText("0");
-            loadout.extra_mana = 0;
+            config.loadout.extra_mana = 0;
         end
     	self:ClearFocus();
         self:HighlightText(0,0);
@@ -2643,6 +2648,7 @@ local function create_sw_ui_loadout_frame()
     f:SetAutoFocus(false);
     f.number_editbox = true;
     local editbox_target_armor_update = function(self)
+        sc.loadouts.force_update = true;
         local target_armor = tonumber(self:GetText());
         local valid = target_armor and target_armor >= 0;
         if valid then

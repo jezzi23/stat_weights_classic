@@ -283,6 +283,9 @@ local effects_additive = {
         "skill",
         "class_misc",
 
+        "wpn_subclass_mh",
+        "wpn_subclass_oh",
+        "wpn_subclass_ranged",
         "wpn_min_mh",
         "wpn_max_mh",
         "wpn_min_oh",
@@ -293,6 +296,7 @@ local effects_additive = {
         "wpn_delay_oh",
         "wpn_delay_ranged",
         "wpn_school_ranged",
+        "ammo_dps",
     },
 };
 
@@ -622,22 +626,24 @@ local function effects_finalize_forced(loadout, effects)
             (effects.by_attr.stat_mod[i] + effects.by_attr.stat_mod_forced[i]) *
                 loadout.stats[i]/(1.0 + effects.by_attr.stat_mod[i])
         +
-        effects.by_attr.stat_flat[i] * 
+        effects.by_attr.stat_flat[i] *
             (1.0 + effects.by_attr.stat_mod[i] + effects.by_attr.stat_mod_forced[i]);
+
     end
+
 
     local sd_from_stats = 0;
     local hp_from_stats = 0;
 
     for i = 1, 5 do
-        sd_from_stats = sd_from_stats + effects.by_attr.sd_from_stat_pct[i];
+        sd_from_stats = sd_from_stats + effects.by_attr.sd_from_stat_pct[i] * effects.by_attr.stat_flat[i];
     end
     for i = 1, 7 do
         effects.by_school.sp_dmg_flat[i] = effects.by_school.sp_dmg_flat[i] + sd_from_stats;
     end
 
     for i = 1, 5 do
-        hp_from_stats = hp_from_stats + effects.by_attr.hp_from_stat_pct[i];
+        hp_from_stats = hp_from_stats + effects.by_attr.hp_from_stat_pct[i] * effects.by_attr.stat_flat[i];
     end
 
     effects.raw.healing_power_flat = effects.raw.healing_power_flat + hp_from_stats;
@@ -770,11 +776,11 @@ local function dynamic_loadout(loadout)
     loadout.ranged_crit = GetRangedCritChance()*0.01;
     loadout.block_value = GetShieldBlock();
 
-    loadout.r_speed, loadout.r_min, loadout.r_max, loadout.r_pos, loadout.r_neg, loadout.r_mod = UnitRangedDamage("player");
+    --loadout.r_speed, loadout.r_min, loadout.r_max, loadout.r_pos, loadout.r_neg, loadout.r_mod = UnitRangedDamage("player");
 
-    loadout.m1_min, loadout.m1_max, loadout.m2_min, loadout.m2_max, loadout.m_pos, loadout.m_neg, loadout.m_mod = UnitDamage("player");
+    loadout.attack_min_mh, loadout.attack_max_mh, _, _, loadout.attack_pos, loadout.attack_neg, loadout.attack_mod = UnitDamage("player");
 
-    loadout.m1_speed, loadout.m2_speed = UnitAttackSpeed("player");
+    loadout.attack_delay_mh, loadout.attack_delay_oh = UnitAttackSpeed("player");
 
     loadout.shapeshift = GetShapeshiftForm();
     if class == classes.druid and loadout.shapeshift ~= 0 and loadout.shapeshift ~= 5 then
@@ -958,7 +964,6 @@ local loadout_front = loadout_base1;
 -- singular tables shared in both loadout buffers, not to be compared 
 local loadout_shared = {
     "wpn_skills",
-    "wpn_subclasses",
     "num_set_pieces",
     "enchants",
     "talents",

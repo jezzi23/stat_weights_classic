@@ -5,6 +5,7 @@ local spells                                    = sc.spells;
 local spids                                     = sc.spids;
 local schools                                   = sc.schools;
 local comp_flags                                = sc.comp_flags;
+local powers                                    = sc.powers;
 
 local next_rank                                 = sc.utils.next_rank;
 local best_rank_by_lvl                          = sc.utils.best_rank_by_lvl;
@@ -22,6 +23,7 @@ local cpy_effects                               = sc.loadouts.cpy_effects;
 local empty_effects                             = sc.loadouts.empty_effects;
 
 local apply_item_cmp                            = sc.equipment.apply_item_cmp;
+local slots                                     = sc.equipment.slots;
 
 local fight_types                               = sc.calc.fight_types;
 local stat_weights                              = sc.calc.stat_weights;
@@ -43,6 +45,27 @@ local tooltip_effects_finalized = {};
 empty_effects(tooltip_effects_diffed_finalized);
 empty_effects(tooltip_effects_finalized);
 
+-- Tooltip add, share signature so that optional works
+local function add_double_line(tooltip, lhs, rhs, rgb_r, rgb_g, rgb_b)
+    if lhs == "" then
+        lhs = " ";
+    end
+    if rhs == "" then
+        rhs = " ";
+    end
+    tooltip:AddDoubleLine(lhs, rhs, rgb_r, rgb_g, rgb_b, rgb_r, rgb_g, rgb_b);
+end
+local function add_single_line(tooltip, lhs, rhs, rgb_r, rgb_g, rgb_b)
+    local combined;
+    if lhs == "" or rhs == "" then
+        combined = lhs..rhs;
+    else
+        combined = lhs.." "..rhs;
+    end
+    tooltip:AddLine(combined, rgb_r, rgb_g, rgb_b);
+end
+
+local add_line = add_double_line;
 
 local function sort_stat_weights(weights, sort_by_field)
 
@@ -76,12 +99,16 @@ local function stat_weights_tooltip(tooltip, weights_list, key, weight_normalize
     if config.settings["tooltip_display_stat_weights_"..key] and weight_normalize_to[key.."_delta"] > 0 then
         local num_weights = #weights_list;
         local max_weights_per_line = 4;
-        tooltip:AddLine(
-            string.format("%s per %s: %.3f, weighing",
+
+        add_line(
+            tooltip,
+            string.format("%s per %s:",
                           effect_type_str,
-                          weight_normalize_to.display,
+                          weight_normalize_to.display),
+            string.format("%.3f, weighing",
                           weight_normalize_to[key.."_delta"]),
-            effect_color("stat_weights"));
+            effect_color("stat_weights")
+        );
 
         local stat_weights_str = "|";
         sort_stat_weights(weights_list, key.."_weight");
@@ -92,11 +119,13 @@ local function stat_weights_tooltip(tooltip, weights_list, key, weight_normalize
             else
                 stat_weights_str = stat_weights_str .. string.format(" %d %s |", 0, weights_list[i].display);
             end
-            if i == max_weights_per_line and i ~= num_weights then
-                stat_weights_str = stat_weights_str .. "\n|";
+            if (i == max_weights_per_line and i ~= num_weights) or i == num_weights then
+
+                stat_weights_str = stat_weights_str;
+                add_line(tooltip, "", stat_weights_str, effect_color("stat_weights"));
+                stat_weights_str = "|";
             end
         end
-        tooltip:AddLine(stat_weights_str, effect_color("stat_weights"));
     end
 end
 
@@ -117,7 +146,7 @@ local function append_tooltip_spell_rank(tooltip, spell, lvl)
     end
 
     if rank_str ~= "" then
-        tooltip:AddLine(rank_str, effect_color("spell_rank"));
+        add_line(tooltip, rank_str, "", effect_color("spell_rank"));
     end
 end
 
@@ -127,7 +156,9 @@ local function append_tooltip_addon_name(tooltip)
         if config.loadout.use_custom_lvl then
             loadout_extra_info = string.format(" (clvl %d)", config.loadout.lvl);
         end
-        tooltip:AddLine(sc.core.addon_name.." v"..sc.core.version.." | "..config.loadout.name..loadout_extra_info, 1, 1, 1);
+        add_line(tooltip,
+                 sc.core.addon_name.." v"..sc.core.version.." | "..config.loadout.name..loadout_extra_info,
+                 "", 1, 1, 1);
     end
 end
 
@@ -273,7 +304,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     end
 
     local dual_wield_flags = bit.bor(comp_flags.applies_mh, comp_flags.applies_oh);
-    local dual_wield = loadout.m2_speed ~= nil and bit.band(anycomp.flags, dual_wield_flags) == dual_wield_flags;
+    local dual_wield = loadout.attack_delay_oh ~= nil and bit.band(anycomp.flags, dual_wield_flags) == dual_wield_flags;
 
     if dual_wield then
         eval_mode_to_flag.isolate_mh = num_eval_mode_comps;
@@ -439,19 +470,19 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
     if config.settings.tooltip_display_eval_options then
         if eval_mode_combinations > 1 then
-            tooltip:AddLine(string.format("Eval mode %d/%d: %s",
-                                          eval_mode_mod+1,
-                                          eval_mode_combinations,
-                                          scrollable_eval_mode_txt),
+            add_line(tooltip,
+                     string.format("Eval mode %d/%d:",
+                                   eval_mode_mod+1,
+                                   eval_mode_combinations),
+                     string.format("%s", scrollable_eval_mode_txt),
 
                 1.0, 1.0, 1.0);
 
-            evaluation_options = append_to_txt_delimitered(evaluation_options, "scroll wheel to change mode");
+            evaluation_options = append_to_txt_delimitered(evaluation_options, "Scroll wheel to change mode");
         else
 
             if scrollable_eval_mode_txt ~= "" then
-                tooltip:AddLine(string.format("Eval mode: %s", scrollable_eval_mode_txt),
-                    1.0, 1.0, 1.0);
+                add_line(tooltip, "Eval mode:", scrollable_eval_mode_txt, 1.0, 1.0, 1.0);
             end
         end
         if hybrid_spell and not ctrl then
@@ -471,7 +502,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
 
         if evaluation_options ~= "" then
-            tooltip:AddLine("Use " .. evaluation_options, 1.0, 1.0, 1.0);
+            add_line(tooltip, "Use:", evaluation_options, 1.0, 1.0, 1.0);
         end
     end
 
@@ -484,18 +515,20 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if bit.band(spell.flags, bit.bor(spell_flags.absorb, spell_flags.heal)) ~= 0 then
             if loadout.friendly_hp_perc ~= 1 then
 
-                tooltip:AddLine(string.format("Target: %.0f%% Health",
-                        loadout.friendly_hp_perc * 100
-                    ),
-                    effect_color("target_info")
-                );
+                add_line(tooltip,
+                         "Target:",
+                         string.format("%.0f%% Health", loadout.friendly_hp_perc * 100),
+                         effect_color("target_info"));
              end
         else
             local en_hp = "";
             if loadout.enemy_hp_perc ~= 1 then
                 en_hp = string.format(" | %.0f%% Health", 100*loadout.enemy_hp_perc);
             end
-            tooltip:AddLine(string.format("Target: %s Level %s%d|r | %d Armor | %d Res%s",
+            add_line(
+                tooltip,
+                "Target:",
+                string.format("%s Level %s%d|r | %d Armor | %d Res%s",
                     specified,
                     color_by_lvl_diff(loadout.lvl, loadout.target_lvl),
                     loadout.target_lvl,
@@ -503,13 +536,18 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     stats.target_resi,
                     en_hp
                 ),
-                effect_color("target_info"));
+                effect_color("target_info")
+            );
         end
     end
 
     if config.loadout.force_apply_buffs or config.loadout.use_custom_talents or config.loadout.use_custom_lvl then
 
-        tooltip:AddLine("WARNING: using custom talents, runes, lvl or buffs!", 1, 0, 0);
+        add_line(
+            tooltip,
+            "WARNING:",
+            "using custom talents, glyphs, runes, lvl or buffs!",
+            1, 0, 0);
     end
 
     local display_direct_avoidance = spell.direct and
@@ -521,7 +559,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
         if spell.direct.school1 == sc.schools.physical then
             if bit.band(spell.direct.flags, comp_flags.no_attack) ~= 0 then
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                         100*stats.extra_hit,
                         100*stats.miss,
@@ -530,7 +570,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     effect_color("avoidance_info")
                 );
             else
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                         stats.attack_skill,
                         100*stats.extra_hit,
@@ -539,7 +581,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         ),
                     effect_color("avoidance_info")
                 );
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d |",
                         100*stats.dodge,
                         100*stats.parry,
@@ -550,7 +594,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
             end
         else
-            tooltip:AddLine(
+            add_line(
+                tooltip,
+                "",
                 string.format("| Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                     100*stats.extra_hit,
                     100*stats.miss,
@@ -581,23 +627,27 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         math.floor(info.oh_info.min_noncrit_if_hit1),
                         math.ceil(info.oh_info.max_noncrit_if_hit1)
                     );
-                end
-                tooltip:AddLine(string.format("%s%s: %d to %d%s",
-                        effect,
-                        hit_str,
+                end 
+                add_line(
+                    tooltip,
+                    string.format("%s%s:", effect, hit_str),
+                    string.format("%d to %d%s",
                         math.floor(info.min_noncrit_if_hit1),
                         math.ceil(info.max_noncrit_if_hit1),
                         oh
-                        ),
+                    ),
                     effect_color("normal")
                 );
                 if bit.band(eval_flags, evaluation_flags.assume_single_effect) == 0 and
                     stats.direct_jumps ~= 0 and stats.direct_jump_amp ~= 1 then
-                        tooltip:AddLine(format_bounce_spell(
+                        add_line(tooltip,
+                            "",
+                            format_bounce_spell(
                                 info.min_noncrit_if_hit1,
                                 info.max_noncrit_if_hit1,
                                 stats.direct_jumps,
-                                stats.direct_jump_amp),
+                                stats.direct_jump_amp
+                            ),
                             effect_color("normal")
                         );
                 end
@@ -606,44 +656,54 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 if info.oh_info then
                     oh = string.format(" | %.1f", info.oh_info.min_noncrit_if_hit1);
                 end
-                tooltip:AddLine(string.format("%s%s: %.1f%s",
-                        effect,
-                        hit_str,
-                        info.min_noncrit_if_hit1,
-                        oh
-                        ),
+                add_line(
+                    tooltip,
+                    string.format("%s%s:", effect, hit_str),
+                    string.format("%.1f%s", info.min_noncrit_if_hit1, oh),
                     effect_color("normal")
-                    );
+                );
             end
         end
 
         for i = 2, info.num_direct_effects do
             if i == info.glance_index then
                 local avg_red = 0.5*(stats.glance_min+stats.glance_max);
-                tooltip:AddLine(string.format("%s (%.2f%%|%.2fx to %.2fx): (%d to %d) to (%d to %d)",
+                add_line(
+                    tooltip,
+                    string.format("%s (%.2f%%|%.2fx to %.2fx):",
                         info["direct_description" .. i],
                         100*info["hit_normal" .. i]*info["direct_utilization" .. i],
                         stats.glance_min,
-                        stats.glance_max,
+                        stats.glance_max
+                        ),
+                    string.format("(%d to %d) to (%d to %d)",
                         math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
                         math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
                         math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_max/avg_red),
                         math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_max/avg_red)
                         ),
                     effect_color("normal")
-                        );
+                  );
+
             elseif info["min_noncrit_if_hit" .. i] ~= info["max_noncrit_if_hit" .. i] then
-                tooltip:AddLine(string.format("%s (%.2f%%): %d to %d",
+                add_line(
+                    tooltip,
+                    string.format("%s (%.2f%%):",
                         info["direct_description" .. i],
-                        100*info["hit_normal" .. i]*info["direct_utilization" .. i],
+                        100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
+
+                    string.format("%d to %d",
                         math.floor(info["min_noncrit_if_hit" .. i]),
                         math.ceil(info["max_noncrit_if_hit" .. i])),
                     effect_color("normal")
                         );
             elseif info["min_noncrit_if_hit" .. i] ~= 0 then
-                tooltip:AddLine(string.format("%s (%.2f%%): %.1f",
+                add_line(
+                    tooltip,
+                    string.format("%s (%.2f%%):",
                         info["direct_description" .. i],
-                        100*info["hit_normal" .. i]*info["direct_utilization" .. i],
+                        100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
+                    string.format("%.1f",
                         info["min_noncrit_if_hit" .. i]),
                     effect_color("normal")
                         );
@@ -678,8 +738,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         math.ceil(info.oh_info.max_crit_if_hit1)
                     );
                 end
-                tooltip:AddLine(string.format("Critical%s: %d to %d%s%s",
-                        crit_chance_info_str,
+                add_line(
+                    tooltip,
+                    string.format("Critical%s:", crit_chance_info_str, oh),
+                    string.format("%d to %d%s%s",
                         math.floor(info.min_crit_if_hit1),
                         math.ceil(info.max_crit_if_hit1),
                         special_crit_mod_str,
@@ -690,8 +752,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 if info.oh_info then
                     oh = string.format(" | %.1f", info.oh_info.min_crit_if_hit1);
                 end
-                tooltip:AddLine(string.format("Critical%s: %.1f%s%s",
-                        crit_chance_info_str,
+                add_line(
+                    tooltip,
+                string.format("Critical%s:", crit_chance_info_str, oh),
+                string.format("%.1f%s%s",
                         info.min_crit_if_hit1,
                         special_crit_mod_str,
                         oh),
@@ -701,7 +765,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
             if bit.band(eval_flags, evaluation_flags.assume_single_effect) == 0 and
                 stats.direct_jumps ~= 0 and stats.direct_jump_amp ~= 1 then
-                    tooltip:AddLine(format_bounce_spell(
+                    add_line(
+                        tooltip,
+                        "",
+                        format_bounce_spell(
                             info.min_crit_if_hit1,
                             info.max_crit_if_hit1,
                             stats.direct_jumps,
@@ -711,8 +778,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             end
         end
         if stats.crit_excess > 0 then
-            tooltip:AddLine(string.format("Critical pushed off attack table: %.2f%%",
-                                          100*stats.crit_excess),
+            add_line(
+                tooltip,
+                "Critical pushed off attack table:",
+                string.format("%.2f%%", 100*stats.crit_excess),
                 effect_color("crit")
             );
         end
@@ -720,17 +789,23 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         for i = 2, info.num_direct_effects do
             if info["crit" .. i] ~= 0 then
                 if info["min_crit_if_hit" .. i] ~= info["max_crit_if_hit" .. i] then
-                    tooltip:AddLine(string.format("%s (%.2f%%): %d to %d",
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%):",
                             info["direct_description" .. i],
-                            100*info["crit" .. i]*info["direct_utilization" .. i],
+                            100*info["crit" .. i]*info["direct_utilization" .. i]),
+                        string.format("%d to %d",
                             math.floor(info["min_crit_if_hit" .. i]),
                             math.ceil(info["max_crit_if_hit" .. i])),
                         effect_color("crit")
                     );
                 else
-                    tooltip:AddLine(string.format("%s (%.2f%%): %.1f",
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%):",
                             info["direct_description" .. i],
-                            100*info["crit" .. i]*info["direct_utilization" .. i],
+                            100*info["crit" .. i]*info["direct_utilization" .. i]),
+                        string.format("%.1f",
                             info["min_crit_if_hit" .. i]),
                         effect_color("crit")
                     );
@@ -749,7 +824,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
         if spell.periodic.school1 == sc.schools.physical then
             if bit.band(spell.periodic.flags, comp_flags.periodic) ~= 0 then
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                         stats.attack_skill_ot,
                         100*stats.extra_hit_ot,
@@ -758,7 +835,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         ),
                     effect_color("avoidance_info")
                 );
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Dodge %.1f%% | Parry %.1f%% |",
                         100*stats.dodge_ot,
                         100*stats.parry_ot
@@ -766,7 +845,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     effect_color("avoidance_info")
                 );
             else
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Skill %s | Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                         stats.attack_skill_ot,
                         stats.extra_hit_ot * 100,
@@ -775,7 +856,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         ),
                     effect_color("avoidance_info")
                 );
-                tooltip:AddLine(
+                add_line(
+                    tooltip,
+                    "",
                     string.format("| Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d |",
                         100*stats.dodge_ot,
                         100*stats.parry_ot,
@@ -786,7 +869,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
             end
         else
-            tooltip:AddLine(
+            add_line(
+                tooltip,
+                "",
                 string.format("| Hit +%d%%->%.1f%% Miss | Mitigated %.1f%% |",
                     100*stats.extra_hit_ot,
                     100*stats.miss_ot,
@@ -808,9 +893,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             if spell.base_id == spids.curse_of_agony then
                 local dmg_from_sp = info.ot_min_noncrit_if_hit1 - info.ot_min_noncrit_if_hit_base1;
                 local dmg_wo_sp = info.ot_min_noncrit_if_hit_base1;
-                tooltip:AddLine(string.format("%s%s: %.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %d)",
-                        effect,
-                        hit_str,
+                add_line(
+                    tooltip,
+                    string.format("%s%s:", effect, hit_str),
+                    string.format("%.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %d)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         (0.5 * dmg_wo_sp + dmg_from_sp) / info.ot_ticks1,
@@ -824,9 +910,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             elseif spell.base_id == spids.starshards then
                 local dmg_from_sp = info.ot_min_noncrit_if_hit1 - info.ot_min_noncrit_if_hit_base1;
                 local dmg_wo_sp = info.ot_min_noncrit_if_hit_base1;
-                tooltip:AddLine(string.format("%s%s: %.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %d)",
-                        effect,
-                        hit_str,
+                add_line(
+                    tooltip,
+                    string.format("%s%s:", effect, hit_str),
+                    string.format("%.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %d)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         ((2 / 3) * dmg_wo_sp + dmg_from_sp) / info.ot_ticks1,
@@ -839,9 +926,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             elseif spell.base_id == spids.wild_growth then
                 local heal_from_sp = info.ot_min_noncrit_if_hit1 - info.ot_min_noncrit_if_hit_base1;
                 local heal_wo_sp = info.ot_min_noncrit_if_hit_base1;
-                tooltip:AddLine(
-                    string.format("%s: %.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %d)",
-                        effect,
+                add_line(
+                    tooltip,
+                    string.format("%s:", effect),
+                    string.format("%.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %d)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         ((3 * 0.1425 + 1.0) * heal_wo_sp + heal_from_sp) / info.ot_ticks1,
@@ -856,9 +944,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     effect_color("normal")
                 );
             elseif info.ot_min_noncrit_if_hit1 ~=  info.ot_max_noncrit_if_hit1 then
-                tooltip:AddLine(string.format("%s%s: %d to %d over %.1fs (%d to %d every %.1fs x %d)",
-                        effect,
-                        hit_str,
+                add_line(
+                    tooltip,
+                    string.format("%s%s:", effect, hit_str),
+                    string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
                         math.floor(info.ot_min_noncrit_if_hit1),
                         math.ceil(info.ot_max_noncrit_if_hit1),
                         info.ot_dur1,
@@ -869,9 +958,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     effect_color("normal")
                 );
             else
-                tooltip:AddLine(string.format("%s%s: %.1f over %.1fs (%.1f every %.1fs x %d)",
-                        effect,
-                        hit_str,
+                add_line(
+                    tooltip,
+                    string.format("%s%s:", effect, hit_str),
+                    string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         info.ot_min_noncrit_if_hit1 / info.ot_ticks1,
@@ -884,9 +974,12 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         for i = 2, info.num_periodic_effects do
             if info["ot_min_noncrit_if_hit" .. i] ~= 0.0 then
                 if info["ot_min_noncrit_if_hit" .. i] ~= info["ot_max_noncrit_if_hit" .. i] then
-                    tooltip:AddLine(string.format("%s (%.2f%%): %d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%):",
                             info["ot_description" .. i],
-                            100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i],
+                            100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
+                        string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
                             math.floor(info["ot_min_noncrit_if_hit" .. i]),
                             math.ceil(info["ot_max_noncrit_if_hit" .. i]),
                             info["ot_dur" .. i],
@@ -897,9 +990,12 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         effect_color("normal")
                     );
                 else
-                    tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.1fs (%.1f every %.1fs x %d)",
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%):",
                             info["ot_description" .. i],
-                            100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i],
+                            100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
+                        string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
                             info["ot_min_noncrit_if_hit" .. i],
                             info["ot_dur" .. i],
                             info["ot_min_noncrit_if_hit" .. i] / info["ot_ticks" .. i],
@@ -921,8 +1017,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 local crit_chance_info_str =  string.format(" (%.2f%%||%.2fx)", stats.crit_ot * 100, crit_mod_ot);
 
                 if info.ot_min_crit_if_hit1 ~= info.ot_max_crit_if_hit1 then
-                    tooltip:AddLine(string.format("Critical%s: %d to %d over %.1fs (%d to %d every %.1fs x %d)",
-                            crit_chance_info_str,
+                    add_line(
+                        tooltip,
+                        string.format("Critical%s:", crit_chance_info_str),
+                        string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
                             math.floor(info.ot_min_crit_if_hit1),
                             math.ceil(info.ot_max_crit_if_hit1),
                             info.ot_dur1,
@@ -933,8 +1031,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         effect_color("crit")
                     );
                 else
-                    tooltip:AddLine(string.format("Critical%s: %.1f over %.1fs (%.1f every %.1fs x %d)",
-                            crit_chance_info_str,
+                    add_line(
+                        tooltip,
+                        string.format("Critical%s:", crit_chance_info_str),
+                        string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
                             info.ot_min_crit_if_hit1,
                             info.ot_dur1,
                             info.ot_min_crit_if_hit1 / info.ot_ticks1,
@@ -948,9 +1048,12 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             for i = 2, info.num_periodic_effects do
                 if info["ot_crit" .. i] ~= 0.0 then
                     if info["ot_min_crit_if_hit" .. i] ~= info["ot_max_crit_if_hit" .. i] then
-                        tooltip:AddLine(string.format("%s (%.2f%%): %d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                        add_line(
+                            tooltip,
+                            string.format("%s (%.2f%%):",
                                 info["ot_description" .. i],
-                                100*(info["ot_crit" .. i]*info["ot_utilization" .. i]),
+                                100*(info["ot_crit" .. i]*info["ot_utilization" .. i])),
+                            string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
                                 math.floor(info["ot_min_crit_if_hit" .. i]),
                                 math.ceil(info["ot_max_crit_if_hit" .. i]),
                                 info["ot_dur" .. i],
@@ -961,9 +1064,12 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                             effect_color("crit")
                         );
                     else
-                        tooltip:AddLine(string.format("%s (%.2f%%): %.1f over %.1fs (%.1f every %.1fs x %d)",
+                        add_line(
+                            tooltip,
+                            string.format("%s (%.2f%%):",
                                 info["ot_description" .. i],
-                                100*info["ot_crit" .. i]*info["ot_utilization" .. i],
+                                100*info["ot_crit" .. i]*info["ot_utilization" .. i]),
+                            string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
                                 info["ot_min_crit_if_hit" .. i],
                                 info["ot_dur" .. i],
                                 info["ot_min_crit_if_hit" .. i] / info["ot_ticks" .. i],
@@ -1009,7 +1115,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if extra_info_st ~= "" then
             extra_info_st = "(" .. extra_info_st .. ")";
         end
-        tooltip:AddLine("Expected" .. string.format(": %.1f %s", info.expected_st, extra_info_st),
+        add_line(
+            tooltip,
+            "Expected:",
+            string.format("%.1f %s", info.expected_st, extra_info_st),
             effect_color("expectation")
         );
 
@@ -1020,7 +1129,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             else
                 extra_info_multi = "(" .. extra_info_multi .. " | " .. aoe_ratio .. ")";
             end
-            tooltip:AddLine(string.format("Optimistic: %.1f %s", info.expected, extra_info_multi),
+            add_line(
+                tooltip,
+                "Optimistic",
+                string.format("%.1f %s", info.expected, extra_info_multi),
                 effect_color("expectation")
             );
         end
@@ -1033,14 +1145,18 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 info.longest_ot_duration);
         end
 
-        tooltip:AddLine(string.format("%s: %.1f by execution time %s",
-                effect_per_sec,
-                info.effect_per_sec, periodic_part),
+        add_line(
+            tooltip,
+            string.format("%s:", effect_per_sec),
+            string.format("%.1f by execution time %s", info.effect_per_sec, periodic_part),
             effect_color("effect_per_sec")
         );
     end
     if config.settings.tooltip_display_threat and info.threat ~= 0 then
-        tooltip:AddLine(string.format("Expected threat: %.1f", info.threat),
+        add_line(
+            tooltip,
+            "Expected threat:",
+            string.format("%.1f", info.threat),
             effect_color("threat")
         );
     end
@@ -1048,7 +1164,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         stats.cast_time ~= 0 and
         info.threat_per_sec ~= 0 then
 
-        tooltip:AddLine(string.format("Threat per sec: %.1f", info.threat_per_sec),
+        add_line(
+            tooltip,
+            "Threat per sec:",
+            string.format("%.1f", info.threat_per_sec),
             effect_color("threat")
         );
     end
@@ -1062,12 +1181,17 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 oh = string.format(" | %.3f", info.oh_stats.cast_time);
             end
             if stats.cast_time_nogcd ~= stats.cast_time then
-                tooltip:AddLine(
-                    string.format("Expected execution time: %.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
+                add_line(
+                    tooltip,
+                    "Expected execution time:",
+                    string.format("%.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
                     effect_color("avg_cast")
                 );
             else
-                tooltip:AddLine(string.format("Expected execution time: %.3f%s sec", stats.cast_time, oh),
+                add_line(
+                    tooltip,
+                    "Expected execution time:",
+                    string.format("%.3f%s sec", stats.cast_time, oh),
                     effect_color("avg_cast")
                 );
             end
@@ -1078,17 +1202,26 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
        spell.power_type == sc.powers.mana and
        (not tooltip_cost or tooltip_cost ~= stats.cost) then
 
-        tooltip:AddLine(string.format("Expected cost: %.1f", stats.cost),
+        add_line(
+            tooltip,
+            "Expected cost:",
+            string.format("%.1f", stats.cost),
             effect_color("avg_cost")
         );
     end
     if config.settings.tooltip_display_effect_per_cost and stats.cost ~= 0 then
-        tooltip:AddLine(effect_per_cost .. ": " .. string.format("%.2f", info.effect_per_cost),
+        add_line(
+            tooltip,
+            string.format("%s:", effect_per_cost),
+            string.format("%.2f", info.effect_per_cost),
             effect_color("effect_per_cost")
         );
     end
     if config.settings.tooltip_display_threat_per_cost and stats.cost ~= 0 and info.threat_per_cost ~= 0 then
-        tooltip:AddLine(string.format("Threat per %s: %.2f", cost_str, info.threat_per_cost),
+        add_line(
+            tooltip,
+            string.format("Threat per %s:", cost_str),
+            string.format("%.2f", info.threat_per_cost),
             effect_color("effect_per_cost")
         );
     end
@@ -1096,8 +1229,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
        stats.cost ~= 0 and
        spell.power_type == sc.powers.mana then
 
-        tooltip:AddLine(
-            cost_per_sec .. ": " .. string.format("- %.1f out | + %.1f in", info.cost_per_sec, info.mp1),
+        add_line(
+            tooltip,
+            string.format("%s:", cost_per_sec),
+            string.format("- %.1f out | + %.1f in", info.cost_per_sec, info.mp1),
             effect_color("cost_per_sec")
         );
     end
@@ -1106,14 +1241,22 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
        spell.power_type == sc.powers.mana and
        (not config.settings.tooltip_hide_cd_coom or bit.band(spell.flags, spell_flags.cd) == 0)
         then
-        tooltip:AddLine(
-            string.format("%s until OOM: %.1f (%.1f casts, %.1f sec)", effect, info.effect_until_oom,
-                info.num_casts_until_oom, info.time_until_oom),
+
+        add_line(
+            tooltip,
+            string.format("%s until OOM:", effect),
+            string.format("%.1f (%.1f casts, %.1f sec)",
+                info.effect_until_oom,
+                info.num_casts_until_oom,
+                info.time_until_oom),
             effect_color("normal")
         );
-        if loadout.extra_mana ~= 0 then
-            tooltip:AddLine(string.format("                                   casting from %d %s",
-                                          loadout.resources[powers.mana] + loadout.extra_mana, cost_str),
+        if config.loadout.extra_mana ~= 0 then
+            add_line(
+                tooltip,
+                "",
+                string.format("       casting from %d %s",
+                    loadout.resources[powers.mana] + config.loadout.extra_mana, cost_str),
                 effect_color("normal")
             );
         end
@@ -1123,7 +1266,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if spell.direct and spell.direct.min ~= info.min_noncrit_if_hit_base1 then
             local armor_dr_adjusted = 1/(1 - stats.armor_dr);
             if info.min_noncrit_if_hit_base1 ~= info.max_noncrit_if_hit_base1 then
-                tooltip:AddLine(string.format("Direct base: %.1f to %.1f (+%d x %.3f mod) + %d = %.1f to %.1f",
+                add_line(
+                    tooltip,
+                    "Direct base:",
+                    string.format("%.1f to %.1f (+%d x %.3f mod) + %d = %.1f to %.1f",
                         info.base_min,
                         info.base_max,
                         stats.base_mod_flat,
@@ -1136,7 +1282,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
                     
             else
-                tooltip:AddLine(string.format("Direct base: %.1f (+%d x %.3f mod) + %d = %.1f",
+                add_line(
+                    tooltip,
+                    "Direct base:",
+                    string.format("%.1f (+%d x %.3f mod) + %d = %.1f",
                         info.base_min,
                         stats.base_mod_flat,
                         stats.base_mod,
@@ -1151,7 +1300,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if spell.periodic and spell.periodic.min ~= info.ot_min_noncrit_if_hit_base1 then
             local armor_dr_adjusted = 1/(1 - stats.armor_dr_ot);
             if info.ot_min_noncrit_if_hit_base1 ~= info.ot_max_noncrit_if_hit_base1 then
-                tooltip:AddLine(string.format("Periodic base = %.1f to %.1f (+%d * %.3f mod) + %d = %.1f to %.1f",
+                add_line(
+                    tooltip,
+                    "Periodic base:",
+                    string.format("%.1f to %.1f (+%d * %.3f mod) + %d = %.1f to %.1f",
                         info.ot_base_min,
                         info.ot_base_max,
                         stats.base_mod_ot_flat,
@@ -1164,7 +1316,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
                     
             else
-                tooltip:AddLine(string.format("Periodic base = %.1f (+%d * %.3f mod) +%d = %.1f",
+                add_line(
+                    tooltip,
+                    "Periodic base:",
+                    string.format("%.1f (+%d * %.3f mod) +%d = %.1f",
                         info.ot_base_min,
                         stats.base_mod_ot_flat,
                         stats.base_mod_ot,
@@ -1182,7 +1337,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
         if spell.direct and stats.coef > 0 and bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 then
             local armor_dr_adjusted = 1/(1 - stats.armor_dr);
-            tooltip:AddLine(string.format("Direct:    %.3f coef * %.3f mod * %d %s = %.1f",
+            add_line(
+                tooltip,
+                "Direct:   ",
+                string.format("%.3f coef * %.3f mod * %d %s = %.1f",
                     stats.coef,
                     stats.spell_mod*armor_dr_adjusted,
                     stats.spell_power,
@@ -1194,7 +1352,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
         if spell.periodic and stats.coef_ot > 0 and bit.band(eval_flags, evaluation_flags.isolate_direct) == 0 then
             local armor_dr_adjusted = 1/(1 - stats.armor_dr_ot);
-            tooltip:AddLine(string.format("Periodic: %d ticks * %.3f coef * %.3f mod * %d %s",
+            add_line(
+                tooltip,
+                "Periodic:",
+                string.format("%d ticks * %.3f coef * %.3f mod * %d %s",
                     info.ot_ticks1,
                     stats.coef_ot,
                     stats.spell_mod_ot*armor_dr_adjusted,
@@ -1203,7 +1364,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 ),
                 effect_color("sp_effect")
             );
-            tooltip:AddLine(string.format("            = %d ticks * %.1f = %.1f",
+            add_line(
+                tooltip,
+                "           ",
+                string.format("= %d ticks * %.1f = %.1f",
                     info.ot_ticks1,
                     stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * armor_dr_adjusted,
                     stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * info.ot_ticks1 * armor_dr_adjusted),
@@ -1225,14 +1389,11 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         end
         local effect_sp = effect_total - effect_base;
 
-        tooltip:AddLine(string.format("%s=%d improves base by %.1f%%",
-                pwr,
-                stats.spell_power,
-                100*effect_sp/effect_base
-            ),
-            effect_color("sp_effect")
-        );
-        tooltip:AddLine(string.format("Total: %.1f%% base, %.1f%% %s",
+        add_line(
+            tooltip,
+            string.format("Improved by %d %s:", stats.spell_power, pwr),
+            string.format("%.1f%% (%.1f%% base, %.1f%% %s)",
+                100*effect_sp/effect_base,
                 100*effect_base/(effect_base + effect_sp),
                 100*effect_sp/(effect_base + effect_sp),
                 pwr
@@ -1244,7 +1405,10 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         append_tooltip_spell_rank(tooltip, spell, loadout.lvl);
     end
     if config.settings.tooltip_display_spell_id then
-        tooltip:AddLine(string.format("Spell ID: %d", spell_id),
+        add_line(
+            tooltip,
+            "Spell ID:",
+            string.format("%d", spell_id),
             effect_color("spell_rank")
         );
     end
@@ -1327,14 +1491,21 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
 
             append_tooltip_addon_name(tooltip);
             local info = calc_spell_resource_regen(spell, spell_id, loadout, effects_finalized);
-            tooltip:AddLine(string.format("Restored for player: %d", math.floor(info.total_restored)),
+
+            add_line(
+                tooltip,
+                "Restored for player:",
+                string.format("%d", math.floor(info.total_restored)),
                 effect_color("avg_cost")
             );
             if spell.periodic then
-                tooltip:AddLine(string.format("Periodically: %d every %.1fs x %d",
-                    math.floor(info.restored),
-                    info.tick_time,
-                    math.floor(info.ticks)
+                add_line(
+                    tooltip,
+                    "Periodically:",
+                    string.format("%d every %.1fs x %d",
+                        math.floor(info.restored),
+                        info.tick_time,
+                        math.floor(info.ticks)
                     ),
                     effect_color("avg_cost")
                 );
@@ -1352,7 +1523,9 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                 if spell.direct.school1 == sc.schools.physical and
                     bit.band(spell.direct.flags, bit.bor(comp_flags.always_hit, comp_flags.no_attack)) == 0 then
 
-                    tooltip:AddLine(
+                    add_line(
+                        tooltip,
+                        "",
                         string.format("| Skill %s | Hit +%d%%->%.1f%% Miss |",
                             stats.attack_skill,
                             100*stats.extra_hit,
@@ -1360,7 +1533,9 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                             ),
                         effect_color("avoidance_info")
                     );
-                    tooltip:AddLine(
+                    add_line(
+                        tooltip,
+                        "",
                         string.format("| Dodge %.1f%% | Parry %.1f%% | Block %.1f%% for %d |",
                             100*stats.dodge,
                             100*stats.parry,
@@ -1370,7 +1545,9 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                         effect_color("avoidance_info")
                     );
                 else
-                    tooltip:AddLine(
+                    add_line(
+                        tooltip,
+                        "",
                         string.format("| Hit +%d%%->%.1f%% Miss |",
                             100*stats.extra_hit,
                             100*stats.miss
@@ -1381,14 +1558,20 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
             end
 
             if config.settings.tooltip_display_threat then
-                tooltip:AddLine(string.format("Expected threat: %.1f", info.threat),
+                add_line(
+                    tooltip,
+                    "Expected threat:",
+                    string.format("%.1f", info.threat),
                     effect_color("threat")
                 );
             end
             if config.settings.tooltip_display_threat_per_sec and
                 stats.cast_time ~= 0 then
 
-                tooltip:AddLine(string.format("Threat per sec: %.1f", info.threat_per_sec),
+                add_line(
+                    tooltip,
+                    "Threat per sec:",
+                    string.format("%.1f", info.threat_per_sec),
                     effect_color("threat")
                 );
             end
@@ -1398,12 +1581,17 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                     (not tooltip_cast or math.abs(tooltip_cast-stats.cast_time_nogcd) > 0.00001) then
 
                     if stats.cast_time_nogcd ~= stats.cast_time then
-                        tooltip:AddLine(
-                            string.format("Expected execution time: %.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
+                        add_line(
+                            tooltip,
+                            "Expected execution time:",
+                            string.format("%.1f sec (%.3f but gcd capped)", stats.gcd, stats.cast_time_nogcd),
                             effect_color("avg_cast")
                         );
                     else
-                        tooltip:AddLine(string.format("Expected execution time: %.3f sec", stats.cast_time),
+                        add_line(
+                            tooltip,
+                            "Expected execution time:",
+                            string.format("%.3f sec", stats.cast_time),
                             effect_color("avg_cast")
                         );
                     end
@@ -1419,7 +1607,10 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
                 elseif spell.power_type == sc.powers.energy then
                     cost_str = "energy";
                 end
-                tooltip:AddLine(string.format("Threat per %s: %.2f", cost_str, info.threat_per_cost),
+                add_line(
+                    tooltip,
+                    string.format("Threat per %s:", cost_str),
+                    string.format("%.2f", info.threat_per_cost),
                     effect_color("effect_per_cost")
                 );
             end
@@ -1429,7 +1620,10 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
             append_tooltip_spell_rank(tooltip, spell, loadout.lvl);
         end
         if config.settings.tooltip_display_spell_id then
-            tooltip:AddLine(string.format("Spell ID: %d", spell_id),
+            add_line(
+                tooltip,
+                "Spell ID:",
+                string.format("%d", spell_id),
                 effect_color("spell_rank")
             );
         end
@@ -1460,6 +1654,12 @@ local function write_spell_tooltip()
 
     if not spell then
         return;
+    end
+
+    if config.settings.tooltip_double_line then
+        add_line = add_double_line;
+    else
+        add_line = add_single_line;
     end
 
     if not __sc_frame.calculator_frame:IsShown() or not __sc_frame:IsShown() then
@@ -1494,30 +1694,31 @@ local function write_spell_tooltip()
 end
 
 local inv_type_to_slot_ids = {
-    INVTYPE_HEAD = {1},
-    INVTYPE_NECK = {2},
-    INVTYPE_SHOULDER = {3},
-    INVTYPE_BODY = {4},
-    INVTYPE_CHEST = {5},
-    INVTYPE_ROBE = {5},
-    INVTYPE_WAIST = {6},
-    INVTYPE_LEGS = {7},
-    INVTYPE_FEET = {8},
-    INVTYPE_WRIST = {9},
-    INVTYPE_HAND = {10},
-    INVTYPE_FINGER = {11, 12},
-    INVTYPE_TRINKET = {13, 14},
-    INVTYPE_CLOAK = {15},
-    INVTYPE_WEAPON = {16, 17},
-    INVTYPE_2HWEAPON = {16},
-    INVTYPE_WEAPONMAINHAND = {16},
-    INVTYPE_WEAPONOFFHAND = {17},
-    INVTYPE_SHIELD = {17},
-    INVTYPE_HOLDABLE = {17},
-    INVTYPE_TABARD = {19},
-    INVTYPE_RANGED = {18},
-    INVTYPE_RANGEDRIGHT = {18},
-    INVTYPE_RELIC = {18},
+    INVTYPE_AMMO = {slots.AmmoSlot},
+    INVTYPE_HEAD = {slots.HeadSlot},
+    INVTYPE_NECK = {slots.NeckSlot},
+    INVTYPE_SHOULDER = {slots.ShoulderSlot},
+    INVTYPE_BODY = {slots.ShirtSlot},
+    INVTYPE_CHEST = {slots.ChestSlot},
+    INVTYPE_ROBE = {slots.ChestSlot},
+    INVTYPE_WAIST = {slots.WaistSlot},
+    INVTYPE_LEGS = {slots.LegsSlot},
+    INVTYPE_FEET = {slots.FeetSlot},
+    INVTYPE_WRIST = {slots.WristSlot},
+    INVTYPE_HAND = {slots.HandsSlot},
+    INVTYPE_FINGER = {slots.Finger0Slot, slots.Finger1Slot},
+    INVTYPE_TRINKET = {slots.Trinket0Slot, slots.Trinket1Slot},
+    INVTYPE_CLOAK = {slots.BackSlot},
+    INVTYPE_WEAPON = {slots.MainHandSlot, slots.SecondaryHandSlot},
+    INVTYPE_2HWEAPON = {slots.MainHandSlot},
+    INVTYPE_WEAPONMAINHAND = {slots.MainHandSlot},
+    INVTYPE_WEAPONOFFHAND = {slots.SecondaryHandSlot},
+    INVTYPE_SHIELD = {slots.SecondaryHandSlot},
+    INVTYPE_HOLDABLE = {slots.SecondaryHandSlot},
+    INVTYPE_TABARD = {slots.TabardSlot},
+    INVTYPE_RANGED = {slots.RangedSlot},
+    INVTYPE_RANGEDRIGHT = {slots.RangedSlot},
+    INVTYPE_RELIC = {slots.RangedSlot},
 };
 
 local cached_spells_cmp_item_slots = { [1] = {len = 0, diff_list = {}}, [2] = {len = 0, diff_list = {}} };
@@ -1564,13 +1765,16 @@ local function write_item_tooltip(tooltip, mod, mod_change)
     new_item.lname, new_item.link = GameTooltip:GetItem();
     new_item.id = nil;
     if new_item.link then
---        local item_id, suffix_id = new_item.link:match("item:(%d+):%d+:%d+:%d+:%d+:%d+:(%d+):");
-        local item_id, suffix_id = new_item.link:match("item:(%d+):?:?:?:?:?:?(%d*):")
+
+        local item_id, _, _, _, _, _, suffix_id =
+            strsplit(":", new_item.link:match("|Hitem:(.+)|h"));
         new_item.id = tonumber(item_id);
         new_item.suffix_id = tonumber(suffix_id);
+    else
+        return;
     end
 
-    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex = GetItemInfo(new_item.link);
+    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex, _, _, new_item.subclass_id = GetItemInfo(new_item.link);
 
     if not new_item.inv_type then
         return;
@@ -1616,14 +1820,18 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             old_item.link = GetInventoryItemLink("player", slot);
             old_item.id = GetInventoryItemID("player", slot);
             if old_item.link then
-                local suffix_id = old_item.link:match("item:%d+:%d+:%d+:%d+:%d+:%d+:(%d+):");
-                old_item.lname, _, old_item.quality, _, _, _, _, _, old_item.inv_type, old_item.tex = GetItemInfo(old_item.link);
+
+                local _, _, _, _, _, _, suffix_id =
+                    strsplit(":", old_item.link:match("|Hitem:(.+)|h"));
+
+                old_item.lname, _, old_item.quality, _, _, _, _, _, old_item.inv_type, old_item.tex, _, _, old_item.subclass_id = GetItemInfo(old_item.link);
                 old_item.suffix_id = tonumber(suffix_id);
             else
                 old_item.tex = empty_tex;
+                old_item.subclass_id = nil;
             end
 
-            apply_item_cmp(effects, effects_diffed, new_item, old_item, slot);
+            apply_item_cmp(loadout, effects, effects_diffed, new_item, old_item, slot);
 
             local i = 0;
             slot_cmp.len = 0;
@@ -1703,9 +1911,17 @@ local function write_item_tooltip(tooltip, mod, mod_change)
                     1, 1, 1,
                     1, 1, 1);
 
-    local header0 = string.format("|T%s:16:16:0:0|t <-> |T%s:16:16:0:0|t",
+    local wpn_skill_change = "";
+    if new_item.wpn_skill ~= old_item1.wpn_skill then
+        wpn_skill_change = string.format(" Skill: %d -> %d",
+                                         old_item1.wpn_skill,
+                                         new_item.wpn_skill);
+    end
+    local header0 = string.format("|cFF4682B4|T%s:16:16:0:0|t -> |T%s:16:16:0:0|t%s|r",
                                   old_item1.tex,
-                                  new_item.tex);
+                                  new_item.tex,
+                                  wpn_skill_change
+                                  );
     tooltip:AddDoubleLine(header0,
                           " ",
                     1, 1, 1,
@@ -1726,10 +1942,19 @@ local function write_item_tooltip(tooltip, mod, mod_change)
     for item_fits_in_slot, _ in pairs(cmp_slots) do
         local slot_cmp;
         if item_fits_in_slot > 1 then
+
             slot_cmp = cached_spells_cmp_item_slots[2];
-            tooltip:AddDoubleLine(string.format("|T%s:16:16:0:0|t <-> |T%s:16:16:0:0|t",
+
+            local wpn_skill_change = "";
+            if new_item.wpn_skill ~= old_item2.wpn_skill then
+                wpn_skill_change = string.format(" Skill: %d -> %d",
+                                                 old_item2.wpn_skill,
+                                                 new_item.wpn_skill);
+            end
+            tooltip:AddDoubleLine(string.format("|cFF4682B4|T%s:16:16:0:0|t -> |T%s:16:16:0:0|t%s|r",
                                   old_item2.tex,
-                                  new_item.tex),
+                                  new_item.tex,
+                                  wpn_skill_change),
                                   " ",
                             1, 1, 1);
             num_lines = num_lines + 1;
@@ -1741,8 +1966,13 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             local diff = slot_cmp.diff_list[i];
             local spell_texture_str = "|T" .. diff.tex .. ":16:16:0:0|t "
 
-            local change = format_number(diff.diff_ratio, 2).."%";
-            if diff.diff_ratio < 0 then
+            local change_fmt = format_number(diff.diff_ratio, 2);
+            local change = change_fmt.."%";
+            if not diff.diff_ratio  then
+                change = "";
+            elseif change_fmt == "∞" then
+                diff.frames.change_fstr:SetTextColor(1, 1, 1);
+            elseif diff.diff_ratio < 0 then
                 diff.frames.change_fstr:SetTextColor(195/255, 44/255, 11/255);
                 change = change;
             elseif diff.diff_ratio > 0 then
@@ -1754,7 +1984,11 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             diff.frames.change_fstr:SetText(change);
 
             local first = format_number(diff.first, 2);
-            if diff.first < 0 then
+            if not diff.first then
+                first = "";
+            elseif first == "∞" then
+                diff.frames.first_fstr:SetTextColor(1, 1, 1);
+            elseif diff.first < 0 then
                 diff.frames.first_fstr:SetTextColor(195/255, 44/255, 11/255);
             elseif diff.first > 0 then
                 diff.frames.first_fstr:SetTextColor(33/255, 185/255, 21/255);
@@ -1765,7 +1999,11 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             diff.frames.first_fstr:SetText(first);
 
             local second = format_number(diff.second, 2);
-            if diff.second < 0 then
+            if not diff.second then
+                second = "";
+            elseif second == "∞" then
+                diff.frames.second_fstr:SetTextColor(1, 1, 1);
+            elseif diff.second < 0 then
                 diff.frames.second_fstr:SetTextColor(195/255, 44/255, 11/255);
             elseif diff.second > 0 then
                 diff.frames.second_fstr:SetTextColor(33/255, 185/255, 21/255);
@@ -1775,7 +2013,11 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             end
             diff.frames.second_fstr:SetText(second);
 
-            tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");
+            if diff.id == sc.auto_attack_spell_id then
+                tooltip:AddDoubleLine(string.format("  %s %s", spell_texture_str, diff.disp), " ");
+            else
+                tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");
+            end
 
             num_lines = num_lines + 1;
 

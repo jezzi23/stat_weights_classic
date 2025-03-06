@@ -148,7 +148,9 @@ local function format_number_signed_colored(val, max_accuracy_digits)
 
     local normal_format = format_number(val, max_accuracy_digits);
 
-    if val < 0 then
+    if normal_format == "∞" then
+        return normal_format;
+    elseif val < 0 then
         return "|cFFFF0000"..normal_format.."|r";
     elseif val > 0 then
         return "|cFF00FF00"..normal_format.."|r";
