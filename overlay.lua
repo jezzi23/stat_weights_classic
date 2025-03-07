@@ -731,6 +731,14 @@ local function update_spell_icons(loadout, effects, eval_flags)
         update_action_bars();
         sc.core.update_action_bar_needed = false;
     end
+    if sc.core.rescan_action_bar_needed then
+
+        active_overlays = {};
+        scan_action_frames();
+        on_special_action_bar_changed();
+        sc.loadouts.force_update = true;
+        sc.core.rescan_action_bar_needed = false;
+    end
 
     --NOTE: sometimes the Action buttons 1-12 haven't been updated
     --      to reflect the new action id's for forms that change the action bar
@@ -788,7 +796,6 @@ local function update_spell_icons(loadout, effects, eval_flags)
             update_overlay_frame(v, loadout, effects, v.spell_id, eval_flags);
         end
     end
-    --print("Num overlay evals", num_evals);
 
     if mana_cost_overlay or cast_speed_overlay then
         for _, v in pairs(action_id_frames) do
@@ -838,6 +845,7 @@ local function update_overlay()
         end
 
         if not config.settings.overlay_disable then
+            print("doing full icons update");
             update_spell_icons(loadout, effects, eval_flags);
         end
     end

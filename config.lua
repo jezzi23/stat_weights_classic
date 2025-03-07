@@ -43,11 +43,13 @@ local default_settings     = {
     tooltip_display_resource_regen                  = true,
 
     tooltip_disable                                 = false,
-    tooltip_disable_item                            = false,
     tooltip_shift_to_show                           = false,
     tooltip_double_line                             = false,
     tooltip_clear_original                          = false,
     tooltip_hide_cd_coom                            = false,
+
+    tooltip_disable_item                            = false,
+    tooltip_item_leveling_skill_normalize           = true,
 
     -- overlay
     overlay_display_normal                          = false,

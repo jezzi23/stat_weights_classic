@@ -172,6 +172,9 @@ local function apply_damage_enchant(effects, dmg_effect, slot, undo)
 end
 
 local function apply_ammo(effects, ammo_effect, undo)
+    if not ammo_effect then
+        return;
+    end
     local mod;
     if undo then
         mod = -1;

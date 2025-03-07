@@ -8,7 +8,8 @@ local highest_learned_rank                      = sc.utils.highest_learned_rank;
 local wowhead_talent_link                       = sc.talents.wowhead_talent_link;
 local wowhead_talent_code_from_url              = sc.talents.wowhead_talent_code_from_url;
 
-local fight_types                                = sc.calc.fight_types;
+local fight_types                               = sc.calc.fight_types;
+local evaluation_flags                          = sc.calc.evaluation_flags;
 
 local effect_colors                             = sc.utils.effect_colors;
 local format_number                             = sc.utils.format_number;
@@ -159,6 +160,8 @@ local function update_calc_list(loadout, effects, effects_diffed, eval_flags)
         loadout, effects, effects_diffed = update_loadout_and_effects_diffed_from_ui();
         eval_flags = sc.overlay.overlay_eval_flags();
     end
+
+    eval_flags = bit.bor(eval_flags, evaluation_flags.expectation_of_self);
 
     local i = 0;
     for k, _ in pairs(config.settings.spell_calc_list) do
@@ -1322,7 +1325,7 @@ local function create_sw_ui_tooltip_frame()
     __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
     multi_row_checkbutton(tooltip_spell_checks, __sc_frame.tooltip_frame, 2);
 
-    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
 
     local div = __sc_frame.tooltip_frame:CreateTexture(nil, "ARTWORK")
     div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
@@ -1352,7 +1355,7 @@ local function create_sw_ui_tooltip_frame()
         {
             id = "tooltip_display_eval_options",
             txt = "Evaluation modes",
-            tooltip = "Shows evaluation options for many types of spells which can be switched between dynamically. Example: Switch between healing and damage component of Holy shock.";
+            tooltip = "Some spells may have different evaluation modes. This shows the mode and how to dynamically switch between. Example: Switch between healing and damage component of Holy shock.";
         },
         {
             id = "tooltip_display_target_info",
@@ -1593,7 +1596,7 @@ local function create_sw_ui_tooltip_frame()
     f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.tooltip_frame.y_offset);
-    f_txt:SetText("Tooltip item settings");
+    f_txt:SetText("Tooltip item comparison settings");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
 
@@ -1602,11 +1605,16 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_disable_item",
             txt = "Disable item upgrade evaluation in tooltip"
         },
+        {
+            id = "tooltip_item_leveling_skill_normalize",
+            txt = "Use all weapon skills as clvl*5 when not maximum level",
+            tooltip = "More intuitive weapon upgrade results when leveling since lower weapon skill type is not punished",
+        },
     };
 
     __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
-    multi_row_checkbutton(tooltip_item_checks, __sc_frame.tooltip_frame, 2);
-    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
+    multi_row_checkbutton(tooltip_item_checks, __sc_frame.tooltip_frame, 1);
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
 
     f_txt = __sc_frame.tooltip_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
@@ -2486,7 +2494,7 @@ local function create_sw_ui_loadout_frame()
     editbox_config(f, clvl_editbox_update, clvl_editbox_close);
     __sc_frame.loadout_frame.loadout_clvl_editbox = f;
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f = CreateFrame("CheckButton", "__sc_frame_loadout_always_max_resource", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
@@ -2500,7 +2508,7 @@ local function create_sw_ui_loadout_frame()
     __sc_frame.loadout_frame.max_mana_checkbutton = f;
 
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
 
     f = CreateFrame("CheckButton", "__sc_frame_loadout_use_custom_talents", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
@@ -2518,7 +2526,7 @@ local function create_sw_ui_loadout_frame()
 
         update_loadout_frame();
     end);
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
 
     f = CreateFrame("EditBox", "__sc_frame_loadout_talent_editbox", __sc_frame.loadout_frame, "InputBoxTemplate");
     f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+25, __sc_frame.loadout_frame.y_offset);
@@ -2552,7 +2560,7 @@ local function create_sw_ui_loadout_frame()
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+4, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Extra mana for casts until OOM");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
@@ -2711,22 +2719,22 @@ local function create_sw_ui_loadout_frame()
         v:Show();
     end
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 20;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f = CreateFrame("CheckButton", "__sc_frame_loadout_behind_target", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    getglobal(f:GetName()..'Text'):SetText("Attacked from behind, eliminating parry and blocks");
+    getglobal(f:GetName()..'Text'):SetText("Attacked from behind, eliminating parry and block");
     f:SetScript("OnClick", function(self)
         config.loadout.behind_target = self:GetChecked();
     end)
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 30;
 
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+5, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Level difference");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
@@ -2764,11 +2772,11 @@ local function create_sw_ui_loadout_frame()
     f:SetText("(when no hostile target available)");
     f:SetTextColor(1.0,  1.0,  1.0);
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+5, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Resistance");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
@@ -2799,11 +2807,11 @@ local function create_sw_ui_loadout_frame()
 
     editbox_config(f, editbox_target_res_update, editbox_target_res_close);
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+5, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Default health");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
@@ -2838,11 +2846,11 @@ local function create_sw_ui_loadout_frame()
     f_txt:SetText("%");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
-    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 23;
+    __sc_frame.loadout_frame.y_offset = __sc_frame.loadout_frame.y_offset - 25;
 
     f_txt = __sc_frame.loadout_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
-    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad + 23, __sc_frame.loadout_frame.y_offset);
+    f_txt:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad+5, __sc_frame.loadout_frame.y_offset);
     f_txt:SetText("Number of targets for unbounded AOE spells");
     f_txt:SetTextColor(1.0,  1.0,  1.0);
 
@@ -3153,7 +3161,7 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("Profiles retain all settings except for Loadout & Buffs config");
+    f_txt:SetText("Profiles retain all settings except for Loadout & Buffs");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
 

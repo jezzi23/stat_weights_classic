@@ -53,6 +53,8 @@ local evaluation_flags = {
 
     -- To ignore when e.g. heroic strike normally uses expectation as gains over normal attack
     expectation_of_self                     = bit.lshift(1, 7),
+
+    fix_weapon_skill_to_level               = bit.lshift(1, 8),
 };
 
 local function mandatory_flags_by_spell(comp)
@@ -199,6 +201,9 @@ local function stats_attack_skill(comp, loadout, effects, eval_flags)
         end
     end
 
+    if bit.band(eval_flags, evaluation_flags.fix_weapon_skill_to_level) ~= 0 then
+        skill = loadout.lvl * 5;
+    end
     return skill, subclass;
 end
 

@@ -1774,7 +1774,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
         return;
     end
 
-    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex, _, _, new_item.subclass_id = GetItemInfo(new_item.link);
+    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex, _, new_item.class_id, new_item.subclass_id = GetItemInfo(new_item.link);
 
     if not new_item.inv_type then
         return;
@@ -1801,11 +1801,21 @@ local function write_item_tooltip(tooltip, mod, mod_change)
         end
     end
 
+    -- "On next attack" spells eval the entire attack instead of net gain
+    local eval_flags = bit.bor(sc.overlay.overlay_eval_flags(), evaluation_flags.expectation_of_self);
+    local should_fix_wpn_skill =
+        new_item.class_id == 2 and -- weapon type
+        loadout.lvl ~= sc.max_lvl and
+        config.settings.tooltip_item_leveling_skill_normalize;
+
+    if should_fix_wpn_skill then
+        eval_flags = bit.bor(eval_flags, evaluation_flags.fix_weapon_skill_to_level);
+    end
+
     local effects_diffed = sc.loadouts.diffed;
     if tooltip_item_id_last ~= new_item.id or updated or mod_change then
         -- actual evaluation update step and overwrites cache
 
-        local eval_flags = sc.overlay.overlay_eval_flags();
         for item_fits_in_slot, slot in pairs(cmp_slots) do
 
             local slot_cmp;
@@ -1912,7 +1922,10 @@ local function write_item_tooltip(tooltip, mod, mod_change)
                     1, 1, 1);
 
     local wpn_skill_change = "";
-    if new_item.wpn_skill ~= old_item1.wpn_skill then
+
+    if should_fix_wpn_skill then
+        wpn_skill_change = string.format(" Skill: as %d", loadout.lvl * 5);
+    elseif new_item.wpn_skill ~= old_item1.wpn_skill then
         wpn_skill_change = string.format(" Skill: %d -> %d",
                                          old_item1.wpn_skill,
                                          new_item.wpn_skill);
@@ -1946,7 +1959,9 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             slot_cmp = cached_spells_cmp_item_slots[2];
 
             local wpn_skill_change = "";
-            if new_item.wpn_skill ~= old_item2.wpn_skill then
+            if should_fix_wpn_skill then
+                wpn_skill_change = string.format(" Skill: as %d", loadout.lvl * 5);
+            elseif new_item.wpn_skill ~= old_item2.wpn_skill then
                 wpn_skill_change = string.format(" Skill: %d -> %d",
                                                  old_item2.wpn_skill,
                                                  new_item.wpn_skill);
@@ -2014,7 +2029,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             diff.frames.second_fstr:SetText(second);
 
             if diff.id == sc.auto_attack_spell_id then
-                tooltip:AddDoubleLine(string.format("  %s %s", spell_texture_str, diff.disp), " ");
+                tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t %s", new_item.tex, diff.disp), " ");
             else
                 tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");
             end

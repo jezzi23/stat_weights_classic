@@ -55,6 +55,7 @@ core.setup_action_bar_needed    = true;
 core.update_action_bar_needed   = false;
 core.addon_message_on_update    = false;
 core.old_ranks_checks_needed    = true;
+core.rescan_action_bar_needed   = false;
 
 
 core.beacon_snapshot_time       = -1000;
@@ -199,17 +200,17 @@ local event_dispatch = {
         if config.settings.general_version_mismatch_notify and
             generated_data_is_outdated(sc.client_version_loaded, sc.client_version_src) and
             client_age_days() > version_warning_build_threshold_days then
-            print("SpellCoda: detected client and spell data version mismatch. Consider checking for an update");
+            print(core.addon_name..": detected client and addon data mismatch. Consider checking for an update.");
         end
 
     end,
-    ["ACTIONBAR_SLOT_CHANGED"] = function(_, arg)
+    ["ACTIONBAR_SLOT_CHANGED"] = function(_, slot)
         if not core.sw_addon_loaded or config.settings.overlay_disable then
             return;
         end
 
-        sc.loadouts.force_update = true;
-        reassign_overlay_icon(arg)
+        core.rescan_action_bar_needed = true;
+        reassign_overlay_icon(slot);
     end,
     ["UPDATE_STEALTH"] = function()
         if not core.sw_addon_loaded then
