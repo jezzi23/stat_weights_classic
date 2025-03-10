@@ -182,7 +182,7 @@ local function try_register_frame(action_id, frame_name)
                 sc.core.action_id_of_wand = action_id;
             end
         else
-            active_overlays[action_id] = nil; -- this okay?
+            active_overlays[action_id] = nil;
         end
         action_id_frames[action_id].spell_id = spell_id;
         init_frame_overlay(action_id_frames[action_id]);

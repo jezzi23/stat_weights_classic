@@ -211,6 +211,7 @@ local event_dispatch = {
 
         core.rescan_action_bar_needed = true;
         reassign_overlay_icon(slot);
+        sc.loadouts.force_update = true;
     end,
     ["UPDATE_STEALTH"] = function()
         if not core.sw_addon_loaded then

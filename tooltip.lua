@@ -136,17 +136,13 @@ local function append_tooltip_spell_rank(tooltip, spell, lvl)
 
     local next_r = next_rank(spell);
     local best = best_rank_by_lvl(spell, lvl);
-    local rank_str = "";
-    if spell.lvl_req > lvl then
-        rank_str = rank_str.."Trained at level "..spell.lvl_req;
-    elseif best and best.rank ~= spell.rank then
-        rank_str = rank_str.."Downranked. Best available is rank "..best.rank;
-    elseif next_r then
-        rank_str = rank_str.."Next rank "..next_r.rank.." available at level "..next_r.lvl_req;
-    end
 
-    if rank_str ~= "" then
-        add_line(tooltip, rank_str, "", effect_color("spell_rank"));
+    if spell.lvl_req > lvl then
+        add_line(tooltip, "Trained at level:", string.format("%d", spell.lvl_req), effect_color("spell_rank"));
+    elseif best and best.rank ~= spell.rank then
+        add_line(tooltip, "Downranked. Best available rank:", string.format("%d", best.rank), effect_color("spell_rank"));
+    elseif next_r then
+        add_line(tooltip, "Next rank:", string.format("%d available at level %d", next_r.rank, next_r.lvl_req), effect_color("spell_rank"));
     end
 end
 
@@ -665,48 +661,57 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             end
         end
 
-        for i = 2, info.num_direct_effects do
-            if i == info.glance_index then
-                local avg_red = 0.5*(stats.glance_min+stats.glance_max);
-                add_line(
-                    tooltip,
-                    string.format("%s (%.2f%%|%.2fx to %.2fx):",
-                        info["direct_description" .. i],
-                        100*info["hit_normal" .. i]*info["direct_utilization" .. i],
-                        stats.glance_min,
-                        stats.glance_max
-                        ),
-                    string.format("(%d to %d) to (%d to %d)",
-                        math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
-                        math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
-                        math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_max/avg_red),
-                        math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_max/avg_red)
-                        ),
-                    effect_color("normal")
-                  );
+        for i = 1, info.num_direct_effects do
+            if i ~= 1 or not spell.direct then
+                local oh = "";
+                if info.oh_info then
+                    oh = " | ...";
+                end
+                if i == info.glance_index then
+                    local avg_red = 0.5*(stats.glance_min+stats.glance_max);
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%|%.2fx to %.2fx):",
+                            info["direct_description" .. i],
+                            100*info["hit_normal" .. i]*info["direct_utilization" .. i],
+                            stats.glance_min,
+                            stats.glance_max
+                            ),
+                        string.format("(%d to %d) to (%d to %d)%s",
+                            math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
+                            math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
+                            math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_max/avg_red),
+                            math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_max/avg_red),
+                            oh
+                            ),
+                        effect_color("normal")
+                      );
 
-            elseif info["min_noncrit_if_hit" .. i] ~= info["max_noncrit_if_hit" .. i] then
-                add_line(
-                    tooltip,
-                    string.format("%s (%.2f%%):",
-                        info["direct_description" .. i],
-                        100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
+                elseif info["min_noncrit_if_hit" .. i] ~= info["max_noncrit_if_hit" .. i] then
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%):",
+                            info["direct_description" .. i],
+                            100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
 
-                    string.format("%d to %d",
-                        math.floor(info["min_noncrit_if_hit" .. i]),
-                        math.ceil(info["max_noncrit_if_hit" .. i])),
-                    effect_color("normal")
-                        );
-            elseif info["min_noncrit_if_hit" .. i] ~= 0 then
-                add_line(
-                    tooltip,
-                    string.format("%s (%.2f%%):",
-                        info["direct_description" .. i],
-                        100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
-                    string.format("%.1f",
-                        info["min_noncrit_if_hit" .. i]),
-                    effect_color("normal")
-                        );
+                        string.format("%d to %d%s",
+                            math.floor(info["min_noncrit_if_hit" .. i]),
+                            math.ceil(info["max_noncrit_if_hit" .. i]),
+                            oh),
+                        effect_color("normal")
+                            );
+                elseif info["min_noncrit_if_hit" .. i] ~= 0 then
+                    add_line(
+                        tooltip,
+                        string.format("%s (%.2f%%):",
+                            info["direct_description" .. i],
+                            100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
+                        string.format("%.1f%s",
+                            info["min_noncrit_if_hit" .. i],
+                            oh),
+                        effect_color("normal")
+                            );
+                end
             end
         end
     end
@@ -786,29 +791,31 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             );
         end
 
-        for i = 2, info.num_direct_effects do
-            if info["crit" .. i] ~= 0 then
-                if info["min_crit_if_hit" .. i] ~= info["max_crit_if_hit" .. i] then
-                    add_line(
-                        tooltip,
-                        string.format("%s (%.2f%%):",
-                            info["direct_description" .. i],
-                            100*info["crit" .. i]*info["direct_utilization" .. i]),
-                        string.format("%d to %d",
-                            math.floor(info["min_crit_if_hit" .. i]),
-                            math.ceil(info["max_crit_if_hit" .. i])),
-                        effect_color("crit")
-                    );
-                else
-                    add_line(
-                        tooltip,
-                        string.format("%s (%.2f%%):",
-                            info["direct_description" .. i],
-                            100*info["crit" .. i]*info["direct_utilization" .. i]),
-                        string.format("%.1f",
-                            info["min_crit_if_hit" .. i]),
-                        effect_color("crit")
-                    );
+        for i = 1, info.num_direct_effects do
+            if i ~= 1 or not spell.direct then
+                if info["crit" .. i] ~= 0 then
+                    if info["min_crit_if_hit" .. i] ~= info["max_crit_if_hit" .. i] then
+                        add_line(
+                            tooltip,
+                            string.format("%s (%.2f%%):",
+                                info["direct_description" .. i],
+                                100*info["crit" .. i]*info["direct_utilization" .. i]),
+                            string.format("%d to %d",
+                                math.floor(info["min_crit_if_hit" .. i]),
+                                math.ceil(info["max_crit_if_hit" .. i])),
+                            effect_color("crit")
+                        );
+                    else
+                        add_line(
+                            tooltip,
+                            string.format("%s (%.2f%%):",
+                                info["direct_description" .. i],
+                                100*info["crit" .. i]*info["direct_utilization" .. i]),
+                            string.format("%.1f",
+                                info["min_crit_if_hit" .. i]),
+                            effect_color("crit")
+                        );
+                    end
                 end
             end
         end
@@ -943,7 +950,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                         info.ot_ticks1),
                     effect_color("normal")
                 );
-            elseif info.ot_min_noncrit_if_hit1 ~=  info.ot_max_noncrit_if_hit1 then
+            elseif info.ot_min_noncrit_if_hit1 ~= info.ot_max_noncrit_if_hit1 then
                 add_line(
                     tooltip,
                     string.format("%s%s:", effect, hit_str),
@@ -971,38 +978,40 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 );
             end
         end
-        for i = 2, info.num_periodic_effects do
-            if info["ot_min_noncrit_if_hit" .. i] ~= 0.0 then
-                if info["ot_min_noncrit_if_hit" .. i] ~= info["ot_max_noncrit_if_hit" .. i] then
-                    add_line(
-                        tooltip,
-                        string.format("%s (%.2f%%):",
-                            info["ot_description" .. i],
-                            100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
-                        string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
-                            math.floor(info["ot_min_noncrit_if_hit" .. i]),
-                            math.ceil(info["ot_max_noncrit_if_hit" .. i]),
-                            info["ot_dur" .. i],
-                            math.floor(info["ot_min_noncrit_if_hit" .. i] / info["ot_ticks" .. i]),
-                            math.ceil(info["ot_max_noncrit_if_hit" .. i] / info["ot_ticks" .. i]),
-                            info["ot_tick_time" .. i],
-                            info["ot_ticks" .. i]),
-                        effect_color("normal")
-                    );
-                else
-                    add_line(
-                        tooltip,
-                        string.format("%s (%.2f%%):",
-                            info["ot_description" .. i],
-                            100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
-                        string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
-                            info["ot_min_noncrit_if_hit" .. i],
-                            info["ot_dur" .. i],
-                            info["ot_min_noncrit_if_hit" .. i] / info["ot_ticks" .. i],
-                            info["ot_tick_time" .. i],
-                            info["ot_ticks" .. i]),
-                        effect_color("normal")
-                    );
+        for i = 1, info.num_periodic_effects do
+            if i ~= 1 or not spell.periodic then
+                if info["ot_min_noncrit_if_hit" .. i] ~= 0.0 then
+                    if info["ot_min_noncrit_if_hit" .. i] ~= info["ot_max_noncrit_if_hit" .. i] then
+                        add_line(
+                            tooltip,
+                            string.format("%s (%.2f%%):",
+                                info["ot_description" .. i],
+                                100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
+                            string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                                math.floor(info["ot_min_noncrit_if_hit" .. i]),
+                                math.ceil(info["ot_max_noncrit_if_hit" .. i]),
+                                info["ot_dur" .. i],
+                                math.floor(info["ot_min_noncrit_if_hit" .. i] / info["ot_ticks" .. i]),
+                                math.ceil(info["ot_max_noncrit_if_hit" .. i] / info["ot_ticks" .. i]),
+                                info["ot_tick_time" .. i],
+                                info["ot_ticks" .. i]),
+                            effect_color("normal")
+                        );
+                    else
+                        add_line(
+                            tooltip,
+                            string.format("%s (%.2f%%):",
+                                info["ot_description" .. i],
+                                100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
+                            string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
+                                info["ot_min_noncrit_if_hit" .. i],
+                                info["ot_dur" .. i],
+                                info["ot_min_noncrit_if_hit" .. i] / info["ot_ticks" .. i],
+                                info["ot_tick_time" .. i],
+                                info["ot_ticks" .. i]),
+                            effect_color("normal")
+                        );
+                    end
                 end
             end
         end
@@ -1045,38 +1054,40 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 end
             end
 
-            for i = 2, info.num_periodic_effects do
-                if info["ot_crit" .. i] ~= 0.0 then
-                    if info["ot_min_crit_if_hit" .. i] ~= info["ot_max_crit_if_hit" .. i] then
-                        add_line(
-                            tooltip,
-                            string.format("%s (%.2f%%):",
-                                info["ot_description" .. i],
-                                100*(info["ot_crit" .. i]*info["ot_utilization" .. i])),
-                            string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
-                                math.floor(info["ot_min_crit_if_hit" .. i]),
-                                math.ceil(info["ot_max_crit_if_hit" .. i]),
-                                info["ot_dur" .. i],
-                                math.floor(info["ot_min_crit_if_hit" .. i] / info["ot_ticks" .. i]),
-                                math.ceil(info["ot_max_crit_if_hit" .. i] / info["ot_ticks" .. i]),
-                                info["ot_tick_time" .. i],
-                                info["ot_ticks" .. i]),
-                            effect_color("crit")
-                        );
-                    else
-                        add_line(
-                            tooltip,
-                            string.format("%s (%.2f%%):",
-                                info["ot_description" .. i],
-                                100*info["ot_crit" .. i]*info["ot_utilization" .. i]),
-                            string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
-                                info["ot_min_crit_if_hit" .. i],
-                                info["ot_dur" .. i],
-                                info["ot_min_crit_if_hit" .. i] / info["ot_ticks" .. i],
-                                info["ot_tick_time" .. i],
-                                info["ot_ticks" .. i]),
-                            effect_color("crit")
-                        );
+            for i = 1, info.num_periodic_effects do
+                if i ~= 1 or not spell.periodic then
+                    if info["ot_crit" .. i] ~= 0.0 then
+                        if info["ot_min_crit_if_hit" .. i] ~= info["ot_max_crit_if_hit" .. i] then
+                            add_line(
+                                tooltip,
+                                string.format("%s (%.2f%%):",
+                                    info["ot_description" .. i],
+                                    100*(info["ot_crit" .. i]*info["ot_utilization" .. i])),
+                                string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                                    math.floor(info["ot_min_crit_if_hit" .. i]),
+                                    math.ceil(info["ot_max_crit_if_hit" .. i]),
+                                    info["ot_dur" .. i],
+                                    math.floor(info["ot_min_crit_if_hit" .. i] / info["ot_ticks" .. i]),
+                                    math.ceil(info["ot_max_crit_if_hit" .. i] / info["ot_ticks" .. i]),
+                                    info["ot_tick_time" .. i],
+                                    info["ot_ticks" .. i]),
+                                effect_color("crit")
+                            );
+                        else
+                            add_line(
+                                tooltip,
+                                string.format("%s (%.2f%%):",
+                                    info["ot_description" .. i],
+                                    100*info["ot_crit" .. i]*info["ot_utilization" .. i]),
+                                string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
+                                    info["ot_min_crit_if_hit" .. i],
+                                    info["ot_dur" .. i],
+                                    info["ot_min_crit_if_hit" .. i] / info["ot_ticks" .. i],
+                                    info["ot_tick_time" .. i],
+                                    info["ot_ticks" .. i]),
+                                effect_color("crit")
+                            );
+                        end
                     end
                 end
             end
@@ -2028,7 +2039,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             end
             diff.frames.second_fstr:SetText(second);
 
-            if diff.id == sc.auto_attack_spell_id then
+            if diff.id == sc.auto_attack_spell_id and new_item.class_id == 2 then
                 tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t %s", new_item.tex, diff.disp), " ");
             else
                 tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");

@@ -203,8 +203,10 @@ local effects_additive = {
         "stat_flat",
         "stat_mod",
         "stat_mod_forced",
-        "sd_from_stat_pct",
-        "hp_from_stat_pct",
+        "sd_of_stat_pct",
+        "sd_of_stat_pct_forced",
+        "hp_of_stat_pct",
+        "hp_of_stat_pct_forced",
     },
     ability = {
         "threat",
@@ -636,14 +638,18 @@ local function effects_finalize_forced(loadout, effects)
     local hp_from_stats = 0;
 
     for i = 1, 5 do
-        sd_from_stats = sd_from_stats + effects.by_attr.sd_from_stat_pct[i] * effects.by_attr.stat_flat[i];
+        sd_from_stats = sd_from_stats +
+            (effects.by_attr.sd_of_stat_pct[i] + effects.by_attr.sd_of_stat_pct_forced[i]) * effects.by_attr.stat_flat[i] +
+            effects.by_attr.sd_of_stat_pct_forced[i] * loadout.stats[i];
     end
     for i = 1, 7 do
         effects.by_school.sp_dmg_flat[i] = effects.by_school.sp_dmg_flat[i] + sd_from_stats;
     end
 
     for i = 1, 5 do
-        hp_from_stats = hp_from_stats + effects.by_attr.hp_from_stat_pct[i] * effects.by_attr.stat_flat[i];
+        hp_from_stats = hp_from_stats +
+            (effects.by_attr.hp_of_stat_pct[i] + effects.by_attr.hp_of_stat_pct_forced[i]) * effects.by_attr.stat_flat[i] +
+            effects.by_attr.hp_of_stat_pct_forced[i] * loadout.stats[i];
     end
 
     effects.raw.healing_power_flat = effects.raw.healing_power_flat + hp_from_stats;
@@ -1017,6 +1023,7 @@ local function update_loadout_and_effects()
         -- will benefit from not having to update icons
         return loadout_front, buffed, final, effects_update_id;
     end
+    print("loadout changed");
     loadouts.force_update = false;
     loadout_front = other;
 

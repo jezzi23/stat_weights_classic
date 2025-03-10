@@ -6,6 +6,7 @@
 --     * introduces new dummy behaviour
 local _, sc = ...;
 
+local attr                          = sc.attr;
 local spells                        = sc.spells;
 local spids                         = sc.spids;
 local spell_flags                   = sc.spell_flags;
@@ -61,6 +62,7 @@ if sc.class == sc.classes.mage then
 
     lookups.averaged_procs = {
         12536, -- clearcast
+        22008, -- tier 2 instant cast proc
     };
 
     do
@@ -145,6 +147,13 @@ elseif sc.class == sc.classes.priest then
     for _, v in pairs(rank_seqs[spids.power_word_shield]) do
         spells[v].direct.coef = spell_coef_lvl_adjusted(0.1, spells[v].lvl_req);
     end
+    for _, v in pairs(rank_seqs[spids.penance]) do
+        -- first tick missing from generator, use direct portion as one tick of periodic
+        spells[v].direct = spells[v].periodic;
+        if spells[v].healing_version  then
+            spells[v].healing_version.direct = spells[v].healing_version.periodic;
+        end
+    end
 
     -- THREAT
     add_threat_mod_all_ranks({
@@ -156,7 +165,11 @@ elseif sc.class == sc.classes.priest then
     end
 
     for _, talent_id in pairs(talent_ranks[214]) do
-        sc.talent_effects[talent_id][sc.aura_idx_subject] = {attr.spirit};
+        for _, auras in pairs(sc.talent_effects[talent_id]) do
+            if auras[sc.aura_idx_category] == "by_attr" then
+                auras[sc.aura_idx_subject] = {attr.spirit};
+            end
+        end
     end
 
 elseif sc.class == sc.classes.shaman then
@@ -236,10 +249,10 @@ elseif sc.class == sc.classes.rogue then
         bit.band(spells[spids.main_gauche].direct.flags, bit.bnot(comp_flags.applies_mh));
 
     -- Disable broken spells
-    spells[spids.envenom].flags =
-        bit.band(spells[spids.envenom].flags, bit.bnot(spell_flags.eval));
-    spells[spids.between_the_eyes].flags =
-        bit.band(spells[spids.between_the_eyes].flags, bit.bnot(spell_flags.eval));
+    --spells[spids.envenom].flags =
+    --    bit.band(spells[spids.envenom].flags, bit.bnot(spell_flags.eval));
+    --spells[spids.between_the_eyes].flags =
+    --    bit.band(spells[spids.between_the_eyes].flags, bit.bnot(spell_flags.eval));
 
 elseif sc.class == sc.classes.paladin then
     sc.friendly_buffs[407613] = {}; -- beacon of light, dummy value - handled manually

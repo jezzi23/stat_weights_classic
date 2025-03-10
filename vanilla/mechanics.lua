@@ -11,6 +11,8 @@ local spell_flags                                   = sc.spell_flags;
 local comp_flags                                    = sc.comp_flags;
 local lookups                                       = sc.lookups;
 
+local num_set_pieces                                = sc.equipment.num_set_pieces;
+
 local effect_flags                                  = sc.calc.effect_flags;
 local add_extra_effect                              = sc.calc.add_extra_effect;
 local get_buff                                      = sc.buffs.get_buff;
@@ -66,10 +68,10 @@ local class_stats_spell = (function()
         end
     elseif class == classes.shaman then
         return function(anycomp, bid, stats, spell, loadout, effects)
-            --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and spell.direct and get_buff(loadout, "player", lookups.water_shield, true) then
+            if num_set_pieces(loadout, 1816) >= 2 and spell.direct and get_buff(loadout, "player", lookups.water_shield, true) then
 
-            --    stats.resource_refund_mul_crit = stats.resource_refund_mul_crit + 0.04 * loadout.resources_max[powers.mana];
-            --end
+                stats.resource_refund_mul_crit = stats.resource_refund_mul_crit + 0.04 * loadout.resources_max[powers.mana];
+            end
             if loadout.enchants[lookups.rune_overload] and
                    (bid == spids.chain_heal or
                     bid == spids.chain_lightning or
@@ -88,13 +90,13 @@ local class_stats_spell = (function()
                     stats.resource_refund_mul_crit = stats.resource_refund_mul_crit + 0.01 * base_mana;
                 end
 
-                --if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 and bid == spids.fireball then
-                --    add_extra_effect(stats, effect_flags.periodic, 1.0, "6P Set Bonus", 1.0, 4, 2);
-                --end
+                if num_set_pieces(loadout, 1807) >= 6 and bid == spids.fireball then
+                    add_extra_effect(stats, effect_flags.periodic, 1.0, "6P Set Bonus", 1.0, 4, 2);
+                end
 
-                --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 2 and bid == spids.arcane_missiles then
-                --    stats.resource_refund = stats.resource_refund + 0.5 * stats.original_base_cost;
-                --end
+                if num_set_pieces(loadout, 1808) >= 2 and bid == spids.arcane_missiles then
+                    stats.resource_refund = stats.resource_refund + 0.5 * stats.original_base_cost;
+                end
                 if bid == spids.arcane_surge then
                     stats.spell_dmg_mod_mul = stats.spell_dmg_mod_mul *
                         (1.0 + 100*spell.direct.per_resource * loadout.resources[powers.mana] / loadout.resources_max[powers.mana]);
@@ -115,9 +117,10 @@ local class_stats_spell = (function()
                         stats.target_vuln_mod_mul * math.min(1.18, 1.0 + 0.06 * effects.raw.class_misc);
                 end
             end
-            --if loadout.num_set_pieces[set_tiers.sod_final_pve_2] >= 6 then
-            --    stats.target_vuln_mod_mul = stats.target_vuln_mod_mul * math.min(1.3, 1.1 + 0.1 * effects.raw.target_num_afflictions);
-            --end
+            if bid == spids.shadow_bolt and num_set_pieces(loadout, 1820) >= 6 then
+                stats.target_vuln_mod_mul =
+                    stats.target_vuln_mod_mul * math.min(1.3, 1.1 + 0.05 * effects.raw.class_misc);
+            end
         end
     elseif class == classes.druid then
         return function(anycomp, bid, stats, spell, loadout, effects)
@@ -139,10 +142,6 @@ local class_stats_spell = (function()
                 stats.target_vuln_mod_mul = stats.target_vuln_mod_mul * 1.2;
             end
 
-            --if loadout.num_set_pieces[set_tiers.sod_final_pve_2_heal] >= 4 and bit.band(spell_flags.heal, spell.flags) ~= 0 then
-            --    --crit_cast_reduction = math.min(0.5, crit_cast_reduction * 2);
-            --    stats.crit_reduces_cast_flat = stats.crit_reduces_cast_flat + 0.5*pts/3;
-            --end
         end
     end
 end)();

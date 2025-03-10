@@ -73,11 +73,6 @@ local wpn_strs = {
 
 local function detect_sets(loadout)
 
-    -- TODO: Retire this
-    for k, v in pairs(set_tiers) do
-        loadout.num_set_pieces[v] = 0;
-    end
-
     for k, _ in pairs(sc.set_bonuses) do
         loadout.num_set_pieces[k] = 0;
     end
@@ -93,6 +88,13 @@ local function detect_sets(loadout)
     end
 end
 
+local function num_set_pieces(loadout, set_id)
+    if loadout.num_set_pieces[set_id] then
+        return loadout.num_set_pieces[set_id];
+    else
+        return 0;
+    end
+end
 local GetItemStats = GetItemStats or C_Item.GetItemStats
 
 -- Generated spell effects handle most item effects but some require special handling
@@ -291,7 +293,6 @@ local force_items = {};
 
 local function apply_equipment(loadout, effects)
 
-    print("equipment update update");
     for _, slot in pairs(slots) do
         loadout.items[slot] = GetInventoryItemID("player", slot);
     end
@@ -330,6 +331,7 @@ local function apply_equipment(loadout, effects)
                 end
             end
         end
+        loadout.num_set_pieces[force_set_id] = force_threshold;
     end
 
     -- NOTE: Enchant changes might not force an equipment update
@@ -426,13 +428,14 @@ local function apply_equipment(loadout, effects)
         end
         print(items_applied, "gen items applied");
         local sets_applied = 0;
-        for _, v in pairs(sc.set_bonuses) do
+        for k, v in pairs(sc.set_bonuses) do
             for _, bonus in pairs(v) do
                 local id = bonus[2];
 
                 apply_effect(effects, id, sc.set_effects[id], true, 1.0);
                 sets_applied = sets_applied + 1;
             end
+            loadout.num_set_pieces[k] = 100;
         end
         print(sets_applied, "gen sets applied");
 
@@ -445,12 +448,14 @@ local function apply_equipment(loadout, effects)
             end
         end
         print(enchants_applied, "gen enchants applied");
+
     end
 
     return found_anything;
 end
 
 equipment.set_tiers = set_tiers;
+equipment.num_set_pieces = num_set_pieces;
 equipment.apply_equipment = apply_equipment;
 equipment.force_item_sets = force_item_sets;
 equipment.force_items = force_items;

@@ -133,10 +133,12 @@ sc.aura_flags = {
 	stacks_as_charges = bit.lshift(1, 6),
 	weapon_slot_dependent = bit.lshift(1, 7),
 };
+sc.feral_skill_as_wpn_subclass_hack = 28;
 sc.wep_subclass_to_normalized_speed = {
 	[1] = 3.3,
 	[6] = 3.3,
 	[16] = 2.8,
+	[28] = 0,
 	[-1] = 2.4,
 	[2] = 2.8,
 	[3] = 2.8,
