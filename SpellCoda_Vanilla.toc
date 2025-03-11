@@ -9,19 +9,19 @@ lib/CallbackHandler-1.0/CallbackHandler-1.0.xml
 lib/LibDataBroker-1.1/LibDataBroker-1.1.lua
 lib/LibDBIcon-1.0/LibDBIcon-1.0.lua
 
-vanilla/generated/defs.lua
-vanilla/generated/localized_defs.lua
-vanilla/generated/all.lua
-
-vanilla/generated/druid.lua
-vanilla/generated/hunter.lua
-vanilla/generated/mage.lua
-vanilla/generated/paladin.lua
-vanilla/generated/priest.lua
-vanilla/generated/rogue.lua
-vanilla/generated/shaman.lua
-vanilla/generated/warlock.lua
-vanilla/generated/warrior.lua
+generated/vanilla/defs.lua
+generated/vanilla/localized_defs.lua
+generated/vanilla/all.lua
+          
+generated/vanilla/druid.lua
+generated/vanilla/hunter.lua
+generated/vanilla/mage.lua
+generated/vanilla/paladin.lua
+generated/vanilla/priest.lua
+generated/vanilla/rogue.lua
+generated/vanilla/shaman.lua
+generated/vanilla/warlock.lua
+generated/vanilla/warrior.lua
 
 locale/default.lua
 locale/ptBR.lua
