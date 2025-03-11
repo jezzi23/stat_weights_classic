@@ -13,10 +13,7 @@ local update_loadout_and_effects                    = sc.loadouts.update_loadout
 local update_loadout_and_effects_diffed_from_ui     = sc.loadouts.update_loadout_and_effects_diffed_from_ui;
 local active_loadout                                = sc.loadouts.active_loadout;
 
-local stats_for_spell                               = sc.calc.stats_for_spell;
-local spell_info                                    = sc.calc.spell_info;
 local cast_until_oom                                = sc.calc.cast_until_oom;
-local resource_regen_info                           = sc.calc.resource_regen_info;
 local calc_spell_eval                               = sc.calc.calc_spell_eval;
 local calc_spell_threat                             = sc.calc.calc_spell_threat;
 local calc_spell_resource_regen                     = sc.calc.calc_spell_resource_regen;
@@ -25,14 +22,16 @@ local config                                        = sc.config;
 --------------------------------------------------------------------------------
 local overlay = {};
 
+local initialized = false;
 local active_overlays = {};
 local action_bar_frame_names = {};
 local action_id_frames = {};
 local spell_book_frames = {};
 local action_bar_addon_name = "Default";
 local externally_registered_spells = {};
+local overlay_component_id_to_overlay_slot_idx = {};
 
-local mana_cost_overlay, cast_speed_overlay, mana_restoration_overlay;
+local mana_cost_overlay, cast_speed_overlay, mana_restoration_overlay, threat_overlay;
 
 sc.ext.register_spell = function(spell_id)
     if spells[spell_id] and bit.band(spell.flags, spell_flags.eval) ~= 0 then
@@ -100,20 +99,47 @@ local function init_frame_overlay(frame_info)
 
     local offsets = {-3, -1.5, 0};
     local anchors = {"TOP", "CENTER", "BOTTOM"};
+
     if not frame_info.overlay_frames then
         frame_info.overlay_frames = {};
 
         for i = 1, 3 do
             frame_info.overlay_frames[i] = frame_info.frame:CreateFontString(nil, "OVERLAY");
+            frame_info.overlay_frames[i]:SetFont(
+                sc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
+            frame_info.overlay_frames[i]:SetPoint(anchors[i], config.settings.overlay_offset + 1.0, offsets[i]);
         end
-    end
-    for i = 1, 3 do
-        frame_info.overlay_frames[i]:SetFont(
-            sc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
-        frame_info.overlay_frames[i]:SetPoint(anchors[i], config.settings.overlay_offset + 1.0, offsets[i]);
     end
 end
 
+local function overlay_reconfig()
+
+    if not initialized then
+        return;
+    end
+
+    local offsets = {-3, -1.5, 0};
+    local anchors = {"TOP", "CENTER", "BOTTOM"};
+
+    for i = 1, 12 do
+        if spell_book_frames[i] then
+            for j = 1, 3 do
+                spell_book_frames[i].overlay_frames[j]:SetFont(
+                    sc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
+                spell_book_frames[i].overlay_frames[j]:SetPoint(anchors[j], config.settings.overlay_offset + 1.0, offsets[j]);
+            end
+        end
+    end
+    for _, v in pairs(action_id_frames) do
+        if v.frame then
+            for j = 1, 3 do
+                v.overlay_frames[j]:SetFont(
+                    sc.ui.icon_overlay_font, config.settings.overlay_font_size, "THICKOUTLINE");
+                v.overlay_frames[j]:SetPoint(anchors[j], config.settings.overlay_offset + 1.0, offsets[j]);
+            end
+        end
+    end
+end
 local function clear_overlays()
 
     for _, v in pairs(action_id_frames) do
@@ -163,7 +189,8 @@ local function spell_id_of_action(action_id)
     elseif (bit.band(spells[spell_id].flags, spell_flags.eval) == 0) and
         (mana_cost_overlay and not spell_cost(spell_id)) and
         (cast_speed_overlay and not spell_cast_time(spell_id)) and
-        (mana_restoration_overlay and bit.band(spells[spell_id].flags, spell_flags.resource_regen) == 0) then
+        (mana_restoration_overlay and bit.band(spells[spell_id].flags, spell_flags.resource_regen) == 0) and
+        (threat_overlay and bit.band(spells[spell_id].flags, spell_flags.threat_only) == 0) then
         spell_id = 0;
     end
 
@@ -377,6 +404,7 @@ local function update_icon_overlay_settings()
     mana_cost_overlay = config.settings.overlay_display_avg_cost or config.settings.overlay_display_casts_until_oom or config.settings.overlay_display_time_until_oom;
     cast_speed_overlay = config.settings.overlay_display_avg_cast;
     mana_restoration_overlay = config.settings.overlay_resource_regen;
+    threat_overlay = config.settings.overlay_display_threat or config.settings.overlay_display_threat_per_sec or config.settings.overlay_display_threat_per_cost;
 
     __sc_frame.overlay_frame.icon_overlay = {};
 
@@ -413,7 +441,9 @@ local function update_icon_overlay_settings()
         if config.settings.overlay_icon_bottom_clearance then
             __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[1];
         else
-            __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[1] or __sc_frame.overlay_frame.icon_overlay[3];
+            --__sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[1] or __sc_frame.overlay_frame.icon_overlay[3];
+            __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[3] or __sc_frame.overlay_frame.icon_overlay[1];
+            __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[2] or __sc_frame.overlay_frame.icon_overlay[1];
         end
         __sc_frame.overlay_frame.icon_overlay[1] = nil;
     end
@@ -421,18 +451,33 @@ local function update_icon_overlay_settings()
     --sw_num_icon_overlay_fields_active = index - 1;
 
     -- hide existing overlay frames that should no longer exist
-    for i = 1, 3 do
-
-        if not __sc_frame.overlay_frame.icon_overlay[i] then
-            for _, v in pairs(spell_book_frames) do
-                if v.overlay_frames[i] then
+    for _, v in pairs(spell_book_frames) do
+        if v.overlay_frames then
+            for i = 1, 3 do
+                if not __sc_frame.overlay_frame.icon_overlay[i] then
                     v.overlay_frames[i]:Hide();
                 end
             end
-            for _, v in pairs(action_id_frames) do
-                if v.frame then
+        end
+    end
+    for _, v in pairs(action_id_frames) do
+        if v.frame then
+            for i = 1, 3 do
+                if not __sc_frame.overlay_frame.icon_overlay[i] then
                     v.overlay_frames[i]:Hide();
                 end
+            end
+        end
+    end
+    -- for only_threat spells, find the indices of these for eval spells so that
+    -- the numbers are in the same place
+
+    overlay_component_id_to_overlay_slot_idx = {};
+    for i, v in pairs( __sc_frame.overlay_frame.icon_overlay) do
+        for id, _ in pairs(__sc_frame.overlay_frame.overlay_components) do
+            if id == v.label_type then
+                overlay_component_id_to_overlay_slot_idx[id] = i;
+                break;
             end
         end
     end
@@ -440,6 +485,7 @@ local function update_icon_overlay_settings()
     active_overlays = {};
     scan_action_frames();
     on_special_action_bar_changed();
+    initialized = true;
 end
 
 local function setup_action_bars()
@@ -558,83 +604,78 @@ local overlay_label_handler = {
     end,
 };
 
---local function cache_spell(spell, spell_id, loadout, effects, eval_flags)
---
---    if not spell_cache[spell_id] then
---        spell_cache[spell_id] = {};
---        spell_cache[spell_id].dmg = {};
---        spell_cache[spell_id].heal = {};
---    end
---    local spell_variant = spell_cache[spell_id].dmg;
---    if bit.band(spell.flags, spell_flags.heal) ~= 0 then
---        spell_variant = spell_cache[spell_id].heal;
---    end
---
---    if not spell_variant.seq then
---
---        spell_variant.seq = -1;
---        spell_variant.stats = {};
---        spell_variant.spell_effect = {};
---    end
---    local spell_effect = spell_variant.spell_effect;
---    local stats = spell_variant.stats;
---
---    if spell_variant.seq ~= sc.sequence_counter then
---
---        if bit.band(spell.flags, spell_flags.eval) ~= 0 then
---            spell_variant.seq = sc.sequence_counter;
---            stats_for_spell(stats, spell, loadout, effects, eval_flags);
---            spell_info(spell_effect, spell, stats, loadout, effects, eval_flags);
---            cast_until_oom(spell_effect, spell, stats, loadout, effects);
---        elseif bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
---            resource_regen_info(spell_effect, spell, spell_id, loadout, effects);
---        end
---    end
---
---    return spell_effect, stats;
---end
+local only_threat_label_types = {
+    "overlay_display_threat",
+    "overlay_display_threat_per_sec",
+    "overlay_display_threat_per_cost"
+};
 
 local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, effects, eval_flags)
 
-    --local spell_effect, stats = cache_spell(spell, spell_id, loadout, effects, eval_flags);
-
-    if bit.band(spell.flags, spell_flags.resource_regen) ~= 0 then
+    if bit.band(spell.flags, spell_flags.resource_regen) ~= 0 and
+        config.settings.overlay_resource_regen then
         local spell_effect = calc_spell_resource_regen(spell, spell_id, loadout, effects, eval_flags);
 
-        if config.settings.overlay_resource_regen then
-            local idx = 3;
-            if config.settings.overlay_icon_bottom_clearance and config.settings.overlay_icon_top_clearance then
-                idx = 2;
-            elseif config.settings.overlay_icon_bottom_clearance then
-                idx = 1;
-            end
-            frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.total_restored)));
-            frame_info.overlay_frames[idx]:SetTextColor(effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
-            frame_info.overlay_frames[idx]:Show();
-        end
-
-    elseif __sc_frame.overlay_frame.num_overlay_components_toggled > 0 then
-        local spell_effect, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
-        cast_until_oom(spell_effect, spell, stats, loadout, effects);
-
         for i = 1, 3 do
+            frame_info.overlay_frames[i]:Hide();
+        end
+        local idx = 3;
+        if config.settings.overlay_icon_bottom_clearance and config.settings.overlay_icon_top_clearance then
+            idx = 2;
+        elseif config.settings.overlay_icon_bottom_clearance then
+            idx = 1;
+        end
+        frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.total_restored)));
+        frame_info.overlay_frames[idx]:SetTextColor(effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
+        frame_info.overlay_frames[idx]:Show();
 
-            if __sc_frame.overlay_frame.icon_overlay[i] then
+    elseif __sc_frame.overlay_frame.num_overlay_components_toggled > 0 then 
+        local spell_effect, stats;
 
-                overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](
-                    frame_info.overlay_frames[i],
-                    spell_effect,
-                    spell,
-                    stats
-                 );
+        if bit.band(spell.flags, spell_flags.eval) ~= 0 then
+            spell_effect, stats = calc_spell_eval(spell, loadout, effects, eval_flags);
+            cast_until_oom(spell_effect, spell, stats, loadout, effects);
 
-                frame_info.overlay_frames[i]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[i].color[1],
-                                                          __sc_frame.overlay_frame.icon_overlay[i].color[2],
-                                                          __sc_frame.overlay_frame.icon_overlay[i].color[3]);
+            for i = 1, 3 do
+                if __sc_frame.overlay_frame.icon_overlay[i] then
 
-                frame_info.overlay_frames[i]:Show();
+                    overlay_label_handler[__sc_frame.overlay_frame.icon_overlay[i].label_type](
+                        frame_info.overlay_frames[i],
+                        spell_effect,
+                        spell,
+                        stats
+                     );
+
+                    frame_info.overlay_frames[i]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[i].color[1],
+                                                              __sc_frame.overlay_frame.icon_overlay[i].color[2],
+                                                              __sc_frame.overlay_frame.icon_overlay[i].color[3]);
+
+                    frame_info.overlay_frames[i]:Show();
+                end
+            end
+
+        elseif bit.band(spell.flags, spell_flags.only_threat) ~= 0 and threat_overlay then
+            spell_effect, stats = calc_spell_threat(spell, loadout, effects, eval_flags);
+
+            for _, id in pairs(only_threat_label_types) do
+                local idx = overlay_component_id_to_overlay_slot_idx[id];
+                if idx then
+                    overlay_label_handler[id](
+                        frame_info.overlay_frames[idx],
+                        spell_effect,
+                        spell,
+                        stats
+                     );
+
+                    frame_info.overlay_frames[idx]:SetTextColor(__sc_frame.overlay_frame.icon_overlay[idx].color[1],
+                                                                __sc_frame.overlay_frame.icon_overlay[idx].color[2],
+                                                                __sc_frame.overlay_frame.icon_overlay[idx].color[3]);
+
+                    frame_info.overlay_frames[idx]:Show();
+                end
             end
         end
+
     end
 end
 
@@ -706,7 +747,7 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
     if frame.old_rank_marked then
         return;
     end
-    if bit.band(spells[id].flags, bit.bor(spell_flags.eval, spell_flags.resource_regen)) ~= 0 then
+    if bit.band(spells[id].flags, bit.bor(spell_flags.eval, spell_flags.resource_regen, spell_flags.only_threat)) ~= 0 then
         -- TODO: icon overlay not working for healing version checkbox
         if spells[id].healing_version and config.settings.general_prio_heal then
             update_spell_icon_frame(frame, spells[id].healing_version, id, loadout, effects, eval_flags);
@@ -714,9 +755,6 @@ local function update_overlay_frame(frame, loadout, effects, id, eval_flags)
             update_spell_icon_frame(frame, spells[id], id, loadout, effects, eval_flags);
         end
     end
-    --for i = 1, 3 do
-    --    frame.overlay_frames[i]:Hide();
-    --end
 end
 
 local special_action_bar_changed_id = 0;
@@ -845,7 +883,6 @@ local function update_overlay()
         end
 
         if not config.settings.overlay_disable then
-            print("doing full icons update");
             update_spell_icons(loadout, effects, eval_flags);
         end
     end
@@ -880,6 +917,7 @@ overlay.reassign_overlay_icon        = reassign_overlay_icon;
 overlay.clear_overlays               = clear_overlays;
 overlay.old_rank_warning_traversal   = old_rank_warning_traversal;
 overlay.overlay_eval_flags           = overlay_eval_flags;
+overlay.overlay_reconfig             = overlay_reconfig;
 
 sc.overlay = overlay;
 

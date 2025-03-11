@@ -605,9 +605,7 @@ local function effects_add_diff(effects, diff)
     end
     if sc.core.__sw__debug__ and effects.finalized then
         print("FAILURE: Adding effects diff with finalized");
-
         --print ("\nCall stack: \n" .. debugstack(2, 3, 2));
-
     end
 end
 
@@ -925,9 +923,9 @@ local function apply_effect(effects, spid, auras, forced, stacks, undo, player_o
                     aura_effect = aura_effect.."_forced";
                 end
                 if bit.band(aura[flags_idx], sc.aura_flags.mul) ~= 0 then
-                    if not effects["mul"][aura[category_idx]][aura_effect] then
-                        print("Missing effects.mul."..aura[category_idx].."."..aura_effect);
-                    end
+                    --if not effects["mul"][aura[category_idx]][aura_effect] then
+                    --    print("Missing effects.mul."..aura[category_idx].."."..aura_effect);
+                    --end
                     if undo then
                         val = 1/val;
                     end
@@ -939,12 +937,12 @@ local function apply_effect(effects, spid, auras, forced, stacks, undo, player_o
                         end
                     end
                 else
-                    if not effects[aura[category_idx]] then
-                        print("Missing effects."..aura[category_idx]);
-                    end
-                    if not effects[aura[category_idx]][aura_effect] then
-                        print("Missing effects."..aura[category_idx].."."..aura_effect);
-                    end
+                    --if not effects[aura[category_idx]] then
+                    --    print("Missing effects."..aura[category_idx]);
+                    --end
+                    --if not effects[aura[category_idx]][aura_effect] then
+                    --    print("Missing effects."..aura[category_idx].."."..aura_effect);
+                    --end
                     if undo then
                         val = -val;
                     end
@@ -1023,7 +1021,6 @@ local function update_loadout_and_effects()
         -- will benefit from not having to update icons
         return loadout_front, buffed, final, effects_update_id;
     end
-    print("loadout changed");
     loadouts.force_update = false;
     loadout_front = other;
 

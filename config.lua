@@ -3,13 +3,14 @@ local _, sc               = ...;
 local config               = {};
 
 local spell_filter_options = {
-    spells_filter_already_known     = true,
-    spells_filter_available         = true,
-    spells_filter_unavailable       = true,
-    spells_filter_learned_from_item = true,
-    spells_filter_pet               = true,
-    spells_filter_ignored_spells    = false,
-    spells_filter_other_spells      = false,
+    spells_filter_already_known              = true,
+    spells_filter_available                  = true,
+    spells_filter_unavailable                = true,
+    spells_filter_learned_from_item          = true,
+    spells_filter_pet                        = true,
+    spells_filter_ignored_spells             = false,
+    spells_filter_other_spells               = false,
+    spells_filter_only_highest_learned_ranks = false
 };
 
 -- Avoiding all bit flags here simply any changes between versions
@@ -89,22 +90,44 @@ local default_settings     = {
 
     -- calculator
     spell_calc_list                                 = {
+        -- a few basic spells for each class
         [6603] = 6603,
-        [78] = 78,
-        [23881] = 23881,
-        [75] = 75,
-        [2973] = 2973,
-        [133] = 133,
-        [5176] = 5176,
-        [5185] = 5185,
-        [403] = 403,
-        [331] = 331,
-        [635] = 635,
-        [585] = 585,
-        [2050] = 2050,
-        [1752] = 1752,
-        [2098] = 2098,
-        [686] = 686,
+        -- warrior
+        [78] = 78, -- heroic strik
+        [23881] = 23881, -- bloodthirst
+        [12294] = 12294, -- mortal strike
+        -- hunter
+        [75] = 75, -- auto shot
+        [19434] = 19434, -- aimed shot
+        [2643] = 2643, -- multi shot
+        -- mage
+        [133] = 133, --fireball
+        [116] = 116, --frostbolt
+        [1449] = 1449, --arcane explosion
+        -- druid
+        [5176] = 5176, -- wrath
+        [5185] = 5185, -- healing touch
+        [774] = 774, -- rejuv
+        -- shaman
+        [403] = 403, -- lightning bolt
+        [331] = 331, -- healing wave
+        [17364] = 17364, -- stormstrike
+        --paladin
+        [635] = 635, -- holy light
+        [19750] = 19750, -- flash of light
+        -- priest
+        [8092] = 8092, -- mind blast
+        [15407] = 15407, -- mind flay
+        [139] = 139, -- renew
+        [2054] = 2054, -- heal
+        -- rogue
+        [1752] = 1752, -- sinister strike
+        [53] = 53, -- backstab
+        [2098] = 2098, -- eviscerate
+        -- warlock
+        [686] = 686, -- shadow bolt
+        [172] = 172, -- corruption
+        [5676] = 5676, -- searing pain
     },
     calc_list_use_highest_rank                     = true,
     calc_fight_type                                = 1,

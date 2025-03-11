@@ -1,4 +1,4 @@
-## Interface: 11505
+## Interface: 11506
 ## Title: SpellCoda
 ## Notes: All things spells!
 ## SavedVariablesPerCharacter: __sc_p_char

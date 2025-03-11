@@ -127,7 +127,7 @@ local function format_number(val, max_accuracy_digits)
         return "";
     end
     local abs_val = math.abs(val);
-    if string.find(tostring(val), "nan") then
+    if val ~= val then
         return "∞";
     elseif (abs_val < 100.0 and max_accuracy_digits >= 2) then
         return string.format("%.2f", val);
@@ -137,13 +137,12 @@ local function format_number(val, max_accuracy_digits)
         return string.format("%d", 0.5+math.floor(val));
     elseif (abs_val < 1000000.0) then
         return string.format("%.1fk", val/1000);
-    elseif (abs_val < 1000000000.0) then
+    elseif (abs_val < 10000000000.0) then
         return string.format("%.1fm", val/1000000);
     else
         return "∞";
     end
 end
-
 local function format_number_signed_colored(val, max_accuracy_digits)
 
     local normal_format = format_number(val, max_accuracy_digits);

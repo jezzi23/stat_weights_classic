@@ -600,6 +600,6 @@ sc.ext.version_id = core.version_id;
 
 __SC = sc.ext;
 
-core.__sw__debug__ = 1;
+--core.__sw__debug__ = 1;
 --core.__sw__test_all_codepaths = 1;
 --core.__sw__test_all_spells = 1;

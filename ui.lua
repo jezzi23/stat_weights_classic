@@ -15,7 +15,6 @@ local effect_colors                             = sc.utils.effect_colors;
 local format_number                             = sc.utils.format_number;
 local color_by_lvl_diff                         = sc.utils.color_by_lvl_diff;
 
-
 local update_loadout_and_effects_diffed_from_ui = sc.loadouts.update_loadout_and_effects_diffed_from_ui;
 local update_loadout_and_effects                = sc.loadouts.update_loadout_and_effects;
 local active_loadout                            = sc.loadouts.active_loadout
@@ -419,6 +418,59 @@ local spell_browser_scroll_to_lvl = true;
 local stats = {};
 local info = {};
 
+function isFilteredValid(filtered)
+    -- Check if filtered is a table
+    if type(filtered) ~= "table" then
+        return false, "filtered is not a table"
+    end
+
+    -- Check if the table is empty
+    if #filtered == 0 then
+        return true -- An empty table is valid
+    end
+
+    -- Check if the table is a proper sequence
+    local maxKey = 0
+    local keySet = {}
+    for k, v in pairs(filtered) do
+        -- Ensure keys are positive integers
+        if type(k) ~= "number" or k ~= math.floor(k) or k < 1 then
+            return false, "filtered contains non-integer or invalid keys"
+        end
+
+        -- Track the maximum key
+        if k > maxKey then
+            maxKey = k
+        end
+
+        -- Ensure keys are unique
+        if keySet[k] then
+            return false, "filtered contains duplicate keys"
+        end
+        keySet[k] = true
+    end
+
+    -- Check if the keys form a consecutive sequence starting from 1
+    for i = 1, maxKey do
+        if not keySet[i] then
+            return false, "filtered has gaps in its keys"
+        end
+    end
+
+    -- Check if all elements are tables and contain the "dps" key
+    for i, v in ipairs(filtered) do
+        if type(v) ~= "table" then
+            return false, "element at index " .. i .. " is not a table"
+        end
+        if v.dps == nil then
+            return false, "element at index " .. i .. " is missing the 'dps' key"
+        end
+    end
+
+    -- If all checks pass, the table is valid for sorting
+    return true
+end
+
 local function filtered_spell_view(spell_ids, name_filter, loadout, effects, eval_flags)
 
     local lvl = active_loadout().lvl;
@@ -525,6 +577,8 @@ local function filtered_spell_view(spell_ids, name_filter, loadout, effects, eva
                 filtered[i].effect_per_cost = info.effect_per_cost;
                 filtered[i].hps = info.effect_per_sec;
                 filtered[i].hpc = info.effect_per_cost;
+                filtered[i].dps = 0;
+                filtered[i].dpc = 0;
 
                 i = i + 1;
             end
@@ -563,13 +617,13 @@ local function filtered_spell_view(spell_ids, name_filter, loadout, effects, eva
         __sc_frame.spells_frame.header_level:Show();
 
         if spell_browser_active_sort_key == spell_browser_sort_keys.dps then
-            table.sort(filtered, function(lhs, rhs) return lhs.dps > rhs.dps end);
+            table.sort(filtered, function(lhs, rhs) return lhs.dps > rhs.dps; end);
         elseif spell_browser_active_sort_key == spell_browser_sort_keys.hps then
-            table.sort(filtered, function(lhs, rhs) return lhs.hps > rhs.hps end);
+            table.sort(filtered, function(lhs, rhs) return lhs.hps > rhs.hps; end);
         elseif spell_browser_active_sort_key == spell_browser_sort_keys.dpc then
-            table.sort(filtered, function(lhs, rhs) return lhs.dpc > rhs.dpc end);
+            table.sort(filtered, function(lhs, rhs) return lhs.dpc > rhs.dpc; end);
         elseif spell_browser_active_sort_key == spell_browser_sort_keys.hpc then
-            table.sort(filtered, function(lhs, rhs) return lhs.hpc > rhs.hpc end);
+            table.sort(filtered, function(lhs, rhs) return lhs.hpc > rhs.hpc; end);
         end
     end
 
@@ -1077,7 +1131,7 @@ local function create_sw_ui_spells_frame()
     __sc_frame.spells_frame:EnableMouseWheel(true)
     __sc_frame.spells_frame:SetScript("OnMouseWheel", function(_, delta)
         local scrollbar = __sc_frame.spells_frame.slider;
-        scrollbar:SetValue(scrollbar:GetValue() - delta);
+        scrollbar:SetValue(scrollbar:GetValue() - delta*5);
     end);
 
     -- Spell list
@@ -1691,7 +1745,7 @@ local function create_sw_ui_overlay_frame()
             id = "overlay_icon_bottom_clearance",
             txt = "Icon bottom clearance",
             func = function()
-                sc.core.uresource_regen = true;
+                sc.core.update_action_bar_needed = true;
             end,
         },
     };
@@ -1751,25 +1805,29 @@ local function create_sw_ui_overlay_frame()
 
         self.val_txt:SetText(string.format("%.2fx", config.settings.overlay_font_size));
 
-        for _, v in pairs(sc.overlay.spell_book_frames) do
-            if v.frame then
-                local spell_name = v.frame.SpellName:GetText();
-                local spell_rank_name = v.frame.SpellSubName:GetText();
-                local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
-                for i = 1, 3 do
-                    v.overlay_frames[i]:SetFont(
-                        icon_overlay_font, val, "THICKOUTLINE");
-                end
-            end
-        end
-        for _, v in pairs(sc.overlay.action_id_frames) do
-            if v.frame then
-                for i = 1, 3 do
-                    v.overlay_frames[i]:SetFont(
-                        icon_overlay_font, val, "THICKOUTLINE");
-                end
-            end
-        end
+
+        sc.overlay.overlay_reconfig();
+        --sc.loadouts.force_update = true;
+        --sc.core.update_action_bar_needed = true;
+        --for _, v in pairs(sc.overlay.spell_book_frames) do
+        --    if v.frame then
+        --        local spell_name = v.frame.SpellName:GetText();
+        --        local spell_rank_name = v.frame.SpellSubName:GetText();
+        --        local _, _, _, _, _, _, id = GetSpellInfo(spell_name, spell_rank_name);
+        --        for i = 1, 3 do
+        --            v.overlay_frames[i]:SetFont(
+        --                icon_overlay_font, val, "THICKOUTLINE");
+        --        end
+        --    end
+        --end
+        --for _, v in pairs(sc.overlay.action_id_frames) do
+        --    if v.frame then
+        --        for i = 1, 3 do
+        --            v.overlay_frames[i]:SetFont(
+        --                icon_overlay_font, val, "THICKOUTLINE");
+        --        end
+        --    end
+        --end
 
     end);
 
@@ -1799,8 +1857,11 @@ local function create_sw_ui_overlay_frame()
     f:SetScript("OnValueChanged", function(self, val)
         config.settings.overlay_offset = val;
         self.val_txt:SetText(string.format("%.1f", val))
-        sc.core.setup_action_bar_needed = true;
-        sc.overlay.update_overlay();
+        --sc.core.update_action_bar_needed = true;
+        --sc.core.update_action_bar_needed = true;
+        --sc.loadouts.force_update = true;
+        sc.overlay.overlay_reconfig();
+        --sc.overlay.update_icon_overlay_settings();
     end);
 
     __sc_frame.overlay_frame.y_offset = __sc_frame.overlay_frame.y_offset - 20;
@@ -1833,14 +1894,11 @@ local function create_sw_ui_overlay_frame()
         end
 
         if __sc_frame.overlay_frame.num_overlay_components_toggled > 3 then
-            -- toggled fourth
+            checked = false;
             self:SetChecked(false);
             __sc_frame.overlay_frame.num_overlay_components_toggled = 3;
-        --elseif __sc_frame.overlay_frame.num_overlay_components_toggled == 0 then
-        --    config.settings.overlay_disable = true;
-        else
-            config.settings[self._settings_id] = checked;
         end
+        config.settings[self._settings_id] = checked;
 
         sc.core.update_action_bar_needed = true;
     end;
@@ -1867,6 +1925,17 @@ local function create_sw_ui_overlay_frame()
             id = "overlay_display_crit",
             txt = "Critical effect",
             color = effect_colors.crit,
+        },
+        {
+            id = "overlay_display_hit_chance",
+            txt = "Hit chance",
+            color = effect_colors.hit_chance,
+            tooltip = "Probability of not missing, parrying or dodging."
+        },
+        {
+            id = "overlay_display_crit_chance",
+            txt = "Critical chance",
+            color = effect_colors.crit
         },
         {
             id = "overlay_display_expected",
@@ -1905,35 +1974,24 @@ local function create_sw_ui_overlay_frame()
             color = effect_colors.avg_cost,
             optional_evaluation = true,
         },
-        {
-            id = "overlay_display_actual_cost",
-            txt = "Actual cost",
-            color = effect_colors.avg_cost,
-            optional_evaluation = true,
-        },
+        --{
+        --    id = "overlay_display_actual_cost",
+        --    txt = "Actual cost",
+        --    color = effect_colors.avg_cost,
+        --    optional_evaluation = true,
+        --},
         {
             id = "overlay_display_avg_cast",
             txt = "Expected execution time",
             color = effect_colors.avg_cast,
             optional_evaluation = true,
         },
-        {
-            id = "overlay_display_actual_cast",
-            txt = "Actual execution time",
-            color = effect_colors.avg_cast,
-            optional_evaluation = true,
-        },
-        {
-            id = "overlay_display_hit_chance",
-            txt = "Hit chance",
-            color = effect_colors.hit_chance,
-            tooltip = "Probability of not missing, parrying or dodging."
-        },
-        {
-            id = "overlay_display_crit_chance",
-            txt = "Critical chance",
-            color = effect_colors.crit
-        },
+        --{
+        --    id = "overlay_display_actual_cast",
+        --    txt = "Actual execution time",
+        --    color = effect_colors.avg_cast,
+        --    optional_evaluation = true,
+        --},
         {
             id = "overlay_display_effect_until_oom",
             txt = "Effect until OOM" ,
@@ -2499,7 +2557,7 @@ local function create_sw_ui_loadout_frame()
     f = CreateFrame("CheckButton", "__sc_frame_loadout_always_max_resource", __sc_frame.loadout_frame, "ChatConfigCheckButtonTemplate");
     f._type = "CheckButton";
     f:SetPoint("TOPLEFT", __sc_frame.loadout_frame, x_pad, __sc_frame.loadout_frame.y_offset);
-    getglobal(f:GetName()..'Text'):SetText("Always at maximum resource");
+    getglobal(f:GetName()..'Text'):SetText("Always at maximum resources");
     getglobal(f:GetName()).tooltip = 
         "Assumes you are casting from maximum mana, energy, rage or combo points.";
     f:SetScript("OnClick", function(self)
@@ -3161,10 +3219,16 @@ local function create_sw_ui_profile_frame()
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
     f_txt:SetFontObject(GameFontNormal);
     f_txt:SetPoint("TOPLEFT", 0, __sc_frame.profile_frame.y_offset);
-    f_txt:SetText("Profiles retain all settings except for Loadout & Buffs");
+    f_txt:SetText("Profiles are shared across characters and retain all settings");
     f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
 
+    __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 12;
 
+    f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");
+    f_txt:SetFontObject(GameFontNormal);
+    f_txt:SetPoint("TOPLEFT", 0, __sc_frame.profile_frame.y_offset);
+    f_txt:SetText("  except for Loadouts and Buffs");
+    f_txt:SetTextColor(232.0/255, 225.0/255, 32.0/255);
     __sc_frame.profile_frame.y_offset = __sc_frame.profile_frame.y_offset - 35;
 
     f_txt = __sc_frame.profile_frame:CreateFontString(nil, "OVERLAY");

@@ -1185,8 +1185,8 @@ end)();
 local function post_process_stats(comp, spell, stats, loadout)
 
     if bit.band(comp.flags, comp_flags.heal_to_full) ~= 0 then
-        anycomp.spell_mod = 1.0;
-        anycomp.spell_mod_ot = 1.0;
+        comp.spell_mod = 1.0;
+        comp.spell_mod_ot = 1.0;
         stats.effect_mod = 1.0;
         stats.effect_mod_ot = 1.0;
         stats.effect_mod_flat = 0.0;
@@ -1707,7 +1707,8 @@ local function periodic_info(info, spell, loadout, stats, effects, eval_flags)
     end
 
     -- round so tooltip is displayed nicely
-    info.ot_ticks1 = math.floor(0.5 + (info.ot_dur1 / info.ot_tick_time1));
+    --info.ot_ticks1 = math.floor(0.5 + (info.ot_dur1 / info.ot_tick_time1));
+    info.ot_ticks1 = info.ot_dur1 / info.ot_tick_time1;
     info.longest_ot_duration = info.ot_dur1;
 
     info.ot_base_min = base_tick_min;
@@ -1866,8 +1867,14 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.threat = 0;
     end
 
-    info.effect_per_sec = info.expected / stats.cast_time;
-    info.threat_per_sec = info.threat / stats.cast_time;
+    if stats.cast_time == 0 then
+        info.effect_per_sec = math.huge;
+        info.threat_per_sec = math.huge
+    else
+        info.effect_per_sec = info.expected / stats.cast_time;
+        info.threat_per_sec = info.threat / stats.cast_time;
+    end
+
 
     local dual_wield_flags = bit.bor(comp_flags.applies_mh, comp_flags.applies_oh);
 
@@ -2034,7 +2041,7 @@ end
 
 local function resource_regen_info(info, spell, spell_id, loadout, effects, _)
 
-    if not effects.finalized then
+    if not effects.finalized and sc.core.__sw__debug__ then
         print("CALLING SPELL INFO FOR SPELL WITHOUT FINALIZED EFFECTS");
     end
 
@@ -2131,7 +2138,7 @@ end
 
 local function only_threat_info(info, stats, spell, loadout, effects, eval_flags)
 
-    if not effects.finalized then
+    if not effects.finalized and sc.core.__sw__debug__ then
         print("CALLING SPELL INFO FOR SPELL WITHOUT FINALIZED EFFECTS");
     end
     local bid = spell.base_id;
@@ -2299,6 +2306,7 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
             v.effect_until_oom_delta = info_diff.effect_until_oom - normal_info.effect_until_oom;
         end
     end
+    local normalize_table_preferred = normalize_table;
 
     local eps = 0.000000001;
     if normalize_table.effect_per_sec_delta < eps then
@@ -2309,6 +2317,22 @@ local function stat_weights(normal_info, spell, loadout, effects, eval_flags)
             if v.effect_per_sec_delta > eps and v.effect_per_sec_delta < lowest then
                 lowest = v.effect_per_sec_delta;
                 normalize_table = v;
+            end
+        end
+    end
+
+    if not normalize_table or normalize_table.effect_per_sec_delta < eps then
+        -- effect per sec still has no gains, execution time is likely 0
+        --   find new normalize field by expectation
+        normalize_table = normalize_table_preferred;
+        if normalize_table.effect_delta < eps then
+            local lowest = math.huge;
+            -- need to find any other field to normalize to
+            for _, v in ipairs(weights) do
+                if v.effect_delta > eps and v.effect_delta < lowest then
+                    lowest = v.effect_delta;
+                    normalize_table = v;
+                end
             end
         end
     end

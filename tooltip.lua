@@ -83,12 +83,12 @@ end
 local function format_bounce_spell(min_hit, max_hit, bounces, falloff)
     local bounce_str = "     + ";
     for _ = 1, bounces - 1 do
-        bounce_str = bounce_str .. string.format(" %d to %d  + ",
+        bounce_str = bounce_str .. string.format(" %.0f to %.0f  + ",
             falloff * math.floor(min_hit),
             falloff * math.ceil(max_hit));
         falloff = falloff * falloff;
     end
-    bounce_str = bounce_str .. string.format(" %d to %d",
+    bounce_str = bounce_str .. string.format(" %.0f to %.0f",
         falloff * math.floor(min_hit),
         falloff * math.ceil(max_hit));
     return bounce_str;
@@ -604,7 +604,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
     if config.settings.tooltip_display_normal and
         bit.band(eval_flags, evaluation_flags.isolate_periodic) == 0 and
-        info.num_direct_effects > 0 then
+        info.num_direct_effects > 0 and
+info.min_noncrit_if_hit1
+        then
 
         if spell.direct then
 
@@ -619,7 +621,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 -- dmg spells with real direct range
                 local oh = "";
                 if info.oh_info then
-                    oh = string.format(" | %d to %d",
+                    oh = string.format(" | %.0f to %.0f",
                         math.floor(info.oh_info.min_noncrit_if_hit1),
                         math.ceil(info.oh_info.max_noncrit_if_hit1)
                     );
@@ -627,7 +629,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("%s%s:", effect, hit_str),
-                    string.format("%d to %d%s",
+                    string.format("%.0f to %.0f%s",
                         math.floor(info.min_noncrit_if_hit1),
                         math.ceil(info.max_noncrit_if_hit1),
                         oh
@@ -677,7 +679,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                             stats.glance_min,
                             stats.glance_max
                             ),
-                        string.format("(%d to %d) to (%d to %d)%s",
+                        string.format("(%.0f to %.0f) to (%.0f to %.0f)%s",
                             math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
                             math.ceil(info["max_noncrit_if_hit" .. i]*stats.glance_min/avg_red),
                             math.floor(info["min_noncrit_if_hit" .. i]*stats.glance_max/avg_red),
@@ -694,7 +696,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                             info["direct_description" .. i],
                             100*info["hit_normal" .. i]*info["direct_utilization" .. i]),
 
-                        string.format("%d to %d%s",
+                        string.format("%.0f to %.0f%s",
                             math.floor(info["min_noncrit_if_hit" .. i]),
                             math.ceil(info["max_noncrit_if_hit" .. i]),
                             oh),
@@ -738,7 +740,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             local oh = "";
             if info.min_crit_if_hit1 ~= info.max_crit_if_hit1 then
                 if info.oh_info then
-                    oh = string.format(" | %d to %d",
+                    oh = string.format(" | %.0f to %.0f",
                         math.floor(info.oh_info.min_crit_if_hit1),
                         math.ceil(info.oh_info.max_crit_if_hit1)
                     );
@@ -746,7 +748,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("Critical%s:", crit_chance_info_str, oh),
-                    string.format("%d to %d%s%s",
+                    string.format("%.0f to %0.f%s%s",
                         math.floor(info.min_crit_if_hit1),
                         math.ceil(info.max_crit_if_hit1),
                         special_crit_mod_str,
@@ -800,7 +802,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                             string.format("%s (%.2f%%):",
                                 info["direct_description" .. i],
                                 100*info["crit" .. i]*info["direct_utilization" .. i]),
-                            string.format("%d to %d",
+                            string.format("%.0f to %.0f",
                                 math.floor(info["min_crit_if_hit" .. i]),
                                 math.ceil(info["max_crit_if_hit" .. i])),
                             effect_color("crit")
@@ -903,7 +905,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("%s%s:", effect, hit_str),
-                    string.format("%.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %d)",
+                    string.format("%.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %.0f)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         (0.5 * dmg_wo_sp + dmg_from_sp) / info.ot_ticks1,
@@ -920,7 +922,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("%s%s:", effect, hit_str),
-                    string.format("%.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %d)",
+                    string.format("%.1f over %.1fs (%.1f,%.1f,%.1f every %.1fs x %.0f)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         ((2 / 3) * dmg_wo_sp + dmg_from_sp) / info.ot_ticks1,
@@ -936,7 +938,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("%s:", effect),
-                    string.format("%.1f over %ds (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %d)",
+                    string.format("%.1f over %.0fs (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f every %.1fs x %.0f)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         ((3 * 0.1425 + 1.0) * heal_wo_sp + heal_from_sp) / info.ot_ticks1,
@@ -954,7 +956,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("%s%s:", effect, hit_str),
-                    string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                    string.format("%.0f to %.0f over %.1fs (%.0f to %.0f every %.1fs x %.0f)",
                         math.floor(info.ot_min_noncrit_if_hit1),
                         math.ceil(info.ot_max_noncrit_if_hit1),
                         info.ot_dur1,
@@ -968,7 +970,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     string.format("%s%s:", effect, hit_str),
-                    string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
+                    string.format("%.1f over %.1fs (%.1f every %.1fs x %.0f)",
                         info.ot_min_noncrit_if_hit1,
                         info.ot_dur1,
                         info.ot_min_noncrit_if_hit1 / info.ot_ticks1,
@@ -987,7 +989,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                             string.format("%s (%.2f%%):",
                                 info["ot_description" .. i],
                                 100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
-                            string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                            string.format("%.0f to %.0f over %.1fs (%.0f to %.0f every %.1fs x %.0f)",
                                 math.floor(info["ot_min_noncrit_if_hit" .. i]),
                                 math.ceil(info["ot_max_noncrit_if_hit" .. i]),
                                 info["ot_dur" .. i],
@@ -1003,7 +1005,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                             string.format("%s (%.2f%%):",
                                 info["ot_description" .. i],
                                 100*info["ot_hit_normal" .. i]*info["ot_utilization" .. i]),
-                            string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
+                            string.format("%.1f over %.1fs (%.1f every %.1fs x %.0f)",
                                 info["ot_min_noncrit_if_hit" .. i],
                                 info["ot_dur" .. i],
                                 info["ot_min_noncrit_if_hit" .. i] / info["ot_ticks" .. i],
@@ -1029,7 +1031,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     add_line(
                         tooltip,
                         string.format("Critical%s:", crit_chance_info_str),
-                        string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                        string.format("%.0f to %.0f over %.1fs (%.0f to %.0f every %.1fs x %.0f)",
                             math.floor(info.ot_min_crit_if_hit1),
                             math.ceil(info.ot_max_crit_if_hit1),
                             info.ot_dur1,
@@ -1043,7 +1045,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                     add_line(
                         tooltip,
                         string.format("Critical%s:", crit_chance_info_str),
-                        string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
+                        string.format("%.1f over %.1fs (%.1f every %.1fs x %.0f)",
                             info.ot_min_crit_if_hit1,
                             info.ot_dur1,
                             info.ot_min_crit_if_hit1 / info.ot_ticks1,
@@ -1063,7 +1065,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                                 string.format("%s (%.2f%%):",
                                     info["ot_description" .. i],
                                     100*(info["ot_crit" .. i]*info["ot_utilization" .. i])),
-                                string.format("%d to %d over %.1fs (%d to %d every %.1fs x %d)",
+                                string.format("%.0f to %.0f over %.1fs (%.0f to %.0f every %.1fs x %.0f)",
                                     math.floor(info["ot_min_crit_if_hit" .. i]),
                                     math.ceil(info["ot_max_crit_if_hit" .. i]),
                                     info["ot_dur" .. i],
@@ -1079,7 +1081,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                                 string.format("%s (%.2f%%):",
                                     info["ot_description" .. i],
                                     100*info["ot_crit" .. i]*info["ot_utilization" .. i]),
-                                string.format("%.1f over %.1fs (%.1f every %.1fs x %d)",
+                                string.format("%.1f over %.1fs (%.1f every %.1fs x %.0f)",
                                     info["ot_min_crit_if_hit" .. i],
                                     info["ot_dur" .. i],
                                     info["ot_min_crit_if_hit" .. i] / info["ot_ticks" .. i],
@@ -1152,7 +1154,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     if config.settings.tooltip_display_effect_per_sec and stats.cast_time ~= 0 then
         local periodic_part = "";
         if info.num_periodic_effects > 0 and info.effect_per_dur ~= 0 and info.effect_per_dur ~= info.effect_per_sec then
-            periodic_part = string.format("| %.1f periodic for %d sec", info.effect_per_dur,
+            periodic_part = string.format("| %.1f periodic for %.0f sec", info.effect_per_dur,
                 info.longest_ot_duration);
         end
 
@@ -1266,7 +1268,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             add_line(
                 tooltip,
                 "",
-                string.format("       casting from %d %s",
+                string.format("       casting from %.0f %s",
                     loadout.resources[powers.mana] + config.loadout.extra_mana, cost_str),
                 effect_color("normal")
             );
@@ -1280,7 +1282,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     "Direct base:",
-                    string.format("%.1f to %.1f (+%d x %.3f mod) + %d = %.1f to %.1f",
+                    string.format("%.1f to %.1f (+%.0f x %.3f mod) + %.0f = %.1f to %.1f",
                         info.base_min,
                         info.base_max,
                         stats.base_mod_flat,
@@ -1296,7 +1298,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     "Direct base:",
-                    string.format("%.1f (+%d x %.3f mod) + %d = %.1f",
+                    string.format("%.1f (+%.0f x %.3f mod) + %.0f = %.1f",
                         info.base_min,
                         stats.base_mod_flat,
                         stats.base_mod,
@@ -1314,7 +1316,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     "Periodic base:",
-                    string.format("%.1f to %.1f (+%d * %.3f mod) + %d = %.1f to %.1f",
+                    string.format("%.1f to %.1f (+%.0f * %.3f mod) + %.0f = %.1f to %.1f",
                         info.ot_base_min,
                         info.ot_base_max,
                         stats.base_mod_ot_flat,
@@ -1330,7 +1332,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
                 add_line(
                     tooltip,
                     "Periodic base:",
-                    string.format("%.1f (+%d * %.3f mod) +%d = %.1f",
+                    string.format("%.1f (+%.0f * %.3f mod) +%.0f = %.1f",
                         info.ot_base_min,
                         stats.base_mod_ot_flat,
                         stats.base_mod_ot,
@@ -1351,7 +1353,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             add_line(
                 tooltip,
                 "Direct:   ",
-                string.format("%.3f coef * %.3f mod * %d %s = %.1f",
+                string.format("%.3f coef * %.3f mod * %.0f %s = %.1f",
                     stats.coef,
                     stats.spell_mod*armor_dr_adjusted,
                     stats.spell_power,
@@ -1366,7 +1368,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             add_line(
                 tooltip,
                 "Periodic:",
-                string.format("%d ticks * %.3f coef * %.3f mod * %d %s",
+                string.format("%.0f ticks * %.3f coef * %.3f mod * %.0f %s",
                     info.ot_ticks1,
                     stats.coef_ot,
                     stats.spell_mod_ot*armor_dr_adjusted,
@@ -1378,7 +1380,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
             add_line(
                 tooltip,
                 "           ",
-                string.format("= %d ticks * %.1f = %.1f",
+                string.format("= %.0f ticks * %.1f = %.1f",
                     info.ot_ticks1,
                     stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * armor_dr_adjusted,
                     stats.coef_ot * stats.spell_mod_ot * stats.spell_power_ot * info.ot_ticks1 * armor_dr_adjusted),
@@ -1402,7 +1404,7 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
 
         add_line(
             tooltip,
-            string.format("Improved by %d %s:", stats.spell_power, pwr),
+            string.format("Improved by %.0f %s:", stats.spell_power, pwr),
             string.format("%.1f%% (%.1f%% base, %.1f%% %s)",
                 100*effect_sp/effect_base,
                 100*effect_base/(effect_base + effect_sp),
@@ -1506,14 +1508,14 @@ local function write_tooltip_spell_info(tooltip, spell, spell_id, loadout, effec
             add_line(
                 tooltip,
                 "Restored for player:",
-                string.format("%d", math.floor(info.total_restored)),
+                string.format("%.0f", math.floor(info.total_restored)),
                 effect_color("avg_cost")
             );
             if spell.periodic then
                 add_line(
                     tooltip,
                     "Periodically:",
-                    string.format("%d every %.1fs x %d",
+                    string.format("%.0f every %.1fs x %.0f",
                         math.floor(info.restored),
                         info.tick_time,
                         math.floor(info.ticks)
@@ -2039,7 +2041,9 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             end
             diff.frames.second_fstr:SetText(second);
 
-            if diff.id == sc.auto_attack_spell_id and new_item.class_id == 2 then
+            if diff.id == sc.auto_attack_spell_id and cmp_slots[item_fits_in_slot] == slots.MainHandSlot then
+                tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t %s", new_item.tex, diff.disp), " ");
+            elseif diff.id == 75 and cmp_slots[item_fits_in_slot] == slots.RangedSlot then
                 tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t %s", new_item.tex, diff.disp), " ");
             else
                 tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");

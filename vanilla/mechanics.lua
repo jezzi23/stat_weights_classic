@@ -91,7 +91,7 @@ local class_stats_spell = (function()
                 end
 
                 if num_set_pieces(loadout, 1807) >= 6 and bid == spids.fireball then
-                    add_extra_effect(stats, effect_flags.periodic, 1.0, "6P Set Bonus", 1.0, 4, 2);
+                    add_extra_effect(stats, effect_flags.is_periodic, 1.0, "6P Set Bonus", 1.0, 4, 2);
                 end
 
                 if num_set_pieces(loadout, 1808) >= 2 and bid == spids.arcane_missiles then
