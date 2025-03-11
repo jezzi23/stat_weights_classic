@@ -206,14 +206,9 @@ local function add_threat_mod_all_ranks(list)
     end
 end
 
-utils.spell_mod_mul                 = spell_mod_mul;
-utils.spell_mod_add                 = spell_mod_add;
-utils.beacon_snapshot_time          = beacon_snapshot_time;
-utils.addon_running_time            = addon_running_time;
 utils.deep_table_copy               = deep_table_copy;
 utils.spell_cost                    = spell_cost;
 utils.spell_cast_time               = spell_cast_time;
-utils.add_all_spell_crit            = add_all_spell_crit;
 utils.format_number                 = format_number;
 utils.color_by_lvl_diff             = color_by_lvl_diff;
 utils.format_number_signed_colored  = format_number_signed_colored;

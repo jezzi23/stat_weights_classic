@@ -418,59 +418,6 @@ local spell_browser_scroll_to_lvl = true;
 local stats = {};
 local info = {};
 
-function isFilteredValid(filtered)
-    -- Check if filtered is a table
-    if type(filtered) ~= "table" then
-        return false, "filtered is not a table"
-    end
-
-    -- Check if the table is empty
-    if #filtered == 0 then
-        return true -- An empty table is valid
-    end
-
-    -- Check if the table is a proper sequence
-    local maxKey = 0
-    local keySet = {}
-    for k, v in pairs(filtered) do
-        -- Ensure keys are positive integers
-        if type(k) ~= "number" or k ~= math.floor(k) or k < 1 then
-            return false, "filtered contains non-integer or invalid keys"
-        end
-
-        -- Track the maximum key
-        if k > maxKey then
-            maxKey = k
-        end
-
-        -- Ensure keys are unique
-        if keySet[k] then
-            return false, "filtered contains duplicate keys"
-        end
-        keySet[k] = true
-    end
-
-    -- Check if the keys form a consecutive sequence starting from 1
-    for i = 1, maxKey do
-        if not keySet[i] then
-            return false, "filtered has gaps in its keys"
-        end
-    end
-
-    -- Check if all elements are tables and contain the "dps" key
-    for i, v in ipairs(filtered) do
-        if type(v) ~= "table" then
-            return false, "element at index " .. i .. " is not a table"
-        end
-        if v.dps == nil then
-            return false, "element at index " .. i .. " is missing the 'dps' key"
-        end
-    end
-
-    -- If all checks pass, the table is valid for sorting
-    return true
-end
-
 local function filtered_spell_view(spell_ids, name_filter, loadout, effects, eval_flags)
 
     local lvl = active_loadout().lvl;

@@ -327,7 +327,6 @@ local function stats_res(comp, spell, loadout, effects)
         i = i + 1;
     end
     local resi = (1.0 + effects.by_school.target_res[comp.school1]) * (loadout.target_res + res_pen_flat);
-    -- mod res by school currently used to snapshot equipment and set bonuses
 
     if bit.band(spell.flags, spell_flags.binary) ~= 0 then
         target_resi = math.min(loadout.lvl * 5,
@@ -707,15 +706,10 @@ local function stats_cast_time(stats, bid, comp, spell, loadout, effects, eval_f
         end
     end
 
-
-    -- TODO: handle  stats.crit_reduces_cast_flat
-    --       Nautres grace: Wrath special case with gcd, remove gcd change from buff
-
     local cast_time_nogcd = cast_time;
     cast_time = math.max(cast_time, gcd);
 
     return cast_time, cast_time_nogcd, gcd;
-
 end
 
 local function stats_cost(bid, spell, loadout, effects)
@@ -782,7 +776,6 @@ local attack_table =  {
 
 local function write_attack_table(stats, is_direct)
 
-    -- rewrites the 
     local comp_substr;
     if is_direct then
         comp_substr = "";
@@ -1275,7 +1268,6 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     -- generalized spell handling that may be applied
     stats.clearcast_p = 0.0;
     stats.becomes_instant_p = 0.0; -- spell is instant with probability
-    stats.crit_reduces_cast_flat = 0.0; -- nature's grace like effect
     stats.resource_refund = 0.0;
     stats.resource_refund_mul_crit = 0.0; -- resource refunded to be multiplied by crit
     stats.resource_refund_mul_hit = 0.0; -- resource refunded to be multiplied by hit
@@ -1351,7 +1343,6 @@ local function resolve_extra_spell_effects(info, stats)
         local val = stats["extra_effect_val" .. k];
         local flat = 0;
         if bit.band(flags, bit.bor(effect_flags.use_flat, effect_flags.add_flat)) ~= 0 then
-            -- currently only done for direct effects until we need more
             flat = val;
             val = 1.0;
         end
@@ -1693,7 +1684,7 @@ local function periodic_info(info, spell, loadout, stats, effects, eval_flags)
     info.ot_dur1 = stats.dur_ot;
     info.ot_tick_time1 = stats.tick_time_ot;
 
-    -- Might want to deal with some weapon based spells as periodic
+    -- Might want to deal with some weapon based spells as periodic here later
 
 
     if bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
@@ -1732,9 +1723,6 @@ local function periodic_info(info, spell, loadout, stats, effects, eval_flags)
     info.ot_hit_normal1 = stats.hit_normal_ot;
     info.ot_flags1 = 0;
     info.ot_utilization1 = 1.0;
-    --if spell.base_id == auto_attack_spell_id then
-    --    info.ot_flags1 = bit.bor(info.ot_flags1, effect_flags.block_competes_with_hit);
-    --end
     info.ot_flags1 = bit.bor(info.ot_flags1, effect_flags.can_be_blocked);
 
     info.num_periodic_effects = info.num_periodic_effects + 1;
@@ -2425,8 +2413,6 @@ local function spell_diff(out, fight_type, spell, spell_id, loadout, effects_fin
         end
     end
 end
-
-
 
 calc.fight_types                = fight_types;
 calc.evaluation_flags           = evaluation_flags;

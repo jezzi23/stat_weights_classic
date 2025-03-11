@@ -160,7 +160,6 @@ local event_dispatch = {
         save_config();
     end,
     ["PLAYER_LOGIN"] = function()
-        --core.setup_action_bar_needed = true;
         -- force setup action bar to hook scroll script
         -- even if overlays are disabled
         sc.overlay.setup_action_bars();

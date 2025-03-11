@@ -45,7 +45,7 @@ local tooltip_effects_finalized = {};
 empty_effects(tooltip_effects_diffed_finalized);
 empty_effects(tooltip_effects_finalized);
 
--- Tooltip add, share signature so that optional works
+-- Tooltip add, share signature so that optional right-hand side works
 local function add_double_line(tooltip, lhs, rhs, rgb_r, rgb_g, rgb_b)
     if lhs == "" then
         lhs = " ";

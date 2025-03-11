@@ -138,28 +138,6 @@ local function apply_talents(loadout, effects)
     --end
 
     if sc.core.__sw__test_all_codepaths then
-        --for k, v in pairs(runes) do
-        --    loadout.runes[k] = v;
-        --    if v.apply then
-        --        v.apply(loadout, effects, true);
-        --    end
-        --end
-        --for k, v in pairs(talents) do
-        --    for i = 1, 3 do
-        --        for j = 1, 29 do
-        --            local id = i*100 + j;
-        --            if custom_talents then
-        --                custom_talents[id] = 5;
-        --            end
-        --            if dynamic_talents then
-        --                dynamic_talents[id] = 5;
-        --            end
-        --        end
-        --    end
-        --    if v.apply then
-        --        v.apply(loadout, effects, 3, 3);
-        --    end
-        --end
         -- Testing all special passives
         local passives_applied = 0;
         for id, e in pairs(sc.passives) do

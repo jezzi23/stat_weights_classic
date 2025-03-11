@@ -249,10 +249,10 @@ elseif sc.class == sc.classes.rogue then
         bit.band(spells[spids.main_gauche].direct.flags, bit.bnot(comp_flags.applies_mh));
 
     -- Disable broken spells
-    --spells[spids.envenom].flags =
-    --    bit.band(spells[spids.envenom].flags, bit.bnot(spell_flags.eval));
-    --spells[spids.between_the_eyes].flags =
-    --    bit.band(spells[spids.between_the_eyes].flags, bit.bnot(spell_flags.eval));
+    spells[spids.envenom].flags =
+        bit.band(spells[spids.envenom].flags, bit.bnot(spell_flags.eval));
+    spells[spids.between_the_eyes].flags =
+        bit.band(spells[spids.between_the_eyes].flags, bit.bnot(spell_flags.eval));
 
 elseif sc.class == sc.classes.paladin then
     sc.friendly_buffs[407613] = {}; -- beacon of light, dummy value - handled manually

@@ -66,7 +66,8 @@ local rap_per_agi = {
 
 -- NOTE: intellect to spell crit and agi to physical crit
 --       is not a linear scale by level. However we approximate here
---       with linear interpolation between lvl 1 and 60
+--       with linear interpolation between lvl 1 and 60.
+--       We may want better accuracy here
 local class_int_to_spell_crit = {
     [classes.warrior] = {
         [1] = 0.0,

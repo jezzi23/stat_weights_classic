@@ -441,7 +441,6 @@ local function update_icon_overlay_settings()
         if config.settings.overlay_icon_bottom_clearance then
             __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[1];
         else
-            --__sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[1] or __sc_frame.overlay_frame.icon_overlay[3];
             __sc_frame.overlay_frame.icon_overlay[3] = __sc_frame.overlay_frame.icon_overlay[3] or __sc_frame.overlay_frame.icon_overlay[1];
             __sc_frame.overlay_frame.icon_overlay[2] = __sc_frame.overlay_frame.icon_overlay[2] or __sc_frame.overlay_frame.icon_overlay[1];
         end

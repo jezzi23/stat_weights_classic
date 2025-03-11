@@ -7,34 +7,6 @@ local cpy_effects                      = sc.loadouts.cpy_effects;
 ---------------------------------------------------------------------------------------------------
 local equipment = {};
 
--- TODO: retire this, maybe keep some of the old behaviour using new data format
-local set_tiers = {
-    pve_0                   = 1,
-    pve_0_5                 = 2,
-    pve_1                   = 3,
-    pve_2                   = 4,
-    pve_2_5_0               = 6, -- zg
-    pve_2_5_1               = 7, -- aq20
-    pve_2_5_2               = 8, -- aq40
-    pve_3                   = 9,
-    pvp_1                   = 10,
-    pvp_2                   = 11,
-    sod_p2_anyclass         = 12,
-    sod_p2_class            = 13,
-    sod_p3_t1               = 14,
-    sod_p3_t1_dmg           = 15,
-    sod_final_pve_0_5       = 16,
-    sod_final_pve_0_5_heal  = 17,
-    sod_final_pve_1         = 18,
-    sod_final_pve_1_heal    = 19,
-    sod_final_pve_2         = 20,
-    sod_final_pve_2_heal    = 21,
-    sod_final_pve_zg        = 22,
-};
-
-
-
-
 local slots = {};
 for _, v in ipairs({
     "AmmoSlot",
@@ -454,7 +426,6 @@ local function apply_equipment(loadout, effects)
     return found_anything;
 end
 
-equipment.set_tiers = set_tiers;
 equipment.num_set_pieces = num_set_pieces;
 equipment.apply_equipment = apply_equipment;
 equipment.force_item_sets = force_item_sets;
