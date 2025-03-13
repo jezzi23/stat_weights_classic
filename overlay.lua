@@ -551,14 +551,14 @@ local overlay_label_handler = {
     end,
     overlay_display_avg_cost = function(frame_overlay, _, _, stats)
         if stats.cost >= 0 then
-            frame_overlay:SetText(string.format("%d", stats.cost));
+            frame_overlay:SetText(string.format("%.1f", stats.cost));
         else
             frame_overlay:SetText("");
         end
     end,
     overlay_display_actual_cost = function(frame_overlay, _, _, stats)
         if stats.cost >= 0 then
-            frame_overlay:SetText(string.format("%d", stats.cost));
+            frame_overlay:SetText(string.format("%.0f", stats.cost));
         else
             frame_overlay:SetText("");
         end
@@ -624,7 +624,7 @@ local function update_spell_icon_frame(frame_info, spell, spell_id, loadout, eff
         elseif config.settings.overlay_icon_bottom_clearance then
             idx = 1;
         end
-        frame_info.overlay_frames[idx]:SetText(string.format("%d", math.ceil(spell_effect.total_restored)));
+        frame_info.overlay_frames[idx]:SetText(string.format("%.0f", math.ceil(spell_effect.total_restored)));
         frame_info.overlay_frames[idx]:SetTextColor(effect_colors.avg_cost[1], effect_colors.avg_cost[2], effect_colors.avg_cost[3]);
         frame_info.overlay_frames[idx]:Show();
 

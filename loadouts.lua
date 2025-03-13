@@ -1024,9 +1024,7 @@ local function update_loadout_and_effects()
     loadouts.force_update = false;
     loadout_front = other;
 
-    if sc.core.talents_update_needed or
-        (loadout_front.talents.code == "_" and UnitLevel("player") >= 10) -- workaround around edge case when the talents query won't work shortly after logging in
-        then
+    if sc.core.talents_update_needed then
 
         loadout_front.talents.code = sc.talents.wowhead_talent_code();
 
@@ -1038,20 +1036,19 @@ local function update_loadout_and_effects()
             end
         end
 
-        sc.talents.apply_talents(loadout_front, talented);
+        local success = sc.talents.apply_talents(loadout_front, talented);
 
-        sc.core.talents_update_needed = false;
+        sc.core.talents_update_needed = not success;
         sc.core.equipment_update_needed = true;
     end
 
     if sc.core.equipment_update_needed then
         zero_effects(equipped);
         effects_add(equipped, talented);
-        local equipment_api_worked = sc.equipment.apply_equipment(loadout_front, equipped);
+        local success = sc.equipment.apply_equipment(loadout_front, equipped);
         -- need eq update again next because api failed
-        sc.core.equipment_update_needed = not equipment_api_worked;
+        sc.core.equipment_update_needed = not success;
     end
-
 
     -- equipment and talents updates above are rare
 

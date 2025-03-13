@@ -103,8 +103,50 @@ local function display_spell_diff(i, calc_list, diff, frame)
     end
     v.role_icon.tex:SetAllPoints(v.role_icon);
 
-    local change = format_number(diff.diff_ratio, 2).."%";
-    if diff.diff_ratio < 0 then
+    --local change_fmt = format_number(diff.diff_ratio, 2);
+    --local change = change_fmt.."%";
+    --if not diff.diff_ratio then
+    --    change = "";
+    --elseif diff.diff_ratio < 0 then
+    --    v.change:SetTextColor(195/255, 44/255, 11/255);
+    --    change = change;
+    --elseif diff.diff_ratio > 0 then
+    --    v.change:SetTextColor(33/255, 185/255, 21/255);
+    --    change = "+"..change;
+    --else
+    --    v.change:SetTextColor(1, 1, 1);
+    --end
+    --v.change:SetText(change);
+
+    --local first = format_number(diff.first, 2);
+    --if diff.first < 0 then
+    --    v.first:SetTextColor(195/255, 44/255, 11/255);
+    --elseif diff.first > 0 then
+    --    v.first:SetTextColor(33/255, 185/255, 21/255);
+    --    first = "+"..first;
+    --else
+    --    v.first:SetTextColor(1, 1, 1);
+    --end
+    --v.first:SetText(first);
+
+    --local second = format_number(diff.second, 2);
+    --if diff.second < 0 then
+    --    v.second:SetTextColor(195/255, 44/255, 11/255);
+    --elseif diff.second > 0 then
+    --    v.second:SetTextColor(33/255, 185/255, 21/255);
+    --    second = "+"..second;
+    --else
+    --    v.second:SetTextColor(1, 1, 1);
+    --end
+    --v.second:SetText(second);
+    ------------------
+    local change_fmt = format_number(diff.diff_ratio, 2);
+    local change = change_fmt.."%";
+    if not diff.diff_ratio  then
+        change = "";
+    elseif change_fmt == "∞" then
+        v.change:SetTextColor(1, 1, 1);
+    elseif diff.diff_ratio < 0 then
         v.change:SetTextColor(195/255, 44/255, 11/255);
         change = change;
     elseif diff.diff_ratio > 0 then
@@ -116,7 +158,11 @@ local function display_spell_diff(i, calc_list, diff, frame)
     v.change:SetText(change);
 
     local first = format_number(diff.first, 2);
-    if diff.first < 0 then
+    if not diff.first then
+        first = "";
+    elseif first == "∞" then
+        v.first:SetTextColor(1, 1, 1);
+    elseif diff.first < 0 then
         v.first:SetTextColor(195/255, 44/255, 11/255);
     elseif diff.first > 0 then
         v.first:SetTextColor(33/255, 185/255, 21/255);
@@ -127,7 +173,11 @@ local function display_spell_diff(i, calc_list, diff, frame)
     v.first:SetText(first);
 
     local second = format_number(diff.second, 2);
-    if diff.second < 0 then
+    if not diff.second then
+        second = "";
+    elseif second == "∞" then
+        v.second:SetTextColor(1, 1, 1);
+    elseif diff.second < 0 then
         v.second:SetTextColor(195/255, 44/255, 11/255);
     elseif diff.second > 0 then
         v.second:SetTextColor(33/255, 185/255, 21/255);
@@ -136,6 +186,7 @@ local function display_spell_diff(i, calc_list, diff, frame)
         v.second:SetTextColor(1, 1, 1);
     end
     v.second:SetText(second);
+    ------------------
 
     for _, f in pairs(v) do
         f:Show();
@@ -1300,10 +1351,10 @@ local function create_sw_ui_tooltip_frame()
             id = "tooltip_disable",
             txt = "Disable spell tooltip",
         },
-        {
-            id = "tooltip_clear_original",
-            txt = "Clear original tooltip",
-        },
+        --{
+        --    id = "tooltip_clear_original",
+        --    txt = "Clear original tooltip",
+        --},
         {
             id = "tooltip_double_line",
             txt = "Field values on right-hand side",
@@ -1326,7 +1377,7 @@ local function create_sw_ui_tooltip_frame()
     __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 15;
     multi_row_checkbutton(tooltip_spell_checks, __sc_frame.tooltip_frame, 2);
 
-    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 5;
+    __sc_frame.tooltip_frame.y_offset = __sc_frame.tooltip_frame.y_offset - 25;
 
     local div = __sc_frame.tooltip_frame:CreateTexture(nil, "ARTWORK")
     div:SetColorTexture(0.5, 0.5, 0.5, 0.6);
@@ -2525,7 +2576,7 @@ local function create_sw_ui_loadout_frame()
         "Accepts a valid wowhead talents link, your loadout will use its talents & glyphs instead of your active ones.";
     f:SetScript("OnClick", function(self)
 
-        config.loadout.use_custom_talents = self:GetChecked();
+       config.loadout.use_custom_talents = self:GetChecked();
         sc.core.talents_update_needed = true;
         sc.core.equipment_update_needed = true;
 
@@ -2543,7 +2594,9 @@ local function create_sw_ui_loadout_frame()
         sc.core.talents_update_needed = true;
 
         if config.loadout.use_custom_talents then
-            config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
+            if txt ~= "" then
+                config.loadout.custom_talents_code = wowhead_talent_code_from_url(txt);
+            end
 
             __sc_frame.loadout_frame.talent_editbox:SetText(
                 wowhead_talent_link(config.loadout.custom_talents_code)

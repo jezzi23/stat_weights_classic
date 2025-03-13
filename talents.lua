@@ -89,12 +89,18 @@ end
 local function apply_talents(loadout, effects)
 
     -- weapon skills 
+    local success = GetNumSkillLines() ~= 0;
     for i = 1, GetNumSkillLines() do
         local skill_lname, _, _, skill = GetSkillLineInfo(i);
         local wep_subclass = sc.wpn_skill_lname_to_subclass[skill_lname];
         if wep_subclass then
             loadout.wpn_skills[wep_subclass] = skill;
         end
+    end
+
+    if loadout.talents.code == "_" and UnitLevel("player") >= 10 then
+        -- edge case when the talents query won't work shortly after logging in
+        success = false;
     end
 
     local dynamic_talents, _ = talent_table(loadout.talents.code);
@@ -158,6 +164,8 @@ local function apply_talents(loadout, effects)
         print(applied, "gen talents applied");
 
     end
+
+    return success;
 end
 
 talents_export.wowhead_talent_link = wowhead_talent_link

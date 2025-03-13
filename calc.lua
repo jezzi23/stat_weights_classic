@@ -61,6 +61,11 @@ local evaluation_flags = {
     expectation_of_self                     = bit.lshift(1, 7),
 
     fix_weapon_skill_to_level               = bit.lshift(1, 8),
+
+    -- combo points value shifted, reserve 3 bits for max 5 points
+    num_combo_points_bit_start              = 20,
+    --COMBO_POINT_RESERVED                  = 21,
+    --COMBO_POINT_RESERVED                  = 22
 };
 
 local function mandatory_flags_by_spell(comp)
@@ -195,10 +200,12 @@ local function stats_attack_skill(comp, loadout, effects, eval_flags)
     end
 
     local wpn_skill = loadout.wpn_skills[subclass];
+
     if wpn_skill then
         skill = skill + wpn_skill;
     else
-        skill = skill +  loadout.lvl * 5;
+        --skill = skill +  loadout.lvl * 5;
+        wpn_skill = 0;
     end
 
     for mask, v in pairs(effects.wpn_subclass.skill_flat) do
@@ -494,7 +501,7 @@ local function stats_sp(bid, comp, spell, loadout, effects)
     return sp;
 end
 
-local function stats_coef(bid, comp, spell, loadout, effects, eval_flags)
+local function stats_coef(combo_pts, bid, comp, spell, loadout, effects, eval_flags)
 
     local coef, coef_max;
     if comp.school1 == schools.physical then
@@ -537,9 +544,9 @@ local function stats_coef(bid, comp, spell, loadout, effects, eval_flags)
             coef = dps_per_ap*speed;
         elseif bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
 
-            local extra = (comp.per_cp_coef_ap or 0) * loadout.resources[powers.combopoints];
+            local extra = (comp.per_cp_coef_ap or 0) * combo_pts;
             if comp.coef_ap_by_cp then
-                extra = extra + comp.coef_ap_by_cp[loadout.resources[powers.combopoints]];
+                extra = extra + comp.coef_ap_by_cp[combo_pts];
             end
             coef = (comp.coef_ap_min or 0) + extra;
             if comp.coef_ap_max then
@@ -568,7 +575,7 @@ local function stats_armor_dr(armor, comp, loadout)
     return dr;
 end
 
-local function stats_spell_mod(armor_dr, comp, spell, effects, stats)
+local function stats_spell_mod(armor_dr, attack_subclass, comp, spell, effects, stats)
 
     local effect_mod = stats.effect_mod;
     if bit.band(comp.flags, comp_flags.periodic) ~= 0 then
@@ -590,12 +597,23 @@ local function stats_spell_mod(armor_dr, comp, spell, effects, stats)
         spell_mod = stats.target_vuln_mod_mul * effect_mod;
 
     elseif comp.school1 == schools.physical then
+
+        local phys_mod = effects.mul.raw.phys_mod;
+        -- add phys mod that affects weapon subclasses
+        if attack_subclass then
+            for mask, v in pairs(effects.mul.wpn_subclass.phys_mod) do
+                if bit.band(mask, bit.lshift(1, attack_subclass)) ~= 0 then
+                    phys_mod = phys_mod * v;
+                end
+            end
+        end
+
         spell_mod =
             (1.0 - armor_dr)
             *
             (stats.target_vuln_mod_mul * effects.mul.raw.vuln_phys)
             *
-            (stats.spell_dmg_mod_mul * effects.mul.raw.phys_mod)
+            (stats.spell_dmg_mod_mul * phys_mod)
             *
             effect_mod;
     else
@@ -714,14 +732,20 @@ end
 
 local function stats_cost(bid, spell, loadout, effects)
 
+    -- not clear exactly how cost rounding is done
     local base_cost = spell.cost;
     if bit.band(spell.flags, spell_flags.base_mana_cost) ~= 0 then
-        base_cost = base_cost * loadout.base_mana;
+        base_cost = math.floor(base_cost * loadout.base_mana);
     end
 
+    local mod_flat = effects.ability.cost_mod_flat[bid];
+    if mod_flat then
+        mod_flat = mod_flat * sc.power_mod[spell.power_type];
+    else
+        mod_flat = 0.0;
+    end
     local cost =
-        math.floor(base_cost +
-                  (effects.ability.cost_mod_flat[bid] or 0.0))
+        (base_cost + mod_flat)
         *
         (1.0 + (effects.ability.cost_mod[bid] or 0.0));
 
@@ -828,9 +852,9 @@ local function spell_stats_direct(stats, spell, loadout, effects, eval_flags)
     stats.glance, stats.glance_min, stats.glance_max = stats_glance(stats, bid, loadout);
     stats.dodge, stats.parry, stats.block, stats.block_amount = stats_avoidances(stats.attack_skill, direct, spell, loadout);
     stats.spell_power = stats_sp(benefit_id, direct, spell, loadout, effects);
-    stats.coef, stats.coef_max = stats_coef(benefit_id, direct, spell, loadout, effects, eval_flags);
+    stats.coef, stats.coef_max = stats_coef(stats.combo_pts, benefit_id, direct, spell, loadout, effects, eval_flags);
     stats.armor_dr = stats_armor_dr(stats.armor, direct, loadout);
-    stats.spell_mod = stats_spell_mod(stats.armor_dr, direct, spell, effects, stats);
+    stats.spell_mod = stats_spell_mod(stats.armor_dr, stats.attack_subclass, direct, spell, effects, stats);
 
     write_attack_table(stats, true);
     -- hit used as probability to do any kind of damage, allowing procs of attack
@@ -911,9 +935,9 @@ local function spell_stats_periodic(stats, spell, loadout, effects, eval_flags)
 
     stats.dodge_ot, stats.parry_ot, stats.block_ot, stats.block_amount_ot = stats_avoidances(stats.attack_skill_ot, periodic, spell, loadout);
     stats.spell_power_ot = stats_sp(benefit_id, periodic, spell, loadout, effects);
-    stats.coef_ot, stats.coef_ot_max = stats_coef(benefit_id, periodic, spell, loadout, effects, eval_flags);
+    stats.coef_ot, stats.coef_ot_max = stats_coef(stats.combo_pts, benefit_id, periodic, spell, loadout, effects, eval_flags);
     stats.armor_dr_ot = stats_armor_dr(stats.armor, periodic, loadout);
-    stats.spell_mod_ot = stats_spell_mod(stats.armor_dr_ot, periodic, spell, effects, stats);
+    stats.spell_mod_ot = stats_spell_mod(stats.armor_dr_ot, stats.attack_subclass_ot, periodic, spell, effects, stats);
 
     write_attack_table(stats, false);
     -- hit used as probability to do any kind of damage, allowing procs of attack
@@ -1264,6 +1288,14 @@ local function stats_for_spell(stats, spell, loadout, effects, eval_flags)
     stats.armor = math.max(0, (loadout.armor + effects.by_school.target_res_flat[schools.physical]) * (1.0 + effects.by_school.target_res[schools.physical]));
 
     stats.cost_actual, stats.original_base_cost = stats_cost(bid, spell, loadout, effects);
+
+    if bit.band(spell.flags, bit.bor(spell_flags.finishing_move_dmg, spell_flags.finishing_move_dur)) ~= 0 then
+        local combo_pts = bit.rshift(eval_flags, evaluation_flags.num_combo_points_bit_start);
+        if combo_pts < 1 or combo_pts > 5 then
+            combo_pts = loadout.resources[powers.combopoints];
+        end
+        stats.combo_pts = combo_pts;
+    end
 
     -- generalized spell handling that may be applied
     stats.clearcast_p = 0.0;
@@ -1630,9 +1662,9 @@ local function direct_info(info, spell, loadout, stats, effects, eval_flags)
         base_max = (direct.base_max + effects.raw.wpn_max_ranged + ammo_flat) * base_max;
 
     elseif bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
-        -- seems like finishing moves are never weapon based
-        base_min = base_min + direct.per_resource * loadout.resources[powers.combopoints];
-        base_max = base_max + direct.per_resource * loadout.resources[powers.combopoints];
+        -- seems like finishing moves are never weapon damage based
+        base_min = base_min + direct.per_resource * stats.combo_pts;
+        base_max = base_max + direct.per_resource * stats.combo_pts;
     end
 
     info.base_min = base_min;
@@ -1688,13 +1720,13 @@ local function periodic_info(info, spell, loadout, stats, effects, eval_flags)
 
 
     if bit.band(spell.flags, spell_flags.finishing_move_dmg) ~= 0 then
-        base_tick_min = base_tick_min + periodic.per_resource * loadout.resources[powers.combopoints];
-        base_tick_max = base_tick_max + periodic.per_resource * loadout.resources[powers.combopoints];
+        base_tick_min = base_tick_min + periodic.per_resource * stats.combo_pts;
+        base_tick_max = base_tick_max + periodic.per_resource * stats.combo_pts;
     end
     if bit.band(spell.flags, spell_flags.finishing_move_dur) ~= 0 or
         periodic.per_cp_dur then
 
-        info.ot_dur1 = info.ot_dur1 + (periodic.per_cp_dur or info.ot_tick_time1) * loadout.resources[powers.combopoints];
+        info.ot_dur1 = info.ot_dur1 + (periodic.per_cp_dur or info.ot_tick_time1) * stats.combo_pts;
     end
 
     -- round so tooltip is displayed nicely
@@ -1881,8 +1913,8 @@ local function spell_info(info, spell, stats, loadout, effects, eval_flags)
         info.oh_info = secondary_info;
         info.oh_stats = secondary_stats;
 
-        for _, v in pairs(expectation_variations) do 
-            info[v] = info[v] - info.oh_info[v];
+        for _, v in pairs(expectation_variations) do
+            info[v] = info[v] + info.oh_info[v];
         end
 
         info.effect_per_sec = info.effect_per_sec + info.oh_info.effect_per_sec;
@@ -2369,7 +2401,7 @@ local function spell_diff(out, fight_type, spell, spell_id, loadout, effects_fin
         if spell.rank == 0 then
             out.extra = "";
         else
-            out.extra = string.format("|cFFA9A9A9 Rank %d|r", loadout.resources[powers.combopoints]);
+            out.extra = string.format("|cFFA9A9A9 Rank %d|r", spell.rank);
         end
     end
 

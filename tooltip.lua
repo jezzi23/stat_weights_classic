@@ -255,9 +255,12 @@ end
 tooltip_export.eval_mode = 0;
 local eval_spid_before = 0;
 local eval_dual_components = false;
+local eval_combo_pts = false;
+local eval_combo_pts_offset_from_eval_mode = 0;
 
 local function eval_mode_scroll_fn(_, delta)
-    tooltip_export.eval_mode = math.max(0, tooltip_export.eval_mode + delta);
+    --tooltip_export.eval_mode = math.max(0, tooltip_export.eval_mode + delta);
+    tooltip_export.eval_mode = tooltip_export.eval_mode + delta;
 end
 
 -- key to dynamic flags, allowing scrolling through eval options depending on spell
@@ -274,7 +277,6 @@ local function append_to_txt_delimitered(str, append_str)
         str = str.." | ";
     end
     return str..append_str;
-
 end
 
 local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effects_base, effects_finalized, eval_flags)
@@ -289,6 +291,8 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         tooltip_export.eval_mode = 0;
         eval_spid_before = spell_id;
         eval_dual_components = false;
+        eval_combo_pts = false;
+        eval_combo_pts_offset_from_eval_mode = loadout.resources[powers.combopoints]-1;
     end
 
     -- Setup dynamice evalulation modes
@@ -315,7 +319,18 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
     end
 
     local eval_mode_combinations = bit.lshift(1, num_eval_mode_comps);
+    if eval_mode_combinations == 4 then
+        -- 4 combinations is always INVALID
+        eval_mode_combinations = 3;
+    end
     local eval_mode_mod = tooltip_export.eval_mode%eval_mode_combinations;
+
+    if eval_combo_pts then
+        eval_mode_combinations = 5;
+        eval_mode_mod = tooltip_export.eval_mode%eval_mode_combinations;
+        local combo_pts = 1 + (eval_combo_pts_offset_from_eval_mode+eval_mode_mod)%eval_mode_combinations;
+        eval_flags = bit.bor(eval_flags, bit.lshift(combo_pts, evaluation_flags.num_combo_points_bit_start));
+    end
 
     local evaluation_options = "";
     local scrollable_eval_mode_txt = "";
@@ -366,9 +381,20 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         if not eval_dual_components then
             -- hack for first time view, can't know if dual components
             -- before spell is calculated and it's too late
-            eval_mode_combinations = eval_mode_combinations*4;
+            if eval_mode_combinations == 1 then
+                eval_mode_combinations = 3;
+            else
+                eval_mode_combinations = eval_mode_combinations*4;
+            end
         end
         eval_dual_components = true;
+    end
+
+    if bit.band(spell.flags, bit.bor(spell_flags.finishing_move_dmg, spell_flags.finishing_move_dur)) ~= 0 and
+        eval_mode_combinations == 1 then
+
+        eval_mode_combinations = 5;
+        eval_combo_pts = true;
     end
 
     local effect = "";
@@ -446,6 +472,9 @@ local function append_tooltip_spell_eval(tooltip, spell, spell_id, loadout, effe
         elseif bit.band(eval_flags, evaluation_flags.isolate_periodic) ~= 0 then
             scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, "Periodic");
         end
+    end
+    if eval_combo_pts then
+        scrollable_eval_mode_txt = append_to_txt_delimitered(scrollable_eval_mode_txt, string.format("Combo points: %d", stats.combo_pts));
     end
     if bit.band(spell.flags, spell_flags.on_next_attack) ~= 0 then
         if bit.band(eval_flags, evaluation_flags.expectation_of_self) ~= 0 then
@@ -1212,8 +1241,9 @@ info.min_noncrit_if_hit1
     end
     local tooltip_cost = spell_cost(spell_id);
     if config.settings.tooltip_display_avg_cost and
-       spell.power_type == sc.powers.mana and
-       (not tooltip_cost or tooltip_cost ~= stats.cost) then
+       (not tooltip_cost or
+        (spell.power_type == sc.powers.mana and math.abs(tooltip_cost-stats.cost) > 1.0) or
+        (spell.power_type ~= sc.powers.mana and math.abs(tooltip_cost-stats.cost) > 0.1)) then
 
         add_line(
             tooltip,
@@ -1734,75 +1764,95 @@ local inv_type_to_slot_ids = {
     INVTYPE_RELIC = {slots.RangedSlot},
 };
 
-local cached_spells_cmp_item_slots = { [1] = {len = 0, diff_list = {}}, [2] = {len = 0, diff_list = {}} };
-local tooltip_item_id_last = 0;
-local item_tooltip_frames_hidden = false;
+local function make_item_tooltip_line_frames(tooltip)
 
-local function make_item_tooltip_line_frames()
-
-    local role_tex = GameTooltip:CreateTexture(nil, "ARTWORK");
+    local role_tex = tooltip:CreateTexture(nil, "ARTWORK");
     role_tex:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
     role_tex:SetSize(16, 16);
 
     return {
         role_tex = role_tex,
-        change_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
-        first_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
-        second_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+        change_fstr = tooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+        first_fstr = tooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+        second_fstr = tooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
     };
 end
 
 local empty_tex = "Interface\\Buttons\\UI-Quickslot2";
-local new_item = {};
-local old_item1 = {};
-local old_item2 = {};
-local headers = {
-    change_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
-    first_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
-    second_fstr = GameTooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
-};
 
-for _, v in pairs(headers) do
-    v:SetTextColor(effect_color("effect_per_sec"));
+local function make_item_tooltip_data(tooltip)
+    local data = {
+
+        cached_spells_cmp_item_slots = { [1] = {len = 0, diff_list = {}}, [2] = {len = 0, diff_list = {}} },
+        tooltip_item_id_last = 0,
+        item_tooltip_frames_hidden = false,
+        item_tooltip_effects_update_id = 0,
+        new_item = {},
+        old_item1 = {},
+        old_item2 = {},
+        headers = {
+            change_fstr = tooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+            first_fstr = tooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+            second_fstr = tooltip:CreateFontString(nil, "ARTWORK", "GameFontNormal"),
+        }
+    };
+    for _, v in pairs(data.headers) do
+        v:SetTextColor(effect_color("effect_per_sec"));
+    end
+    return data;
 end
-
-local item_tooltip_effects_update_id = 0;
+-- need two separate because both these tooltips may be open at same time
+local game_tooltip_item_cmp = make_item_tooltip_data(GameTooltip);
+local ref_tooltip_item_cmp = make_item_tooltip_data(ItemRefTooltip);
 
 -- The only reliable way to get alignment on item comparison numbers to be nicely aligned
 -- is to set them as frame objects because monospaced fonts seem to be broken ingame
-local function write_item_tooltip(tooltip, mod, mod_change)
+local function write_item_tooltip(tooltip, mod, mod_change, item_link)
     if config.settings.tooltip_shift_to_show and bit.band(mod, sc.tooltip_mod_flags.SHIFT) == 0 then
         return;
     end
-
-    new_item.lname, new_item.link = GameTooltip:GetItem();
-    new_item.id = nil;
-    if new_item.link then
-
-        local item_id, _, _, _, _, _, suffix_id =
-            strsplit(":", new_item.link:match("|Hitem:(.+)|h"));
-        new_item.id = tonumber(item_id);
-        new_item.suffix_id = tonumber(suffix_id);
+    local tt;
+    if tooltip == GameTooltip then
+        tt = game_tooltip_item_cmp;
+    elseif tooltip == ItemRefTooltip then
+        tt = ref_tooltip_item_cmp;
     else
         return;
     end
 
-    _, _, new_item.quality, _, _, _, _, _, new_item.inv_type, new_item.tex, _, new_item.class_id, new_item.subclass_id = GetItemInfo(new_item.link);
+    if not item_link then
+        _, tt.new_item.link = tooltip:GetItem();
+    else
+        tt.new_item.link = item_link;
+    end
+    tt.new_item.id = nil;
+    if tt.new_item.link then
 
-    if not new_item.inv_type then
+        local item_id, _, _, _, _, _, suffix_id =
+            --strsplit(":", tt.new_item.link:match("|Hitem:(.+)|h"));
+            strsplit(":", tt.new_item.link:match("item:(.+)")); -- works for link from SetHyperLink link too
+        tt.new_item.id = tonumber(item_id);
+        tt.new_item.suffix_id = tonumber(suffix_id);
+    else
         return;
     end
-    local cmp_slots = inv_type_to_slot_ids[new_item.inv_type];
+
+    _, _, tt.new_item.quality, _, _, _, _, _, tt.new_item.inv_type, tt.new_item.tex, _, tt.new_item.class_id, tt.new_item.subclass_id = GetItemInfo(tt.new_item.link);
+
+    if not tt.new_item.inv_type then
+        return;
+    end
+    local cmp_slots = inv_type_to_slot_ids[tt.new_item.inv_type];
     if not cmp_slots then
         return;
     end
 
     local loadout, effects, effects_finalized, update_id = update_loadout_and_effects();
-    local updated = update_id > item_tooltip_effects_update_id;
-    item_tooltip_effects_update_id = update_id;
+    local updated = update_id > tt.item_tooltip_effects_update_id;
+    tt.item_tooltip_effects_update_id = update_id;
 
-    if new_item.id == loadout.items[cmp_slots[1]] or
-        (cmp_slots[2] and new_item.id == loadout.items[cmp_slots[2]]) then
+    if tt.new_item.id == loadout.items[cmp_slots[1]] or
+        (cmp_slots[2] and tt.new_item.id == loadout.items[cmp_slots[2]]) then
         return;
     end
     local fight_type = config.settings.calc_fight_type;
@@ -1817,7 +1867,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
     -- "On next attack" spells eval the entire attack instead of net gain
     local eval_flags = bit.bor(sc.overlay.overlay_eval_flags(), evaluation_flags.expectation_of_self);
     local should_fix_wpn_skill =
-        new_item.class_id == 2 and -- weapon type
+        tt.new_item.class_id == 2 and -- weapon type
         loadout.lvl ~= sc.max_lvl and
         config.settings.tooltip_item_leveling_skill_normalize;
 
@@ -1826,7 +1876,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
     end
 
     local effects_diffed = sc.loadouts.diffed;
-    if tooltip_item_id_last ~= new_item.id or updated or mod_change then
+    if tt.tooltip_item_id_last ~= tt.new_item.id or updated or mod_change then
         -- actual evaluation update step and overwrites cache
 
         for item_fits_in_slot, slot in pairs(cmp_slots) do
@@ -1834,11 +1884,11 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             local slot_cmp;
             local old_item;
             if item_fits_in_slot > 1 then
-                slot_cmp = cached_spells_cmp_item_slots[2];
-                old_item = old_item2;
+                slot_cmp = tt.cached_spells_cmp_item_slots[2];
+                old_item = tt.old_item2;
             else
-                slot_cmp = cached_spells_cmp_item_slots[1];
-                old_item = old_item1;
+                slot_cmp = tt.cached_spells_cmp_item_slots[1];
+                old_item = tt.old_item1;
             end
             old_item.link = GetInventoryItemLink("player", slot);
             old_item.id = GetInventoryItemID("player", slot);
@@ -1847,14 +1897,14 @@ local function write_item_tooltip(tooltip, mod, mod_change)
                 local _, _, _, _, _, _, suffix_id =
                     strsplit(":", old_item.link:match("|Hitem:(.+)|h"));
 
-                old_item.lname, _, old_item.quality, _, _, _, _, _, old_item.inv_type, old_item.tex, _, _, old_item.subclass_id = GetItemInfo(old_item.link);
+                _, _, old_item.quality, _, _, _, _, _, old_item.inv_type, old_item.tex, _, _, old_item.subclass_id = GetItemInfo(old_item.link);
                 old_item.suffix_id = tonumber(suffix_id);
             else
                 old_item.tex = empty_tex;
                 old_item.subclass_id = nil;
             end
 
-            apply_item_cmp(loadout, effects, effects_diffed, new_item, old_item, slot);
+            apply_item_cmp(loadout, effects, effects_diffed, tt.new_item, old_item, slot);
 
             local i = 0;
             slot_cmp.len = 0;
@@ -1867,7 +1917,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
                 if k and spells[k] and bit.band(spells[k].flags, spell_flags.eval) ~= 0 then
 
                     i = i + 1;
-                    slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {frames = make_item_tooltip_line_frames()};
+                    slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {frames = make_item_tooltip_line_frames(tooltip)};
 
                     spell_diff(slot_cmp.diff_list[i],
                                fight_type,
@@ -1882,7 +1932,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
                     if spells[k].healing_version then
 
                         i = i + 1;
-                        slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {frames = make_item_tooltip_line_frames()};
+                        slot_cmp.diff_list[i] = slot_cmp.diff_list[i] or {frames = make_item_tooltip_line_frames(tooltip)};
 
                         spell_diff(slot_cmp.diff_list[i],
                                    fight_type,
@@ -1899,7 +1949,7 @@ local function write_item_tooltip(tooltip, mod, mod_change)
         end
     end
 
-    tooltip_item_id_last = new_item.id;
+    tt.tooltip_item_id_last = tt.new_item.id;
 
     -- display the cached evaluation data
 
@@ -1917,17 +1967,18 @@ local function write_item_tooltip(tooltip, mod, mod_change)
         fight_type_str = "Cast until OOM";
     end
 
-    headers.change_fstr:SetText(header1);
-    headers.first_fstr:SetText(header2);
-    headers.second_fstr:SetText(header3);
+    tt.headers.change_fstr:SetText(header1);
+    tt.headers.first_fstr:SetText(header2);
+    tt.headers.second_fstr:SetText(header3);
 
-    for _, v in pairs(headers) do
+    for _, v in pairs(tt.headers) do
+        v:SetParent(tooltip);
         v:Show();
     end
 
     tooltip:AddLine(" ");
     tooltip:AddDoubleLine(sc.core.addon_name,
-                          string.format("Target Level %s%d|r | %s",
+                          string.format("Target level %s%d|r | %s",
                               color_by_lvl_diff(loadout.lvl, loadout.target_lvl),
                               loadout.target_lvl,
                           fight_type_str),
@@ -1938,14 +1989,14 @@ local function write_item_tooltip(tooltip, mod, mod_change)
 
     if should_fix_wpn_skill then
         wpn_skill_change = string.format(" Skill: as %d", loadout.lvl * 5);
-    elseif new_item.wpn_skill ~= old_item1.wpn_skill then
+    elseif tt.new_item.wpn_skill ~= tt.old_item1.wpn_skill then
         wpn_skill_change = string.format(" Skill: %d -> %d",
-                                         old_item1.wpn_skill,
-                                         new_item.wpn_skill);
+                                         tt.old_item1.wpn_skill,
+                                         tt.new_item.wpn_skill);
     end
     local header0 = string.format("|cFF4682B4|T%s:16:16:0:0|t -> |T%s:16:16:0:0|t%s|r",
-                                  old_item1.tex,
-                                  new_item.tex,
+                                  tt.old_item1.tex,
+                                  tt.new_item.tex,
                                   wpn_skill_change
                                   );
     tooltip:AddDoubleLine(header0,
@@ -1956,38 +2007,39 @@ local function write_item_tooltip(tooltip, mod, mod_change)
     local num_lines = tooltip:NumLines();
     local min_width = 50;
 
-    local offset_to_first = math.max(min_width, headers.second_fstr:GetWidth());
-    local offset_to_change = offset_to_first + math.max(min_width, headers.first_fstr:GetWidth());
-    local offset_to_role_icon = offset_to_change + math.max(min_width, headers.change_fstr:GetWidth());
+    local offset_to_first = math.max(min_width, tt.headers.second_fstr:GetWidth());
+    local offset_to_change = offset_to_first + math.max(min_width, tt.headers.first_fstr:GetWidth());
+    local offset_to_role_icon = offset_to_change + math.max(min_width, tt.headers.change_fstr:GetWidth());
 
-    local rhs_txt = _G["GameTooltipTextRight"..num_lines];
-    headers.second_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", 0, 0);
-    headers.first_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_first, 0);
-    headers.change_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_change, 0);
+    local tooltip_name = tooltip:GetName();
+    local rhs_txt = _G[tooltip_name.."TextRight"..num_lines];
+    tt.headers.second_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", 0, 0);
+    tt.headers.first_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_first, 0);
+    tt.headers.change_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_change, 0);
 
     for item_fits_in_slot, _ in pairs(cmp_slots) do
         local slot_cmp;
         if item_fits_in_slot > 1 then
 
-            slot_cmp = cached_spells_cmp_item_slots[2];
+            slot_cmp = tt.cached_spells_cmp_item_slots[2];
 
             local wpn_skill_change = "";
             if should_fix_wpn_skill then
                 wpn_skill_change = string.format(" Skill: as %d", loadout.lvl * 5);
-            elseif new_item.wpn_skill ~= old_item2.wpn_skill then
+            elseif tt.new_item.wpn_skill ~= tt.old_item2.wpn_skill then
                 wpn_skill_change = string.format(" Skill: %d -> %d",
-                                                 old_item2.wpn_skill,
-                                                 new_item.wpn_skill);
+                                                 tt.old_item2.wpn_skill,
+                                                 tt.new_item.wpn_skill);
             end
             tooltip:AddDoubleLine(string.format("|cFF4682B4|T%s:16:16:0:0|t -> |T%s:16:16:0:0|t%s|r",
-                                  old_item2.tex,
-                                  new_item.tex,
+                                  tt.old_item2.tex,
+                                  tt.new_item.tex,
                                   wpn_skill_change),
                                   " ",
                             1, 1, 1);
             num_lines = num_lines + 1;
         else
-            slot_cmp = cached_spells_cmp_item_slots[1];
+            slot_cmp = tt.cached_spells_cmp_item_slots[1];
         end
         for i = 1, slot_cmp.len do
 
@@ -2041,17 +2093,25 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             end
             diff.frames.second_fstr:SetText(second);
 
-            if diff.id == sc.auto_attack_spell_id and cmp_slots[item_fits_in_slot] == slots.MainHandSlot then
-                tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t %s", new_item.tex, diff.disp), " ");
-            elseif diff.id == 75 and cmp_slots[item_fits_in_slot] == slots.RangedSlot then
-                tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t %s", new_item.tex, diff.disp), " ");
+            if diff.id == sc.auto_attack_spell_id then
+                if cmp_slots[item_fits_in_slot] == slots.MainHandSlot then
+                    tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t  %s", tt.new_item.tex, diff.disp), " ");
+                else
+                    tooltip:AddDoubleLine(string.format("  %s %s", spell_texture_str, diff.disp), " ");
+                end
+            elseif diff.id == 75 then -- hunter ranged auto attack
+                if cmp_slots[item_fits_in_slot] == slots.RangedSlot then
+                    tooltip:AddDoubleLine(string.format("  |T%s:16:16:0:0|t  %s", tt.new_item.tex, diff.disp), " ");
+                else
+                    tooltip:AddDoubleLine(string.format("  %s %s", spell_texture_str, diff.disp), " ");
+                end
             else
                 tooltip:AddDoubleLine(string.format("  %s%s", spell_texture_str, diff.extra), " ");
             end
 
             num_lines = num_lines + 1;
 
-            rhs_txt = _G["GameTooltipTextRight"..num_lines];
+            rhs_txt = _G[tooltip_name.."TextRight"..num_lines];
             diff.frames.second_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", 0, 0);
             diff.frames.first_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_first, 0);
             diff.frames.change_fstr:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_change, 0);
@@ -2064,27 +2124,38 @@ local function write_item_tooltip(tooltip, mod, mod_change)
             end
             diff.frames.role_tex:SetPoint("RIGHT", rhs_txt, "RIGHT", -offset_to_role_icon-10, 0);
             for k, v in pairs(diff.frames) do
+                v:SetParent(tooltip);
                 v:Show();
             end
         end
     end
-    item_tooltip_frames_hidden = false;
+    tt.item_tooltip_frames_hidden = false;
     tooltip:Show();
 end
 
-local function on_clear_tooltip()
-    if item_tooltip_frames_hidden then
+local function on_clear_tooltip(tooltip)
+
+    local tt;
+    if tooltip == GameTooltip then
+        tt = game_tooltip_item_cmp;
+    elseif tooltip == ItemRefTooltip then
+        tt = ref_tooltip_item_cmp;
+    else
         return;
     end
-    item_tooltip_frames_hidden = true;
-    for _, v in pairs(cached_spells_cmp_item_slots) do
+
+    if tt.item_tooltip_frames_hidden then
+        return;
+    end
+    tt.item_tooltip_frames_hidden = true;
+    for _, v in pairs(tt.cached_spells_cmp_item_slots) do
         for _, vv in ipairs(v.diff_list) do
             for _, frame in pairs(vv.frames) do
                 frame:Hide();
             end
         end
     end
-    for _, v in pairs(headers) do
+    for _, v in pairs(tt.headers) do
         v:Hide();
     end
 end

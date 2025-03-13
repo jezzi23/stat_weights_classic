@@ -434,14 +434,26 @@ GameTooltip:HookScript("OnTooltipSetItem", function(self)
         item_tooltip_mod = mod;
         write_item_tooltip(self, mod, mod_change);
     end
-end)
+end);
+
+hooksecurefunc(ItemRefTooltip, "SetHyperlink", function(self, link)
+    if not config.settings.tooltip_disable_item then
+        local mod = key_mod_flags();
+        local mod_change = mod ~= item_tooltip_mod;
+        item_tooltip_mod = mod;
+        write_item_tooltip(self, mod, mod_change, link);
+    end
+end);
 
 GameTooltip:HookScript("OnTooltipCleared", function(self)
     on_clear_tooltip(self);
-end)
+end);
+ItemRefTooltip:HookScript("OnTooltipCleared", function(self)
+    on_clear_tooltip(self);
+end);
 GameTooltip:HookScript("OnShow", function(self)
     on_show_tooltip(self);
-end)
+end);
 
 
 -- add addon to Addons list under Interface
