@@ -6521,6 +6521,9 @@ sc.class_buffs = {
 	[5217] = {
 			{"raw", "phys_dmg_flat", 10, nil, 0, 0},
 	},
+	[19634] = {
+			{"raw", "mp5_flat", 83.33333, nil, 0, 0},
+	},
 	[5570] = {
 			{"raw", "phys_hit", -0.02, nil, 2, 1},
 	},

@@ -1,6 +1,6 @@
 -- THIS FILE IS GENERATED
 local _, sc = ...;
-sc.addon_build_id = 1008;
+sc.addon_build_id = 1009;
 sc.client_name_src = "wow_classic_era";
 sc.client_version_src = "1.15.6.59415";
 _, sc.class = UnitClass("player");
@@ -78,6 +78,14 @@ sc.powers = {
 	energy = 3,
 	combopoints = 4,
 	happiness = 27,
+};
+sc.power_mod = {
+	[0] = 1,
+	[1] = 0.1,
+	[2] = 1,
+	[3] = 1,
+	[4] = 1,
+	[27] = 0.001,
 };
 sc.spell_flags = {
 	heal = bit.lshift(1, 0),
